@@ -1,0 +1,89 @@
+# SpecTree Local Development Environment
+# Run: docker-compose up -d
+# Note: Uses Azure SQL Edge for native Apple Silicon (ARM64) support
+
+services:
+  # ==========================================================================
+  # SQL Server Database (Azure SQL Edge - works on Apple Silicon M1/M2/M3)
+  # ==========================================================================
+  sqlserver:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: spectree-sql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=LocalDev@Password123
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+  # ==========================================================================
+  # Database Initialization (runs once after SQL Server starts)
+  # ==========================================================================
+  sqlserver-init:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: spectree-sql-init
+    depends_on:
+      - sqlserver
+    environment:
+      - MSSQL_SA_PASSWORD=LocalDev@Password123
+    volumes:
+      - ./scripts/init-db.sql:/init-db.sql:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        echo "Waiting for SQL Server to start..."
+        sleep 30
+        for i in {1..30}; do
+          /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "LocalDev@Password123" -Q "SELECT 1" > /dev/null 2>&1
+          if [ $$? -eq 0 ]; then
+            echo "SQL Server is ready!"
+            /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "LocalDev@Password123" -i /init-db.sql
+            echo "Database initialization complete"
+            exit 0
+          fi
+          echo "Waiting for SQL Server... attempt $$i"
+          sleep 2
+        done
+        echo "SQL Server failed to start"
+        exit 1
+    restart: "no"
+
+  # ==========================================================================
+  # API Backend (use: docker-compose --profile full up -d)
+  # ==========================================================================
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    container_name: spectree-api
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - HOST=0.0.0.0
+      - CORS_ORIGIN=http://localhost:5173
+      - DATABASE_URL=sqlserver://sqlserver:1433;database=spectree;user=sa;password=LocalDev@Password123;encrypt=true;trustServerCertificate=true
+    depends_on:
+      - sqlserver
+    profiles:
+      - full
+
+  # ==========================================================================
+  # Web Frontend (use: docker-compose --profile full up -d)
+  # ==========================================================================
+  web:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+    container_name: spectree-web
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    profiles:
+      - full
+
+volumes:
+  sqlserver-data:

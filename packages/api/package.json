@@ -1,0 +1,42 @@
+{
+  "name": "@spectree/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SpecTree API backend",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "prisma generate && tsc && cp -r src/generated dist/",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@fastify/compress": "^8.3.1",
+    "@fastify/cors": "^10.0.0",
+    "@fastify/helmet": "^13.0.2",
+    "@prisma/client": "^6.3.0",
+    "@spectree/shared": "workspace:*",
+    "bcrypt": "^5.1.1",
+    "fastify": "^5.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.10",
+    "prisma": "^6.3.0",
+    "tsx": "^4.19.0"
+  }
+}

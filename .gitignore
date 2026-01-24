@@ -1,0 +1,55 @@
+# =============================================================================
+# Git Ignore
+# =============================================================================
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+.serena/
+*.swp
+*.swo
+.DS_Store
+
+# Build outputs
+bin/
+obj/
+dist/
+node_modules/
+
+# Generated Prisma Client
+packages/api/src/generated/
+
+# Turborepo
+.turbo/
+
+# pnpm
+.pnpm-store/
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+
+# Docker volumes (if stored locally)
+.docker-data/
+
+# Azure deployment secrets
+*.parameters.local.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Vite
+*.local

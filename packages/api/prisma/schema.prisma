@@ -1,0 +1,208 @@
+// Prisma Schema for SpecTree API
+// Documentation: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// Note: SQL Server doesn't support native enums, so we use String fields with
+// application-level validation for: MembershipRole, StatusCategory
+// Valid MembershipRole values: 'admin', 'member', 'guest'
+// Valid StatusCategory values: 'backlog', 'unstarted', 'started', 'completed', 'canceled'
+// =============================================================================
+
+// =============================================================================
+// Test Model - HealthCheck
+// Used to verify CRUD operations work with Azure SQL
+// =============================================================================
+model HealthCheck {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.NVarChar(255)
+  status    String   @db.NVarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("health_checks")
+}
+
+// =============================================================================
+// Team Model
+// Represents a team/department in the organization (e.g., "COM", "ENG")
+// =============================================================================
+model Team {
+  id          String   @id @default(uuid()) @db.UniqueIdentifier
+  name        String   @db.NVarChar(255)
+  key         String   @unique @db.VarChar(10)
+  description String?  @db.Text
+  icon        String?  @db.NVarChar(50)
+  color       String?  @db.VarChar(7)
+  isArchived  Boolean  @default(false) @map("is_archived")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  memberships Membership[]
+  projects    Project[]
+  statuses    Status[]
+
+  @@map("teams")
+}
+
+// =============================================================================
+// User Model
+// Core user account for authentication and authorization
+// =============================================================================
+model User {
+  id           String   @id @default(uuid()) @db.UniqueIdentifier
+  email        String   @unique @db.NVarChar(255)
+  name         String   @db.NVarChar(255)
+  passwordHash String   @map("password_hash") @db.NVarChar(255)
+  avatarUrl    String?  @map("avatar_url") @db.NVarChar(500)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  memberships      Membership[]
+  assignedFeatures Feature[]    @relation("AssignedFeatures")
+  assignedTasks    Task[]       @relation("AssignedTasks")
+
+  @@index([email])
+  @@map("users")
+}
+
+// =============================================================================
+// Membership Model
+// Join table linking Users to Teams with role-based access
+// Role values: 'admin', 'member', 'guest'
+// =============================================================================
+model Membership {
+  id        String   @id @default(uuid()) @db.UniqueIdentifier
+  userId    String   @map("user_id") @db.UniqueIdentifier
+  teamId    String   @map("team_id") @db.UniqueIdentifier
+  role      String   @default("member") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+  @@index([userId])
+  @@index([teamId])
+  @@map("memberships")
+}
+
+// =============================================================================
+// Project Model
+// Represents a project within a team for organizing work
+// =============================================================================
+model Project {
+  id          String   @id @default(uuid()) @db.UniqueIdentifier
+  teamId      String   @map("team_id") @db.UniqueIdentifier
+  name        String   @db.NVarChar(255)
+  description String?  @db.Text
+  icon        String?  @db.NVarChar(50)
+  color       String?  @db.VarChar(7)
+  sortOrder   Float    @default(0) @map("sort_order") @db.Float
+  isArchived  Boolean  @default(false) @map("is_archived")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  team     Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  features Feature[]
+
+  @@index([teamId])
+  @@index([teamId, sortOrder])
+  @@map("projects")
+}
+
+// =============================================================================
+// Status Model
+// Represents workflow statuses within a team (e.g., "To Do", "In Progress")
+// Category values: 'backlog', 'unstarted', 'started', 'completed', 'canceled'
+// =============================================================================
+model Status {
+  id        String   @id @default(uuid()) @db.UniqueIdentifier
+  teamId    String   @map("team_id") @db.UniqueIdentifier
+  name      String   @db.NVarChar(50)
+  category  String   @db.VarChar(20)
+  color     String?  @db.VarChar(7)
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  team     Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  features Feature[]
+  tasks    Task[]
+
+  @@unique([teamId, name])
+  @@index([teamId])
+  @@index([teamId, position])
+  @@map("statuses")
+}
+
+// =============================================================================
+// Feature Model
+// Represents a work item within a project (equivalent to Linear Issues)
+// =============================================================================
+model Feature {
+  id          String   @id @default(uuid()) @db.UniqueIdentifier
+  projectId   String   @map("project_id") @db.UniqueIdentifier
+  identifier  String   @unique @db.VarChar(20)
+  title       String   @db.NVarChar(255)
+  description String?  @db.Text
+  statusId    String?  @map("status_id") @db.UniqueIdentifier
+  assigneeId  String?  @map("assignee_id") @db.UniqueIdentifier
+  sortOrder   Float    @default(0) @map("sort_order") @db.Float
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status   Status? @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignee User?   @relation("AssignedFeatures", fields: [assigneeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tasks    Task[]
+
+  @@index([projectId])
+  @@index([statusId])
+  @@index([assigneeId])
+  @@index([projectId, sortOrder])
+  @@index([projectId, statusId])
+  @@index([assigneeId, statusId])
+  @@map("features")
+}
+
+// =============================================================================
+// Task Model
+// Represents a sub-task within a feature (equivalent to Linear Sub-Issues)
+// =============================================================================
+model Task {
+  id          String   @id @default(uuid()) @db.UniqueIdentifier
+  featureId   String   @map("feature_id") @db.UniqueIdentifier
+  identifier  String   @unique @db.VarChar(20)
+  title       String   @db.NVarChar(255)
+  description String?  @db.Text
+  statusId    String?  @map("status_id") @db.UniqueIdentifier
+  assigneeId  String?  @map("assignee_id") @db.UniqueIdentifier
+  sortOrder   Float    @default(0) @map("sort_order") @db.Float
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  feature  Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  status   Status? @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignee User?   @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([featureId])
+  @@index([statusId])
+  @@index([assigneeId])
+  @@index([featureId, sortOrder])
+  @@index([assigneeId, statusId])
+  @@map("tasks")
+}
