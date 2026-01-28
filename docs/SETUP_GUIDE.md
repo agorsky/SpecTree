@@ -9,16 +9,10 @@ A comprehensive walkthrough for setting up, running, and accessing the SpecTree 
 **Already have everything installed? Just restarted your computer? Run these commands:**
 
 ```bash
-# 1. Start Docker Desktop (if not auto-starting)
-open -a Docker    # macOS
-
-# 2. Navigate to project
+# 1. Navigate to project
 cd /path/to/SpecTree
 
-# 3. Start the database
-pnpm docker:up
-
-# 4. Wait ~30 seconds for database to be ready, then start the app
+# 2. Start the app
 pnpm dev
 ```
 
@@ -26,8 +20,9 @@ pnpm dev
 - **Web App**: http://localhost:5173
 - **API**: http://localhost:3001
 
-**First time or database was reset?** Seed the database:
+**First time or database was reset?** Initialize and seed the database:
 ```bash
+pnpm --filter @spectree/api db:push
 pnpm --filter @spectree/api db:seed
 ```
 
@@ -43,9 +38,7 @@ pnpm --filter @spectree/api db:seed
 
 | Problem | Solution |
 |---------|----------|
-| Docker command not found | Start Docker Desktop first, wait for it to fully load |
-| Port 1433 in use | `docker compose down` then `pnpm docker:up` |
-| Database connection refused | Wait longer (~60s) or check: `docker compose logs sqlserver` |
+| Database not found | Run `pnpm --filter @spectree/api db:push` |
 | "Cannot find module" errors | Run `pnpm build` first |
 | Prisma client errors | Run `pnpm --filter @spectree/api db:generate` |
 
@@ -82,8 +75,8 @@ SpecTree is a monorepo containing four packages:
 **Architecture:**
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   React Web     │────▶│   Fastify API   │────▶│   SQL Server    │
-│   (Port 5173)   │     │   (Port 3001)   │     │   (Port 1433)   │
+│   React Web     │────▶│   Fastify API   │────▶│     SQLite      │
+│   (Port 5173)   │     │   (Port 3001)   │     │   (File-based)  │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                                │
                                ▼
@@ -105,21 +98,21 @@ Before starting, ensure you have these installed:
 |------|-----------------|---------------|---------|
 | **Node.js** | 20.0.0+ | `node --version` | [nodejs.org](https://nodejs.org/) or `nvm install 20` |
 | **pnpm** | 9.0.0+ | `pnpm --version` | `npm install -g pnpm` or `corepack enable` |
-| **Docker** | Latest | `docker --version` | [Docker Desktop](https://www.docker.com/products/docker-desktop/) |
-| **Docker Compose** | v2+ | `docker compose version` | Included with Docker Desktop |
 
 ### Optional Tools
 
 | Tool | Purpose | Install |
 |------|---------|---------|
+| **Docker** | Containerized deployment | [Docker Desktop](https://www.docker.com/products/docker-desktop/) |
 | **Azure CLI** | Production deployment | [Install Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) |
 | **Claude Code / AI Agent** | MCP server integration | Per tool instructions |
 
 ### System Requirements
 
-- **Memory**: 4GB+ available for Docker (SQL Server requirement)
-- **Disk**: ~5GB free space (Docker images + node_modules)
-- **Ports**: 1433, 3001, 5173 must be available
+- **Disk**: ~2GB free space (node_modules)
+- **Ports**: 3001, 5173 must be available
+
+> **Note**: Docker is only needed for containerized deployment. Local development uses SQLite, which requires no separate database server.
 
 ---
 
@@ -150,12 +143,8 @@ cp .env.example .env
 The default `.env` file is pre-configured for local development:
 
 ```bash
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=1433
-DB_NAME=spectree
-DB_USER=sa
-DB_PASSWORD=LocalDev@Password123
+# Database Configuration (SQLite)
+DATABASE_URL=file:./data/spectree.db
 
 # API Server Configuration
 API_PORT=3001
@@ -166,43 +155,23 @@ CORS_ORIGIN=http://localhost:5173
 NODE_ENV=development
 ```
 
-> ⚠️ **Important**: The `DATABASE_URL` for Prisma is constructed from these variables. Ensure they match the Docker Compose settings.
+### Step 4: Set Up the Database
 
-### Step 4: Start the Database
-
-```bash
-# Start SQL Server in Docker
-pnpm docker:up
-```
-
-**What this does:**
-1. Starts Azure SQL Edge container (works on Intel & Apple Silicon)
-2. Initializes the `spectree` database via `scripts/init-db.sql`
-
-**Wait for database to be ready** (~30-60 seconds):
-
-```bash
-# Watch initialization logs
-docker compose logs -f sqlserver-init
-```
-
-You should see: `Database initialization complete.`
-
-### Step 5: Set Up the Database Schema
-
-The API uses Prisma ORM. Push the schema to the database:
+The database is a SQLite file that's created automatically:
 
 ```bash
 # Generate Prisma client
 pnpm --filter @spectree/api db:generate
 
-# Push schema to database
+# Create database and apply schema
 pnpm --filter @spectree/api db:push
 ```
 
+The database file is created at `packages/api/prisma/data/spectree.db`.
+
 > **Note**: `db:push` is for development. For production, use `db:migrate` to create migrations.
 
-### Step 6: Build All Packages
+### Step 5: Build All Packages
 
 ```bash
 pnpm build
@@ -214,7 +183,7 @@ This builds packages in dependency order:
 3. `@spectree/web` (depends on shared)
 4. `@spectree/mcp` (depends on shared & api)
 
-### Step 7: (Optional) Seed the Database
+### Step 6: (Optional) Seed the Database
 
 ```bash
 pnpm --filter @spectree/api db:seed
@@ -264,9 +233,9 @@ pnpm --filter @spectree/api start
 pnpm --filter @spectree/web preview
 ```
 
-### Full Docker Stack
+### Full Docker Stack (Optional)
 
-Run everything in Docker (API, Web, Database):
+Run everything in Docker (API, Web):
 
 ```bash
 docker compose --profile full up -d
@@ -275,7 +244,6 @@ docker compose --profile full up -d
 This exposes:
 - **Web App**: http://localhost:80
 - **API**: http://localhost:3001
-- **Database**: localhost:1433
 
 ---
 
@@ -310,15 +278,8 @@ curl "http://localhost:3001/api/v1/features?query=authentication&status=in_progr
 
 ### Database Access
 
-**Connection Details (Local Docker):**
-
-| Property | Value |
-|----------|-------|
-| Host | `localhost` |
-| Port | `1433` |
-| Database | `spectree` |
-| Username | `sa` |
-| Password | `LocalDev@Password123` |
+**Database Location:**
+- File: `packages/api/prisma/data/spectree.db`
 
 **Tools for Database Access:**
 
@@ -328,12 +289,10 @@ curl "http://localhost:3001/api/v1/features?query=authentication&status=in_progr
    ```
    Opens at http://localhost:5555
 
-2. **Command Line**:
+2. **SQLite CLI** (if installed):
    ```bash
-   ./scripts/local-dev.sh connect
+   sqlite3 packages/api/prisma/data/spectree.db
    ```
-
-3. **Azure Data Studio / SSMS**: Use connection details above
 
 ---
 
@@ -341,7 +300,7 @@ curl "http://localhost:3001/api/v1/features?query=authentication&status=in_progr
 
 ### @spectree/api (Backend)
 
-**Technology**: Fastify 5, Prisma ORM, SQL Server
+**Technology**: Fastify 5, Prisma ORM, SQLite
 
 **Key Scripts:**
 ```bash
@@ -432,7 +391,8 @@ The database contains these main tables:
 
 ```bash
 # Reset database (delete all data)
-./scripts/local-dev.sh reset
+rm packages/api/prisma/data/spectree.db
+pnpm --filter @spectree/api db:push
 
 # View current schema
 pnpm --filter @spectree/api db:studio
@@ -442,6 +402,12 @@ pnpm --filter @spectree/api db:migrate --name describe_change
 
 # Deploy migrations (production)
 pnpm --filter @spectree/api db:migrate:deploy
+
+# Backup database
+./scripts/backup-db.sh
+
+# Restore from backup
+./scripts/restore-db.sh ./backups/spectree_YYYYMMDD_HHMMSS.db
 ```
 
 ### Connection String
@@ -449,7 +415,7 @@ pnpm --filter @spectree/api db:migrate:deploy
 Prisma uses `DATABASE_URL` environment variable:
 
 ```
-sqlserver://localhost:1433;database=spectree;user=sa;password=LocalDev@Password123;encrypt=true;trustServerCertificate=true
+file:./data/spectree.db
 ```
 
 ---
@@ -503,39 +469,30 @@ The MCP server allows AI agents (like Claude) to interact with SpecTree.
 
 ## Common Issues & Solutions
 
-### Docker: SQL Server won't start
+### Database file not found
 
-**Symptoms**: Container exits or health check fails
-
-**Solutions**:
-1. Ensure Docker has 4GB+ memory allocated
-2. Check if port 1433 is in use:
-   ```bash
-   lsof -i :1433
-   ```
-3. View logs:
-   ```bash
-   docker compose logs sqlserver
-   ```
-4. Reset:
-   ```bash
-   ./scripts/local-dev.sh reset
-   ```
-
-### "ECONNREFUSED" when connecting to database
+**Symptoms**: Error about missing database file
 
 **Solutions**:
-1. Wait for database initialization:
+1. Create the database:
    ```bash
-   docker compose logs -f sqlserver-init
+   pnpm --filter @spectree/api db:push
    ```
-2. Verify container is running:
+2. Check file exists:
    ```bash
-   docker compose ps
+   ls packages/api/prisma/data/spectree.db
    ```
-3. Restart:
+
+### "ECONNREFUSED" when connecting to API
+
+**Solutions**:
+1. Ensure the API server is running:
    ```bash
-   pnpm docker:down && pnpm docker:up
+   pnpm dev
+   ```
+2. Check port 3001 is not in use:
+   ```bash
+   lsof -i :3001
    ```
 
 ### Prisma: "Schema out of sync"
@@ -611,7 +568,7 @@ cd infra
 
 | Variable | Description |
 |----------|-------------|
-| `DATABASE_URL` | SQL Server connection string |
+| `DATABASE_URL` | Database connection string |
 | `AZURE_KEY_VAULT_URI` | Key Vault URI for secrets |
 | `AZURE_CLIENT_ID` | Managed identity client ID |
 | `NODE_ENV` | Set to `production` |
@@ -629,12 +586,14 @@ cd infra
 ### Start Everything (Development)
 
 ```bash
-# Terminal 1: Start database
-pnpm docker:up
+# Install dependencies (first time only)
+pnpm install
 
-# Wait for database, then in Terminal 2:
-pnpm build
+# Create database (first time only)
 pnpm --filter @spectree/api db:push
+
+# Build and start
+pnpm build
 pnpm dev
 ```
 
@@ -653,8 +612,8 @@ pnpm dev
 | `pnpm install` | Install all dependencies |
 | `pnpm build` | Build all packages |
 | `pnpm dev` | Start development servers |
-| `pnpm docker:up` | Start database |
-| `pnpm docker:down` | Stop database |
+| `pnpm docker:up` | Start Docker stack (optional) |
+| `pnpm docker:down` | Stop Docker stack |
 | `pnpm test` | Run all tests |
 | `pnpm lint` | Lint all packages |
 | `pnpm format` | Format code |
@@ -664,6 +623,6 @@ pnpm dev
 ## Getting Help
 
 - Check existing [GitHub Issues](../../issues)
-- Review logs: `pnpm docker:logs` for database, browser console for frontend
+- Review logs: browser console for frontend
 - For Azure issues: Check Azure Portal activity logs
 - See the main [README.md](../README.md) for additional details

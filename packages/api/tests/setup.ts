@@ -108,16 +108,28 @@ export async function setupTestDatabase(): Promise<void> {
 export async function cleanupTestDatabase(): Promise<void> {
   const prisma = getTestPrisma();
 
-  // Delete in order to respect foreign key constraints:
-  // 1. Tasks (depends on Feature, Status, User)
-  // 2. Features (depends on Project, Status, User)
-  // 3. Projects (depends on Team)
-  // 4. Statuses (depends on Team)
-  // 5. Memberships (depends on Team, User)
-  // 6. Teams
-  // 7. Users
-  // 8. HealthCheck (no dependencies)
+  // SAFETY CHECK: Only cleanup if we're using a test database
+  const databaseUrl = process.env.DATABASE_URL ?? "";
+  if (!databaseUrl.includes("test")) {
+    console.warn(
+      "⚠️  SKIPPING cleanup - DATABASE_URL does not contain 'test'. " +
+      "To enable cleanup, use a test database (e.g., spectree-test.db)"
+    );
+    return;
+  }
 
+  // Delete in order to respect foreign key constraints:
+  // 1. ApiTokens (depends on User)
+  // 2. Tasks (depends on Feature, Status, User)
+  // 3. Features (depends on Project, Status, User)
+  // 4. Projects (depends on Team)
+  // 5. Statuses (depends on Team)
+  // 6. Memberships (depends on Team, User)
+  // 7. Teams
+  // 8. Users
+  // 9. HealthCheck (no dependencies)
+
+  await prisma.apiToken.deleteMany();
   await prisma.task.deleteMany();
   await prisma.feature.deleteMany();
   await prisma.project.deleteMany();

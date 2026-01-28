@@ -15,9 +15,11 @@ Thank you for your interest in contributing to SpecTree! This guide covers our d
 
 Before contributing, ensure your environment is set up correctly:
 
-1. **Prerequisites**: Node.js 20+, pnpm 9+, Docker
+1. **Prerequisites**: Node.js 20+, pnpm 9+
 2. **Clone and install**: See [README.md Quick Start](./README.md#quick-start)
 3. **Verify setup**: Run `pnpm build && pnpm test` to ensure everything works
+
+> **Note**: The database uses SQLite, which is file-based and requires no separate database server.
 
 ## Code Style Guidelines
 

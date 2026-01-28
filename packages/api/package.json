@@ -22,10 +22,13 @@
     "clean": "rm -rf dist",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
+    "db:backup": "mkdir -p ../../backups && cp prisma/data/spectree.db \"../../backups/spectree_$(date +%Y%m%d_%H%M%S).db\" && echo 'Backup created in backups/'",
+    "db:migrate": "echo '⚠️  WARNING: This may reset your database!' && echo 'Run db:backup first, then use: npx prisma migrate dev' && exit 1",
+    "db:migrate:safe": "npm run db:backup && prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:restore": "echo 'Usage: cp backups/<backup-file>.db prisma/data/spectree.db'"
   },
   "dependencies": {
     "@fastify/compress": "^8.3.1",

@@ -64,7 +64,7 @@ export function Sidebar() {
               <span className="truncate">{user?.name}</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuContent align="start" side="top" className="w-56">
             <DropdownMenuItem asChild>
               <Link to="/settings">
                 <Settings className="mr-2 h-4 w-4" />

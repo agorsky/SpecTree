@@ -8,6 +8,12 @@ export default defineConfig({
     // Use Node.js environment for API tests
     environment: "node",
 
+    // Load test environment variables BEFORE setup
+    // This ensures tests use spectree-test.db instead of spectree.db
+    env: {
+      DATABASE_URL: "file:./data/spectree-test.db",
+    },
+
     // Global setup file that runs before tests
     // This sets up JWT_SECRET and optionally connects to the test database
     // Unit tests can mock the database and don't need DATABASE_URL

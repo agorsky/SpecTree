@@ -2,13 +2,16 @@
  * Authentication middleware for JWT token verification.
  * Extracts Bearer token from Authorization header, verifies it,
  * and attaches the authenticated user to the request.
+ *
+ * Also supports API tokens (prefixed with st_) for programmatic access.
  */
 
 import type { FastifyRequest, FastifyReply } from "fastify";
-import type { User } from "../generated/prisma/index.js";
+import type { User, ApiToken } from "../generated/prisma/index.js";
 import { verifyToken } from "../utils/jwt.js";
 import { prisma } from "../lib/db.js";
 import { UnauthorizedError } from "../errors/index.js";
+import { validateToken, updateTokenLastUsed } from "../services/tokenService.js";
 
 /**
  * Authenticated user type without sensitive fields.
@@ -20,11 +23,12 @@ export type AuthenticatedUser = Omit<User, "passwordHash"> & {
 };
 
 /**
- * Extends FastifyRequest to include the authenticated user.
+ * Extends FastifyRequest to include the authenticated user and optional API token.
  */
 declare module "fastify" {
   interface FastifyRequest {
     user?: AuthenticatedUser;
+    apiToken?: ApiToken;
   }
 }
 
@@ -48,14 +52,15 @@ function extractBearerToken(authHeader: string | undefined): string | null {
 }
 
 /**
- * Authentication middleware that verifies JWT tokens and attaches users to requests.
+ * Authentication middleware that verifies JWT tokens OR API tokens and attaches users to requests.
  *
  * This middleware:
- * 1. Extracts the JWT token from the Authorization header (Bearer scheme)
- * 2. Verifies the token signature and expiration
- * 3. Fetches the user from the database
- * 4. Checks if the user is active
- * 5. Attaches the user (without passwordHash) to req.user
+ * 1. Extracts the token from the Authorization header (Bearer scheme)
+ * 2. If token starts with st_, validates as API token
+ * 3. Otherwise, verifies as JWT token
+ * 4. Fetches the user from the database
+ * 5. Checks if the user is active
+ * 6. Attaches the user (without passwordHash) to req.user
  *
  * @throws UnauthorizedError if:
  *   - No Authorization header is present
@@ -87,6 +92,57 @@ export async function authenticate(
     throw new UnauthorizedError("Missing or invalid Authorization header");
   }
 
+  // Check if this is an API token (st_ prefix)
+  if (token.startsWith("st_")) {
+    await authenticateWithApiToken(request, token);
+    return;
+  }
+
+  // Otherwise, treat as JWT token
+  await authenticateWithJwt(request, token);
+}
+
+/**
+ * Authenticates a request using an API token.
+ */
+async function authenticateWithApiToken(
+  request: FastifyRequest,
+  token: string
+): Promise<void> {
+  const apiToken = await validateToken(token);
+
+  if (!apiToken) {
+    throw new UnauthorizedError("Invalid or expired API token");
+  }
+
+  // Update last_used_at asynchronously (don't wait for it)
+  updateTokenLastUsed(apiToken.id).catch(() => {
+    // Silently ignore errors on tracking
+  });
+
+  // Get team membership for the user
+  const membership = await prisma.membership.findFirst({
+    where: { userId: apiToken.user.id },
+    select: { teamId: true, role: true },
+  });
+
+  // Attach user to request (excluding passwordHash)
+  const { passwordHash: _, ...userWithoutPassword } = apiToken.user;
+  request.user = {
+    ...userWithoutPassword,
+    teamId: membership?.teamId ?? null,
+    role: membership?.role ?? null,
+  };
+  request.apiToken = apiToken;
+}
+
+/**
+ * Authenticates a request using a JWT token.
+ */
+async function authenticateWithJwt(
+  request: FastifyRequest,
+  token: string
+): Promise<void> {
   // Verify token signature and expiration
   const payload = verifyToken(token);
 

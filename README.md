@@ -12,7 +12,7 @@ Project Management & Issue Tracking Platform
 - [Testing](#testing)
 - [API Features](#api-features)
 - [MCP Server with Claude Code](#mcp-server-with-claude-code)
-- [Azure SQL Connection](#azure-sql-connection)
+- [Database](#database)
 - [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
 
@@ -24,16 +24,16 @@ Before you begin, ensure you have the following installed:
 |------|---------|--------------|
 | **Node.js** | 20.0.0+ | [nodejs.org](https://nodejs.org/) or `nvm install 20` |
 | **pnpm** | 9.0.0+ | `npm install -g pnpm` or `corepack enable` |
-| **Docker** | Latest | [docker.com](https://www.docker.com/products/docker-desktop/) |
-| **Docker Compose** | v2+ | Included with Docker Desktop |
+| **Docker** | Latest | [docker.com](https://www.docker.com/products/docker-desktop/) (optional, for containerized deployment) |
 | **Azure CLI** | Latest | [Install Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) (for deployment only) |
+
+> **Note**: The database uses SQLite, which is file-based and requires no separate database server or Docker for local development.
 
 ### Verify Installation
 
 ```bash
 node --version    # Should be v20.x.x or higher
 pnpm --version    # Should be 9.x.x or higher
-docker --version  # Should show Docker version
 az --version      # Optional, for Azure deployment
 ```
 
@@ -52,22 +52,21 @@ pnpm install
 # 3. Set up environment variables
 cp .env.example .env
 
-# 4. Start the local database
-pnpm docker:up
+# 4. Create the database and seed initial data
+pnpm --filter @spectree/api db:push
+pnpm --filter @spectree/api db:seed
 
-# 5. Wait for database initialization (~30 seconds)
-# Check status with: docker-compose logs -f sqlserver-init
-
-# 6. Build all packages
+# 5. Build all packages
 pnpm build
 
-# 7. Start development servers
+# 6. Start development servers
 pnpm dev
 ```
 
 After these steps:
 - **API server** runs at http://localhost:3001
 - **Web app** runs at http://localhost:5173
+- **Database** is at `packages/api/prisma/data/spectree.db`
 
 ## Project Structure
 
@@ -118,11 +117,7 @@ cp .env.example .env
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DB_HOST` | `localhost` | Database server hostname |
-| `DB_PORT` | `1433` | Database server port |
-| `DB_NAME` | `spectree` | Database name |
-| `DB_USER` | `sa` | Database username |
-| `DB_PASSWORD` | `LocalDev@Password123` | Database password |
+| `DATABASE_URL` | `file:./data/spectree.db` | SQLite database file path (relative to prisma directory) |
 | `API_PORT` | `3001` | API server port |
 | `API_HOST` | `0.0.0.0` | API server bind address |
 | `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
@@ -151,11 +146,13 @@ cp .env.example .env
 | `pnpm typecheck` | Run TypeScript type checking |
 | `pnpm clean` | Remove build artifacts and node_modules |
 
-### Docker Commands
+### Docker Commands (Optional)
+
+Docker is only needed for containerized deployment, not for local development:
 
 | Command | Description |
 |---------|-------------|
-| `pnpm docker:up` | Start Docker services (database) |
+| `pnpm docker:up --profile full` | Start full stack in containers (API + Web) |
 | `pnpm docker:down` | Stop Docker services |
 | `pnpm docker:logs` | View Docker service logs |
 
@@ -197,27 +194,45 @@ pnpm --filter @spectree/web dev
 pnpm --filter @spectree/api test
 ```
 
-### Local Development Helper Script
+### Database Backup & Restore
 
-The `scripts/local-dev.sh` script provides convenient commands:
+The database is a single SQLite file, making backup and restore simple:
+
+#### Creating a Backup
 
 ```bash
-./scripts/local-dev.sh start    # Start local environment
-./scripts/local-dev.sh stop     # Stop local environment
-./scripts/local-dev.sh restart  # Restart environment
-./scripts/local-dev.sh status   # Show container status
-./scripts/local-dev.sh logs     # View SQL Server logs
-./scripts/local-dev.sh connect  # Connect to SQL Server via sqlcmd
-./scripts/local-dev.sh reset    # Reset database (delete all data)
+./scripts/backup-db.sh
 ```
+
+Backups are stored in `./backups/` with timestamp filenames (e.g., `spectree_20240115_143052.db`).
+
+#### Restoring from Backup
+
+```bash
+./scripts/restore-db.sh ./backups/spectree_YYYYMMDD_HHMMSS.db
+```
+
+#### Manual Backup
+
+For a quick manual backup, simply copy the database file:
+
+```bash
+cp packages/api/prisma/data/spectree.db packages/api/prisma/data/spectree-backup.db
+```
+
+### SQLite Database Notes
+
+- **File location**: `packages/api/prisma/data/spectree.db`
+- **View data**: Use Prisma Studio with `pnpm --filter @spectree/api db:studio`
+- **Portability**: The database is a single file—easy to backup, copy, or share
+- **No server needed**: No separate database process required for development
 
 ### Docker Compose Profiles
 
-```bash
-# Default: Start only database
-docker-compose up -d
+Docker is optional and only needed for containerized deployment:
 
-# Full stack: Start database, API, and web
+```bash
+# Full stack: Start API and web in containers
 docker-compose --profile full up -d
 ```
 
@@ -429,72 +444,29 @@ Parameters:
 
 Results include a `type` field ("feature" or "task") to distinguish item types.
 
-## Azure SQL Connection
+## Database
 
-### Local Development (Docker)
+### Local Development (SQLite)
 
-Local development uses Azure SQL Edge in Docker, which runs natively on Apple Silicon (M1/M2/M3):
-
-```bash
-# Start the database
-pnpm docker:up
-
-# Connection details
-Server: localhost
-Port: 1433
-Database: spectree
-Username: sa
-Password: LocalDev@Password123
-```
-
-### Connecting to Azure SQL (Production/Staging)
-
-Azure SQL databases use private endpoints and are not publicly accessible. Choose one of these methods:
-
-#### Option 1: Temporary Firewall Rule (Quick Testing)
-
-⚠️ **Warning**: This temporarily exposes the database to the internet.
+Local development uses SQLite, a file-based database that requires no separate server:
 
 ```bash
-# Add your IP to the firewall
-./infra/scripts/add-dev-firewall.sh add
+# Database location
+packages/api/prisma/data/spectree.db
 
-# Connect using Azure Data Studio, SSMS, or sqlcmd
-# Server: sql-spectree-dev.database.windows.net
-# Authentication: Azure Active Directory - Universal with MFA
+# Create database and apply schema
+pnpm --filter @spectree/api db:push
 
-# Remove the firewall rule when done
-./infra/scripts/add-dev-firewall.sh remove
+# Seed initial data
+pnpm --filter @spectree/api db:seed
+
+# View data with Prisma Studio
+pnpm --filter @spectree/api db:studio
 ```
 
-#### Option 2: VPN Gateway (Recommended for Regular Access)
+### Production (Azure SQL)
 
-1. Set up Azure VPN Gateway with point-to-site configuration
-2. Connect to the VPN
-3. Access SQL Server via private IP
-
-#### Option 3: Azure Bastion / Jump Box
-
-1. Deploy a jump box VM in the VNet
-2. Connect via Azure Bastion
-3. Access SQL Server from within the VNet
-
-### Connection Strings
-
-**Local Development:**
-```
-Server=tcp:localhost,1433;Initial Catalog=spectree;User ID=sa;Password=LocalDev@Password123;TrustServerCertificate=True;
-```
-
-**Azure (SQL Authentication):**
-```
-Server=tcp:<server>.database.windows.net,1433;Initial Catalog=<database>;User ID=<user>;Password=<password>;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
-```
-
-**Azure (Managed Identity):**
-```
-Server=tcp:<server>.database.windows.net,1433;Initial Catalog=<database>;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Default;
-```
+Production deployments use Azure SQL. Azure SQL databases use private endpoints and are not publicly accessible. See [`infra/README.md`](./infra/README.md) for deployment details.
 
 ## Deployment
 
@@ -549,16 +521,6 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 
 ### Common Issues
 
-#### Docker: SQL Server won't start
-
-**Symptoms**: Container exits immediately or health check fails
-
-**Solutions**:
-1. Ensure Docker has enough memory (4GB+ recommended)
-2. Check if port 1433 is already in use: `lsof -i :1433`
-3. View logs: `docker-compose logs sqlserver`
-4. Reset the database: `./scripts/local-dev.sh reset`
-
 #### pnpm install fails
 
 **Symptoms**: Dependency resolution errors
@@ -577,15 +539,15 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 2. Regenerate Prisma client: `pnpm --filter @spectree/api db:generate`
 3. Restart TypeScript server in your IDE
 
-#### Database connection refused
+#### Database issues
 
-**Symptoms**: `ECONNREFUSED` or connection timeout
+**Symptoms**: Database file not found or connection errors
 
 **Solutions**:
-1. Verify database is running: `docker-compose ps`
-2. Wait for initialization: `docker-compose logs sqlserver-init`
-3. Check connection details match `.env` file
-4. Restart database: `pnpm docker:down && pnpm docker:up`
+1. Ensure database exists: `pnpm --filter @spectree/api db:push`
+2. Check file exists: `ls packages/api/prisma/data/spectree.db`
+3. Verify DATABASE_URL in `.env`: should be `file:./data/spectree.db`
+4. Reset database: delete the db file and run `db:push` again
 
 #### MCP server not appearing in Claude Code
 
@@ -610,7 +572,7 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 ### Getting Help
 
 - Check existing issues in the repository
-- Review logs: `pnpm docker:logs` for database, browser console for frontend
+- Review logs: browser console for frontend
 - For Azure issues: Check Azure Portal activity logs
 
 ## Technology Stack
@@ -625,7 +587,7 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 | **Frontend** | React 19 + Vite 6 |
 | **Styling** | Tailwind CSS 4 |
 | **Components** | Radix UI |
-| **Database** | SQL Server (Azure SQL Edge locally) |
+| **Database** | SQLite (local), Azure SQL (production) |
 | **ORM** | Prisma |
 | **Testing** | Vitest |
 | **Linting** | ESLint 9 (flat config) |

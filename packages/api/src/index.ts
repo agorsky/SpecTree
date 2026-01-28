@@ -14,6 +14,7 @@ import { teamMembershipsRoutes, userTeamsRoutes } from "./routes/memberships.js"
 import featuresRoutes from "./routes/features.js";
 import tasksRoutes, { featureTasksRoutes } from "./routes/tasks.js";
 import authRoutes from "./routes/auth.js";
+import tokensRoutes from "./routes/tokens.js";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const HOST = process.env.HOST ?? "0.0.0.0";
@@ -44,6 +45,7 @@ async function main(): Promise<void> {
   await fastify.register(featureTasksRoutes, { prefix: "/api/v1/features" });
   await fastify.register(tasksRoutes, { prefix: "/api/v1/tasks" });
   await fastify.register(authRoutes, { prefix: "/api/v1/auth" });
+  await fastify.register(tokensRoutes, { prefix: "/api/v1/tokens" });
 
   // Graceful shutdown - disconnect Prisma
   fastify.addHook("onClose", async () => {

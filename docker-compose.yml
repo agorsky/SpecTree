@@ -1,67 +1,9 @@
 # SpecTree Local Development Environment
 # Run: docker-compose up -d
-# Note: Uses Azure SQL Edge for native Apple Silicon (ARM64) support
-#
-# IMPORTANT: Run ./scripts/backup-db.sh regularly to backup your data!
 
 services:
   # ==========================================================================
-  # SQL Server Database (Azure SQL Edge - works on Apple Silicon M1/M2/M3)
-  # ==========================================================================
-  sqlserver:
-    image: mcr.microsoft.com/azure-sql-edge:latest
-    container_name: spectree-sql
-    hostname: spectree-sql
-    
-    # Auto-restart on failure or system reboot
-    restart: unless-stopped
-    
-    environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=LocalDev@Password123
-      # Limit SQL Server memory to prevent OOM kills
-      - MSSQL_MEMORY_LIMIT_MB=1024
-    
-    ports:
-      - "1433:1433"
-    
-    volumes:
-      - sqlserver-data:/var/opt/mssql
-    
-    # Health check to verify SQL Server is ready for connections
-    healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "LocalDev@Password123" -Q "SELECT 1" -C -b -o /dev/null || exit 1
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    
-    # Give SQL Server time to flush data on shutdown (default is only 10s)
-    stop_grace_period: 60s
-
-  # ==========================================================================
-  # Database Initialization (runs once after SQL Server starts)
-  # ==========================================================================
-  sqlserver-init:
-    image: mcr.microsoft.com/azure-sql-edge:latest
-    container_name: spectree-sql-init
-    depends_on:
-      sqlserver:
-        condition: service_healthy
-    environment:
-      - MSSQL_SA_PASSWORD=LocalDev@Password123
-    volumes:
-      - ./scripts/init-db.sql:/init-db.sql:ro
-    entrypoint: ["/bin/bash", "-c"]
-    command:
-      - |
-        echo "SQL Server is healthy, running initialization..."
-        /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "LocalDev@Password123" -C -i /init-db.sql
-        echo "Database initialization complete"
-    restart: "no"
-
-  # ==========================================================================
-  # API Backend (use: docker-compose --profile full up -d)
+  # API Backend
   # ==========================================================================
   api:
     build:
@@ -76,15 +18,14 @@ services:
       - PORT=3001
       - HOST=0.0.0.0
       - CORS_ORIGIN=http://localhost:5173
-      - DATABASE_URL=sqlserver://sqlserver:1433;database=spectree;user=sa;password=LocalDev@Password123;encrypt=true;trustServerCertificate=true
-    depends_on:
-      sqlserver:
-        condition: service_healthy
+      - DATABASE_URL=file:/app/data/spectree.db
+    volumes:
+      - spectree-data:/app/data
     profiles:
       - full
 
   # ==========================================================================
-  # Web Frontend (use: docker-compose --profile full up -d)
+  # Web Frontend
   # ==========================================================================
   web:
     build:
@@ -100,4 +41,4 @@ services:
       - full
 
 volumes:
-  sqlserver-data:
+  spectree-data:

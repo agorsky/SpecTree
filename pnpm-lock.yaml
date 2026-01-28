@@ -102,6 +102,9 @@ importers:
       '@spectree/shared':
         specifier: workspace:*
         version: link:../shared
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
       zod:
         specifier: ^3.24.0
         version: 3.25.76

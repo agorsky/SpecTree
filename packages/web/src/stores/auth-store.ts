@@ -40,6 +40,7 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
+          isLoading: false,
         });
       },
 
