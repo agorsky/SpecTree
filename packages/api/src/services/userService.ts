@@ -131,19 +131,48 @@ export async function emailExists(email: string, excludeId?: string): Promise<bo
 
 /**
  * Create a new user
+ * Automatically adds the user to all existing teams as a member
  */
 export async function createUser(input: CreateUserInput): Promise<UserResponse> {
   const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
 
-  return prisma.user.create({
-    data: {
-      email: input.email,
-      name: input.name,
-      passwordHash,
-      avatarUrl: input.avatarUrl ?? null,
-    },
-    select: userSelectFields,
+  // Create user and add to all existing teams in a transaction
+  const user = await prisma.$transaction(async (tx) => {
+    // Create the user
+    const newUser = await tx.user.create({
+      data: {
+        email: input.email,
+        name: input.name,
+        passwordHash,
+        avatarUrl: input.avatarUrl ?? null,
+      },
+      select: {
+        ...userSelectFields,
+        id: true,
+      },
+    });
+
+    // Get all existing teams
+    const teams = await tx.team.findMany({
+      where: { isArchived: false },
+      select: { id: true },
+    });
+
+    // Add user to all teams as member
+    if (teams.length > 0) {
+      await tx.membership.createMany({
+        data: teams.map((team) => ({
+          userId: newUser.id,
+          teamId: team.id,
+          role: "member",
+        })),
+      });
+    }
+
+    return newUser;
   });
+
+  return user;
 }
 
 /**
@@ -220,8 +249,10 @@ export async function getUserByEmailWithPassword(email: string): Promise<{
   createdAt: Date;
   updatedAt: Date;
   passwordHash: string;
+  teamId: string | null;
+  role: string | null;
 } | null> {
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { email },
     select: {
       id: true,
@@ -232,6 +263,29 @@ export async function getUserByEmailWithPassword(email: string): Promise<{
       createdAt: true,
       updatedAt: true,
       passwordHash: true,
+      memberships: {
+        select: {
+          teamId: true,
+          role: true,
+        },
+        take: 1,
+      },
     },
   });
+
+  if (!user) return null;
+
+  const membership = user.memberships[0];
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    avatarUrl: user.avatarUrl,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    passwordHash: user.passwordHash,
+    teamId: membership?.teamId ?? null,
+    role: membership?.role ?? null,
+  };
 }

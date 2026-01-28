@@ -5,12 +5,13 @@
  */
 
 import { z } from "zod";
-import { addToolRegistrar } from "./index.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   statusService,
   prisma,
   NotFoundError,
 } from "@spectree/api/src/services/index.js";
+import { isValidUUID } from "../utils.js";
 
 // Input schemas
 const listStatusesSchema = {
@@ -43,14 +44,16 @@ const getStatusSchema = {
 
 // Helper to resolve team ID from name or ID
 async function resolveTeamId(teamNameOrId: string): Promise<string> {
-  // First try to find by ID
-  const teamById = await prisma.team.findUnique({
-    where: { id: teamNameOrId },
-    select: { id: true },
-  });
+  // First try to find by ID - only if it's a valid UUID format
+  if (isValidUUID(teamNameOrId)) {
+    const teamById = await prisma.team.findUnique({
+      where: { id: teamNameOrId },
+      select: { id: true },
+    });
 
-  if (teamById) {
-    return teamById.id;
+    if (teamById) {
+      return teamById.id;
+    }
   }
 
   // Try to find by name
@@ -61,6 +64,16 @@ async function resolveTeamId(teamNameOrId: string): Promise<string> {
 
   if (teamByName) {
     return teamByName.id;
+  }
+
+  // Try to find by key
+  const teamByKey = await prisma.team.findFirst({
+    where: { key: teamNameOrId },
+    select: { id: true },
+  });
+
+  if (teamByKey) {
+    return teamByKey.id;
   }
 
   throw new NotFoundError(`Team '${teamNameOrId}' not found`);
@@ -84,7 +97,7 @@ function formatStatus(status: {
 }
 
 // Register all status tools
-addToolRegistrar((server) => {
+export function registerStatusTools(server: McpServer): void {
   // List statuses tool
   server.registerTool(
     "spectree__list_statuses",
@@ -197,4 +210,4 @@ addToolRegistrar((server) => {
       }
     }
   );
-});
+}

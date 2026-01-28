@@ -7,6 +7,11 @@ import {
   deleteFeature,
 } from "../services/featureService.js";
 import { authenticate } from "../middleware/authenticate.js";
+import { validateBody } from "../middleware/validate.js";
+import { reorderFeatureSchema, type ReorderFeatureInput } from "../schemas/feature.js";
+import { generateSortOrderBetween } from "../utils/ordering.js";
+import { prisma } from "../lib/db.js";
+import { NotFoundError, ValidationError } from "../errors/index.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
 
 // Request type definitions
@@ -15,7 +20,18 @@ interface ListFeaturesQuery {
   limit?: string;
   projectId?: string;
   statusId?: string;
+  /** Status filter - can be ID or name (single or array via repeated param) */
+  status?: string | string[];
+  /** Filter by status category (backlog, unstarted, started, completed, canceled) */
+  statusCategory?: string;
   assigneeId?: string;
+  /** Assignee filter - supports "me", "none", email, or UUID */
+  assignee?: string;
+  query?: string;
+  createdAt?: string;
+  createdBefore?: string;
+  updatedAt?: string;
+  updatedBefore?: string;
 }
 
 interface FeatureIdParams {
@@ -37,6 +53,11 @@ interface UpdateFeatureBody {
   statusId?: string;
   assigneeId?: string;
   sortOrder?: number;
+}
+
+interface BulkUpdateBody {
+  ids: string[];
+  statusId: string;
 }
 
 /**
@@ -63,7 +84,16 @@ export default async function featuresRoutes(
         limit?: number;
         projectId?: string;
         statusId?: string;
+        status?: string | string[];
+        statusCategory?: string;
         assigneeId?: string;
+        assignee?: string;
+        currentUserId?: string;
+        query?: string;
+        createdAt?: string;
+        createdBefore?: string;
+        updatedAt?: string;
+        updatedBefore?: string;
       } = {};
 
       if (request.query.cursor) {
@@ -75,11 +105,39 @@ export default async function featuresRoutes(
       if (request.query.projectId) {
         options.projectId = request.query.projectId;
       }
-      if (request.query.statusId) {
+      // Enhanced status filtering (supports name, ID, array, category)
+      if (request.query.status) {
+        options.status = request.query.status;
+      } else if (request.query.statusCategory) {
+        options.statusCategory = request.query.statusCategory;
+      } else if (request.query.statusId) {
+        // Legacy support for direct statusId
         options.statusId = request.query.statusId;
       }
-      if (request.query.assigneeId) {
+      // Enhanced assignee filtering
+      if (request.query.assignee) {
+        options.assignee = request.query.assignee;
+        if (request.user?.id) {
+          options.currentUserId = request.user.id;
+        }
+      } else if (request.query.assigneeId) {
+        // Legacy support for direct assigneeId
         options.assigneeId = request.query.assigneeId;
+      }
+      if (request.query.query) {
+        options.query = request.query.query;
+      }
+      if (request.query.createdAt) {
+        options.createdAt = request.query.createdAt;
+      }
+      if (request.query.createdBefore) {
+        options.createdBefore = request.query.createdBefore;
+      }
+      if (request.query.updatedAt) {
+        options.updatedAt = request.query.updatedAt;
+      }
+      if (request.query.updatedBefore) {
+        options.updatedBefore = request.query.updatedBefore;
       }
 
       const result = await listFeatures(options);
@@ -170,6 +228,155 @@ export default async function featuresRoutes(
 
       const feature = await updateFeature(id, input);
       return reply.send({ data: feature });
+    }
+  );
+
+  /**
+   * PUT /api/v1/features/:id/reorder
+   * Reorder a feature within its project
+   * Requires authentication, team membership, and member+ role
+   */
+  fastify.put<{ Params: FeatureIdParams; Body: ReorderFeatureInput }>(
+    "/:id/reorder",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(reorderFeatureSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { afterId, beforeId } = request.body;
+
+      // Fetch the feature being reordered
+      const feature = await prisma.feature.findUnique({
+        where: { id },
+        select: { id: true, projectId: true },
+      });
+
+      if (!feature) {
+        throw new NotFoundError(`Feature with id '${id}' not found`);
+      }
+
+      let beforeSortOrder: number | null = null;
+      let afterSortOrder: number | null = null;
+
+      // If afterId provided, the new position is after that feature
+      // So "afterId" feature's sortOrder becomes our "before" value
+      if (afterId) {
+        const afterFeature = await prisma.feature.findUnique({
+          where: { id: afterId },
+          select: { id: true, projectId: true, sortOrder: true },
+        });
+
+        if (!afterFeature) {
+          throw new NotFoundError(`Feature with id '${afterId}' not found`);
+        }
+
+        if (afterFeature.projectId !== feature.projectId) {
+          throw new ValidationError("Cannot reorder: afterId feature belongs to a different project");
+        }
+
+        beforeSortOrder = afterFeature.sortOrder;
+      }
+
+      // If beforeId provided, the new position is before that feature
+      // So "beforeId" feature's sortOrder becomes our "after" value
+      if (beforeId) {
+        const beforeFeature = await prisma.feature.findUnique({
+          where: { id: beforeId },
+          select: { id: true, projectId: true, sortOrder: true },
+        });
+
+        if (!beforeFeature) {
+          throw new NotFoundError(`Feature with id '${beforeId}' not found`);
+        }
+
+        if (beforeFeature.projectId !== feature.projectId) {
+          throw new ValidationError("Cannot reorder: beforeId feature belongs to a different project");
+        }
+
+        afterSortOrder = beforeFeature.sortOrder;
+      }
+
+      // Calculate the new sortOrder
+      const newSortOrder = generateSortOrderBetween(beforeSortOrder, afterSortOrder);
+
+      // Update the feature's sortOrder
+      const updatedFeature = await prisma.feature.update({
+        where: { id },
+        data: { sortOrder: newSortOrder },
+      });
+
+      return reply.send({ data: updatedFeature });
+    }
+  );
+
+  /**
+   * PUT /api/v1/features/bulk-update
+   * Update status for multiple features at once
+   * Requires authentication
+   */
+  fastify.put<{ Body: BulkUpdateBody }>(
+    "/bulk-update",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const { ids, statusId } = request.body;
+
+      // Validate inputs
+      if (!ids || ids.length === 0) {
+        throw new ValidationError("ids array is required and cannot be empty");
+      }
+      if (!statusId) {
+        throw new ValidationError("statusId is required");
+      }
+
+      // Verify status exists
+      const status = await prisma.status.findUnique({
+        where: { id: statusId },
+        select: { id: true, teamId: true },
+      });
+      if (!status) {
+        throw new NotFoundError(`Status with id '${statusId}' not found`);
+      }
+
+      // Verify all features exist and belong to projects in the status's team
+      const features = await prisma.feature.findMany({
+        where: { id: { in: ids } },
+        select: {
+          id: true,
+          project: {
+            select: { teamId: true },
+          },
+        },
+      });
+
+      if (features.length !== ids.length) {
+        const foundIds = features.map((f) => f.id);
+        const missingIds = ids.filter((id) => !foundIds.includes(id));
+        throw new NotFoundError(
+          `Features not found: ${missingIds.join(", ")}`
+        );
+      }
+
+      // Verify all features belong to the same team as the status
+      const invalidFeatures = features.filter(
+        (f) => f.project.teamId !== status.teamId
+      );
+      if (invalidFeatures.length > 0) {
+        throw new ValidationError(
+          `Some features do not belong to the same team as the status`
+        );
+      }
+
+      // Update in transaction
+      const result = await prisma.$transaction(async (tx) => {
+        const updateResult = await tx.feature.updateMany({
+          where: { id: { in: ids } },
+          data: { statusId },
+        });
+        return updateResult.count;
+      });
+
+      return reply.send({ updated: result });
     }
   );
 

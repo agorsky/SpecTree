@@ -1,6 +1,18 @@
 import { prisma } from "../lib/db.js";
 import type { Feature, Task } from "../generated/prisma/index.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
+import { generateSortOrderBetween } from "../utils/ordering.js";
+import { buildDateFilters } from "../utils/dateParser.js";
+import {
+  resolveStatusesToIds,
+  getStatusIdsByCategory,
+} from "./statusService.js";
+import {
+  resolveAssigneeId,
+  isAssigneeNone,
+  isAssigneeInvalid,
+} from "../utils/assignee.js";
+import { emitStatusChanged } from "../events/index.js";
 
 // Types for feature operations
 export interface CreateFeatureInput {
@@ -20,22 +32,48 @@ export interface UpdateFeatureInput {
   sortOrder?: number | undefined;
 }
 
+export type FeatureOrderBy = 'sortOrder' | 'createdAt' | 'updatedAt';
+
 export interface ListFeaturesOptions {
   cursor?: string | undefined;
   limit?: number | undefined;
   projectId?: string | undefined;
   statusId?: string | undefined;
+  /** Status filter - can be ID or name (single or array) */
+  status?: string | string[] | undefined;
+  /** Filter by status category (backlog, unstarted, started, completed, canceled) */
+  statusCategory?: string | undefined;
+  /** @deprecated Use `assignee` instead for enhanced filtering */
   assigneeId?: string | undefined;
+  /** Assignee filter - supports "me", "none", email, or UUID */
+  assignee?: string | undefined;
+  /** Current user ID - required for resolving "me" assignee filter */
+  currentUserId?: string | undefined;
+  orderBy?: FeatureOrderBy | undefined;
+  query?: string | undefined;
+  /** Filter by createdAt on or after this date (ISO-8601 date or duration like -P7D) */
+  createdAt?: string | undefined;
+  /** Filter by createdAt before this date (ISO-8601 date or duration like -P7D) */
+  createdBefore?: string | undefined;
+  /** Filter by updatedAt on or after this date (ISO-8601 date or duration like -P7D) */
+  updatedAt?: string | undefined;
+  /** Filter by updatedAt before this date (ISO-8601 date or duration like -P7D) */
+  updatedBefore?: string | undefined;
 }
 
 export interface FeatureWithCount extends Feature {
   _count: {
     tasks: number;
   };
+  completedTaskCount: number;
 }
 
 export interface FeatureWithTasks extends Feature {
   tasks: Task[];
+  project: {
+    id: string;
+    teamId: string;
+  };
 }
 
 export interface PaginatedResult<T> {
@@ -81,29 +119,140 @@ export async function listFeatures(
 ): Promise<PaginatedResult<FeatureWithCount>> {
   const limit = Math.min(100, Math.max(1, options.limit ?? 20));
 
+  // Build date filters from options (only include defined values)
+  const dateFilterOptions: {
+    createdAt?: string;
+    createdBefore?: string;
+    updatedAt?: string;
+    updatedBefore?: string;
+  } = {};
+  if (options.createdAt !== undefined) {
+    dateFilterOptions.createdAt = options.createdAt;
+  }
+  if (options.createdBefore !== undefined) {
+    dateFilterOptions.createdBefore = options.createdBefore;
+  }
+  if (options.updatedAt !== undefined) {
+    dateFilterOptions.updatedAt = options.updatedAt;
+  }
+  if (options.updatedBefore !== undefined) {
+    dateFilterOptions.updatedBefore = options.updatedBefore;
+  }
+  const dateFilters = buildDateFilters(dateFilterOptions);
+
   // Build where clause conditionally to avoid undefined values
   const whereClause: {
     projectId?: string;
-    statusId?: string;
-    assigneeId?: string;
+    statusId?: string | { in: string[] };
+    assigneeId?: string | null;
+    createdAt?: { gte?: Date; lt?: Date };
+    updatedAt?: { gte?: Date; lt?: Date };
+    OR?: {
+      title?: { contains: string };
+      description?: { contains: string };
+    }[];
   } = {};
 
   if (options.projectId !== undefined) {
     whereClause.projectId = options.projectId;
   }
+
+  // Handle status filtering (supports statusId, status name/array, and statusCategory)
   if (options.statusId !== undefined) {
     whereClause.statusId = options.statusId;
+  } else if (options.status !== undefined) {
+    // Normalize to array (status can be single string or array)
+    const statusValues = Array.isArray(options.status) ? options.status : [options.status];
+    const statusIds = await resolveStatusesToIds(statusValues);
+    if (statusIds.length === 0) {
+      // No matching statuses found - return empty result
+      return { data: [], meta: { cursor: null, hasMore: false } };
+    }
+    whereClause.statusId = { in: statusIds };
+  } else if (options.statusCategory !== undefined) {
+    const statusIds = await getStatusIdsByCategory(options.statusCategory);
+    if (statusIds.length === 0) {
+      // No matching statuses found - return empty result
+      return { data: [], meta: { cursor: null, hasMore: false } };
+    }
+    whereClause.statusId = { in: statusIds };
   }
-  if (options.assigneeId !== undefined) {
+
+  // Handle assignee filtering with enhanced resolution
+  if (options.assignee !== undefined) {
+    const resolvedAssignee = await resolveAssigneeId(options.assignee, options.currentUserId);
+    if (isAssigneeInvalid(resolvedAssignee)) {
+      // Invalid assignee - return empty result (not an error per requirements)
+      return { data: [], meta: { cursor: null, hasMore: false } };
+    }
+    if (isAssigneeNone(resolvedAssignee)) {
+      // Filter for unassigned items (null assigneeId)
+      whereClause.assigneeId = null;
+    } else {
+      // Use the resolved user ID
+      whereClause.assigneeId = resolvedAssignee;
+    }
+  } else if (options.assigneeId !== undefined) {
+    // Legacy support for direct assigneeId
     whereClause.assigneeId = options.assigneeId;
   }
 
-  const features = (await prisma.feature.findMany({
+  if (options.query !== undefined && options.query.trim() !== "") {
+    // Note: SQL Server is case-insensitive by default with most collations
+    // so we don't need the mode: "insensitive" option (which is PostgreSQL-specific)
+    whereClause.OR = [
+      { title: { contains: options.query } },
+      { description: { contains: options.query } },
+    ];
+  }
+
+  // Apply date filters
+  if (dateFilters.createdAt !== undefined) {
+    whereClause.createdAt = dateFilters.createdAt;
+  }
+  if (dateFilters.updatedAt !== undefined) {
+    whereClause.updatedAt = dateFilters.updatedAt;
+  }
+
+  // Determine order by field
+  const orderByField = options.orderBy ?? 'sortOrder';
+  const orderBy = orderByField === 'sortOrder'
+    ? [{ sortOrder: "asc" as const }, { createdAt: "desc" as const }]
+    : [{ [orderByField]: "desc" as const }];
+
+  // First, get features with total task count and status info
+  const featuresRaw = await prisma.feature.findMany({
     take: limit + 1,
     ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
     where: whereClause,
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    include: { _count: { select: { tasks: true } } },
+    orderBy,
+    include: {
+      _count: { select: { tasks: true } },
+      status: true,
+      assignee: true,
+    },
+  });
+
+  // Get completed task counts efficiently via a separate query
+  const featureIds = featuresRaw.map((f) => f.id);
+  const completedCounts = await prisma.task.groupBy({
+    by: ["featureId"],
+    where: {
+      featureId: { in: featureIds },
+      status: { category: "completed" },
+    },
+    _count: { id: true },
+  });
+
+  // Create a map for quick lookup
+  const completedCountMap = new Map(
+    completedCounts.map((c) => [c.featureId, c._count.id])
+  );
+
+  // Merge completed counts into features
+  const features = featuresRaw.map((f) => ({
+    ...f,
+    completedTaskCount: completedCountMap.get(f.id) ?? 0,
   })) as FeatureWithCount[];
 
   const hasMore = features.length > limit;
@@ -132,6 +281,12 @@ export async function getFeatureById(id: string): Promise<FeatureWithTasks | nul
     include: {
       tasks: {
         orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      },
+      project: {
+        select: {
+          id: true,
+          teamId: true,
+        },
       },
     },
   }) as Promise<FeatureWithTasks | null>;
@@ -184,19 +339,31 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
   // Generate identifier
   const identifier = await generateIdentifier(input.projectId);
 
+  // Auto-generate sortOrder if not provided
+  let sortOrder = input.sortOrder;
+  if (sortOrder === undefined) {
+    const lastFeature = await prisma.feature.findFirst({
+      where: { projectId: input.projectId },
+      orderBy: { sortOrder: 'desc' },
+      select: { sortOrder: true },
+    });
+    sortOrder = generateSortOrderBetween(lastFeature?.sortOrder ?? null, null);
+  }
+
   // Build data object conditionally to avoid undefined values
   const data: {
     title: string;
     projectId: string;
     identifier: string;
+    sortOrder: number;
     description?: string;
     statusId?: string;
     assigneeId?: string;
-    sortOrder?: number;
   } = {
     title: input.title.trim(),
     projectId: input.projectId,
     identifier,
+    sortOrder,
   };
 
   if (input.description !== undefined) {
@@ -207,9 +374,6 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
   }
   if (input.assigneeId !== undefined) {
     data.assigneeId = input.assigneeId;
-  }
-  if (input.sortOrder !== undefined) {
-    data.sortOrder = input.sortOrder;
   }
 
   return prisma.feature.create({ data });
@@ -236,14 +400,24 @@ export async function updateFeature(
     throw new ValidationError("Title cannot be empty");
   }
 
-  // Verify status exists if provided
+  // Verify status exists and belongs to the same team if provided
   if (input.statusId) {
     const status = await prisma.status.findUnique({
       where: { id: input.statusId },
-      select: { id: true },
+      select: { id: true, teamId: true },
     });
     if (!status) {
       throw new NotFoundError(`Status with id '${input.statusId}' not found`);
+    }
+
+    // Fetch the feature with its project to get the team
+    const featureWithProject = await prisma.feature.findUnique({
+      where: { id },
+      include: { project: { select: { teamId: true } } },
+    });
+
+    if (featureWithProject && status.teamId !== featureWithProject.project.teamId) {
+      throw new ValidationError("Cannot change status: status belongs to a different team");
     }
   }
 
@@ -283,10 +457,26 @@ export async function updateFeature(
     data.sortOrder = input.sortOrder;
   }
 
-  return prisma.feature.update({
+  // Track old status for event emission
+  const oldStatusId = existing.statusId;
+
+  const updatedFeature = await prisma.feature.update({
     where: { id },
     data,
   });
+
+  // Emit status changed event if status was updated
+  if (input.statusId !== undefined && input.statusId !== oldStatusId) {
+    emitStatusChanged({
+      entityType: "feature",
+      entityId: id,
+      oldStatusId,
+      newStatusId: input.statusId,
+      timestamp: new Date(),
+    });
+  }
+
+  return updatedFeature;
 }
 
 /**

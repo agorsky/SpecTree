@@ -7,8 +7,18 @@
 export {
   uuidParamSchema,
   paginationQuerySchema,
+  searchQuerySchema,
+  dateFilterQuerySchema,
+  statusFilterQuerySchema,
+  assigneeFilterQuerySchema,
+  STATUS_CATEGORIES,
   type UuidParam,
   type PaginationQuery,
+  type SearchQuery,
+  type DateFilterQuery,
+  type StatusFilterQuery,
+  type AssigneeFilterQuery,
+  type StatusCategory as CommonStatusCategory,
 } from "./common.js";
 
 // Team schemas
@@ -37,18 +47,24 @@ export {
 
 // Feature schemas
 export {
+  listFeaturesQuerySchema,
   createFeatureSchema,
   updateFeatureSchema,
+  type ListFeaturesQuery,
   type CreateFeatureInput,
   type UpdateFeatureInput,
 } from "./feature.js";
 
 // Task schemas
 export {
+  listTasksQuerySchema,
   createTaskSchema,
   updateTaskSchema,
+  reorderTaskSchema,
+  type ListTasksQuery,
   type CreateTaskInput,
   type UpdateTaskInput,
+  type ReorderTaskInput,
 } from "./task.js";
 
 // Status schemas

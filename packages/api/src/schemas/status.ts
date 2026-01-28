@@ -36,7 +36,20 @@ export const updateStatusSchema = createStatusSchema
   .omit({ teamId: true })
   .partial();
 
+/**
+ * Schema for reordering a status
+ * At least one of afterId or beforeId must be provided
+ */
+export const reorderStatusSchema = z.object({
+  afterId: z.string().uuid("Invalid after ID").optional(),
+  beforeId: z.string().uuid("Invalid before ID").optional(),
+}).refine(
+  (data) => data.afterId !== undefined || data.beforeId !== undefined,
+  { message: "At least one of afterId or beforeId must be provided" }
+);
+
 // Type exports for use in route handlers
 export type StatusCategory = z.infer<typeof statusCategoryEnum>;
 export type CreateStatusInput = z.infer<typeof createStatusSchema>;
 export type UpdateStatusInput = z.infer<typeof updateStatusSchema>;
+export type ReorderStatusInput = z.infer<typeof reorderStatusSchema>;

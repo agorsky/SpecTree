@@ -1,6 +1,6 @@
 # SpecTree
 
-OpenAPI Spec Analysis Platform
+Project Management & Issue Tracking Platform
 
 ## Table of Contents
 
@@ -10,6 +10,7 @@ OpenAPI Spec Analysis Platform
 - [Environment Variables](#environment-variables)
 - [Development](#development)
 - [Testing](#testing)
+- [API Features](#api-features)
 - [MCP Server with Claude Code](#mcp-server-with-claude-code)
 - [Azure SQL Connection](#azure-sql-connection)
 - [Deployment](#deployment)
@@ -248,9 +249,90 @@ The project uses a shared Vitest configuration at the root level (`vitest.config
 - **Coverage provider**: V8
 - **Test pattern**: `**/*.{test,spec}.{ts,tsx}`
 
+## API Features
+
+### Search & Filtering
+
+The API provides powerful search and filtering capabilities for features and tasks.
+
+#### Text Search
+
+Search features and tasks by title and description (case-insensitive, partial matches supported):
+
+```bash
+GET /api/v1/features?query=authentication
+GET /api/v1/tasks?query=login
+```
+
+#### Filter by Status
+
+Filter by status ID, name, or category:
+
+```bash
+# By status name
+GET /api/v1/features?status=Todo
+GET /api/v1/features?status=In%20Progress
+
+# By status category (backlog, unstarted, started, completed, canceled)
+GET /api/v1/features?statusCategory=started
+
+# Multiple statuses (OR logic)
+GET /api/v1/features?status=todo&status=in_progress
+```
+
+#### Filter by Assignee
+
+Filter by assignee with special values:
+
+```bash
+# Current authenticated user
+GET /api/v1/features?assignee=me
+
+# Unassigned items
+GET /api/v1/features?assignee=none
+
+# By email
+GET /api/v1/features?assignee=user@example.com
+
+# By user ID
+GET /api/v1/features?assignee=550e8400-e29b-41d4-a716-446655440000
+```
+
+#### Filter by Date Range
+
+Filter by creation or update date with ISO-8601 dates or durations:
+
+```bash
+# Items created in the last 7 days
+GET /api/v1/features?createdAt=-P7D
+
+# Items created after a specific date
+GET /api/v1/features?createdAt=2024-01-01
+
+# Items updated in the last month
+GET /api/v1/tasks?updatedAt=-P1M
+
+# Items created before a date
+GET /api/v1/features?createdBefore=2024-06-01
+```
+
+**Duration format**: `-P{n}D` (days), `-P{n}W` (weeks), `-P{n}M` (months)
+
+#### Combined Filters
+
+All filters can be combined (AND logic):
+
+```bash
+# Search for auth-related features assigned to me, created in the last 30 days
+GET /api/v1/features?query=auth&assignee=me&createdAt=-P30D
+
+# In-progress tasks updated recently
+GET /api/v1/tasks?statusCategory=started&updatedAt=-P7D
+```
+
 ## MCP Server with Claude Code
 
-The SpecTree MCP server enables AI assistants like Claude to interact with the OpenAPI analysis platform.
+The SpecTree MCP server enables AI assistants like Claude to interact with the project management platform.
 
 ### Building the MCP Server
 
@@ -308,6 +390,44 @@ pnpm --filter @spectree/mcp dev
 # Run MCP server directly
 pnpm --filter @spectree/mcp start
 ```
+
+### Available MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `spectree__search` | Unified search across features and tasks with all filter options |
+| `spectree__list_projects` | List all projects |
+| `spectree__get_project` | Get project details |
+| `spectree__create_project` | Create a new project |
+| `spectree__list_features` | List features with optional filters |
+| `spectree__get_feature` | Get feature details |
+| `spectree__create_feature` | Create a new feature |
+| `spectree__update_feature` | Update a feature |
+| `spectree__list_tasks` | List tasks with optional filters |
+| `spectree__get_task` | Get task details |
+| `spectree__create_task` | Create a new task |
+| `spectree__update_task` | Update a task |
+| `spectree__list_statuses` | List available statuses |
+
+### Search Tool (`spectree__search`)
+
+The search tool provides powerful filtering capabilities for AI assistants:
+
+```
+Parameters:
+  query         - Text search in title/description
+  project       - Filter by project name or ID
+  status        - Filter by status name or ID
+  statusCategory - Filter by category (backlog, unstarted, started, completed, canceled)
+  assignee      - Filter by assignee ("me", "none", email, or UUID)
+  createdAt     - Date filter (ISO date or duration like "-P7D")
+  updatedAt     - Date filter for last update
+  type          - "feature", "task", or "all" (default)
+  limit         - Results per page (default: 50, max: 100)
+  cursor        - Pagination cursor
+```
+
+Results include a `type` field ("feature" or "task") to distinguish item types.
 
 ## Azure SQL Connection
 

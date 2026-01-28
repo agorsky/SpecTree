@@ -14,7 +14,10 @@ import { UnauthorizedError } from "../errors/index.js";
  * Authenticated user type without sensitive fields.
  * This is the user object attached to req.user after authentication.
  */
-export type AuthenticatedUser = Omit<User, "passwordHash">;
+export type AuthenticatedUser = Omit<User, "passwordHash"> & {
+  teamId: string | null;
+  role: string | null;
+};
 
 /**
  * Extends FastifyRequest to include the authenticated user.
@@ -91,9 +94,18 @@ export async function authenticate(
     throw new UnauthorizedError("Invalid or expired token");
   }
 
-  // Fetch user from database
+  // Fetch user from database with team membership
   const user = await prisma.user.findUnique({
     where: { id: payload.sub },
+    include: {
+      memberships: {
+        select: {
+          teamId: true,
+          role: true,
+        },
+        take: 1,
+      },
+    },
   });
 
   if (!user) {
@@ -105,7 +117,12 @@ export async function authenticate(
     throw new UnauthorizedError("User account is inactive");
   }
 
-  // Attach user to request (excluding passwordHash)
-  const { passwordHash: _, ...authenticatedUser } = user;
-  request.user = authenticatedUser;
+  // Attach user to request (excluding passwordHash, flattening team membership)
+  const { passwordHash: _, memberships, ...userWithoutPassword } = user;
+  const membership = memberships[0];
+  request.user = {
+    ...userWithoutPassword,
+    teamId: membership?.teamId ?? null,
+    role: membership?.role ?? null,
+  };
 }

@@ -7,19 +7,26 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
+// Import tool modules - these export their registrar functions
+import { registerProjectTools } from "./projects.js";
+import { registerFeatureTools } from "./features.js";
+import { registerTaskTools } from "./tasks.js";
+import { registerStatusTools } from "./statuses.js";
+import { registerOrderingTools } from "./ordering.js";
+import { registerSearchTools } from "./search.js";
+
 // Tool registration function type
 export type ToolRegistrar = (server: McpServer) => void;
 
 // Registry of all tool registration functions
-const toolRegistrars: ToolRegistrar[] = [];
-
-/**
- * Register a tool registrar function.
- * Called during module initialization.
- */
-export function addToolRegistrar(registrar: ToolRegistrar): void {
-  toolRegistrars.push(registrar);
-}
+const toolRegistrars: ToolRegistrar[] = [
+  registerProjectTools,
+  registerFeatureTools,
+  registerTaskTools,
+  registerStatusTools,
+  registerOrderingTools,
+  registerSearchTools,
+];
 
 /**
  * Register all tools with the MCP server.
@@ -30,10 +37,3 @@ export function registerAllTools(server: McpServer): void {
     registrar(server);
   }
 }
-
-// Import tool modules to trigger their registration
-// These will be added as each tool file is created
-import "./projects.js";
-import "./features.js";
-import "./tasks.js";
-import "./statuses.js";

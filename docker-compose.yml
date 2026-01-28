@@ -1,6 +1,8 @@
 # SpecTree Local Development Environment
 # Run: docker-compose up -d
 # Note: Uses Azure SQL Edge for native Apple Silicon (ARM64) support
+#
+# IMPORTANT: Run ./scripts/backup-db.sh regularly to backup your data!
 
 services:
   # ==========================================================================
@@ -9,13 +11,33 @@ services:
   sqlserver:
     image: mcr.microsoft.com/azure-sql-edge:latest
     container_name: spectree-sql
+    hostname: spectree-sql
+    
+    # Auto-restart on failure or system reboot
+    restart: unless-stopped
+    
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=LocalDev@Password123
+      # Limit SQL Server memory to prevent OOM kills
+      - MSSQL_MEMORY_LIMIT_MB=1024
+    
     ports:
       - "1433:1433"
+    
     volumes:
       - sqlserver-data:/var/opt/mssql
+    
+    # Health check to verify SQL Server is ready for connections
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "LocalDev@Password123" -Q "SELECT 1" -C -b -o /dev/null || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    
+    # Give SQL Server time to flush data on shutdown (default is only 10s)
+    stop_grace_period: 60s
 
   # ==========================================================================
   # Database Initialization (runs once after SQL Server starts)
@@ -24,7 +46,8 @@ services:
     image: mcr.microsoft.com/azure-sql-edge:latest
     container_name: spectree-sql-init
     depends_on:
-      - sqlserver
+      sqlserver:
+        condition: service_healthy
     environment:
       - MSSQL_SA_PASSWORD=LocalDev@Password123
     volumes:
@@ -32,21 +55,9 @@ services:
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
-        echo "Waiting for SQL Server to start..."
-        sleep 30
-        for i in {1..30}; do
-          /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "LocalDev@Password123" -Q "SELECT 1" > /dev/null 2>&1
-          if [ $$? -eq 0 ]; then
-            echo "SQL Server is ready!"
-            /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "LocalDev@Password123" -i /init-db.sql
-            echo "Database initialization complete"
-            exit 0
-          fi
-          echo "Waiting for SQL Server... attempt $$i"
-          sleep 2
-        done
-        echo "SQL Server failed to start"
-        exit 1
+        echo "SQL Server is healthy, running initialization..."
+        /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "LocalDev@Password123" -C -i /init-db.sql
+        echo "Database initialization complete"
     restart: "no"
 
   # ==========================================================================
@@ -57,6 +68,7 @@ services:
       context: .
       dockerfile: packages/api/Dockerfile
     container_name: spectree-api
+    restart: unless-stopped
     ports:
       - "3001:3001"
     environment:
@@ -66,7 +78,8 @@ services:
       - CORS_ORIGIN=http://localhost:5173
       - DATABASE_URL=sqlserver://sqlserver:1433;database=spectree;user=sa;password=LocalDev@Password123;encrypt=true;trustServerCertificate=true
     depends_on:
-      - sqlserver
+      sqlserver:
+        condition: service_healthy
     profiles:
       - full
 
@@ -78,6 +91,7 @@ services:
       context: .
       dockerfile: packages/web/Dockerfile
     container_name: spectree-web
+    restart: unless-stopped
     ports:
       - "80:80"
     depends_on:

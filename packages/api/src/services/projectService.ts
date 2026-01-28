@@ -1,6 +1,7 @@
 import { prisma } from "../lib/db.js";
 import type { Project } from "../generated/prisma/index.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
+import { generateSortOrderBetween } from "../utils/ordering.js";
 
 // Types for project operations
 export interface CreateProjectInput {
@@ -20,10 +21,13 @@ export interface UpdateProjectInput {
   sortOrder?: number | undefined;
 }
 
+export type ProjectOrderBy = 'sortOrder' | 'createdAt' | 'updatedAt';
+
 export interface ListProjectsOptions {
   cursor?: string | undefined;
   limit?: number | undefined;
   teamId?: string | undefined;
+  orderBy?: ProjectOrderBy | undefined;
 }
 
 export interface ProjectWithCount extends Project {
@@ -55,14 +59,17 @@ export async function listProjects(
     whereClause.teamId = options.teamId;
   }
 
+  // Determine order by field
+  const orderByField = options.orderBy ?? 'sortOrder';
+  const orderBy = orderByField === 'sortOrder'
+    ? [{ sortOrder: "asc" as const }, { createdAt: "desc" as const }]
+    : [{ [orderByField]: "desc" as const }];
+
   const projects = await prisma.project.findMany({
     take: limit + 1,
     ...(options.cursor ? { cursor: { id: options.cursor } } : {}),
     where: whereClause,
-    orderBy: [
-      { sortOrder: "asc" },
-      { createdAt: "desc" },
-    ],
+    orderBy,
     include: { _count: { select: { features: true } } },
   }) as ProjectWithCount[];
 
@@ -115,17 +122,29 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
     throw new NotFoundError(`Team with id '${input.teamId}' not found`);
   }
 
+  // Auto-generate sortOrder if not provided
+  let sortOrder = input.sortOrder;
+  if (sortOrder === undefined) {
+    const lastProject = await prisma.project.findFirst({
+      where: { teamId: input.teamId, isArchived: false },
+      orderBy: { sortOrder: 'desc' },
+      select: { sortOrder: true },
+    });
+    sortOrder = generateSortOrderBetween(lastProject?.sortOrder ?? null, null);
+  }
+
   // Build data object conditionally to avoid undefined values
   const data: {
     name: string;
     teamId: string;
+    sortOrder: number;
     description?: string;
     icon?: string;
     color?: string;
-    sortOrder?: number;
   } = {
     name: input.name.trim(),
     teamId: input.teamId,
+    sortOrder,
   };
 
   if (input.description !== undefined) {
@@ -136,9 +155,6 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
   }
   if (input.color !== undefined) {
     data.color = input.color.trim();
-  }
-  if (input.sortOrder !== undefined) {
-    data.sortOrder = input.sortOrder;
   }
 
   return prisma.project.create({ data });

@@ -1,0 +1,486 @@
+/**
+ * Test Factory Functions for SpecTree API
+ *
+ * These factories create test entities in the database with sensible defaults.
+ * Each factory accepts optional overrides for customization.
+ *
+ * Usage:
+ *   const user = await createTestUser({ name: 'Custom Name' });
+ *   const team = await createTestTeam();
+ *   const project = await createTestProject(team.id);
+ */
+
+import { getTestPrisma } from "../setup.js";
+import type {
+  User,
+  Team,
+  Membership,
+  Project,
+  Status,
+  Feature,
+  Task,
+} from "../../src/generated/prisma/index.js";
+
+// =============================================================================
+// Type Definitions for Factory Inputs
+// =============================================================================
+
+export interface UserInput {
+  email: string;
+  name: string;
+  passwordHash: string;
+  avatarUrl?: string | null;
+  isActive?: boolean;
+}
+
+export interface TeamInput {
+  name: string;
+  key: string;
+  description?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  isArchived?: boolean;
+}
+
+export interface MembershipInput {
+  userId: string;
+  teamId: string;
+  role?: string;
+}
+
+export interface ProjectInput {
+  teamId: string;
+  name: string;
+  description?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  sortOrder?: number;
+  isArchived?: boolean;
+}
+
+export interface StatusInput {
+  teamId: string;
+  name: string;
+  category: string;
+  color?: string | null;
+  position?: number;
+}
+
+export interface FeatureInput {
+  projectId: string;
+  identifier: string;
+  title: string;
+  description?: string | null;
+  statusId?: string | null;
+  assigneeId?: string | null;
+  sortOrder?: number;
+}
+
+export interface TaskInput {
+  featureId: string;
+  identifier: string;
+  title: string;
+  description?: string | null;
+  statusId?: string | null;
+  assigneeId?: string | null;
+  sortOrder?: number;
+}
+
+// =============================================================================
+// Unique ID Generators
+// =============================================================================
+
+let counter = 0;
+
+/**
+ * Generates a unique suffix for test entities to avoid conflicts.
+ */
+function uniqueId(): string {
+  counter++;
+  return `${Date.now()}_${counter}`;
+}
+
+/**
+ * Generates a unique email address for test users.
+ */
+function uniqueEmail(): string {
+  return `test-user-${uniqueId()}@example.com`;
+}
+
+/**
+ * Generates a unique team key (max 10 chars).
+ */
+function uniqueTeamKey(): string {
+  // Use counter to keep keys short and unique
+  return `TT${counter}${Date.now() % 10000}`.slice(0, 10);
+}
+
+/**
+ * Generates a unique identifier for features/tasks.
+ */
+function uniqueIdentifier(prefix: string): string {
+  return `${prefix}-${counter}`;
+}
+
+// =============================================================================
+// Factory Functions
+// =============================================================================
+
+/**
+ * Creates a test user in the database.
+ *
+ * @param overrides - Optional fields to override defaults
+ * @returns The created User entity
+ *
+ * @example
+ * const user = await createTestUser();
+ * const admin = await createTestUser({ name: 'Admin User' });
+ */
+export async function createTestUser(
+  overrides?: Partial<UserInput>
+): Promise<User> {
+  const prisma = getTestPrisma();
+
+  const defaults: UserInput = {
+    email: uniqueEmail(),
+    name: "Test User",
+    passwordHash: "$2b$10$hashedpasswordfortesting123456789", // Mock bcrypt hash
+    avatarUrl: null,
+    isActive: true,
+  };
+
+  const data = { ...defaults, ...overrides };
+
+  return prisma.user.create({ data });
+}
+
+/**
+ * Creates a test team in the database.
+ *
+ * @param overrides - Optional fields to override defaults
+ * @returns The created Team entity
+ *
+ * @example
+ * const team = await createTestTeam();
+ * const devTeam = await createTestTeam({ name: 'Development', key: 'DEV' });
+ */
+export async function createTestTeam(
+  overrides?: Partial<TeamInput>
+): Promise<Team> {
+  const prisma = getTestPrisma();
+
+  const id = uniqueId();
+  const defaults: TeamInput = {
+    name: `Test Team ${id}`,
+    key: uniqueTeamKey(),
+    description: null,
+    icon: null,
+    color: null,
+    isArchived: false,
+  };
+
+  const data = { ...defaults, ...overrides };
+
+  return prisma.team.create({ data });
+}
+
+/**
+ * Creates a test membership linking a user to a team.
+ *
+ * @param teamId - The team ID
+ * @param userId - The user ID
+ * @param overrides - Optional fields to override defaults
+ * @returns The created Membership entity
+ *
+ * @example
+ * const membership = await createTestMembership(team.id, user.id);
+ * const adminMembership = await createTestMembership(team.id, user.id, { role: 'admin' });
+ */
+export async function createTestMembership(
+  teamId: string,
+  userId: string,
+  overrides?: Partial<Omit<MembershipInput, "teamId" | "userId">>
+): Promise<Membership> {
+  const prisma = getTestPrisma();
+
+  const defaults = {
+    teamId,
+    userId,
+    role: "member" as const,
+  };
+
+  const data = { ...defaults, ...overrides };
+
+  return prisma.membership.create({ data });
+}
+
+/**
+ * Creates a test project within a team.
+ *
+ * @param teamId - The team ID this project belongs to
+ * @param overrides - Optional fields to override defaults
+ * @returns The created Project entity
+ *
+ * @example
+ * const project = await createTestProject(team.id);
+ * const apiProject = await createTestProject(team.id, { name: 'API Project' });
+ */
+export async function createTestProject(
+  teamId: string,
+  overrides?: Partial<Omit<ProjectInput, "teamId">>
+): Promise<Project> {
+  const prisma = getTestPrisma();
+
+  const id = uniqueId();
+  const defaults = {
+    teamId,
+    name: `Test Project ${id}`,
+    description: null,
+    icon: null,
+    color: null,
+    sortOrder: 0,
+    isArchived: false,
+  };
+
+  const data = { ...defaults, ...overrides };
+
+  return prisma.project.create({ data });
+}
+
+/**
+ * Creates a test status within a team.
+ *
+ * @param teamId - The team ID this status belongs to
+ * @param overrides - Optional fields to override defaults
+ * @returns The created Status entity
+ *
+ * @example
+ * const status = await createTestStatus(team.id);
+ * const inProgress = await createTestStatus(team.id, {
+ *   name: 'In Progress',
+ *   category: 'started'
+ * });
+ */
+export async function createTestStatus(
+  teamId: string,
+  overrides?: Partial<Omit<StatusInput, "teamId">>
+): Promise<Status> {
+  const prisma = getTestPrisma();
+
+  const id = uniqueId();
+  const defaults = {
+    teamId,
+    name: `Status ${id}`,
+    category: "unstarted",
+    color: null,
+    position: 0,
+  };
+
+  const data = { ...defaults, ...overrides };
+
+  return prisma.status.create({ data });
+}
+
+/**
+ * Creates a test feature within a project.
+ *
+ * @param projectId - The project ID this feature belongs to
+ * @param overrides - Optional fields to override defaults
+ * @returns The created Feature entity
+ *
+ * @example
+ * const feature = await createTestFeature(project.id);
+ * const loginFeature = await createTestFeature(project.id, {
+ *   title: 'User Login',
+ *   identifier: 'PROJ-1'
+ * });
+ */
+export async function createTestFeature(
+  projectId: string,
+  overrides?: Partial<Omit<FeatureInput, "projectId">>
+): Promise<Feature> {
+  const prisma = getTestPrisma();
+
+  const id = uniqueId();
+  const defaults = {
+    projectId,
+    identifier: uniqueIdentifier("FEAT"),
+    title: `Test Feature ${id}`,
+    description: null,
+    statusId: null,
+    assigneeId: null,
+    sortOrder: 0,
+  };
+
+  const data = { ...defaults, ...overrides };
+
+  return prisma.feature.create({ data });
+}
+
+/**
+ * Creates a test task within a feature.
+ *
+ * @param featureId - The feature ID this task belongs to
+ * @param overrides - Optional fields to override defaults
+ * @returns The created Task entity
+ *
+ * @example
+ * const task = await createTestTask(feature.id);
+ * const designTask = await createTestTask(feature.id, {
+ *   title: 'Create mockups',
+ *   identifier: 'FEAT-1-1'
+ * });
+ */
+export async function createTestTask(
+  featureId: string,
+  overrides?: Partial<Omit<TaskInput, "featureId">>
+): Promise<Task> {
+  const prisma = getTestPrisma();
+
+  const id = uniqueId();
+  const defaults = {
+    featureId,
+    identifier: uniqueIdentifier("TASK"),
+    title: `Test Task ${id}`,
+    description: null,
+    statusId: null,
+    assigneeId: null,
+    sortOrder: 0,
+  };
+
+  const data = { ...defaults, ...overrides };
+
+  return prisma.task.create({ data });
+}
+
+// =============================================================================
+// Composite Factory Functions
+// =============================================================================
+
+/**
+ * Creates a complete test scenario with a team, user, and membership.
+ * Useful for tests that need a fully set up user context.
+ *
+ * @param options - Optional overrides for user, team, and membership
+ * @returns Object containing the created user, team, and membership
+ *
+ * @example
+ * const { user, team, membership } = await createTestUserWithTeam();
+ */
+export async function createTestUserWithTeam(options?: {
+  userOverrides?: Partial<UserInput>;
+  teamOverrides?: Partial<TeamInput>;
+  membershipOverrides?: Partial<Omit<MembershipInput, "teamId" | "userId">>;
+}): Promise<{ user: User; team: Team; membership: Membership }> {
+  const user = await createTestUser(options?.userOverrides);
+  const team = await createTestTeam(options?.teamOverrides);
+  const membership = await createTestMembership(
+    team.id,
+    user.id,
+    options?.membershipOverrides
+  );
+
+  return { user, team, membership };
+}
+
+/**
+ * Creates a complete project hierarchy with team, project, and optional features.
+ *
+ * @param options - Configuration options
+ * @returns Object containing the created entities
+ *
+ * @example
+ * const { team, project, features } = await createTestProjectWithFeatures({
+ *   featureCount: 3
+ * });
+ */
+export async function createTestProjectWithFeatures(options?: {
+  teamOverrides?: Partial<TeamInput>;
+  projectOverrides?: Partial<Omit<ProjectInput, "teamId">>;
+  featureCount?: number;
+  featureOverrides?: Partial<Omit<FeatureInput, "projectId">>;
+}): Promise<{ team: Team; project: Project; features: Feature[] }> {
+  const team = await createTestTeam(options?.teamOverrides);
+  const project = await createTestProject(team.id, options?.projectOverrides);
+
+  const featureCount = options?.featureCount ?? 0;
+  const features: Feature[] = [];
+
+  for (let i = 0; i < featureCount; i++) {
+    const feature = await createTestFeature(project.id, options?.featureOverrides);
+    features.push(feature);
+  }
+
+  return { team, project, features };
+}
+
+/**
+ * Creates a complete workflow setup with team, statuses, project, and feature.
+ * Includes default workflow statuses (Backlog, To Do, In Progress, Done).
+ *
+ * @param options - Configuration options
+ * @returns Object containing all created entities
+ *
+ * @example
+ * const { team, statuses, project, feature } = await createTestWorkflow();
+ */
+export async function createTestWorkflow(options?: {
+  teamOverrides?: Partial<TeamInput>;
+  projectOverrides?: Partial<Omit<ProjectInput, "teamId">>;
+  featureOverrides?: Partial<Omit<FeatureInput, "projectId">>;
+}): Promise<{
+  team: Team;
+  statuses: {
+    backlog: Status;
+    todo: Status;
+    inProgress: Status;
+    done: Status;
+  };
+  project: Project;
+  feature: Feature;
+}> {
+  const team = await createTestTeam(options?.teamOverrides);
+
+  // Create workflow statuses
+  const backlog = await createTestStatus(team.id, {
+    name: "Backlog",
+    category: "backlog",
+    position: 0,
+  });
+  const todo = await createTestStatus(team.id, {
+    name: "To Do",
+    category: "unstarted",
+    position: 1,
+  });
+  const inProgress = await createTestStatus(team.id, {
+    name: "In Progress",
+    category: "started",
+    position: 2,
+  });
+  const done = await createTestStatus(team.id, {
+    name: "Done",
+    category: "completed",
+    position: 3,
+  });
+
+  const project = await createTestProject(team.id, options?.projectOverrides);
+  const feature = await createTestFeature(project.id, {
+    statusId: todo.id,
+    ...options?.featureOverrides,
+  });
+
+  return {
+    team,
+    statuses: { backlog, todo, inProgress, done },
+    project,
+    feature,
+  };
+}
+
+/**
+ * Resets the unique ID counter.
+ * Call this in beforeEach if you need predictable IDs.
+ */
+export function resetFactoryCounter(): void {
+  counter = 0;
+}

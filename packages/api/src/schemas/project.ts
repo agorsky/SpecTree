@@ -26,6 +26,16 @@ export const updateProjectSchema = createProjectSchema
   .omit({ teamId: true })
   .partial();
 
+/**
+ * Schema for reordering a project
+ * Either afterId or beforeId (or both) can be provided
+ */
+export const reorderProjectSchema = z.object({
+  afterId: z.string().uuid("Invalid after project ID").optional(),
+  beforeId: z.string().uuid("Invalid before project ID").optional(),
+});
+
 // Type exports for use in route handlers
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+export type ReorderProjectInput = z.infer<typeof reorderProjectSchema>;

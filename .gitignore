@@ -53,3 +53,6 @@ temp/
 
 # Vite
 *.local
+
+# Database backups (don't commit to git)
+backups/*.bak

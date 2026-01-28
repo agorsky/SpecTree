@@ -5,24 +5,27 @@
  */
 
 import { z } from "zod";
-import { addToolRegistrar } from "./index.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   projectService,
   prisma,
   NotFoundError,
 } from "@spectree/api/src/services/index.js";
+import { isValidUUID } from "../utils.js";
 
 /**
  * Helper to resolve team identifier (ID, name, or key) to team ID
  */
 async function resolveTeamId(teamQuery: string): Promise<string | null> {
-  // First try to find by ID (UUID)
-  const teamById = await prisma.team.findUnique({
-    where: { id: teamQuery },
-    select: { id: true, isArchived: true },
-  });
-  if (teamById && !teamById.isArchived) {
-    return teamById.id;
+  // First try to find by ID (UUID) - only if it's a valid UUID format
+  if (isValidUUID(teamQuery)) {
+    const teamById = await prisma.team.findUnique({
+      where: { id: teamQuery },
+      select: { id: true, isArchived: true },
+    });
+    if (teamById && !teamById.isArchived) {
+      return teamById.id;
+    }
   }
 
   // Then try to find by name (exact match, case-sensitive)
@@ -75,7 +78,7 @@ function createErrorResponse(error: unknown) {
 /**
  * Register all project-related tools
  */
-addToolRegistrar((server) => {
+export function registerProjectTools(server: McpServer): void {
   // ==========================================================================
   // spectree__list_projects
   // ==========================================================================
@@ -422,4 +425,4 @@ addToolRegistrar((server) => {
       }
     }
   );
-});
+}

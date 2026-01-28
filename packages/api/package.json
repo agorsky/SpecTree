@@ -5,6 +5,11 @@
   "description": "SpecTree API backend",
   "type": "module",
   "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./src/services/index.js": "./dist/services/index.js",
+    "./src/utils/ordering.js": "./dist/utils/ordering.js"
+  },
   "scripts": {
     "build": "prisma generate && tsc && cp -r src/generated dist/",
     "dev": "tsx watch src/index.ts",
@@ -29,6 +34,7 @@
     "@prisma/client": "^6.3.0",
     "@spectree/shared": "workspace:*",
     "bcrypt": "^5.1.1",
+    "dotenv": "^17.2.3",
     "fastify": "^5.2.0",
     "jsonwebtoken": "^9.0.3",
     "zod": "^3.24.0"
