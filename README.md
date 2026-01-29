@@ -88,7 +88,8 @@ SpecTree/
 │   ├── parameters/   # Environment-specific parameters
 │   └── scripts/      # Deployment helper scripts
 ├── scripts/          # Development and utility scripts
-│   ├── init-db.sql   # Database initialization
+│   ├── backup-db.sh  # Database backup script
+│   ├── restore-db.sh # Database restore script
 │   └── local-dev.sh  # Local development helper
 ├── docker-compose.yml
 ├── turbo.json        # Turborepo configuration
@@ -347,20 +348,52 @@ GET /api/v1/tasks?statusCategory=started&updatedAt=-P7D
 
 ## MCP Server with Claude Code
 
-The SpecTree MCP server enables AI assistants like Claude to interact with the project management platform.
+The SpecTree MCP server enables AI assistants like Claude to interact with the project management platform through secure API token authentication.
 
-### Building the MCP Server
+> **📚 Detailed Documentation**: See [`docs/MCP/`](./docs/MCP/) for comprehensive guides on:
+> - [API Token Authentication](./docs/MCP/api-token-authentication.md) — Token system details
+> - [Security Architecture](./docs/MCP/security-architecture.md) — Security model
+> - [Migration Guide](./docs/MCP/migration-guide.md) — Migrating from older configurations
+> - [Azure Deployment](./docs/MCP/azure-deployment.md) — Production deployment
+
+### Quick Setup
+
+#### 1. Build the MCP Server
 
 ```bash
-# Build the MCP package
 pnpm --filter @spectree/mcp build
 ```
 
-### Configuring Claude Code
+#### 2. Start the API Server
 
-Add the MCP server to your Claude Code configuration:
+The MCP server requires the API server to be running:
 
-**Option 1: Project-level configuration** (`.claude/settings.json` in project root):
+```bash
+pnpm dev
+```
+
+#### 3. Generate an API Token
+
+Create a token via the API (requires a JWT from login):
+
+```bash
+# Login to get a JWT
+curl -X POST http://localhost:3001/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@spectree.dev","password":"Password123!"}'
+
+# Create an API token (use the accessToken from login response)
+curl -X POST http://localhost:3001/api/v1/tokens \
+  -H "Authorization: Bearer <your-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "MCP Server"}'
+
+# Save the returned token (st_xxx...) - it's only shown once!
+```
+
+#### 4. Configure Claude Code
+
+Add the MCP server to your Claude Code configuration (`~/.claude/settings.json` or project `.claude/settings.json`):
 
 ```json
 {
@@ -368,33 +401,24 @@ Add the MCP server to your Claude Code configuration:
     "spectree": {
       "type": "stdio",
       "command": "node",
-      "args": ["packages/mcp/dist/index.js"],
-      "cwd": "/path/to/SpecTree"
+      "args": ["/path/to/SpecTree/packages/mcp/dist/index.js"],
+      "env": {
+        "API_TOKEN": "st_your_token_here",
+        "API_BASE_URL": "http://localhost:3001"
+      }
     }
   }
 }
 ```
 
-**Option 2: Global configuration** (`~/.claude/settings.json`):
-
-```json
-{
-  "mcpServers": {
-    "spectree": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/absolute/path/to/SpecTree/packages/mcp/dist/index.js"]
-    }
-  }
-}
-```
+> **⚠️ Security Note**: The `API_TOKEN` provides authenticated access to SpecTree. Keep it secure and never commit it to version control.
 
 ### Verifying MCP Connection
 
 After configuring, restart Claude Code and verify the connection:
 
 1. The MCP server should appear in the list of available tools
-2. Test with the built-in `echo` tool: ask Claude to echo a message using the spectree MCP
+2. Ask Claude to list projects: "List all projects in SpecTree"
 
 ### MCP Server Development
 
@@ -555,9 +579,21 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 
 **Solutions**:
 1. Verify MCP server is built: `pnpm --filter @spectree/mcp build`
-2. Check configuration path is correct and absolute
-3. Restart Claude Code completely
-4. Check Claude Code logs for connection errors
+2. Ensure API server is running: `pnpm dev`
+3. Verify `API_TOKEN` is set correctly in MCP config (starts with `st_`)
+4. Check configuration path is correct and absolute
+5. Restart Claude Code completely
+6. Check Claude Code logs for connection errors
+
+#### MCP authentication errors
+
+**Symptoms**: "Invalid or expired API token" errors
+
+**Solutions**:
+1. Generate a new token if the old one expired or was revoked
+2. Verify token is copied correctly (including `st_` prefix)
+3. Ensure the API server is running and accessible at `API_BASE_URL`
+4. Check that the user associated with the token is still active
 
 #### Azure deployment fails
 
