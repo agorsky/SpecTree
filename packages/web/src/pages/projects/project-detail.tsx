@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useProject, useUpdateProject, useDeleteProject } from "@/hooks/queries/use-projects";
 import { IssuesList } from "@/components/issues/issues-list";
 import { FeatureForm } from "@/components/features/feature-form";
+import { MarkdownRenderer } from "@/components/common/markdown-renderer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Trash2, Check, X, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Check, X, MoreHorizontal, ChevronDown, ChevronRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -32,6 +34,7 @@ export function ProjectDetailPage() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   if (isLoading) {
     return (
@@ -71,38 +74,35 @@ export function ProjectDetailPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center gap-4 p-4 border-b">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/projects")}>
+      {/* Header - Clean top bar */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b bg-background">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/projects")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex-1">
+        
+        <div className="flex-1 min-w-0">
           {isEditingName ? (
             <div className="flex items-center gap-2">
               <Input
                 value={editedName}
                 onChange={(e) => setEditedName(e.target.value)}
-                className="text-xl font-semibold"
+                className="text-lg font-semibold h-8"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleNameSave();
                   if (e.key === "Escape") setIsEditingName(false);
                 }}
               />
-              <Button size="icon" variant="ghost" onClick={handleNameSave}>
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleNameSave}>
                 <Check className="h-4 w-4" />
               </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setIsEditingName(false)}
-              >
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setIsEditingName(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
           ) : (
             <h1
-              className="text-xl font-semibold cursor-pointer hover:bg-muted/50 px-2 py-1 rounded -mx-2"
+              className="text-lg font-semibold truncate cursor-pointer hover:text-muted-foreground transition-colors"
               onClick={() => {
                 setEditedName(project.name);
                 setIsEditingName(true);
@@ -111,33 +111,64 @@ export function ProjectDetailPage() {
               {project.name}
             </h1>
           )}
-          {project.description && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {project.description}
-            </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setIsFeatureFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            New Feature
+          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setIsFeatureFormOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Feature
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Project
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Collapsible Description Section */}
+      {project.description && (
+        <div className="border-b bg-muted/30">
+          <button
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+          >
+            {isDescriptionExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            <span>Project Description</span>
+          </button>
+          {isDescriptionExpanded && (
+            <div className="px-4 pb-4">
+              <div className="bg-background rounded-lg border p-4">
+                <MarkdownRenderer 
+                  content={project.description} 
+                  className="text-sm"
+                />
+              </div>
+            </div>
           )}
         </div>
-        <Button onClick={() => setIsFeatureFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Feature
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Settings className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => setShowDeleteDialog(true)}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete project
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      )}
 
       {/* Issues (Features + Tasks) */}
       <div className="flex-1 overflow-auto">

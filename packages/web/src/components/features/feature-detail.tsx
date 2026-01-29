@@ -181,7 +181,7 @@ export function FeatureDetail() {
       <div className="flex-1 overflow-auto flex">
         {/* Main content */}
         <div className="flex-1 p-6 overflow-auto">
-          <div className="max-w-3xl space-y-6">
+          <div className="space-y-6">
             {/* Description */}
             <MarkdownEditor
               value={feature.description ?? ""}
@@ -203,7 +203,7 @@ export function FeatureDetail() {
         </div>
 
         {/* Properties sidebar */}
-        <div className="w-64 border-l p-4 space-y-1">
+        <div className="w-56 border-l p-4 space-y-1 shrink-0">
           <div className="text-xs font-medium text-muted-foreground mb-3">Properties</div>
           
           {/* Status property */}
