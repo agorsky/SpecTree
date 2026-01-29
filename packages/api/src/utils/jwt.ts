@@ -1,4 +1,5 @@
-import jwt, { SignOptions, JwtPayload } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
+import type { SignOptions, JwtPayload } from "jsonwebtoken";
 
 /**
  * JWT utility functions for token generation and verification.
@@ -23,12 +24,6 @@ export interface TokenPayload {
  */
 export type TokenType = "access" | "refresh";
 
-/**
- * Extended payload that includes token type for internal use.
- */
-interface InternalTokenPayload extends TokenPayload {
-  type: TokenType;
-}
 
 /**
  * Gets the JWT secret from environment variables.

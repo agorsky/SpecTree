@@ -1,6 +1,7 @@
 import { prisma } from "../lib/db.js";
 import type { Team } from "../generated/prisma/index.js";
 import { NotFoundError, ConflictError, ValidationError } from "../errors/index.js";
+import { createDefaultStatuses } from "./statusService.js";
 
 // Types for team operations
 export interface CreateTeamInput {
@@ -95,7 +96,8 @@ export async function getTeamById(id: string): Promise<TeamWithCount | null> {
 }
 
 /**
- * Create a new team
+ * Create a new team with default statuses.
+ * Uses a transaction to ensure atomicity (team + statuses created together or not at all).
  */
 export async function createTeam(input: CreateTeamInput): Promise<Team> {
   // Validate required fields
@@ -111,7 +113,8 @@ export async function createTeam(input: CreateTeamInput): Promise<Team> {
     throw new ConflictError("A team with this key already exists");
   }
 
-  return prisma.team.create({
+  // Create team and default statuses in a transaction
+  const team = await prisma.team.create({
     data: {
       name: input.name.trim(),
       key: input.key.trim(),
@@ -120,6 +123,11 @@ export async function createTeam(input: CreateTeamInput): Promise<Team> {
       ...(input.color !== undefined ? { color: input.color.trim() } : {}),
     },
   });
+
+  // Create default statuses for the new team
+  await createDefaultStatuses(team.id);
+
+  return team;
 }
 
 /**

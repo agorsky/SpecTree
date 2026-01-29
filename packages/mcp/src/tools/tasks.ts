@@ -6,7 +6,7 @@
  */
 
 import { z } from "zod";
-import { addToolRegistrar } from "./index.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   taskService,
   prisma,
@@ -72,7 +72,7 @@ function createErrorResponse(error: unknown) {
 }
 
 // Register all task tools
-addToolRegistrar((server) => {
+export function registerTaskTools(server: McpServer): void {
   // ==========================================================================
   // spectree__list_tasks
   // ==========================================================================
@@ -331,4 +331,4 @@ addToolRegistrar((server) => {
       }
     }
   );
-});
+}

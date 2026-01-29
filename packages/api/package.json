@@ -5,6 +5,11 @@
   "description": "SpecTree API backend",
   "type": "module",
   "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./src/services/index.js": "./dist/services/index.js",
+    "./src/utils/ordering.js": "./dist/utils/ordering.js"
+  },
   "scripts": {
     "build": "prisma generate && tsc && cp -r src/generated dist/",
     "dev": "tsx watch src/index.ts",
@@ -17,10 +22,13 @@
     "clean": "rm -rf dist",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
+    "db:backup": "mkdir -p ../../backups && cp prisma/data/spectree.db \"../../backups/spectree_$(date +%Y%m%d_%H%M%S).db\" && echo 'Backup created in backups/'",
+    "db:migrate": "echo '⚠️  WARNING: This may reset your database!' && echo 'Run db:backup first, then use: npx prisma migrate dev' && exit 1",
+    "db:migrate:safe": "npm run db:backup && prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:restore": "echo 'Usage: cp backups/<backup-file>.db prisma/data/spectree.db'"
   },
   "dependencies": {
     "@fastify/compress": "^8.3.1",
@@ -29,6 +37,7 @@
     "@prisma/client": "^6.3.0",
     "@spectree/shared": "workspace:*",
     "bcrypt": "^5.1.1",
+    "dotenv": "^17.2.3",
     "fastify": "^5.2.0",
     "jsonwebtoken": "^9.0.3",
     "zod": "^3.24.0"

@@ -8,6 +8,8 @@ import {
 } from "../services/projectService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
+import { generateSortOrderBetween } from "../utils/ordering.js";
+import { reorderProjectSchema } from "../schemas/project.js";
 
 // Request type definitions
 interface ListProjectsQuery {
@@ -35,6 +37,11 @@ interface UpdateProjectBody {
   icon?: string;
   color?: string;
   sortOrder?: number;
+}
+
+interface ReorderProjectBody {
+  afterId?: string;
+  beforeId?: string;
 }
 
 /**
@@ -156,16 +163,97 @@ export default async function projectsRoutes(
   /**
    * DELETE /api/v1/projects/:id
    * Soft delete a project (set isArchived = true)
-   * Requires authentication, team membership, and admin role
+   * Requires authentication, team membership, and member+ role
    */
   fastify.delete<{ Params: ProjectIdParams }>(
     "/:id",
-    { preHandler: [authenticate, requireTeamAccess("id:projectId"), requireRole("admin")] },
+    { preHandler: [authenticate, requireTeamAccess("id:projectId"), requireRole("member")] },
     async (request, reply) => {
       const { id } = request.params;
 
       await deleteProject(id);
       return reply.status(204).send();
+    }
+  );
+
+  /**
+   * PUT /api/v1/projects/:id/reorder
+   * Reorder a project within its team
+   * Requires authentication, team membership, and member+ role
+   */
+  fastify.put<{ Params: ProjectIdParams; Body: ReorderProjectBody }>(
+    "/:id/reorder",
+    { preHandler: [authenticate, requireTeamAccess("id:projectId"), requireRole("member")] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { afterId, beforeId } = request.body;
+
+      // Validate request body using Zod schema
+      const validation = reorderProjectSchema.safeParse(request.body);
+      if (!validation.success) {
+        return reply.status(400).send({
+          error: "Bad Request",
+          message: validation.error.errors[0]?.message ?? "Invalid request body",
+        });
+      }
+
+      // Fetch the project being reordered
+      const project = await getProjectById(id);
+      if (!project) {
+        return reply.status(404).send({
+          error: "Not Found",
+          message: `Project with id '${id}' not found`,
+        });
+      }
+
+      let beforeSortOrder: number | null = null;
+      let afterSortOrder: number | null = null;
+
+      // If afterId provided, fetch that project and use its sortOrder as "before"
+      if (afterId) {
+        const afterProject = await getProjectById(afterId);
+        if (!afterProject) {
+          return reply.status(404).send({
+            error: "Not Found",
+            message: `Project with id '${afterId}' not found`,
+          });
+        }
+        // Validate that afterId project belongs to the same team
+        if (afterProject.teamId !== project.teamId) {
+          return reply.status(400).send({
+            error: "Bad Request",
+            message: "afterId project must belong to the same team",
+          });
+        }
+        beforeSortOrder = afterProject.sortOrder;
+      }
+
+      // If beforeId provided, fetch that project and use its sortOrder as "after"
+      if (beforeId) {
+        const beforeProject = await getProjectById(beforeId);
+        if (!beforeProject) {
+          return reply.status(404).send({
+            error: "Not Found",
+            message: `Project with id '${beforeId}' not found`,
+          });
+        }
+        // Validate that beforeId project belongs to the same team
+        if (beforeProject.teamId !== project.teamId) {
+          return reply.status(400).send({
+            error: "Bad Request",
+            message: "beforeId project must belong to the same team",
+          });
+        }
+        afterSortOrder = beforeProject.sortOrder;
+      }
+
+      // Calculate new sortOrder using generateSortOrderBetween
+      const newSortOrder = generateSortOrderBetween(beforeSortOrder, afterSortOrder);
+
+      // Update the project's sortOrder
+      const updatedProject = await updateProject(id, { sortOrder: newSortOrder });
+
+      return reply.send({ data: updatedProject });
     }
   );
 }

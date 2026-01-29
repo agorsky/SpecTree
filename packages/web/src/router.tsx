@@ -1,21 +1,42 @@
-import { createBrowserRouter } from "react-router-dom";
-import { RootLayout } from "@/components/layout/root-layout";
-import { HomePage } from "@/pages/home";
-import { AboutPage } from "@/pages/about";
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import { AppLayout } from "@/components/layout/app-layout";
+import { LoginPage } from "@/pages/login";
+import { RegisterPage } from "@/pages/register";
+import { InboxPage } from "@/pages/inbox";
+import { ProjectsPage } from "@/pages/projects/index";
+import { ProjectDetailPage } from "@/pages/projects/project-detail";
+import { FeatureDetail } from "@/components/features/feature-detail";
+import { TeamsPage } from "@/pages/teams/index";
+import { TeamDetailPage } from "@/pages/teams/team-detail";
+import { SettingsPage } from "@/pages/settings";
 
 export const router = createBrowserRouter([
   {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
+  },
+  {
     path: "/",
-    element: <RootLayout />,
+    element: <AppLayout />,
     children: [
+      { index: true, element: <Navigate to="/inbox" replace /> },
+      { path: "inbox", element: <InboxPage /> },
+      { path: "projects", element: <ProjectsPage /> },
       {
-        index: true,
-        element: <HomePage />,
+        path: "projects/:projectId",
+        element: <ProjectDetailPage />,
       },
       {
-        path: "about",
-        element: <AboutPage />,
+        path: "features/:featureId",
+        element: <FeatureDetail />,
       },
+      { path: "teams", element: <TeamsPage /> },
+      { path: "teams/:teamId", element: <TeamDetailPage /> },
+      { path: "settings", element: <SettingsPage /> },
     ],
   },
 ]);

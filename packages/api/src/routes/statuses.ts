@@ -7,6 +7,11 @@ import {
   deleteStatus,
 } from "../services/statusService.js";
 import { authenticate } from "../middleware/authenticate.js";
+import { validateBody } from "../middleware/validate.js";
+import { reorderStatusSchema, type ReorderStatusInput } from "../schemas/status.js";
+import { generateSortOrderBetween } from "../utils/ordering.js";
+import { prisma } from "../lib/db.js";
+import { NotFoundError, ValidationError } from "../errors/index.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
 
 // Request type definitions
@@ -135,6 +140,85 @@ export default async function statusesRoutes(
 
       const status = await updateStatus(id, input);
       return reply.send({ data: status });
+    }
+  );
+
+  /**
+   * PUT /api/v1/statuses/:id/reorder
+   * Reorder a status within its team
+   * Requires authentication, team membership, and member+ role
+   */
+  fastify.put<{ Params: StatusIdParams; Body: ReorderStatusInput }>(
+    "/:id/reorder",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:statusId"), requireRole("member")],
+      preValidation: [validateBody(reorderStatusSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { afterId, beforeId } = request.body;
+
+      // Fetch the status being reordered
+      const status = await prisma.status.findUnique({
+        where: { id },
+        select: { id: true, teamId: true },
+      });
+
+      if (!status) {
+        throw new NotFoundError(`Status with id '${id}' not found`);
+      }
+
+      let beforeSortOrder: number | null = null;
+      let afterSortOrder: number | null = null;
+
+      // If afterId provided, the new position is after that status
+      // So "afterId" status's position becomes our "before" value
+      if (afterId) {
+        const afterStatus = await prisma.status.findUnique({
+          where: { id: afterId },
+          select: { id: true, teamId: true, position: true },
+        });
+
+        if (!afterStatus) {
+          throw new NotFoundError(`Status with id '${afterId}' not found`);
+        }
+
+        if (afterStatus.teamId !== status.teamId) {
+          throw new ValidationError("Cannot reorder: afterId status belongs to a different team");
+        }
+
+        beforeSortOrder = afterStatus.position;
+      }
+
+      // If beforeId provided, the new position is before that status
+      // So "beforeId" status's position becomes our "after" value
+      if (beforeId) {
+        const beforeStatus = await prisma.status.findUnique({
+          where: { id: beforeId },
+          select: { id: true, teamId: true, position: true },
+        });
+
+        if (!beforeStatus) {
+          throw new NotFoundError(`Status with id '${beforeId}' not found`);
+        }
+
+        if (beforeStatus.teamId !== status.teamId) {
+          throw new ValidationError("Cannot reorder: beforeId status belongs to a different team");
+        }
+
+        afterSortOrder = beforeStatus.position;
+      }
+
+      // Calculate the new position
+      const newPosition = generateSortOrderBetween(beforeSortOrder, afterSortOrder);
+
+      // Update the status's position
+      const updatedStatus = await prisma.status.update({
+        where: { id },
+        data: { position: newPosition },
+      });
+
+      return reply.send({ data: updatedStatus });
     }
   );
 

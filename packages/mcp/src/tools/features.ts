@@ -6,13 +6,14 @@
  */
 
 import { z } from "zod";
-import { addToolRegistrar } from "./index.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   featureService,
   userService,
   prisma,
   NotFoundError,
 } from "@spectree/api/src/services/index.js";
+import { isValidUUID } from "../utils.js";
 
 /**
  * Helper to resolve "me" assignee value to actual user ID
@@ -37,13 +38,15 @@ async function resolveAssigneeId(
  * Helper to resolve project name/ID to project ID
  */
 async function resolveProjectId(project: string): Promise<string> {
-  // First try to find by ID (UUID)
-  const projectById = await prisma.project.findUnique({
-    where: { id: project },
-    select: { id: true },
-  });
+  // First try to find by ID (UUID) - only if it's a valid UUID format
+  if (isValidUUID(project)) {
+    const projectById = await prisma.project.findUnique({
+      where: { id: project },
+      select: { id: true },
+    });
 
-  if (projectById) return projectById.id;
+    if (projectById) return projectById.id;
+  }
 
   // Try to find by name
   const projectByName = await prisma.project.findFirst({
@@ -63,13 +66,15 @@ async function resolveStatusId(
   status: string,
   teamId?: string
 ): Promise<string> {
-  // First try to find by ID (UUID)
-  const statusById = await prisma.status.findUnique({
-    where: { id: status },
-    select: { id: true },
-  });
+  // First try to find by ID (UUID) - only if it's a valid UUID format
+  if (isValidUUID(status)) {
+    const statusById = await prisma.status.findUnique({
+      where: { id: status },
+      select: { id: true },
+    });
 
-  if (statusById) return statusById.id;
+    if (statusById) return statusById.id;
+  }
 
   // Try to find by name (optionally scoped to team)
   const statusByName = await prisma.status.findFirst({
@@ -131,7 +136,7 @@ function createErrorResponse(error: unknown) {
 }
 
 // Register all feature tools
-addToolRegistrar((server) => {
+export function registerFeatureTools(server: McpServer): void {
   // ==========================================================================
   // spectree__list_features
   // ==========================================================================
@@ -450,4 +455,4 @@ addToolRegistrar((server) => {
       }
     }
   );
-});
+}

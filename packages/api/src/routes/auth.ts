@@ -101,6 +101,20 @@ export default async function authRoutes(
   );
 
   /**
+   * GET /api/v1/auth/me
+   * Get the current authenticated user
+   * Requires authentication
+   */
+  fastify.get(
+    "/me",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      // User is already attached to request by authenticate middleware
+      return reply.send(request.user);
+    }
+  );
+
+  /**
    * POST /api/v1/auth/logout
    * Invalidate the refresh token (stateless for MVP - no token blacklist)
    * Requires authentication

@@ -1,0 +1,203 @@
+/**
+ * Global Test Setup for SpecTree API
+ *
+ * This file configures the test database connection, provides setup/cleanup
+ * utilities, and exports helper functions for integration tests.
+ *
+ * For unit tests that mock the database, you don't need to use these functions.
+ * For integration tests that need a real database, use:
+ *
+ * ```typescript
+ * import {
+ *   setupTestDatabase,
+ *   cleanupTestDatabase,
+ *   disconnectTestDatabase,
+ * } from '../fixtures/index.js';
+ *
+ * beforeAll(async () => {
+ *   await setupTestDatabase();
+ * });
+ *
+ * afterEach(async () => {
+ *   await cleanupTestDatabase();
+ * });
+ *
+ * afterAll(async () => {
+ *   await disconnectTestDatabase();
+ * });
+ * ```
+ */
+
+import { PrismaClient } from "../src/generated/prisma/index.js";
+import { execSync } from "child_process";
+
+// Create a dedicated test Prisma client instance
+// This ensures tests use the test database regardless of global singleton
+let testPrisma: PrismaClient | null = null;
+
+/**
+ * Gets or creates the test Prisma client instance.
+ * Uses the test database URL from environment.
+ */
+export function getTestPrisma(): PrismaClient {
+  if (!testPrisma) {
+    testPrisma = new PrismaClient({
+      log: process.env.DEBUG_TESTS ? ["query", "error", "warn"] : ["error"],
+    });
+  }
+  return testPrisma;
+}
+
+/**
+ * Sets up the test database connection and environment.
+ * Should be called before running integration tests.
+ *
+ * - Ensures DATABASE_URL points to test database
+ * - Runs database migrations
+ * - Initializes the Prisma client
+ */
+export async function setupTestDatabase(): Promise<void> {
+  // Ensure we're using a test database URL
+  const databaseUrl = process.env.DATABASE_URL;
+
+  if (!databaseUrl) {
+    throw new Error(
+      "DATABASE_URL environment variable is not set. " +
+        "Please configure it to point to your test database (spectree_test)."
+    );
+  }
+
+  // Warn if the URL doesn't appear to be a test database
+  if (!databaseUrl.includes("test") && !databaseUrl.includes("Test")) {
+    console.warn(
+      "WARNING: DATABASE_URL does not contain 'test'. " +
+        "Make sure you are using the test database to avoid data loss."
+    );
+  }
+
+  // Set JWT_SECRET for tests if not already set
+  if (!process.env.JWT_SECRET) {
+    process.env.JWT_SECRET = "test-secret-key-for-jwt-signing-minimum-32-chars";
+  }
+
+  // Run database migrations to ensure schema is up to date
+  try {
+    execSync("pnpm db:migrate:deploy", {
+      cwd: process.cwd().includes("packages/api")
+        ? process.cwd()
+        : `${process.cwd()}/packages/api`,
+      stdio: process.env.DEBUG_TESTS ? "inherit" : "pipe",
+      env: { ...process.env, DATABASE_URL: databaseUrl },
+    });
+  } catch {
+    // Migrations might fail if already applied or if DB doesn't exist yet
+    // This is expected for unit tests that don't need a real database
+  }
+
+  // Initialize Prisma client and verify connection
+  const prisma = getTestPrisma();
+  await prisma.$connect();
+}
+
+/**
+ * Cleans up all test data from the database.
+ * Truncates tables in the correct order to respect foreign key constraints.
+ *
+ * Call this in beforeEach/afterEach hooks to ensure test isolation.
+ */
+export async function cleanupTestDatabase(): Promise<void> {
+  const prisma = getTestPrisma();
+
+  // SAFETY CHECK: Only cleanup if we're using a test database
+  const databaseUrl = process.env.DATABASE_URL ?? "";
+  if (!databaseUrl.includes("test")) {
+    console.warn(
+      "⚠️  SKIPPING cleanup - DATABASE_URL does not contain 'test'. " +
+      "To enable cleanup, use a test database (e.g., spectree-test.db)"
+    );
+    return;
+  }
+
+  // Delete in order to respect foreign key constraints:
+  // 1. ApiTokens (depends on User)
+  // 2. Tasks (depends on Feature, Status, User)
+  // 3. Features (depends on Project, Status, User)
+  // 4. Projects (depends on Team)
+  // 5. Statuses (depends on Team)
+  // 6. Memberships (depends on Team, User)
+  // 7. Teams
+  // 8. Users
+  // 9. HealthCheck (no dependencies)
+
+  await prisma.apiToken.deleteMany();
+  await prisma.task.deleteMany();
+  await prisma.feature.deleteMany();
+  await prisma.project.deleteMany();
+  await prisma.status.deleteMany();
+  await prisma.membership.deleteMany();
+  await prisma.team.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.healthCheck.deleteMany();
+}
+
+/**
+ * Disconnects from the test database.
+ * Call this after all tests complete (in globalTeardown or afterAll).
+ */
+export async function disconnectTestDatabase(): Promise<void> {
+  if (testPrisma) {
+    await testPrisma.$disconnect();
+    testPrisma = null;
+  }
+}
+
+/**
+ * Resets the test database by cleaning and reconnecting.
+ * Useful for ensuring a completely fresh state.
+ */
+export async function resetTestDatabase(): Promise<void> {
+  await cleanupTestDatabase();
+}
+
+// =============================================================================
+// Global Setup for Integration Tests
+// =============================================================================
+// Note: This setup runs for ALL test files when this file is included in
+// vitest.config.ts setupFiles. For unit tests that mock the database,
+// these hooks will run but should not interfere (they catch connection errors).
+//
+// If you want to run ONLY unit tests without database setup, you can:
+// 1. Set SKIP_DB_SETUP=true environment variable
+// 2. Or run tests from specific directories that don't need the database
+// =============================================================================
+
+const skipDbSetup = process.env.SKIP_DB_SETUP === "true";
+
+if (!skipDbSetup) {
+  // Before all tests: set up environment (JWT_SECRET is always needed)
+  beforeAll(async () => {
+    // Always set JWT_SECRET for tests
+    if (!process.env.JWT_SECRET) {
+      process.env.JWT_SECRET = "test-secret-key-for-jwt-signing-minimum-32-chars";
+    }
+
+    // Only try database setup if DATABASE_URL is configured
+    if (process.env.DATABASE_URL) {
+      try {
+        await setupTestDatabase();
+      } catch {
+        // Database setup failed - this is OK for unit tests that mock the DB
+        // Integration tests will fail later with a more specific error
+      }
+    }
+  });
+
+  // After all tests: disconnect if connected
+  afterAll(async () => {
+    try {
+      await disconnectTestDatabase();
+    } catch {
+      // Ignore disconnect errors
+    }
+  });
+}

@@ -1,6 +1,6 @@
 # SpecTree
 
-OpenAPI Spec Analysis Platform
+Project Management & Issue Tracking Platform
 
 ## Table of Contents
 
@@ -10,8 +10,9 @@ OpenAPI Spec Analysis Platform
 - [Environment Variables](#environment-variables)
 - [Development](#development)
 - [Testing](#testing)
+- [API Features](#api-features)
 - [MCP Server with Claude Code](#mcp-server-with-claude-code)
-- [Azure SQL Connection](#azure-sql-connection)
+- [Database](#database)
 - [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
 
@@ -23,16 +24,16 @@ Before you begin, ensure you have the following installed:
 |------|---------|--------------|
 | **Node.js** | 20.0.0+ | [nodejs.org](https://nodejs.org/) or `nvm install 20` |
 | **pnpm** | 9.0.0+ | `npm install -g pnpm` or `corepack enable` |
-| **Docker** | Latest | [docker.com](https://www.docker.com/products/docker-desktop/) |
-| **Docker Compose** | v2+ | Included with Docker Desktop |
+| **Docker** | Latest | [docker.com](https://www.docker.com/products/docker-desktop/) (optional, for containerized deployment) |
 | **Azure CLI** | Latest | [Install Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) (for deployment only) |
+
+> **Note**: The database uses SQLite, which is file-based and requires no separate database server or Docker for local development.
 
 ### Verify Installation
 
 ```bash
 node --version    # Should be v20.x.x or higher
 pnpm --version    # Should be 9.x.x or higher
-docker --version  # Should show Docker version
 az --version      # Optional, for Azure deployment
 ```
 
@@ -51,22 +52,21 @@ pnpm install
 # 3. Set up environment variables
 cp .env.example .env
 
-# 4. Start the local database
-pnpm docker:up
+# 4. Create the database and seed initial data
+pnpm --filter @spectree/api db:push
+pnpm --filter @spectree/api db:seed
 
-# 5. Wait for database initialization (~30 seconds)
-# Check status with: docker-compose logs -f sqlserver-init
-
-# 6. Build all packages
+# 5. Build all packages
 pnpm build
 
-# 7. Start development servers
+# 6. Start development servers
 pnpm dev
 ```
 
 After these steps:
 - **API server** runs at http://localhost:3001
 - **Web app** runs at http://localhost:5173
+- **Database** is at `packages/api/prisma/data/spectree.db`
 
 ## Project Structure
 
@@ -88,7 +88,8 @@ SpecTree/
 │   ├── parameters/   # Environment-specific parameters
 │   └── scripts/      # Deployment helper scripts
 ├── scripts/          # Development and utility scripts
-│   ├── init-db.sql   # Database initialization
+│   ├── backup-db.sh  # Database backup script
+│   ├── restore-db.sh # Database restore script
 │   └── local-dev.sh  # Local development helper
 ├── docker-compose.yml
 ├── turbo.json        # Turborepo configuration
@@ -117,11 +118,7 @@ cp .env.example .env
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DB_HOST` | `localhost` | Database server hostname |
-| `DB_PORT` | `1433` | Database server port |
-| `DB_NAME` | `spectree` | Database name |
-| `DB_USER` | `sa` | Database username |
-| `DB_PASSWORD` | `LocalDev@Password123` | Database password |
+| `DATABASE_URL` | `file:./data/spectree.db` | SQLite database file path (relative to prisma directory) |
 | `API_PORT` | `3001` | API server port |
 | `API_HOST` | `0.0.0.0` | API server bind address |
 | `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
@@ -150,11 +147,13 @@ cp .env.example .env
 | `pnpm typecheck` | Run TypeScript type checking |
 | `pnpm clean` | Remove build artifacts and node_modules |
 
-### Docker Commands
+### Docker Commands (Optional)
+
+Docker is only needed for containerized deployment, not for local development:
 
 | Command | Description |
 |---------|-------------|
-| `pnpm docker:up` | Start Docker services (database) |
+| `pnpm docker:up --profile full` | Start full stack in containers (API + Web) |
 | `pnpm docker:down` | Stop Docker services |
 | `pnpm docker:logs` | View Docker service logs |
 
@@ -196,27 +195,45 @@ pnpm --filter @spectree/web dev
 pnpm --filter @spectree/api test
 ```
 
-### Local Development Helper Script
+### Database Backup & Restore
 
-The `scripts/local-dev.sh` script provides convenient commands:
+The database is a single SQLite file, making backup and restore simple:
+
+#### Creating a Backup
 
 ```bash
-./scripts/local-dev.sh start    # Start local environment
-./scripts/local-dev.sh stop     # Stop local environment
-./scripts/local-dev.sh restart  # Restart environment
-./scripts/local-dev.sh status   # Show container status
-./scripts/local-dev.sh logs     # View SQL Server logs
-./scripts/local-dev.sh connect  # Connect to SQL Server via sqlcmd
-./scripts/local-dev.sh reset    # Reset database (delete all data)
+./scripts/backup-db.sh
 ```
+
+Backups are stored in `./backups/` with timestamp filenames (e.g., `spectree_20240115_143052.db`).
+
+#### Restoring from Backup
+
+```bash
+./scripts/restore-db.sh ./backups/spectree_YYYYMMDD_HHMMSS.db
+```
+
+#### Manual Backup
+
+For a quick manual backup, simply copy the database file:
+
+```bash
+cp packages/api/prisma/data/spectree.db packages/api/prisma/data/spectree-backup.db
+```
+
+### SQLite Database Notes
+
+- **File location**: `packages/api/prisma/data/spectree.db`
+- **View data**: Use Prisma Studio with `pnpm --filter @spectree/api db:studio`
+- **Portability**: The database is a single file—easy to backup, copy, or share
+- **No server needed**: No separate database process required for development
 
 ### Docker Compose Profiles
 
-```bash
-# Default: Start only database
-docker-compose up -d
+Docker is optional and only needed for containerized deployment:
 
-# Full stack: Start database, API, and web
+```bash
+# Full stack: Start API and web in containers
 docker-compose --profile full up -d
 ```
 
@@ -248,22 +265,135 @@ The project uses a shared Vitest configuration at the root level (`vitest.config
 - **Coverage provider**: V8
 - **Test pattern**: `**/*.{test,spec}.{ts,tsx}`
 
-## MCP Server with Claude Code
+## API Features
 
-The SpecTree MCP server enables AI assistants like Claude to interact with the OpenAPI analysis platform.
+### Search & Filtering
 
-### Building the MCP Server
+The API provides powerful search and filtering capabilities for features and tasks.
+
+#### Text Search
+
+Search features and tasks by title and description (case-insensitive, partial matches supported):
 
 ```bash
-# Build the MCP package
+GET /api/v1/features?query=authentication
+GET /api/v1/tasks?query=login
+```
+
+#### Filter by Status
+
+Filter by status ID, name, or category:
+
+```bash
+# By status name
+GET /api/v1/features?status=Todo
+GET /api/v1/features?status=In%20Progress
+
+# By status category (backlog, unstarted, started, completed, canceled)
+GET /api/v1/features?statusCategory=started
+
+# Multiple statuses (OR logic)
+GET /api/v1/features?status=todo&status=in_progress
+```
+
+#### Filter by Assignee
+
+Filter by assignee with special values:
+
+```bash
+# Current authenticated user
+GET /api/v1/features?assignee=me
+
+# Unassigned items
+GET /api/v1/features?assignee=none
+
+# By email
+GET /api/v1/features?assignee=user@example.com
+
+# By user ID
+GET /api/v1/features?assignee=550e8400-e29b-41d4-a716-446655440000
+```
+
+#### Filter by Date Range
+
+Filter by creation or update date with ISO-8601 dates or durations:
+
+```bash
+# Items created in the last 7 days
+GET /api/v1/features?createdAt=-P7D
+
+# Items created after a specific date
+GET /api/v1/features?createdAt=2024-01-01
+
+# Items updated in the last month
+GET /api/v1/tasks?updatedAt=-P1M
+
+# Items created before a date
+GET /api/v1/features?createdBefore=2024-06-01
+```
+
+**Duration format**: `-P{n}D` (days), `-P{n}W` (weeks), `-P{n}M` (months)
+
+#### Combined Filters
+
+All filters can be combined (AND logic):
+
+```bash
+# Search for auth-related features assigned to me, created in the last 30 days
+GET /api/v1/features?query=auth&assignee=me&createdAt=-P30D
+
+# In-progress tasks updated recently
+GET /api/v1/tasks?statusCategory=started&updatedAt=-P7D
+```
+
+## MCP Server with Claude Code
+
+The SpecTree MCP server enables AI assistants like Claude to interact with the project management platform through secure API token authentication.
+
+> **📚 Detailed Documentation**: See [`docs/MCP/`](./docs/MCP/) for comprehensive guides on:
+> - [API Token Authentication](./docs/MCP/api-token-authentication.md) — Token system details
+> - [Security Architecture](./docs/MCP/security-architecture.md) — Security model
+> - [Migration Guide](./docs/MCP/migration-guide.md) — Migrating from older configurations
+> - [Azure Deployment](./docs/MCP/azure-deployment.md) — Production deployment
+
+### Quick Setup
+
+#### 1. Build the MCP Server
+
+```bash
 pnpm --filter @spectree/mcp build
 ```
 
-### Configuring Claude Code
+#### 2. Start the API Server
 
-Add the MCP server to your Claude Code configuration:
+The MCP server requires the API server to be running:
 
-**Option 1: Project-level configuration** (`.claude/settings.json` in project root):
+```bash
+pnpm dev
+```
+
+#### 3. Generate an API Token
+
+Create a token via the API (requires a JWT from login):
+
+```bash
+# Login to get a JWT
+curl -X POST http://localhost:3001/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@spectree.dev","password":"Password123!"}'
+
+# Create an API token (use the accessToken from login response)
+curl -X POST http://localhost:3001/api/v1/tokens \
+  -H "Authorization: Bearer <your-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "MCP Server"}'
+
+# Save the returned token (st_xxx...) - it's only shown once!
+```
+
+#### 4. Configure Claude Code
+
+Add the MCP server to your Claude Code configuration (`~/.claude/settings.json` or project `.claude/settings.json`):
 
 ```json
 {
@@ -271,33 +401,24 @@ Add the MCP server to your Claude Code configuration:
     "spectree": {
       "type": "stdio",
       "command": "node",
-      "args": ["packages/mcp/dist/index.js"],
-      "cwd": "/path/to/SpecTree"
+      "args": ["/path/to/SpecTree/packages/mcp/dist/index.js"],
+      "env": {
+        "API_TOKEN": "st_your_token_here",
+        "API_BASE_URL": "http://localhost:3001"
+      }
     }
   }
 }
 ```
 
-**Option 2: Global configuration** (`~/.claude/settings.json`):
-
-```json
-{
-  "mcpServers": {
-    "spectree": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/absolute/path/to/SpecTree/packages/mcp/dist/index.js"]
-    }
-  }
-}
-```
+> **⚠️ Security Note**: The `API_TOKEN` provides authenticated access to SpecTree. Keep it secure and never commit it to version control.
 
 ### Verifying MCP Connection
 
 After configuring, restart Claude Code and verify the connection:
 
 1. The MCP server should appear in the list of available tools
-2. Test with the built-in `echo` tool: ask Claude to echo a message using the spectree MCP
+2. Ask Claude to list projects: "List all projects in SpecTree"
 
 ### MCP Server Development
 
@@ -309,72 +430,67 @@ pnpm --filter @spectree/mcp dev
 pnpm --filter @spectree/mcp start
 ```
 
-## Azure SQL Connection
+### Available MCP Tools
 
-### Local Development (Docker)
+| Tool | Description |
+|------|-------------|
+| `spectree__search` | Unified search across features and tasks with all filter options |
+| `spectree__list_projects` | List all projects |
+| `spectree__get_project` | Get project details |
+| `spectree__create_project` | Create a new project |
+| `spectree__list_features` | List features with optional filters |
+| `spectree__get_feature` | Get feature details |
+| `spectree__create_feature` | Create a new feature |
+| `spectree__update_feature` | Update a feature |
+| `spectree__list_tasks` | List tasks with optional filters |
+| `spectree__get_task` | Get task details |
+| `spectree__create_task` | Create a new task |
+| `spectree__update_task` | Update a task |
+| `spectree__list_statuses` | List available statuses |
 
-Local development uses Azure SQL Edge in Docker, which runs natively on Apple Silicon (M1/M2/M3):
+### Search Tool (`spectree__search`)
+
+The search tool provides powerful filtering capabilities for AI assistants:
+
+```
+Parameters:
+  query         - Text search in title/description
+  project       - Filter by project name or ID
+  status        - Filter by status name or ID
+  statusCategory - Filter by category (backlog, unstarted, started, completed, canceled)
+  assignee      - Filter by assignee ("me", "none", email, or UUID)
+  createdAt     - Date filter (ISO date or duration like "-P7D")
+  updatedAt     - Date filter for last update
+  type          - "feature", "task", or "all" (default)
+  limit         - Results per page (default: 50, max: 100)
+  cursor        - Pagination cursor
+```
+
+Results include a `type` field ("feature" or "task") to distinguish item types.
+
+## Database
+
+### Local Development (SQLite)
+
+Local development uses SQLite, a file-based database that requires no separate server:
 
 ```bash
-# Start the database
-pnpm docker:up
+# Database location
+packages/api/prisma/data/spectree.db
 
-# Connection details
-Server: localhost
-Port: 1433
-Database: spectree
-Username: sa
-Password: LocalDev@Password123
+# Create database and apply schema
+pnpm --filter @spectree/api db:push
+
+# Seed initial data
+pnpm --filter @spectree/api db:seed
+
+# View data with Prisma Studio
+pnpm --filter @spectree/api db:studio
 ```
 
-### Connecting to Azure SQL (Production/Staging)
+### Production (Azure SQL)
 
-Azure SQL databases use private endpoints and are not publicly accessible. Choose one of these methods:
-
-#### Option 1: Temporary Firewall Rule (Quick Testing)
-
-⚠️ **Warning**: This temporarily exposes the database to the internet.
-
-```bash
-# Add your IP to the firewall
-./infra/scripts/add-dev-firewall.sh add
-
-# Connect using Azure Data Studio, SSMS, or sqlcmd
-# Server: sql-spectree-dev.database.windows.net
-# Authentication: Azure Active Directory - Universal with MFA
-
-# Remove the firewall rule when done
-./infra/scripts/add-dev-firewall.sh remove
-```
-
-#### Option 2: VPN Gateway (Recommended for Regular Access)
-
-1. Set up Azure VPN Gateway with point-to-site configuration
-2. Connect to the VPN
-3. Access SQL Server via private IP
-
-#### Option 3: Azure Bastion / Jump Box
-
-1. Deploy a jump box VM in the VNet
-2. Connect via Azure Bastion
-3. Access SQL Server from within the VNet
-
-### Connection Strings
-
-**Local Development:**
-```
-Server=tcp:localhost,1433;Initial Catalog=spectree;User ID=sa;Password=LocalDev@Password123;TrustServerCertificate=True;
-```
-
-**Azure (SQL Authentication):**
-```
-Server=tcp:<server>.database.windows.net,1433;Initial Catalog=<database>;User ID=<user>;Password=<password>;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
-```
-
-**Azure (Managed Identity):**
-```
-Server=tcp:<server>.database.windows.net,1433;Initial Catalog=<database>;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Default;
-```
+Production deployments use Azure SQL. Azure SQL databases use private endpoints and are not publicly accessible. See [`infra/README.md`](./infra/README.md) for deployment details.
 
 ## Deployment
 
@@ -429,16 +545,6 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 
 ### Common Issues
 
-#### Docker: SQL Server won't start
-
-**Symptoms**: Container exits immediately or health check fails
-
-**Solutions**:
-1. Ensure Docker has enough memory (4GB+ recommended)
-2. Check if port 1433 is already in use: `lsof -i :1433`
-3. View logs: `docker-compose logs sqlserver`
-4. Reset the database: `./scripts/local-dev.sh reset`
-
 #### pnpm install fails
 
 **Symptoms**: Dependency resolution errors
@@ -457,15 +563,15 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 2. Regenerate Prisma client: `pnpm --filter @spectree/api db:generate`
 3. Restart TypeScript server in your IDE
 
-#### Database connection refused
+#### Database issues
 
-**Symptoms**: `ECONNREFUSED` or connection timeout
+**Symptoms**: Database file not found or connection errors
 
 **Solutions**:
-1. Verify database is running: `docker-compose ps`
-2. Wait for initialization: `docker-compose logs sqlserver-init`
-3. Check connection details match `.env` file
-4. Restart database: `pnpm docker:down && pnpm docker:up`
+1. Ensure database exists: `pnpm --filter @spectree/api db:push`
+2. Check file exists: `ls packages/api/prisma/data/spectree.db`
+3. Verify DATABASE_URL in `.env`: should be `file:./data/spectree.db`
+4. Reset database: delete the db file and run `db:push` again
 
 #### MCP server not appearing in Claude Code
 
@@ -473,9 +579,21 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 
 **Solutions**:
 1. Verify MCP server is built: `pnpm --filter @spectree/mcp build`
-2. Check configuration path is correct and absolute
-3. Restart Claude Code completely
-4. Check Claude Code logs for connection errors
+2. Ensure API server is running: `pnpm dev`
+3. Verify `API_TOKEN` is set correctly in MCP config (starts with `st_`)
+4. Check configuration path is correct and absolute
+5. Restart Claude Code completely
+6. Check Claude Code logs for connection errors
+
+#### MCP authentication errors
+
+**Symptoms**: "Invalid or expired API token" errors
+
+**Solutions**:
+1. Generate a new token if the old one expired or was revoked
+2. Verify token is copied correctly (including `st_` prefix)
+3. Ensure the API server is running and accessible at `API_BASE_URL`
+4. Check that the user associated with the token is still active
 
 #### Azure deployment fails
 
@@ -490,7 +608,7 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 ### Getting Help
 
 - Check existing issues in the repository
-- Review logs: `pnpm docker:logs` for database, browser console for frontend
+- Review logs: browser console for frontend
 - For Azure issues: Check Azure Portal activity logs
 
 ## Technology Stack
@@ -505,7 +623,7 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 | **Frontend** | React 19 + Vite 6 |
 | **Styling** | Tailwind CSS 4 |
 | **Components** | Radix UI |
-| **Database** | SQL Server (Azure SQL Edge locally) |
+| **Database** | SQLite (local), Azure SQL (production) |
 | **ORM** | Prisma |
 | **Testing** | Vitest |
 | **Linting** | ESLint 9 (flat config) |

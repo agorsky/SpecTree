@@ -172,6 +172,138 @@ export async function updateStatus(
 }
 
 /**
+ * Check if a string is a valid UUID v4
+ */
+function isUuid(value: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
+
+/**
+ * Resolve a status identifier (ID or name) to its UUID.
+ * Returns null if the status is not found.
+ * If the value is already a UUID, it checks if it exists.
+ */
+export async function resolveStatusToId(
+  value: string,
+  teamId?: string
+): Promise<string | null> {
+  if (isUuid(value)) {
+    // Check if the status exists
+    const status = await prisma.status.findUnique({
+      where: { id: value },
+      select: { id: true },
+    });
+    return status?.id ?? null;
+  }
+
+  // Look up by name (case-insensitive)
+  const where: { name: { equals: string; mode: "insensitive" }; teamId?: string } = {
+    name: { equals: value, mode: "insensitive" },
+  };
+  if (teamId) {
+    where.teamId = teamId;
+  }
+
+  const status = await prisma.status.findFirst({
+    where,
+    select: { id: true },
+  });
+
+  return status?.id ?? null;
+}
+
+/**
+ * Resolve multiple status identifiers (IDs or names) to their UUIDs.
+ * Returns only the IDs that were found (filters out invalid ones).
+ * Accepts either a single string or an array of strings.
+ */
+export async function resolveStatusesToIds(
+  values: string | string[],
+  teamId?: string
+): Promise<string[]> {
+  const valueArray = Array.isArray(values) ? values : [values];
+  const ids: string[] = [];
+
+  for (const value of valueArray) {
+    const id = await resolveStatusToId(value, teamId);
+    if (id) {
+      ids.push(id);
+    }
+  }
+
+  // Remove duplicates
+  return [...new Set(ids)];
+}
+
+/**
+ * Get all status IDs for a given category.
+ * Returns an empty array if no statuses are found.
+ */
+export async function getStatusIdsByCategory(
+  category: string,
+  teamId?: string
+): Promise<string[]> {
+  // Validate category
+  if (!isValidCategory(category)) {
+    return [];
+  }
+
+  const where: { category: string; teamId?: string } = {
+    category,
+  };
+  if (teamId) {
+    where.teamId = teamId;
+  }
+
+  const statuses = await prisma.status.findMany({
+    where,
+    select: { id: true },
+  });
+
+  return statuses.map((s) => s.id);
+}
+
+/**
+ * Default status configurations for new teams
+ */
+const DEFAULT_STATUSES: Array<{
+  name: string;
+  category: StatusCategory;
+  position: number;
+}> = [
+  { name: "Backlog", category: "backlog", position: 0 },
+  { name: "Todo", category: "unstarted", position: 1 },
+  { name: "In Progress", category: "started", position: 2 },
+  { name: "Done", category: "completed", position: 3 },
+  { name: "Canceled", category: "canceled", position: 4 },
+];
+
+/**
+ * Create default statuses for a new team.
+ * Uses a transaction to ensure atomicity (all or nothing).
+ */
+export async function createDefaultStatuses(teamId: string): Promise<Status[]> {
+  return prisma.$transaction(async (tx) => {
+    const statuses: Status[] = [];
+
+    for (const statusConfig of DEFAULT_STATUSES) {
+      const status = await tx.status.create({
+        data: {
+          name: statusConfig.name,
+          teamId,
+          category: statusConfig.category,
+          position: statusConfig.position,
+        },
+      });
+      statuses.push(status);
+    }
+
+    return statuses;
+  });
+}
+
+/**
  * Delete a status (only if not in use by any features or tasks)
  */
 export async function deleteStatus(id: string): Promise<void> {

@@ -8,14 +8,35 @@ import {
 } from "../services/taskService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
+import { validateBody } from "../middleware/validate.js";
+import {
+  reorderTaskSchema,
+  type ReorderTaskInput,
+} from "../schemas/index.js";
+import { generateSortOrderBetween } from "../utils/ordering.js";
+import { prisma } from "../lib/db.js";
+import { NotFoundError, ValidationError } from "../errors/index.js";
 
 // Request type definitions
 interface ListTasksQuery {
   cursor?: string;
   limit?: string;
   featureId?: string;
+  /** Filter by project ID (returns tasks across all features in the project) */
+  projectId?: string;
   statusId?: string;
+  /** Status filter - can be ID or name (single or array via repeated param) */
+  status?: string | string[];
+  /** Filter by status category (backlog, unstarted, started, completed, canceled) */
+  statusCategory?: string;
   assigneeId?: string;
+  /** Assignee filter - supports "me", "none", email, or UUID */
+  assignee?: string;
+  query?: string;
+  createdAt?: string;
+  createdBefore?: string;
+  updatedAt?: string;
+  updatedBefore?: string;
 }
 
 interface TaskIdParams {
@@ -43,6 +64,11 @@ interface UpdateTaskBody {
   sortOrder?: number;
 }
 
+interface BulkUpdateBody {
+  ids: string[];
+  statusId: string;
+}
+
 /**
  * Tasks routes plugin
  * Prefix: /api/v1/tasks
@@ -65,8 +91,18 @@ export default async function tasksRoutes(
         cursor?: string;
         limit?: number;
         featureId?: string;
+        projectId?: string;
         statusId?: string;
+        status?: string | string[];
+        statusCategory?: string;
         assigneeId?: string;
+        assignee?: string;
+        currentUserId?: string;
+        query?: string;
+        createdAt?: string;
+        createdBefore?: string;
+        updatedAt?: string;
+        updatedBefore?: string;
       } = {};
 
       if (request.query.cursor) {
@@ -78,11 +114,42 @@ export default async function tasksRoutes(
       if (request.query.featureId) {
         options.featureId = request.query.featureId;
       }
-      if (request.query.statusId) {
+      if (request.query.projectId) {
+        options.projectId = request.query.projectId;
+      }
+      // Enhanced status filtering (supports name, ID, array, category)
+      if (request.query.status) {
+        options.status = request.query.status;
+      } else if (request.query.statusCategory) {
+        options.statusCategory = request.query.statusCategory;
+      } else if (request.query.statusId) {
+        // Legacy support for direct statusId
         options.statusId = request.query.statusId;
       }
-      if (request.query.assigneeId) {
+      // Enhanced assignee filtering
+      if (request.query.assignee) {
+        options.assignee = request.query.assignee;
+        if (request.user?.id) {
+          options.currentUserId = request.user.id;
+        }
+      } else if (request.query.assigneeId) {
+        // Legacy support for direct assigneeId
         options.assigneeId = request.query.assigneeId;
+      }
+      if (request.query.query) {
+        options.query = request.query.query;
+      }
+      if (request.query.createdAt) {
+        options.createdAt = request.query.createdAt;
+      }
+      if (request.query.createdBefore) {
+        options.createdBefore = request.query.createdBefore;
+      }
+      if (request.query.updatedAt) {
+        options.updatedAt = request.query.updatedAt;
+      }
+      if (request.query.updatedBefore) {
+        options.updatedBefore = request.query.updatedBefore;
       }
 
       const result = await listTasks(options);
@@ -177,6 +244,78 @@ export default async function tasksRoutes(
   );
 
   /**
+   * PUT /api/v1/tasks/bulk-update
+   * Update status for multiple tasks at once
+   * Requires authentication
+   */
+  fastify.put<{ Body: BulkUpdateBody }>(
+    "/bulk-update",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const { ids, statusId } = request.body;
+
+      // Validate inputs
+      if (!ids || ids.length === 0) {
+        throw new ValidationError("ids array is required and cannot be empty");
+      }
+      if (!statusId) {
+        throw new ValidationError("statusId is required");
+      }
+
+      // Verify status exists
+      const status = await prisma.status.findUnique({
+        where: { id: statusId },
+        select: { id: true, teamId: true },
+      });
+      if (!status) {
+        throw new NotFoundError(`Status with id '${statusId}' not found`);
+      }
+
+      // Verify all tasks exist and belong to features in projects in the status's team
+      const tasks = await prisma.task.findMany({
+        where: { id: { in: ids } },
+        select: {
+          id: true,
+          feature: {
+            select: {
+              project: {
+                select: { teamId: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (tasks.length !== ids.length) {
+        const foundIds = tasks.map((t) => t.id);
+        const missingIds = ids.filter((id) => !foundIds.includes(id));
+        throw new NotFoundError(`Tasks not found: ${missingIds.join(", ")}`);
+      }
+
+      // Verify all tasks belong to the same team as the status
+      const invalidTasks = tasks.filter(
+        (t) => t.feature.project.teamId !== status.teamId
+      );
+      if (invalidTasks.length > 0) {
+        throw new ValidationError(
+          `Some tasks do not belong to the same team as the status`
+        );
+      }
+
+      // Update in transaction
+      const result = await prisma.$transaction(async (tx) => {
+        const updateResult = await tx.task.updateMany({
+          where: { id: { in: ids } },
+          data: { statusId },
+        });
+        return updateResult.count;
+      });
+
+      return reply.send({ updated: result });
+    }
+  );
+
+  /**
    * DELETE /api/v1/tasks/:id
    * Delete a task (hard delete)
    * Requires authentication, team membership, and admin role
@@ -189,6 +328,84 @@ export default async function tasksRoutes(
 
       await deleteTask(id);
       return reply.status(204).send();
+    }
+  );
+
+  /**
+   * PUT /api/v1/tasks/:id/reorder
+   * Reorder a task within its feature
+   * Requires authentication, team membership, and member+ role
+   */
+  fastify.put<{ Params: TaskIdParams; Body: ReorderTaskInput }>(
+    "/:id/reorder",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(reorderTaskSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { afterId, beforeId } = request.body;
+
+      // Fetch the task being reordered
+      const task = await getTaskById(id);
+      if (!task) {
+        throw new NotFoundError(`Task with id '${id}' not found`);
+      }
+
+      let beforeSortOrder: number | null = null;
+      let afterSortOrder: number | null = null;
+
+      // If afterId provided, fetch that task and use its sortOrder as "before"
+      // (the new task will be placed after it, so its sortOrder is the lower bound)
+      if (afterId) {
+        const afterTask = await prisma.task.findUnique({
+          where: { id: afterId },
+          select: { sortOrder: true, featureId: true },
+        });
+
+        if (!afterTask) {
+          throw new NotFoundError(`Task with id '${afterId}' not found`);
+        }
+
+        // Validate that afterId task belongs to the same feature
+        if (afterTask.featureId !== task.featureId) {
+          throw new ValidationError(
+            "Cannot reorder task: afterId task belongs to a different feature"
+          );
+        }
+
+        beforeSortOrder = afterTask.sortOrder;
+      }
+
+      // If beforeId provided, fetch that task and use its sortOrder as "after"
+      // (the new task will be placed before it, so its sortOrder is the upper bound)
+      if (beforeId) {
+        const beforeTask = await prisma.task.findUnique({
+          where: { id: beforeId },
+          select: { sortOrder: true, featureId: true },
+        });
+
+        if (!beforeTask) {
+          throw new NotFoundError(`Task with id '${beforeId}' not found`);
+        }
+
+        // Validate that beforeId task belongs to the same feature
+        if (beforeTask.featureId !== task.featureId) {
+          throw new ValidationError(
+            "Cannot reorder task: beforeId task belongs to a different feature"
+          );
+        }
+
+        afterSortOrder = beforeTask.sortOrder;
+      }
+
+      // Calculate new sortOrder using generateSortOrderBetween
+      const newSortOrder = generateSortOrderBetween(beforeSortOrder, afterSortOrder);
+
+      // Update the task's sortOrder
+      const updatedTask = await updateTask(id, { sortOrder: newSortOrder });
+
+      return reply.send({ data: updatedTask });
     }
   );
 }
@@ -216,7 +433,16 @@ export async function featureTasksRoutes(
         limit?: number;
         featureId: string;
         statusId?: string;
+        status?: string | string[];
+        statusCategory?: string;
         assigneeId?: string;
+        assignee?: string;
+        currentUserId?: string;
+        query?: string;
+        createdAt?: string;
+        createdBefore?: string;
+        updatedAt?: string;
+        updatedBefore?: string;
       } = {
         featureId: request.params.featureId,
       };
@@ -227,11 +453,39 @@ export async function featureTasksRoutes(
       if (request.query.limit) {
         options.limit = parseInt(request.query.limit, 10);
       }
-      if (request.query.statusId) {
+      // Enhanced status filtering (supports name, ID, array, category)
+      if (request.query.status) {
+        options.status = request.query.status;
+      } else if (request.query.statusCategory) {
+        options.statusCategory = request.query.statusCategory;
+      } else if (request.query.statusId) {
+        // Legacy support for direct statusId
         options.statusId = request.query.statusId;
       }
-      if (request.query.assigneeId) {
+      // Enhanced assignee filtering
+      if (request.query.assignee) {
+        options.assignee = request.query.assignee;
+        if (request.user?.id) {
+          options.currentUserId = request.user.id;
+        }
+      } else if (request.query.assigneeId) {
+        // Legacy support for direct assigneeId
         options.assigneeId = request.query.assigneeId;
+      }
+      if (request.query.query) {
+        options.query = request.query.query;
+      }
+      if (request.query.createdAt) {
+        options.createdAt = request.query.createdAt;
+      }
+      if (request.query.createdBefore) {
+        options.createdBefore = request.query.createdBefore;
+      }
+      if (request.query.updatedAt) {
+        options.updatedAt = request.query.updatedAt;
+      }
+      if (request.query.updatedBefore) {
+        options.updatedBefore = request.query.updatedBefore;
       }
 
       const result = await listTasks(options);
