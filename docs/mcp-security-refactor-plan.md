@@ -1,50 +1,81 @@
 # MCP Security Refactor - Implementation Plan
 
+> **Last Updated:** 2026-01-29  
+> **Status:** Feature 1 COMPLETE, Features 2-5 NOT STARTED
+
 ## Overview
 
 Create a SpecTree project with features and tasks to refactor the MCP server from direct database access to secure API-based authentication with Azure Key Vault integration.
 
 ## The Problem
 
-The current MCP server (`packages/mcp`) connects directly to the database using `DATABASE_URL` with **plaintext credentials** stored in `~/.copilot/mcp-config.json`:
+The current MCP server (`packages/mcp`) connects directly to the database using `DATABASE_URL` stored in `~/.copilot/mcp-config.json`:
 
 ```json
 {
   "spectree": {
     "env": {
-      "DATABASE_URL": "sqlserver://localhost:1433;database=spectree;user=sa;password=LocalDev@Password123;..."
+      "DATABASE_URL": "file:./data/spectree.db"
     }
   }
 }
 ```
 
 This is a security risk because:
-1. Credentials are stored in plaintext in a config file
-2. MCP runs in the user's local environment (less secure than server)
-3. Direct database access bypasses API authentication/authorization
+1. MCP runs in the user's local environment (less secure than server)
+2. Direct database access bypasses API authentication/authorization
+3. In production with Azure SQL, credentials would be exposed
+
+## Current State (as of 2026-01-29)
+
+### What Has Changed Since Original Plan
+
+| Item | Original Plan | Current State |
+|------|---------------|---------------|
+| Database | SQL Server (Azure SQL Edge) | **SQLite** (migrated) |
+| Connection String | `sqlserver://localhost:1433;...` | `file:./data/spectree.db` |
+| API Token System | Not implemented | **✅ IMPLEMENTED** (ENG-10) |
+| MCP Database Access | Direct Prisma | Still direct Prisma (unchanged) |
+| Azure Key Vault | Not implemented | Not implemented |
+| Managed Identity | Not implemented | Not applicable (SQLite) |
+
+### Migration to SQLite
+
+The project migrated from SQL Server to SQLite. See `docs/sql-server-to-sqlite-migration.md` for details.
+
+**Impact on this plan:**
+- Feature 4 (Azure Managed Identity for Database) is **no longer applicable** for local development
+- SQLite doesn't require complex authentication - it's file-based
+- For Azure deployment, may use Azure SQL or continue with SQLite on Azure Files
 
 ## Target Architecture
 
-**Current (Insecure):**
+**Current:**
 ```
-MCP → Direct Prisma/DB Connection (via DATABASE_URL)
+MCP → Direct Prisma/SQLite (via DATABASE_URL file path)
 ```
 
-**Target (Secure):**
+**Target (Local):**
 ```
-MCP → HTTP API (with API Token) → Azure Key Vault → Managed Identity → Azure SQL
+MCP → HTTP API (with API Token) → SQLite
+```
+
+**Target (Azure Production):**
+```
+MCP → HTTP API (with API Token) → Azure Key Vault → Azure SQL (or SQLite on Azure Files)
 ```
 
 ## Existing Infrastructure
 
-The API already has:
-- JWT authentication middleware (`packages/api/src/middleware/authenticate.ts`)
-- Full REST endpoints for projects, features, tasks, statuses
-- JWT tokens (15min access, 7d refresh)
+The API now has:
+- ✅ JWT authentication middleware (`packages/api/src/middleware/authenticate.ts`)
+- ✅ **API Token authentication** (added in ENG-10)
+- ✅ Full REST endpoints for projects, features, tasks, statuses
+- ✅ Token endpoints: POST/GET/DELETE `/api/v1/tokens`
 
 The MCP currently:
-- Uses Prisma directly in `packages/mcp/src/tools/*.ts`
-- Bypasses all API authentication
+- ❌ Uses Prisma directly in `packages/mcp/src/tools/*.ts`
+- ❌ Bypasses all API authentication
 
 ---
 
@@ -55,44 +86,30 @@ The MCP currently:
 ### Project Details
 - **Name:** `Enterprise Secrets & API Authentication`
 - **Team:** `Engineering`
-- **Description:** Refactor MCP server to use secure API authentication instead of direct database access. Implement Azure Key Vault for secrets management and Managed Identity for production database connections.
+- **Description:** Refactor MCP server to use secure API authentication instead of direct database access. Implement Azure Key Vault for secrets management in production.
 - **Color:** `#DC2626` (red - security)
 - **Icon:** `lock`
 
-### Feature 1: API Token Authentication System
+### Feature 1: API Token Authentication System ✅ COMPLETE
 **Title:** API Token Authentication System  
+**Status:** ✅ **IMPLEMENTED** (ENG-10, 2026-01-28)
 **Description:** Implement long-lived API tokens for MCP and other programmatic clients, separate from short-lived JWT user tokens.
 
-**Tasks:**
-1. **Create API tokens database schema**
-   - Add `api_tokens` table with fields: id, name, token_hash, user_id, scopes, expires_at, last_used_at, created_at
-   - Add migration file
-   - Tokens should be hashed (never store plaintext)
+**Completed Tasks:**
+1. ✅ **API tokens database schema** - `api_tokens` table with id, name, token_hash, user_id, scopes, expires_at, last_used_at, created_at
+2. ✅ **Token generation endpoint** - POST `/api/v1/tokens` creates new API token, returns token once
+3. ✅ **Token validation middleware** - Extended `authenticate.ts` to support API tokens (st_ prefix)
+4. ✅ **Token management endpoints** - GET `/api/v1/tokens` (list), DELETE `/api/v1/tokens/:id` (revoke)
+5. ✅ **Unit tests** - 25 tests covering generation, validation, revocation, edge cases
 
-2. **Implement token generation endpoint**
-   - POST `/api/tokens` - Create new API token
-   - Return token only once at creation (cannot be retrieved later)
-   - Require user authentication to create tokens
-   - Support optional expiration and scope limiting
+**Implementation Files:**
+- `packages/api/prisma/schema.prisma` - ApiToken model
+- `packages/api/src/services/tokenService.ts` - Token service
+- `packages/api/src/routes/tokens.ts` - Token endpoints
+- `packages/api/src/middleware/authenticate.ts` - Extended for API tokens
+- `packages/api/tests/api/tokens.test.ts` - Tests
 
-3. **Implement token validation middleware**
-   - Create `authenticateApiToken` middleware
-   - Check `Authorization: Bearer <token>` header
-   - Validate token hash against database
-   - Update `last_used_at` on each use
-   - Attach user context to request
-
-4. **Add token management endpoints**
-   - GET `/api/tokens` - List user's tokens (metadata only, not token values)
-   - DELETE `/api/tokens/:id` - Revoke a token
-   - Support token rotation (create new, delete old)
-
-5. **Write unit tests for token system**
-   - Test token generation, validation, revocation
-   - Test expiration handling
-   - Test scope enforcement
-
-### Feature 2: Refactor MCP to Use API Client
+### Feature 2: Refactor MCP to Use API Client ⏳ NOT STARTED
 **Title:** Refactor MCP to Use HTTP API Client  
 **Description:** Replace all direct Prisma database calls in MCP with HTTP API calls using the new token authentication.
 
@@ -134,7 +151,7 @@ The MCP currently:
    - Test error handling when API is unavailable
    - Test token authentication flow
 
-### Feature 3: Azure Key Vault Integration
+### Feature 3: Azure Key Vault Integration ⏳ NOT STARTED
 **Title:** Azure Key Vault Integration  
 **Description:** Integrate Azure Key Vault for secure secrets management in production environments.
 
@@ -153,9 +170,9 @@ The MCP currently:
    - Implement secret retrieval with caching (secrets don't change often)
    - Add error handling for Key Vault unavailability
 
-4. **Refactor database connection to use secrets service**
-   - Move connection string assembly to use secrets service
-   - Support both local (env var) and production (Key Vault) modes
+4. **Refactor configuration to use secrets service**
+   - JWT_SECRET from Key Vault in production
+   - Any other sensitive configuration
    - Add `SECRETS_PROVIDER` env var (values: "env" | "azure-keyvault")
 
 5. **Document Key Vault setup**
@@ -163,44 +180,43 @@ The MCP currently:
    - Document required permissions and access policies
    - Add setup instructions to README
 
-### Feature 4: Azure Managed Identity for Database
-**Title:** Azure Managed Identity for Database Authentication  
-**Description:** Implement Azure Managed Identity for passwordless database authentication in production.
+### Feature 4: Azure SQL Database Support ⏳ OPTIONAL
+**Title:** Azure SQL Database Support  
+**Description:** Add support for Azure SQL as an alternative to SQLite for production deployments requiring higher concurrency.
+
+> **Note:** This feature is OPTIONAL. SQLite works well for SpecTree's use case (low concurrency, single-user MCP access). Azure SQL is only needed if scaling to multiple concurrent users.
 
 **Tasks:**
-1. **Research Azure SQL + Managed Identity requirements**
-   - Document Azure SQL configuration needed
-   - Document managed identity types (system vs user-assigned)
-   - Identify Prisma/SQL Server driver support
+1. **Research multi-provider Prisma setup**
+   - Document how to support both SQLite and SQL Server providers
+   - Evaluate schema compatibility
 
-2. **Implement managed identity authentication**
-   - Add token-based authentication to database connection
-   - Use `@azure/identity` to acquire tokens
+2. **Implement Azure SQL connection with Managed Identity**
+   - Token-based authentication using `@azure/identity`
    - Configure Prisma for token-based auth
 
 3. **Create connection string builder**
    - Build connection strings dynamically based on environment
-   - Local: username/password from env or Key Vault
-   - Production: managed identity token
+   - Local: SQLite file path
+   - Production: Azure SQL with managed identity
 
-4. **Add health check for database connectivity**
-   - Verify managed identity can connect
-   - Add diagnostic endpoint for troubleshooting
-   - Log authentication method being used
+4. **Add provider selection configuration**
+   - `DATABASE_PROVIDER` env var (values: "sqlite" | "azure-sql")
+   - Automatic provider detection
 
-5. **Test in Azure environment**
-   - Deploy to Azure App Service with managed identity
-   - Verify connectivity to Azure SQL
-   - Document any Azure-specific configuration
+5. **Test and document Azure SQL deployment**
+   - Deploy to Azure App Service
+   - Verify connectivity
+   - Document Azure-specific configuration
 
-### Feature 5: Documentation & Migration Guide
+### Feature 5: Documentation & Migration Guide ⏳ NOT STARTED
 **Title:** Documentation and Migration Guide  
 **Description:** Comprehensive documentation for the new security architecture and migration guide for existing deployments.
 
 **Tasks:**
 1. **Update MCP README with new configuration**
    - Document API_TOKEN and API_BASE_URL env vars
-   - Remove DATABASE_URL documentation
+   - Remove DATABASE_URL documentation (for MCP)
    - Add troubleshooting section
 
 2. **Create security architecture document**
@@ -215,8 +231,8 @@ The MCP currently:
 
 4. **Create Azure deployment guide**
    - Key Vault setup instructions
-   - Managed identity configuration
-   - Azure SQL firewall and access rules
+   - Optional: Azure SQL configuration
+   - Azure Container Apps / App Service deployment
 
 5. **Update CONTRIBUTING.md**
    - Document local development setup
@@ -225,12 +241,26 @@ The MCP currently:
 
 ---
 
+## Progress Summary
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Feature 1: API Token Authentication | ✅ Complete | Implemented as ENG-10 |
+| Feature 2: MCP API Client Refactor | ⏳ Not Started | High priority - main security goal |
+| Feature 3: Azure Key Vault | ⏳ Not Started | Production only |
+| Feature 4: Azure SQL Support | ⏳ Optional | Only if SQLite doesn't scale |
+| Feature 5: Documentation | ⏳ Not Started | Depends on Feature 2 |
+
 ## Prompt for New Session
 
 Copy and paste this prompt into your new Copilot CLI session:
 
 ```
-Please read the file at ~/.copilot/session-state/3e7afbc2-b31b-4dcc-96a3-33b96d952e75/files/mcp-security-refactor-plan.md and create the SpecTree project with all features and tasks as documented. Use the SpecTree MCP tools to create:
+Please read the file at docs/mcp-security-refactor-plan.md and create the SpecTree project with all features and tasks as documented. 
+
+Note: Feature 1 (API Token Authentication) is already complete - mark those tasks as Done.
+
+Use the SpecTree MCP tools to create:
 1. The project under the Engineering team
 2. All 5 features with their descriptions
 3. All tasks under each feature with detailed descriptions
@@ -242,7 +272,8 @@ Create tasks one at a time (not in parallel) to avoid unique constraint errors.
 
 ## Important Notes
 
-1. **Create tasks sequentially** - There was a race condition bug (now fixed) but creating tasks one at a time is safer
-2. **Use team name "Engineering"** - The UUID resolution bug has been fixed, so "Engineering" should work now
-3. **Status "Backlog"** - Use "Backlog" as the initial status for all features
-4. **The fix applied** - The MCP now validates UUIDs before calling `findUnique` to prevent SQL Server conversion errors
+1. **Feature 1 is complete** - API tokens are already implemented (ENG-10)
+2. **SQLite is now the database** - No SQL Server credentials to protect locally
+3. **Feature 4 is optional** - SQLite works for the current use case
+4. **Main goal is Feature 2** - Refactor MCP to use API instead of direct DB access
+5. **Create tasks sequentially** - Avoids race condition issues with identifier generation
