@@ -5,6 +5,8 @@ import {
   createEpic,
   updateEpic,
   deleteEpic,
+  archiveEpic,
+  unarchiveEpic,
 } from "../services/epicService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
@@ -16,6 +18,7 @@ interface ListEpicsQuery {
   cursor?: string;
   limit?: string;
   teamId?: string;
+  includeArchived?: string;
 }
 
 interface EpicIdParams {
@@ -48,21 +51,22 @@ interface ReorderEpicBody {
  * Epics routes plugin
  * Prefix: /api/v1/epics
  */
-export default async function epicsRoutes(
+export default function epicsRoutes(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions
-): Promise<void> {
+): void {
   /**
    * GET /api/v1/epics
    * List epics with cursor-based pagination
    * Optional teamId query param to filter by team
+   * Optional includeArchived query param to include archived epics
    * Requires authentication
    */
   fastify.get<{ Querystring: ListEpicsQuery }>(
     "/",
     { preHandler: [authenticate] },
     async (request, reply) => {
-      const options: { cursor?: string; limit?: number; teamId?: string; currentUserId?: string } = {};
+      const options: { cursor?: string; limit?: number; teamId?: string; includeArchived?: boolean } = {};
       if (request.query.cursor) {
         options.cursor = request.query.cursor;
       }
@@ -72,9 +76,8 @@ export default async function epicsRoutes(
       if (request.query.teamId) {
         options.teamId = request.query.teamId;
       }
-      // Always pass currentUserId for scope-based filtering
-      if (request.user?.id) {
-        options.currentUserId = request.user.id;
+      if (request.query.includeArchived === "true") {
+        options.includeArchived = true;
       }
 
       const result = await listEpics(options);
@@ -167,16 +170,48 @@ export default async function epicsRoutes(
   /**
    * DELETE /api/v1/epics/:id
    * Soft delete an epic (set isArchived = true)
-   * Requires authentication, team membership, and member+ role
+   * Requires authentication, team membership, and admin role
    */
   fastify.delete<{ Params: EpicIdParams }>(
     "/:id",
-    { preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("member")] },
+    { preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("admin")] },
     async (request, reply) => {
       const { id } = request.params;
 
       await deleteEpic(id);
       return reply.status(204).send();
+    }
+  );
+
+  /**
+   * POST /api/v1/epics/:id/archive
+   * Archive an epic (set isArchived = true)
+   * Requires authentication, team membership, and member+ role
+   */
+  fastify.post<{ Params: EpicIdParams }>(
+    "/:id/archive",
+    { preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("member")] },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      const epic = await archiveEpic(id);
+      return reply.send({ data: epic });
+    }
+  );
+
+  /**
+   * POST /api/v1/epics/:id/unarchive
+   * Unarchive an epic (set isArchived = false)
+   * Requires authentication, team membership, and member+ role
+   */
+  fastify.post<{ Params: EpicIdParams }>(
+    "/:id/unarchive",
+    { preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("member")] },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      const epic = await unarchiveEpic(id);
+      return reply.send({ data: epic });
     }
   );
 

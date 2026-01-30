@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useEpic, useUpdateEpic, useDeleteEpic } from "@/hooks/queries/use-epics";
+import { useEpic, useUpdateEpic, useDeleteEpic, useArchiveEpic, useUnarchiveEpic } from "@/hooks/queries/use-epics";
 import { IssuesList } from "@/components/issues/issues-list";
 import { FeatureForm } from "@/components/features/feature-form";
 import { MarkdownRenderer } from "@/components/common/markdown-renderer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Trash2, Check, X, MoreHorizontal, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Check, X, MoreHorizontal, ChevronDown, ChevronRight, Archive, ArchiveRestore } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 export function EpicDetailPage() {
   const { epicId } = useParams<{ epicId: string }>();
@@ -29,11 +30,14 @@ export function EpicDetailPage() {
   const { data: epic, isLoading } = useEpic(epicId ?? "");
   const updateEpic = useUpdateEpic();
   const deleteEpic = useDeleteEpic();
+  const archiveEpic = useArchiveEpic();
+  const unarchiveEpic = useUnarchiveEpic();
 
   const [isFeatureFormOpen, setIsFeatureFormOpen] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   if (isLoading) {
@@ -72,6 +76,16 @@ export function EpicDetailPage() {
     navigate("/epics");
   };
 
+  const handleArchive = async () => {
+    await archiveEpic.mutateAsync(epic.id);
+    setShowArchiveDialog(false);
+    navigate("/epics");
+  };
+
+  const handleUnarchive = async () => {
+    await unarchiveEpic.mutateAsync(epic.id);
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header - Clean top bar */}
@@ -101,23 +115,40 @@ export function EpicDetailPage() {
               </Button>
             </div>
           ) : (
-            <h1
-              className="text-lg font-semibold truncate cursor-pointer hover:text-muted-foreground transition-colors"
-              onClick={() => {
-                setEditedName(epic.name);
-                setIsEditingName(true);
-              }}
-            >
-              {epic.name}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1
+                className="text-lg font-semibold truncate cursor-pointer hover:text-muted-foreground transition-colors"
+                onClick={() => {
+                  if (!epic.isArchived) {
+                    setEditedName(epic.name);
+                    setIsEditingName(true);
+                  }
+                }}
+              >
+                {epic.name}
+              </h1>
+              {epic.isArchived && (
+                <Badge variant="secondary" className="gap-1">
+                  <Archive className="h-3 w-3" />
+                  Archived
+                </Badge>
+              )}
+            </div>
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => setIsFeatureFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            New Feature
-          </Button>
+          {epic.isArchived ? (
+            <Button size="sm" variant="outline" onClick={handleUnarchive} disabled={unarchiveEpic.isPending}>
+              <ArchiveRestore className="h-4 w-4 mr-1.5" />
+              {unarchiveEpic.isPending ? "Restoring..." : "Restore Epic"}
+            </Button>
+          ) : (
+            <Button size="sm" onClick={() => setIsFeatureFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              New Feature
+            </Button>
+          )}
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -126,18 +157,41 @@ export function EpicDetailPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsFeatureFormOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Feature
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Epic
-              </DropdownMenuItem>
+              {epic.isArchived ? (
+                <>
+                  <DropdownMenuItem onClick={handleUnarchive}>
+                    <ArchiveRestore className="h-4 w-4 mr-2" />
+                    Restore Epic
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Permanently
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => setIsFeatureFormOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Feature
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowArchiveDialog(true)}>
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archive Epic
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Epic
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -204,6 +258,30 @@ export function EpicDetailPage() {
               disabled={deleteEpic.isPending}
             >
               {deleteEpic.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Archive confirmation dialog */}
+      <Dialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Archive Epic</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to archive "{epic.name}"? The epic and its features
+              will be hidden from the default view but can be restored later.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowArchiveDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleArchive}
+              disabled={archiveEpic.isPending}
+            >
+              {archiveEpic.isPending ? "Archiving..." : "Archive"}
             </Button>
           </DialogFooter>
         </DialogContent>

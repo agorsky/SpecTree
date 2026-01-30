@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import type { Epic } from "@/lib/api/types";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -22,8 +24,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Folder, MoreVertical, Trash2, Pencil } from "lucide-react";
-import { useDeleteEpic } from "@/hooks/queries/use-epics";
+import { Folder, MoreVertical, Trash2, Pencil, Archive, ArchiveRestore } from "lucide-react";
+import { useDeleteEpic, useArchiveEpic, useUnarchiveEpic } from "@/hooks/queries/use-epics";
 import { ApiError } from "@/lib/api/client";
 
 interface EpicCardProps {
@@ -33,8 +35,11 @@ interface EpicCardProps {
 
 export function EpicCard({ epic, onEdit }: EpicCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [error, setError] = useState("");
   const deleteEpic = useDeleteEpic();
+  const archiveEpic = useArchiveEpic();
+  const unarchiveEpic = useUnarchiveEpic();
 
   const handleDelete = async () => {
     setError("");
@@ -54,9 +59,36 @@ export function EpicCard({ epic, onEdit }: EpicCardProps) {
     }
   };
 
+  const handleArchive = async () => {
+    setError("");
+    try {
+      await archiveEpic.mutateAsync(epic.id);
+      setShowArchiveDialog(false);
+    } catch (err: unknown) {
+      console.error("Archive epic error:", err);
+      if (err instanceof ApiError) {
+        const data = err.data as { error?: { message?: string } } | undefined;
+        setError(data?.error?.message || `Error ${err.response.status}: Failed to archive epic`);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to archive epic");
+      }
+    }
+  };
+
+  const handleUnarchive = async () => {
+    setError("");
+    try {
+      await unarchiveEpic.mutateAsync(epic.id);
+    } catch (err: unknown) {
+      console.error("Unarchive epic error:", err);
+    }
+  };
+
   return (
     <>
-      <Card className="hover:bg-muted/50 transition-colors cursor-pointer group relative">
+      <Card className={`hover:bg-muted/50 transition-colors cursor-pointer group relative ${epic.isArchived ? 'opacity-60' : ''}`}>
         <Link to={`/epics/${epic.id}`}>
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -64,7 +96,15 @@ export function EpicCard({ epic, onEdit }: EpicCardProps) {
                 <Folder className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <CardTitle className="text-base truncate">{epic.name}</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base truncate">{epic.name}</CardTitle>
+                  {epic.isArchived && (
+                    <Badge variant="secondary" className="gap-1 text-xs">
+                      <Archive className="h-3 w-3" />
+                      Archived
+                    </Badge>
+                  )}
+                </div>
                 {epic.description && (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -99,27 +139,64 @@ export function EpicCard({ epic, onEdit }: EpicCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {onEdit && (
-                <DropdownMenuItem 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(epic);
-                  }}
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
+              {epic.isArchived ? (
+                <>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleUnarchive();
+                    }}
+                  >
+                    <ArchiveRestore className="h-4 w-4 mr-2" />
+                    Restore
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteDialog(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Permanently
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  {onEdit && (
+                    <DropdownMenuItem 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(epic);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowArchiveDialog(true);
+                    }}
+                  >
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archive
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteDialog(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </>
               )}
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeleteDialog(true);
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -146,6 +223,31 @@ export function EpicCard({ epic, onEdit }: EpicCardProps) {
               disabled={deleteEpic.isPending}
             >
               {deleteEpic.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Archive confirmation dialog */}
+      <Dialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Archive Epic</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to archive "{epic.name}"? The epic and its features
+              will be hidden from the default view but can be restored later.
+            </DialogDescription>
+          </DialogHeader>
+          {error && <div className="text-sm text-destructive">{error}</div>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowArchiveDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handleArchive()}
+              disabled={archiveEpic.isPending}
+            >
+              {archiveEpic.isPending ? "Archiving..." : "Archive"}
             </Button>
           </DialogFooter>
         </DialogContent>

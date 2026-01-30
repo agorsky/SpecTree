@@ -5,6 +5,7 @@ export interface EpicFilters {
   teamId?: string | undefined;
   cursor?: string | undefined;
   limit?: number | undefined;
+  includeArchived?: boolean | undefined;
 }
 
 export interface CreateEpicInput {
@@ -37,4 +38,8 @@ export const epicsApi = {
     api.put<{ data: Epic }>(`/epics/${id}`, input),
 
   delete: (id: string) => api.delete<void>(`/epics/${id}`),
+
+  archive: (id: string) => api.post<{ data: Epic }>(`/epics/${id}/archive`, {}),
+
+  unarchive: (id: string) => api.post<{ data: Epic }>(`/epics/${id}/unarchive`, {}),
 };
