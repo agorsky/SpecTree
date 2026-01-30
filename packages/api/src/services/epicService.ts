@@ -1,11 +1,11 @@
 import { prisma } from "../lib/db.js";
-import type { Project } from "../generated/prisma/index.js";
+import type { Epic } from "../generated/prisma/index.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
 import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
 
-// Types for project operations
-export interface CreateProjectInput {
+// Types for epic operations
+export interface CreateEpicInput {
   name: string;
   teamId: string;
   description?: string | undefined;
@@ -14,7 +14,7 @@ export interface CreateProjectInput {
   sortOrder?: number | undefined;
 }
 
-export interface UpdateProjectInput {
+export interface UpdateEpicInput {
   name?: string | undefined;
   description?: string | undefined;
   icon?: string | undefined;
@@ -22,18 +22,18 @@ export interface UpdateProjectInput {
   sortOrder?: number | undefined;
 }
 
-export type ProjectOrderBy = 'sortOrder' | 'createdAt' | 'updatedAt';
+export type EpicOrderBy = 'sortOrder' | 'createdAt' | 'updatedAt';
 
-export interface ListProjectsOptions {
+export interface ListEpicsOptions {
   cursor?: string | undefined;
   limit?: number | undefined;
   teamId?: string | undefined;
-  orderBy?: ProjectOrderBy | undefined;
-  /** Current user ID - when provided, filters to only show projects in accessible scopes */
+  orderBy?: EpicOrderBy | undefined;
+  /** Current user ID - when provided, filters to only show epics in accessible scopes */
   currentUserId?: string | undefined;
 }
 
-export interface ProjectWithCount extends Project {
+export interface EpicWithCount extends Epic {
   _count: {
     features: number;
   };
@@ -48,13 +48,13 @@ export interface PaginatedResult<T> {
 }
 
 /**
- * List projects with cursor-based pagination
+ * List epics with cursor-based pagination
  * Ordered by sortOrder, then createdAt
- * When currentUserId is provided, filters to only show projects in accessible scopes
+ * When currentUserId is provided, filters to only show epics in accessible scopes
  */
-export async function listProjects(
-  options: ListProjectsOptions = {}
-): Promise<PaginatedResult<ProjectWithCount>> {
+export async function listEpics(
+  options: ListEpicsOptions = {}
+): Promise<PaginatedResult<EpicWithCount>> {
   const limit = Math.min(100, Math.max(1, options.limit ?? 20));
 
   // Build where clause conditionally to avoid undefined values
@@ -92,7 +92,7 @@ export async function listProjects(
   // If teamId filter is provided, apply it (overrides scope filter for specific team queries)
   if (options.teamId !== undefined) {
     // When teamId is explicitly provided, use it directly
-    // The scope filter above already ensures user can only see their accessible projects
+    // The scope filter above already ensures user can only see their accessible epics
     // But if explicitly requesting a team, we filter to just that team
     delete whereClause.OR;
     whereClause.teamId = options.teamId;
@@ -104,24 +104,24 @@ export async function listProjects(
     ? [{ sortOrder: "asc" as const }, { createdAt: "desc" as const }]
     : [{ [orderByField]: "desc" as const }];
 
-  const projects = await prisma.project.findMany({
+  const epics = await prisma.epic.findMany({
     take: limit + 1,
     ...(options.cursor ? { cursor: { id: options.cursor } } : {}),
     where: whereClause,
     orderBy,
     include: { _count: { select: { features: true } } },
-  }) as ProjectWithCount[];
+  }) as EpicWithCount[];
 
-  const hasMore = projects.length > limit;
+  const hasMore = epics.length > limit;
   if (hasMore) {
-    projects.pop();
+    epics.pop();
   }
 
-  const lastProject = projects.at(-1);
-  const nextCursor = hasMore && lastProject ? lastProject.id : null;
+  const lastEpic = epics.at(-1);
+  const nextCursor = hasMore && lastEpic ? lastEpic.id : null;
 
   return {
-    data: projects,
+    data: epics,
     meta: {
       cursor: nextCursor,
       hasMore,
@@ -135,24 +135,24 @@ export async function listProjects(
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Get a single project by ID or name.
+ * Get a single epic by ID or name.
  * Supports both UUID (e.g., "550e8400-e29b-41d4-a716-446655440000") and
- * exact project name (case-sensitive) lookups.
+ * exact epic name (case-sensitive) lookups.
  */
-export async function getProjectById(idOrName: string): Promise<ProjectWithCount | null> {
+export async function getEpicById(idOrName: string): Promise<EpicWithCount | null> {
   const isUuid = UUID_REGEX.test(idOrName);
-  return prisma.project.findFirst({
+  return prisma.epic.findFirst({
     where: isUuid
       ? { id: idOrName, isArchived: false }
       : { name: idOrName, isArchived: false },
     include: { _count: { select: { features: true } } },
-  }) as Promise<ProjectWithCount | null>;
+  }) as Promise<EpicWithCount | null>;
 }
 
 /**
- * Create a new project
+ * Create a new epic
  */
-export async function createProject(input: CreateProjectInput): Promise<Project> {
+export async function createEpic(input: CreateEpicInput): Promise<Epic> {
   // Validate required fields
   if (!input.name || input.name.trim() === "") {
     throw new ValidationError("Name is required");
@@ -174,12 +174,12 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
   // Auto-generate sortOrder if not provided
   let sortOrder = input.sortOrder;
   if (sortOrder === undefined) {
-    const lastProject = await prisma.project.findFirst({
+    const lastEpic = await prisma.epic.findFirst({
       where: { teamId: input.teamId, isArchived: false },
       orderBy: { sortOrder: 'desc' },
       select: { sortOrder: true },
     });
-    sortOrder = generateSortOrderBetween(lastProject?.sortOrder ?? null, null);
+    sortOrder = generateSortOrderBetween(lastEpic?.sortOrder ?? null, null);
   }
 
   // Build data object conditionally to avoid undefined values
@@ -206,27 +206,27 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
     data.color = input.color.trim();
   }
 
-  return prisma.project.create({ data });
+  return prisma.epic.create({ data });
 }
 
 /**
- * Update an existing project.
- * Supports both UUID and exact project name lookups.
+ * Update an existing epic.
+ * Supports both UUID and exact epic name lookups.
  */
-export async function updateProject(
+export async function updateEpic(
   idOrName: string,
-  input: UpdateProjectInput
-): Promise<Project> {
-  // First check if project exists and is not archived
+  input: UpdateEpicInput
+): Promise<Epic> {
+  // First check if epic exists and is not archived
   const isUuid = UUID_REGEX.test(idOrName);
-  const existing = await prisma.project.findFirst({
+  const existing = await prisma.epic.findFirst({
     where: isUuid
       ? { id: idOrName }
       : { name: idOrName },
   });
 
   if (!existing || existing.isArchived) {
-    throw new NotFoundError(`Project with id '${idOrName}' not found`);
+    throw new NotFoundError(`Epic with id '${idOrName}' not found`);
   }
 
   // Use the resolved UUID for the update
@@ -262,30 +262,30 @@ export async function updateProject(
     data.sortOrder = input.sortOrder;
   }
 
-  return prisma.project.update({
+  return prisma.epic.update({
     where: { id },
     data,
   });
 }
 
 /**
- * Soft delete a project (set isArchived = true).
- * Supports both UUID and exact project name lookups.
+ * Soft delete an epic (set isArchived = true).
+ * Supports both UUID and exact epic name lookups.
  */
-export async function deleteProject(idOrName: string): Promise<void> {
-  // First check if project exists and is not already archived
+export async function deleteEpic(idOrName: string): Promise<void> {
+  // First check if epic exists and is not already archived
   const isUuid = UUID_REGEX.test(idOrName);
-  const existing = await prisma.project.findFirst({
+  const existing = await prisma.epic.findFirst({
     where: isUuid
       ? { id: idOrName }
       : { name: idOrName },
   });
 
   if (!existing || existing.isArchived) {
-    throw new NotFoundError(`Project with id '${idOrName}' not found`);
+    throw new NotFoundError(`Epic with id '${idOrName}' not found`);
   }
 
-  await prisma.project.update({
+  await prisma.epic.update({
     where: { id: existing.id },
     data: { isArchived: true },
   });
