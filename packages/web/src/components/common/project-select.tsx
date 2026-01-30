@@ -5,24 +5,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEpics } from "@/hooks/queries/use-epics";
+import { useProjects } from "@/hooks/queries/use-projects";
 import { cn } from "@/lib/utils";
 import { Folder } from "lucide-react";
 
-interface EpicSelectProps {
+interface ProjectSelectProps {
   value?: string;
-  onChange: (epicId: string) => void;
+  onChange: (projectId: string) => void;
   placeholder?: string;
   className?: string;
 }
 
-export function EpicSelect({
+export function ProjectSelect({
   value,
   onChange,
-  placeholder = "Select epic",
+  placeholder = "Select project",
   className,
-}: EpicSelectProps) {
-  const { data, isLoading } = useEpics();
+}: ProjectSelectProps) {
+  const { data, isLoading } = useProjects();
 
   if (isLoading) {
     return (
@@ -30,7 +30,7 @@ export function EpicSelect({
     );
   }
 
-  const epics = data?.pages.flatMap((page) => page.data) ?? [];
+  const projects = data?.pages.flatMap((page) => page.data) ?? [];
 
   return (
     <Select value={value ?? ""} onValueChange={onChange}>
@@ -38,11 +38,11 @@ export function EpicSelect({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {epics.map((epic) => (
-          <SelectItem key={epic.id} value={epic.id}>
+        {projects.map((project) => (
+          <SelectItem key={project.id} value={project.id}>
             <div className="flex items-center gap-2">
               <Folder className="h-4 w-4 text-muted-foreground" />
-              {epic.name}
+              {project.name}
             </div>
           </SelectItem>
         ))}

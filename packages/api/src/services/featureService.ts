@@ -19,7 +19,7 @@ import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.
 // Types for feature operations
 export interface CreateFeatureInput {
   title: string;
-  epicId: string;
+  projectId: string;
   description?: string | undefined;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
@@ -39,7 +39,7 @@ export type FeatureOrderBy = 'sortOrder' | 'createdAt' | 'updatedAt';
 export interface ListFeaturesOptions {
   cursor?: string | undefined;
   limit?: number | undefined;
-  epicId?: string | undefined;
+  projectId?: string | undefined;
   statusId?: string | undefined;
   /** Status filter - can be ID or name (single or array) */
   status?: string | string[] | undefined;
@@ -72,7 +72,7 @@ export interface FeatureWithCount extends Feature {
 
 export interface FeatureWithTasks extends Feature {
   tasks: Task[];
-  epic: {
+  project: {
     id: string;
     teamId: string;
   };
@@ -90,26 +90,26 @@ export interface PaginatedResult<T> {
  * Generate a unique identifier for a feature based on team key
  * Format: TEAM_KEY-NUMBER (e.g., "COM-123")
  */
-async function generateIdentifier(epicId: string): Promise<string> {
-  const epic = await prisma.epic.findUnique({
-    where: { id: epicId },
+async function generateIdentifier(projectId: string): Promise<string> {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
     include: { team: true },
   });
 
-  if (!epic) {
-    throw new NotFoundError(`Epic with id '${epicId}' not found`);
+  if (!project) {
+    throw new NotFoundError(`Project with id '${projectId}' not found`);
   }
 
-  if (!epic.team) {
-    throw new Error(`Epic with id '${epicId}' has no associated team`);
+  if (!project.team) {
+    throw new Error(`Project with id '${projectId}' has no associated team`);
   }
 
-  const teamKey = epic.team.key;
+  const teamKey = project.team.key;
 
-  // Count existing features in epics belonging to this team
+  // Count existing features in projects belonging to this team
   const count = await prisma.feature.count({
     where: {
-      epic: { teamId: epic.teamId },
+      project: { teamId: project.teamId },
     },
   });
 
@@ -149,8 +149,8 @@ export async function listFeatures(
 
   // Build where clause conditionally to avoid undefined values
   const whereClause: {
-    epicId?: string;
-    epic?: {
+    projectId?: string;
+    project?: {
       OR?: Array<{ teamId?: { in: string[] }; personalScopeId?: string }>;
     };
     statusId?: string | { in: string[] };
@@ -185,11 +185,11 @@ export async function listFeatures(
       scopeConditions.push({ personalScopeId: accessibleScopes.personalScopeId });
     }
 
-    whereClause.epic = { OR: scopeConditions };
+    whereClause.project = { OR: scopeConditions };
   }
 
-  if (options.epicId !== undefined) {
-    whereClause.epicId = options.epicId;
+  if (options.projectId !== undefined) {
+    whereClause.projectId = options.projectId;
   }
 
   // Handle status filtering (supports statusId, status name/array, and statusCategory)
@@ -339,7 +339,7 @@ export async function getFeatureById(idOrIdentifierOrTitle: string): Promise<Fea
       tasks: {
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       },
-      epic: {
+      project: {
         select: {
           id: true,
           teamId: true,
@@ -358,18 +358,18 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
   if (!input.title || input.title.trim() === "") {
     throw new ValidationError("Title is required");
   }
-  if (!input.epicId || input.epicId.trim() === "") {
-    throw new ValidationError("Epic ID is required");
+  if (!input.projectId || input.projectId.trim() === "") {
+    throw new ValidationError("Project ID is required");
   }
 
-  // Verify epic exists and is not archived, get teamId for status lookup
-  const epic = await prisma.epic.findUnique({
-    where: { id: input.epicId },
+  // Verify project exists and is not archived, get teamId for status lookup
+  const project = await prisma.project.findUnique({
+    where: { id: input.projectId },
     select: { id: true, isArchived: true, teamId: true },
   });
 
-  if (!epic || epic.isArchived) {
-    throw new NotFoundError(`Epic with id '${input.epicId}' not found`);
+  if (!project || project.isArchived) {
+    throw new NotFoundError(`Project with id '${input.projectId}' not found`);
   }
 
   // Determine statusId: use provided, or default to Backlog
@@ -383,9 +383,9 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
     if (!status) {
       throw new NotFoundError(`Status with id '${statusId}' not found`);
     }
-  } else if (epic.teamId) {
+  } else if (project.teamId) {
     // Default to Backlog status for the team
-    const backlogStatus = await getDefaultBacklogStatus(epic.teamId);
+    const backlogStatus = await getDefaultBacklogStatus(project.teamId);
     if (backlogStatus) {
       statusId = backlogStatus.id;
     }
@@ -403,13 +403,13 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
   }
 
   // Generate identifier
-  const identifier = await generateIdentifier(input.epicId);
+  const identifier = await generateIdentifier(input.projectId);
 
   // Auto-generate sortOrder if not provided
   let sortOrder = input.sortOrder;
   if (sortOrder === undefined) {
     const lastFeature = await prisma.feature.findFirst({
-      where: { epicId: input.epicId },
+      where: { projectId: input.projectId },
       orderBy: { sortOrder: 'desc' },
       select: { sortOrder: true },
     });
@@ -419,7 +419,7 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
   // Build data object conditionally to avoid undefined values
   const data: {
     title: string;
-    epicId: string;
+    projectId: string;
     identifier: string;
     sortOrder: number;
     description?: string;
@@ -427,7 +427,7 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
     assigneeId?: string;
   } = {
     title: input.title.trim(),
-    epicId: input.epicId,
+    projectId: input.projectId,
     identifier,
     sortOrder,
   };
@@ -493,10 +493,10 @@ export async function updateFeature(
     // Fetch the feature with its project to get the team
     const featureWithProject = await prisma.feature.findUnique({
       where: { id },
-      include: { epic: { select: { teamId: true } } },
+      include: { project: { select: { teamId: true } } },
     });
 
-    if (featureWithProject && status.teamId !== featureWithProject.epic.teamId) {
+    if (featureWithProject && status.teamId !== featureWithProject.project.teamId) {
       throw new ValidationError("Cannot change status: status belongs to a different team");
     }
   }

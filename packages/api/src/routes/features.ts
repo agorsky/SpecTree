@@ -18,7 +18,7 @@ import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
 interface ListFeaturesQuery {
   cursor?: string;
   limit?: string;
-  epicId?: string;
+  projectId?: string;
   statusId?: string;
   /** Status filter - can be ID or name (single or array via repeated param) */
   status?: string | string[];
@@ -40,7 +40,7 @@ interface FeatureIdParams {
 
 interface CreateFeatureBody {
   title: string;
-  epicId: string;
+  projectId: string;
   description?: string;
   statusId?: string;
   assigneeId?: string;
@@ -71,7 +71,7 @@ export default async function featuresRoutes(
   /**
    * GET /api/v1/features
    * List features with cursor-based pagination
-   * Optional query params: epicId, statusId, assigneeId
+   * Optional query params: projectId, statusId, assigneeId
    * Includes _count: { tasks } in response
    * Requires authentication
    */
@@ -82,7 +82,7 @@ export default async function featuresRoutes(
       const options: {
         cursor?: string;
         limit?: number;
-        epicId?: string;
+        projectId?: string;
         statusId?: string;
         status?: string | string[];
         statusCategory?: string;
@@ -102,8 +102,8 @@ export default async function featuresRoutes(
       if (request.query.limit) {
         options.limit = parseInt(request.query.limit, 10);
       }
-      if (request.query.epicId) {
-        options.epicId = request.query.epicId;
+      if (request.query.projectId) {
+        options.projectId = request.query.projectId;
       }
       // Enhanced status filtering (supports name, ID, array, category)
       if (request.query.status) {
@@ -168,25 +168,25 @@ export default async function featuresRoutes(
   /**
    * POST /api/v1/features
    * Create a new feature (auto-generates identifier in format TEAM_KEY-NUMBER)
-   * Requires authentication, team membership (via epicId), and member+ role
+   * Requires authentication, team membership (via projectId), and member+ role
    */
   fastify.post<{ Body: CreateFeatureBody }>(
     "/",
-    { preHandler: [authenticate, requireTeamAccess("epicId"), requireRole("member")] },
+    { preHandler: [authenticate, requireTeamAccess("projectId"), requireRole("member")] },
     async (request, reply) => {
-      const { title, epicId, description, statusId, assigneeId, sortOrder } =
+      const { title, projectId, description, statusId, assigneeId, sortOrder } =
         request.body;
 
       const input: {
         title: string;
-        epicId: string;
+        projectId: string;
         description?: string;
         statusId?: string;
         assigneeId?: string;
         sortOrder?: number;
       } = {
         title,
-        epicId,
+        projectId,
       };
 
       if (description !== undefined) input.description = description;
@@ -233,7 +233,7 @@ export default async function featuresRoutes(
 
   /**
    * PUT /api/v1/features/:id/reorder
-   * Reorder a feature within its epic
+   * Reorder a feature within its project
    * Requires authentication, team membership, and member+ role
    */
   fastify.put<{ Params: FeatureIdParams; Body: ReorderFeatureInput }>(
@@ -249,7 +249,7 @@ export default async function featuresRoutes(
       // Fetch the feature being reordered
       const feature = await prisma.feature.findUnique({
         where: { id },
-        select: { id: true, epicId: true },
+        select: { id: true, projectId: true },
       });
 
       if (!feature) {
@@ -264,15 +264,15 @@ export default async function featuresRoutes(
       if (afterId) {
         const afterFeature = await prisma.feature.findUnique({
           where: { id: afterId },
-          select: { id: true, epicId: true, sortOrder: true },
+          select: { id: true, projectId: true, sortOrder: true },
         });
 
         if (!afterFeature) {
           throw new NotFoundError(`Feature with id '${afterId}' not found`);
         }
 
-        if (afterFeature.epicId !== feature.epicId) {
-          throw new ValidationError("Cannot reorder: afterId feature belongs to a different epic");
+        if (afterFeature.projectId !== feature.projectId) {
+          throw new ValidationError("Cannot reorder: afterId feature belongs to a different project");
         }
 
         beforeSortOrder = afterFeature.sortOrder;
@@ -283,15 +283,15 @@ export default async function featuresRoutes(
       if (beforeId) {
         const beforeFeature = await prisma.feature.findUnique({
           where: { id: beforeId },
-          select: { id: true, epicId: true, sortOrder: true },
+          select: { id: true, projectId: true, sortOrder: true },
         });
 
         if (!beforeFeature) {
           throw new NotFoundError(`Feature with id '${beforeId}' not found`);
         }
 
-        if (beforeFeature.epicId !== feature.epicId) {
-          throw new ValidationError("Cannot reorder: beforeId feature belongs to a different epic");
+        if (beforeFeature.projectId !== feature.projectId) {
+          throw new ValidationError("Cannot reorder: beforeId feature belongs to a different project");
         }
 
         afterSortOrder = beforeFeature.sortOrder;
@@ -343,7 +343,7 @@ export default async function featuresRoutes(
         where: { id: { in: ids } },
         select: {
           id: true,
-          epic: {
+          project: {
             select: { teamId: true },
           },
         },
@@ -359,7 +359,7 @@ export default async function featuresRoutes(
 
       // Verify all features belong to the same team as the status
       const invalidFeatures = features.filter(
-        (f) => f.epic.teamId !== status.teamId
+        (f) => f.project.teamId !== status.teamId
       );
       if (invalidFeatures.length > 0) {
         throw new ValidationError(

@@ -38,13 +38,13 @@ export {
   type UpdateUserInput,
 } from "./user.js";
 
-// Epic schemas
+// Project schemas
 export {
-  createEpicSchema,
-  updateEpicSchema,
-  type CreateEpicInput,
-  type UpdateEpicInput,
-} from "./epic.js";
+  createProjectSchema,
+  updateProjectSchema,
+  type CreateProjectInput,
+  type UpdateProjectInput,
+} from "./project.js";
 
 // Feature schemas
 export {

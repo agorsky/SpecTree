@@ -20,7 +20,7 @@ export const listFeaturesQuerySchema = paginationQuerySchema
   .merge(statusFilterQuerySchema)
   .merge(assigneeFilterQuerySchema)
   .extend({
-    epicId: z.string().uuid().optional(),
+    projectId: z.string().uuid().optional(),
   });
 
 /**
@@ -28,7 +28,7 @@ export const listFeaturesQuerySchema = paginationQuerySchema
  */
 export const createFeatureSchema = z.object({
   title: z.string().min(1).max(255),
-  epicId: z.string().uuid("Invalid epic ID"),
+  projectId: z.string().uuid("Invalid project ID"),
   description: z.string().max(10000).optional(),
   statusId: z.string().uuid().nullable().optional(),
   assigneeId: z.string().uuid().nullable().optional(),
@@ -36,10 +36,10 @@ export const createFeatureSchema = z.object({
 });
 
 /**
- * Schema for updating an existing feature (epicId cannot be changed)
+ * Schema for updating an existing feature (projectId cannot be changed)
  */
 export const updateFeatureSchema = createFeatureSchema
-  .omit({ epicId: true })
+  .omit({ projectId: true })
   .partial();
 
 /**

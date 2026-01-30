@@ -83,56 +83,56 @@ function hasTeamAccess(
 }
 
 /**
- * Result of looking up an epic for authorization.
- * Contains teamId (null for personal epics) and personalScopeId if applicable.
+ * Result of looking up a project for authorization.
+ * Contains teamId (null for personal projects) and personalScopeId if applicable.
  */
-interface EpicAuthInfo {
+interface ProjectAuthInfo {
   teamId: string | null;
   personalScopeId: string | null;
 }
 
 /**
- * Looks up the team ID for an epic.
- * Supports both UUID and exact epic name lookups.
+ * Looks up the team ID for a project.
+ * Supports both UUID and exact project name lookups.
  *
- * For personal scope epics (teamId = null), returns the personalScopeId
+ * For personal scope projects (teamId = null), returns the personalScopeId
  * to enable ownership verification.
  *
- * @param epicIdOrName - The epic ID (UUID) or exact name
- * @returns Epic auth info or null if epic not found
+ * @param projectIdOrName - The project ID (UUID) or exact name
+ * @returns Project auth info or null if project not found
  */
-async function getEpicAuthInfo(epicIdOrName: string): Promise<EpicAuthInfo | null> {
-  const isUuid = UUID_REGEX.test(epicIdOrName);
-  const epic = await prisma.epic.findFirst({
+async function getProjectAuthInfo(projectIdOrName: string): Promise<ProjectAuthInfo | null> {
+  const isUuid = UUID_REGEX.test(projectIdOrName);
+  const project = await prisma.project.findFirst({
     where: isUuid
-      ? { id: epicIdOrName }
-      : { name: epicIdOrName },
+      ? { id: projectIdOrName }
+      : { name: projectIdOrName },
     select: { teamId: true, personalScopeId: true },
   });
 
-  if (!epic) {
+  if (!project) {
     return null;
   }
 
   return {
-    teamId: epic.teamId,
-    personalScopeId: epic.personalScopeId,
+    teamId: project.teamId,
+    personalScopeId: project.personalScopeId,
   };
 }
 
 /**
- * Looks up the team ID for an epic (legacy function for compatibility).
- * Use getEpicAuthInfo for full support including personal scope.
+ * Looks up the team ID for a project (legacy function for compatibility).
+ * Use getProjectAuthInfo for full support including personal scope.
  *
- * @param epicIdOrName - The epic ID (UUID) or exact name
- * @returns The team ID, PERSONAL_SCOPE_MARKER for personal epics, or null if not found
+ * @param projectIdOrName - The project ID (UUID) or exact name
+ * @returns The team ID, PERSONAL_SCOPE_MARKER for personal projects, or null if not found
  */
-async function getTeamIdFromEpic(epicIdOrName: string): Promise<string | null> {
-  const authInfo = await getEpicAuthInfo(epicIdOrName);
+async function getTeamIdFromProject(projectIdOrName: string): Promise<string | null> {
+  const authInfo = await getProjectAuthInfo(projectIdOrName);
   if (!authInfo) {
     return null;
   }
-  // For personal scope epics, return marker
+  // For personal scope projects, return marker
   if (authInfo.teamId === null && authInfo.personalScopeId) {
     return PERSONAL_SCOPE_MARKER;
   }
@@ -140,7 +140,7 @@ async function getTeamIdFromEpic(epicIdOrName: string): Promise<string | null> {
 }
 
 /**
- * Looks up the team ID for a feature (via epic).
+ * Looks up the team ID for a feature (via project).
  * Supports both UUID and identifier (e.g., "ENG-4") lookups.
  *
  * @param featureIdOrIdentifier - The feature ID (UUID) or identifier
@@ -152,16 +152,16 @@ async function getTeamIdFromFeature(featureIdOrIdentifier: string): Promise<stri
     where: isUuid
       ? { id: featureIdOrIdentifier }
       : { identifier: featureIdOrIdentifier },
-    select: { epic: { select: { teamId: true, personalScopeId: true } } },
+    select: { project: { select: { teamId: true, personalScopeId: true } } },
   });
   if (!feature) {
     return null;
   }
   // For personal scope features, return marker
-  if (feature.epic.teamId === null && feature.epic.personalScopeId) {
+  if (feature.project.teamId === null && feature.project.personalScopeId) {
     return PERSONAL_SCOPE_MARKER;
   }
-  return feature.epic.teamId ?? null;
+  return feature.project.teamId ?? null;
 }
 
 /**
@@ -170,7 +170,7 @@ async function getTeamIdFromFeature(featureIdOrIdentifier: string): Promise<stri
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Looks up the team ID for a task (via feature → epic).
+ * Looks up the team ID for a task (via feature → project).
  * Supports both UUID and identifier (e.g., "ENG-4-1") lookups.
  *
  * @param taskIdOrIdentifier - The task ID (UUID) or identifier (e.g., "ENG-4-1")
@@ -182,16 +182,16 @@ async function getTeamIdFromTask(taskIdOrIdentifier: string): Promise<string | n
     where: isUuid
       ? { id: taskIdOrIdentifier }
       : { identifier: taskIdOrIdentifier },
-    select: { feature: { select: { epic: { select: { teamId: true, personalScopeId: true } } } } },
+    select: { feature: { select: { project: { select: { teamId: true, personalScopeId: true } } } } },
   });
   if (!task) {
     return null;
   }
   // For personal scope tasks, return marker
-  if (task.feature.epic.teamId === null && task.feature.epic.personalScopeId) {
+  if (task.feature.project.teamId === null && task.feature.project.personalScopeId) {
     return PERSONAL_SCOPE_MARKER;
   }
-  return task.feature.epic.teamId ?? null;
+  return task.feature.project.teamId ?? null;
 }
 
 /**
@@ -279,20 +279,20 @@ async function resolveTeamId(teamIdOrNameOrKey: string): Promise<string | null> 
  * The middleware looks up the team ID from the specified parameter (or body),
  * fetches the user's team memberships, and verifies access.
  *
- * For nested resources (epic, feature, task, status), the middleware performs
+ * For nested resources (project, feature, task, status), the middleware performs
  * the necessary lookups to determine the associated team.
  *
  * @param teamIdParam - Name of the param or body field containing the team reference.
  *   Supports special values for nested resources:
  *   - "teamId" or "team_id": Direct team ID
- *   - "epicId" or "epic_id": Lookup team via epic
- *   - "featureId" or "feature_id": Lookup team via feature → epic
- *   - "taskId" or "task_id": Lookup team via task → feature → epic
+ *   - "projectId" or "project_id": Lookup team via project
+ *   - "featureId" or "feature_id": Lookup team via feature → project
+ *   - "taskId" or "task_id": Lookup team via task → feature → project
  *   - "statusId" or "status_id": Lookup team via status
  *
  *   Also supports mapping syntax "paramName:resourceType" for routes where the
- *   param name differs from the resource type (e.g., "id:epicId" means
- *   read from params.id but treat it as a epicId).
+ *   param name differs from the resource type (e.g., "id:projectId" means
+ *   read from params.id but treat it as a projectId).
  *
  * @returns A Fastify preHandler hook function
  *
@@ -313,15 +313,15 @@ async function resolveTeamId(teamIdOrNameOrKey: string): Promise<string | null> 
  * @example
  * // Project-based team access check with mapped param
  * fastify.get(
- *   "/epics/:id",
- *   { preHandler: [authenticate, requireTeamAccess("id:epicId")] },
+ *   "/projects/:id",
+ *   { preHandler: [authenticate, requireTeamAccess("id:projectId")] },
  *   async (request, reply) => { ... }
  * );
  *
  * @example
  * // Team ID from request body
  * fastify.post(
- *   "/epics",
+ *   "/projects",
  *   { preHandler: [authenticate, requireTeamAccess("teamId")] },
  *   async (request, reply) => { ... }
  * );
@@ -337,7 +337,7 @@ export function requireTeamAccess(
     const params = request.params as Record<string, string>;
     const body = request.body as Record<string, unknown> | undefined;
 
-    // Support mapping syntax "paramName:resourceType" (e.g., "id:epicId")
+    // Support mapping syntax "paramName:resourceType" (e.g., "id:projectId")
     // This allows using a different param name than the resource type
     let paramName = teamIdParam;
     let resourceType = teamIdParam;
@@ -365,20 +365,20 @@ export function requireTeamAccess(
       if (!teamId) {
         throw new ForbiddenError("Team not found");
       }
-    } else if (typeLower === "epicid" || typeLower === "epic_id") {
-      // Lookup team via epic (supports UUID and name)
-      teamId = await getTeamIdFromEpic(resourceId);
+    } else if (typeLower === "projectid" || typeLower === "project_id") {
+      // Lookup team via project (supports UUID and name)
+      teamId = await getTeamIdFromProject(resourceId);
       if (teamId === null) {
         throw new ForbiddenError("Project not found");
       }
     } else if (typeLower === "featureid" || typeLower === "feature_id") {
-      // Lookup team via feature → epic
+      // Lookup team via feature → project
       teamId = await getTeamIdFromFeature(resourceId);
       if (teamId === null) {
         throw new ForbiddenError("Feature not found");
       }
     } else if (typeLower === "taskid" || typeLower === "task_id") {
-      // Lookup team via task → feature → epic
+      // Lookup team via task → feature → project
       teamId = await getTeamIdFromTask(resourceId);
       if (teamId === null) {
         throw new ForbiddenError("Task not found");
@@ -533,7 +533,7 @@ function getTeamIdFromRequest(request: FastifyRequest): string | null {
  * @example
  * // Require member or admin role (member can create)
  * fastify.post(
- *   "/teams/:teamId/epics",
+ *   "/teams/:teamId/projects",
  *   { preHandler: [authenticate, requireTeamAccess("teamId"), requireRole("member")] },
  *   async (request, reply) => { ... }
  * );
@@ -541,7 +541,7 @@ function getTeamIdFromRequest(request: FastifyRequest): string | null {
  * @example
  * // Guest can read (any role allowed)
  * fastify.get(
- *   "/teams/:teamId/epics",
+ *   "/teams/:teamId/projects",
  *   { preHandler: [authenticate, requireTeamAccess("teamId"), requireRole("guest")] },
  *   async (request, reply) => { ... }
  * );

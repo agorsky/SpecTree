@@ -10,24 +10,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateEpic, useUpdateEpic } from "@/hooks/queries/use-epics";
+import { useCreateProject, useUpdateProject } from "@/hooks/queries/use-projects";
 import { useAuthStore } from "@/stores/auth-store";
-import type { Epic } from "@/lib/api/types";
+import type { Project } from "@/lib/api/types";
 
-interface EpicFormProps {
+interface ProjectFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  epic?: Epic;
+  project?: Project;
 }
 
-export function EpicForm({ open, onOpenChange, epic }: EpicFormProps) {
-  const isEditing = !!epic;
-  const createEpic = useCreateEpic();
-  const updateEpic = useUpdateEpic();
+export function ProjectForm({ open, onOpenChange, project }: ProjectFormProps) {
+  const isEditing = !!project;
+  const createProject = useCreateProject();
+  const updateProject = useUpdateProject();
   const { user } = useAuthStore();
 
-  const [name, setName] = useState(epic?.name ?? "");
-  const [description, setDescription] = useState(epic?.description ?? "");
+  const [name, setName] = useState(project?.name ?? "");
+  const [description, setDescription] = useState(project?.description ?? "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,26 +36,26 @@ export function EpicForm({ open, onOpenChange, epic }: EpicFormProps) {
 
     try {
       if (isEditing) {
-        const updateData: Parameters<typeof updateEpic.mutateAsync>[0] = {
-          id: epic.id,
+        const updateData: Parameters<typeof updateProject.mutateAsync>[0] = {
+          id: project.id,
           name: name.trim(),
         };
         if (description.trim()) updateData.description = description.trim();
-        await updateEpic.mutateAsync(updateData);
+        await updateProject.mutateAsync(updateData);
       } else {
-        // Use the user's teamId for new epics
+        // Use the user's teamId for new projects
         // This assumes the user has a teamId - in a real app you might need team selection
         const teamId = user?.teamId;
         if (!teamId) {
           console.error("No team ID available");
           return;
         }
-        const createData: Parameters<typeof createEpic.mutateAsync>[0] = {
+        const createData: Parameters<typeof createProject.mutateAsync>[0] = {
           name: name.trim(),
           teamId,
         };
         if (description.trim()) createData.description = description.trim();
-        await createEpic.mutateAsync(createData);
+        await createProject.mutateAsync(createData);
       }
       onOpenChange(false);
       resetForm();
@@ -69,7 +69,7 @@ export function EpicForm({ open, onOpenChange, epic }: EpicFormProps) {
     setDescription("");
   };
 
-  const isPending = createEpic.isPending || updateEpic.isPending;
+  const isPending = createProject.isPending || updateProject.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -77,7 +77,7 @@ export function EpicForm({ open, onOpenChange, epic }: EpicFormProps) {
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
-              {isEditing ? "Edit Epic" : "New Epic"}
+              {isEditing ? "Edit Project" : "New Project"}
             </DialogTitle>
           </DialogHeader>
 
@@ -88,7 +88,7 @@ export function EpicForm({ open, onOpenChange, epic }: EpicFormProps) {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Epic name"
+                placeholder="Project name"
                 required
               />
             </div>
@@ -114,7 +114,7 @@ export function EpicForm({ open, onOpenChange, epic }: EpicFormProps) {
               Cancel
             </Button>
             <Button type="submit" disabled={isPending || !name.trim()}>
-              {isPending ? "Saving..." : isEditing ? "Save Changes" : "Create Epic"}
+              {isPending ? "Saving..." : isEditing ? "Save Changes" : "Create Project"}
             </Button>
           </DialogFooter>
         </form>
