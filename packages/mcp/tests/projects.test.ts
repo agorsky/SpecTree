@@ -16,6 +16,7 @@ const { mockApiClient } = vi.hoisted(() => {
     createProject: vi.fn(),
     getTeam: vi.fn(),
     listFeatures: vi.fn(),
+    listPersonalProjects: vi.fn(),
   };
   return { mockApiClient };
 });
@@ -57,12 +58,18 @@ describe("MCP Projects Tools", () => {
 
     it("should list projects", async () => {
       const mockProjects = [
-        { id: "proj-1", name: "Project Alpha" },
-        { id: "proj-2", name: "Project Beta" },
+        { id: "proj-1", name: "Project Alpha", createdAt: "2026-01-10T00:00:00Z", updatedAt: "2026-01-10T00:00:00Z" },
+        { id: "proj-2", name: "Project Beta", createdAt: "2026-01-11T00:00:00Z", updatedAt: "2026-01-11T00:00:00Z" },
       ];
 
       mockApiClient.listProjects.mockResolvedValue({
         data: mockProjects,
+        meta: { cursor: null, hasMore: false },
+      });
+
+      // Need to mock personal projects too since default scope is "all"
+      mockApiClient.listPersonalProjects.mockResolvedValue({
+        data: [],
         meta: { cursor: null, hasMore: false },
       });
 

@@ -484,3 +484,130 @@ export async function createTestWorkflow(options?: {
 export function resetFactoryCounter(): void {
   counter = 0;
 }
+
+// =============================================================================
+// Invitation Factory Functions
+// =============================================================================
+
+export interface InvitationInput {
+  email: string;
+  code?: string;
+  createdBy: string;
+  expiresAt?: Date;
+  usedAt?: Date | null;
+}
+
+/**
+ * Generates an 8-character invitation code using unambiguous characters.
+ * Mimics the production code generation for test consistency.
+ */
+function generateTestInviteCode(): string {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+/**
+ * Creates a test invitation in the database.
+ *
+ * @param createdBy - The ID of the admin user creating the invitation
+ * @param overrides - Optional fields to override defaults
+ * @returns The created UserInvitation entity
+ *
+ * @example
+ * const invitation = await createTestInvitation(admin.id);
+ * const customInvitation = await createTestInvitation(admin.id, {
+ *   email: 'custom@toro.com',
+ *   expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+ * });
+ */
+export async function createTestInvitation(
+  createdBy: string,
+  overrides?: Partial<Omit<InvitationInput, "createdBy">>
+) {
+  const prisma = getTestPrisma();
+
+  const defaults = {
+    email: `invite-${uniqueId()}@toro.com`,
+    code: generateTestInviteCode(),
+    createdBy,
+    expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000), // 72 hours from now
+    usedAt: null,
+  };
+
+  const data = { ...defaults, ...overrides };
+
+  return prisma.userInvitation.create({ data });
+}
+
+/**
+ * Creates an expired test invitation.
+ *
+ * @param createdBy - The ID of the admin user creating the invitation
+ * @param email - Optional email override
+ * @returns The created expired invitation
+ *
+ * @example
+ * const expired = await createExpiredTestInvitation(admin.id);
+ */
+export async function createExpiredTestInvitation(
+  createdBy: string,
+  email?: string
+) {
+  return createTestInvitation(createdBy, {
+    email: email ?? `expired-${uniqueId()}@toro.com`,
+    expiresAt: new Date(Date.now() - 1000), // 1 second in the past
+  });
+}
+
+/**
+ * Creates a used (already activated) test invitation.
+ *
+ * @param createdBy - The ID of the admin user creating the invitation
+ * @param email - Optional email override
+ * @returns The created used invitation
+ *
+ * @example
+ * const used = await createUsedTestInvitation(admin.id);
+ */
+export async function createUsedTestInvitation(
+  createdBy: string,
+  email?: string
+) {
+  return createTestInvitation(createdBy, {
+    email: email ?? `used-${uniqueId()}@toro.com`,
+    usedAt: new Date(),
+  });
+}
+
+/**
+ * Creates a global admin user for testing admin-only operations.
+ *
+ * @param overrides - Optional fields to override defaults
+ * @returns The created global admin User entity
+ *
+ * @example
+ * const admin = await createTestGlobalAdmin();
+ * const invitation = await createTestInvitation(admin.id);
+ */
+export async function createTestGlobalAdmin(
+  overrides?: Partial<UserInput>
+): Promise<User> {
+  const prisma = getTestPrisma();
+
+  const defaults: UserInput & { isGlobalAdmin: boolean } = {
+    email: `admin-${uniqueId()}@toro.com`,
+    name: "Test Admin",
+    passwordHash: "$2b$10$hashedpasswordfortesting123456789",
+    avatarUrl: null,
+    isActive: true,
+    isGlobalAdmin: true,
+  };
+
+  const data = { ...defaults, ...overrides };
+
+  return prisma.user.create({ data });
+}

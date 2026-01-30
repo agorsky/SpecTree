@@ -3,6 +3,8 @@
  *
  * Provides tools for listing, retrieving, and creating projects in SpecTree.
  * Uses HTTP API client for all operations.
+ * 
+ * Supports both team-scoped and personal-scoped projects via the scope parameter.
  */
 
 import { z } from "zod";
@@ -51,15 +53,26 @@ export function registerProjectTools(server: McpServer): void {
       description:
         "List projects in the user's SpecTree workspace. Returns paginated results " +
         "with project metadata including team information and feature counts. " +
-        "Supports filtering by team and cursor-based pagination. Projects are " +
-        "ordered by sort order then creation date (newest first).",
+        "Supports filtering by team, scope, and cursor-based pagination. Projects are " +
+        "ordered by sort order then creation date (newest first). " +
+        "Use scope='personal' to list only personal projects, scope='team' for team projects only, " +
+        "or scope='all' (default) for all accessible projects.",
       inputSchema: {
+        scope: z
+          .enum(["personal", "team", "all"])
+          .optional()
+          .describe(
+            "Filter by scope. 'personal' returns only projects in the user's personal scope, " +
+            "'team' returns only team-scoped projects, 'all' (default) returns both. " +
+            "When 'personal' is specified, the 'team' filter is ignored."
+          ),
         team: z
           .string()
           .optional()
           .describe(
             "Filter by team. Accepts team ID (UUID), name, or key " +
-            "(e.g., 'Engineering', 'ENG', or '550e8400-e29b-41d4-a716-446655440000')"
+            "(e.g., 'Engineering', 'ENG', or '550e8400-e29b-41d4-a716-446655440000'). " +
+            "Only applies when scope is 'team' or 'all'."
           ),
         includeArchived: z
           .boolean()
@@ -90,8 +103,39 @@ export function registerProjectTools(server: McpServer): void {
     async (input) => {
       try {
         const apiClient = getApiClient();
+        const requestedScope = input.scope ?? "all";
 
-        // Resolve team if provided
+        // Handle personal scope requests
+        if (requestedScope === "personal") {
+          const result = await apiClient.listPersonalProjects({
+            limit: input.limit,
+            cursor: input.cursor,
+          });
+
+          // Transform response to expected format
+          const projects = result.data.map((p) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            icon: p.icon,
+            color: p.color,
+            sortOrder: p.sortOrder,
+            isArchived: p.isArchived,
+            scope: "personal" as const,
+            personalScopeId: p.personalScopeId,
+            team: null,
+            featureCount: p._count?.features ?? 0,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+          }));
+
+          return createResponse({
+            projects,
+            meta: result.meta,
+          });
+        }
+
+        // Handle team scope requests (team-only or all)
         let teamId: string | undefined;
         if (input.team) {
           const resolvedTeamId = await resolveTeamId(input.team);
@@ -101,15 +145,15 @@ export function registerProjectTools(server: McpServer): void {
           teamId = resolvedTeamId;
         }
 
-        const result = await apiClient.listProjects({
+        const teamResult = await apiClient.listProjects({
           team: teamId,
           includeArchived: input.includeArchived,
           limit: input.limit,
           cursor: input.cursor,
         });
 
-        // Transform response to expected format
-        const projects = result.data.map((p) => ({
+        // Transform team projects
+        const teamProjects = teamResult.data.map((p) => ({
           id: p.id,
           name: p.name,
           description: p.description,
@@ -117,15 +161,59 @@ export function registerProjectTools(server: McpServer): void {
           color: p.color,
           sortOrder: p.sortOrder,
           isArchived: p.isArchived,
+          scope: "team" as const,
           team: p.team,
           featureCount: p._count?.features ?? 0,
           createdAt: p.createdAt,
           updatedAt: p.updatedAt,
         }));
 
+        // For team-only scope, return just team projects
+        if (requestedScope === "team") {
+          return createResponse({
+            projects: teamProjects,
+            meta: teamResult.meta,
+          });
+        }
+
+        // For "all" scope, also include personal projects
+        // Note: This is a simplified implementation - in production you'd want
+        // more sophisticated cursor handling for combined results
+        const personalResult = await apiClient.listPersonalProjects({
+          limit: input.limit,
+        });
+
+        const personalProjects = personalResult.data.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          icon: p.icon,
+          color: p.color,
+          sortOrder: p.sortOrder,
+          isArchived: p.isArchived,
+          scope: "personal" as const,
+          personalScopeId: p.personalScopeId,
+          team: null,
+          featureCount: p._count?.features ?? 0,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+        }));
+
+        // Combine and sort by creation date
+        const allProjects = [...personalProjects, ...teamProjects].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        // Apply limit
+        const limitedProjects = allProjects.slice(0, input.limit ?? 20);
+
         return createResponse({
-          projects,
-          meta: result.meta,
+          projects: limitedProjects,
+          meta: {
+            // For combined results, indicate if either source has more
+            hasMore: teamResult.meta.hasMore || personalResult.meta.hasMore,
+            cursor: teamResult.meta.cursor, // Use team cursor for pagination
+          },
         });
       } catch (error) {
         return createErrorResponse(error);
@@ -141,9 +229,10 @@ export function registerProjectTools(server: McpServer): void {
     {
       description:
         "Get detailed information about a specific project by ID or name. " +
-        "Returns the full project object including team information, metadata, " +
+        "Returns the full project object including scope information (team or personal), metadata, " +
         "and a list of all features in the project. Features are ordered by " +
-        "sort order then creation date (newest first). Only returns non-archived projects.",
+        "sort order then creation date (newest first). Only returns non-archived projects. " +
+        "Works for both team-scoped and personal-scoped projects.",
       inputSchema: {
         query: z
           .string()
@@ -207,9 +296,10 @@ export function registerProjectTools(server: McpServer): void {
     "spectree__create_project",
     {
       description:
-        "Create a new project in SpecTree. A project is a container for features " +
+        "Create a new team-scoped project in SpecTree. A project is a container for features " +
         "and must belong to a team. Returns the created project with all metadata " +
-        "including the assigned team information and initial feature count (0).",
+        "including the assigned team information and initial feature count (0). " +
+        "For creating personal projects, use spectree__create_personal_project instead.",
       inputSchema: {
         name: z
           .string()

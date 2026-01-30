@@ -14,6 +14,7 @@ import { registerTaskTools } from "./tasks.js";
 import { registerStatusTools } from "./statuses.js";
 import { registerOrderingTools } from "./ordering.js";
 import { registerSearchTools } from "./search.js";
+import { registerPersonalTools } from "./personal.js";
 
 // Tool registration function type
 export type ToolRegistrar = (server: McpServer) => void;
@@ -26,6 +27,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerStatusTools,
   registerOrderingTools,
   registerSearchTools,
+  registerPersonalTools,
 ];
 
 /**

@@ -1,17 +1,26 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import bcrypt from "bcrypt";
-import { getUserByEmailWithPassword } from "../services/userService.js";
+import {
+  getUserByEmail,
+  createUser,
+  getUserByEmailWithPassword,
+} from "../services/userService.js";
+import {
+  validateAndUseInvitation,
+} from "../services/invitationService.js";
 import {
   generateAccessToken,
   generateRefreshToken,
   verifyTokenWithType,
 } from "../utils/jwt.js";
-import { UnauthorizedError, ForbiddenError } from "../errors/index.js";
+import { UnauthorizedError, ForbiddenError, ConflictError, ValidationError } from "../errors/index.js";
 import {
   loginSchema,
   refreshSchema,
+  activateAccountSchema,
   type LoginInput,
   type RefreshInput,
+  type ActivateAccountInput,
 } from "../schemas/auth.js";
 import { authenticate } from "../middleware/authenticate.js";
 
@@ -130,6 +139,83 @@ export default async function authRoutes(
 
       return reply.status(200).send({
         message: "Logged out successfully",
+      });
+    }
+  );
+
+  /**
+   * POST /api/v1/auth/activate
+   * Activate a new account using an invitation code
+   * Public endpoint with rate limiting
+   */
+  fastify.post<{ Body: ActivateAccountInput }>(
+    "/activate",
+    {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "15 minutes",
+          keyGenerator: (request: { ip: string }) => request.ip,
+          errorResponseBuilder: () => ({
+            statusCode: 429,
+            error: "Too Many Requests",
+            message: "Too many activation attempts. Please try again in 15 minutes.",
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      // Validate request body
+      const parseResult = activateAccountSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        const errors = parseResult.error.errors.reduce(
+          (acc, e) => {
+            acc[e.path.join(".")] = e.message;
+            return acc;
+          },
+          {} as Record<string, string>
+        );
+        throw new ValidationError("Invalid request", errors);
+      }
+
+      const { email, code, name, password } = parseResult.data;
+
+      // 1. Validate and consume invitation
+      const invitation = await validateAndUseInvitation(email, code);
+
+      // 2. Check email not already taken (race condition protection)
+      const existingUser = await getUserByEmail(email);
+      if (existingUser) {
+        throw new ConflictError("An account with this email already exists");
+      }
+
+      // 3. Create user
+      const user = await createUser({
+        email,
+        name,
+        password,
+      });
+
+      // 4. Generate tokens
+      const accessToken = generateAccessToken(user.id);
+      const refreshToken = generateRefreshToken(user.id);
+
+      // 5. Log activation event
+      request.log.info(
+        { email, userId: user.id, invitationId: invitation.id },
+        "Account activated"
+      );
+
+      return reply.status(201).send({
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        },
+        tokens: {
+          accessToken,
+          refreshToken,
+        },
       });
     }
   );

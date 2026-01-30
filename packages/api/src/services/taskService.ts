@@ -14,6 +14,7 @@ import {
   getDefaultBacklogStatus,
 } from "./statusService.js";
 import { emitStatusChanged } from "../events/index.js";
+import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
 
 // Types for task operations
 export interface CreateTaskInput {
@@ -117,6 +118,7 @@ async function generateIdentifier(featureId: string): Promise<string> {
 /**
  * List tasks with cursor-based pagination
  * Ordered by sortOrder (asc), then createdAt (desc)
+ * When currentUserId is provided, filters to only show tasks in accessible scopes
  */
 export async function listTasks(
   options: ListTasksOptions = {}
@@ -147,7 +149,12 @@ export async function listTasks(
   // Build where clause conditionally to avoid undefined values
   const whereClause: {
     featureId?: string;
-    feature?: { projectId: string };
+    feature?: {
+      projectId?: string;
+      project?: {
+        OR?: Array<{ teamId?: { in: string[] }; personalScopeId?: string }>;
+      };
+    };
     statusId?: string | { in: string[] };
     assigneeId?: string | null;
     createdAt?: { gte?: Date; lt?: Date };
@@ -158,13 +165,43 @@ export async function listTasks(
     }[];
   } = {};
 
+  // Apply scope-based filtering when currentUserId is provided
+  if (options.currentUserId) {
+    const accessibleScopes = await getAccessibleScopes(options.currentUserId);
+
+    // If user has no accessible scopes, return empty result
+    if (!hasAccessibleScopes(accessibleScopes)) {
+      return {
+        data: [],
+        meta: { cursor: null, hasMore: false },
+      };
+    }
+
+    // Build OR clause for projects in accessible scopes (via feature → project)
+    const scopeConditions: Array<{ teamId?: { in: string[] }; personalScopeId?: string }> = [];
+
+    if (accessibleScopes.teamIds.length > 0) {
+      scopeConditions.push({ teamId: { in: accessibleScopes.teamIds } });
+    }
+    if (accessibleScopes.personalScopeId) {
+      scopeConditions.push({ personalScopeId: accessibleScopes.personalScopeId });
+    }
+
+    whereClause.feature = { project: { OR: scopeConditions } };
+  }
+
   if (options.featureId !== undefined) {
     whereClause.featureId = options.featureId;
   }
 
   // Filter by project (returns tasks across all features in the project)
   if (options.projectId !== undefined) {
-    whereClause.feature = { projectId: options.projectId };
+    // Merge with existing feature filter if scope filtering applied
+    if (whereClause.feature) {
+      whereClause.feature.projectId = options.projectId;
+    } else {
+      whereClause.feature = { projectId: options.projectId };
+    }
   }
 
   // Handle status filtering (supports statusId, status name/array, and statusCategory)
@@ -323,7 +360,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     if (!status) {
       throw new NotFoundError(`Status with id '${statusId}' not found`);
     }
-  } else {
+  } else if (feature.project.teamId) {
     // Default to Backlog status for the team
     const backlogStatus = await getDefaultBacklogStatus(feature.project.teamId);
     if (backlogStatus) {

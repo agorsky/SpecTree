@@ -62,7 +62,7 @@ export default async function projectsRoutes(
     "/",
     { preHandler: [authenticate] },
     async (request, reply) => {
-      const options: { cursor?: string; limit?: number; teamId?: string } = {};
+      const options: { cursor?: string; limit?: number; teamId?: string; currentUserId?: string } = {};
       if (request.query.cursor) {
         options.cursor = request.query.cursor;
       }
@@ -71,6 +71,10 @@ export default async function projectsRoutes(
       }
       if (request.query.teamId) {
         options.teamId = request.query.teamId;
+      }
+      // Always pass currentUserId for scope-based filtering
+      if (request.user?.id) {
+        options.currentUserId = request.user.id;
       }
 
       const result = await listProjects(options);

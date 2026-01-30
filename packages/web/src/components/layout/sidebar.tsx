@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
-import { Inbox, Folder, Users, Settings, LogOut } from "lucide-react";
+import { Inbox, Folder, Users, Settings, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,11 +10,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 
 const navItems = [
   { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/projects", label: "Projects", icon: Folder },
   { href: "/teams", label: "Teams", icon: Users },
+];
+
+const adminNavItems = [
+  { href: "/admin/users", label: "User Management", icon: Shield },
 ];
 
 export function Sidebar() {
@@ -49,6 +54,32 @@ export function Sidebar() {
             {item.label}
           </Link>
         ))}
+
+        {/* Admin Section */}
+        {user?.isGlobalAdmin && (
+          <>
+            <Separator className="my-2" />
+            <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Admin
+            </p>
+            {adminNavItems.map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                  location.pathname === item.href ||
+                    location.pathname.startsWith(item.href + "/")
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            ))}
+          </>
+        )}
       </nav>
 
       {/* User menu */}

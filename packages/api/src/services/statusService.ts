@@ -1,6 +1,7 @@
 import { prisma } from "../lib/db.js";
 import type { Status } from "../generated/prisma/index.js";
 import { NotFoundError, ConflictError, ValidationError } from "../errors/index.js";
+import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
 
 // Valid StatusCategory values
 const VALID_CATEGORIES = ["backlog", "unstarted", "started", "completed", "canceled"] as const;
@@ -24,6 +25,8 @@ export interface UpdateStatusInput {
 
 export interface ListStatusesOptions {
   teamId?: string | undefined;
+  /** Current user ID - when provided, filters to only show statuses in accessible scopes */
+  currentUserId?: string | undefined;
 }
 
 /**
@@ -35,12 +38,41 @@ function isValidCategory(category: string): category is StatusCategory {
 
 /**
  * List statuses with optional team filter, ordered by position
+ * When currentUserId is provided, filters to only show statuses in accessible scopes
  */
 export async function listStatuses(
   options: ListStatusesOptions = {}
 ): Promise<Status[]> {
-  const where: { teamId?: string } = {};
+  const where: {
+    teamId?: string;
+    OR?: Array<{ teamId?: { in: string[] }; personalScopeId?: string | { in: string[] } }>;
+  } = {};
+
+  // Apply scope-based filtering when currentUserId is provided
+  if (options.currentUserId) {
+    const accessibleScopes = await getAccessibleScopes(options.currentUserId);
+
+    // If user has no accessible scopes, return empty result
+    if (!hasAccessibleScopes(accessibleScopes)) {
+      return [];
+    }
+
+    // Build OR clause for accessible scopes
+    const scopeConditions: Array<{ teamId?: { in: string[] }; personalScopeId?: string }> = [];
+
+    if (accessibleScopes.teamIds.length > 0) {
+      scopeConditions.push({ teamId: { in: accessibleScopes.teamIds } });
+    }
+    if (accessibleScopes.personalScopeId) {
+      scopeConditions.push({ personalScopeId: accessibleScopes.personalScopeId });
+    }
+
+    where.OR = scopeConditions;
+  }
+
+  // If teamId filter is provided, apply it (overrides scope filter for specific team queries)
   if (options.teamId !== undefined) {
+    delete where.OR;
     where.teamId = options.teamId;
   }
 

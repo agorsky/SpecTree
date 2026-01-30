@@ -28,6 +28,13 @@ vi.mock('../../src/lib/db.js', () => ({
 vi.mock('../../src/services/statusService.js', () => ({
   resolveStatusesToIds: vi.fn().mockResolvedValue(['status-1']),
   getStatusIdsByCategory: vi.fn().mockResolvedValue(['status-1', 'status-2']),
+  getDefaultBacklogStatus: vi.fn().mockResolvedValue({ id: 'backlog-status-id', name: 'Backlog' }),
+}));
+
+// Mock scope context utility
+vi.mock('../../src/utils/scopeContext.js', () => ({
+  getAccessibleScopes: vi.fn().mockResolvedValue({ personalScopeIds: [], teamIds: [] }),
+  hasAccessibleScopes: vi.fn().mockReturnValue(false),
 }));
 
 // Mock assignee utility
@@ -62,7 +69,8 @@ import {
   updateTask,
   deleteTask,
 } from '../../src/services/taskService.js';
-import { resolveStatusesToIds, getStatusIdsByCategory } from '../../src/services/statusService.js';
+import { resolveStatusesToIds, getStatusIdsByCategory, getDefaultBacklogStatus } from '../../src/services/statusService.js';
+import { getAccessibleScopes, hasAccessibleScopes } from '../../src/utils/scopeContext.js';
 import { resolveAssigneeId, isAssigneeNone, isAssigneeInvalid } from '../../src/utils/assignee.js';
 import { generateSortOrderBetween } from '../../src/utils/ordering.js';
 import { emitStatusChanged } from '../../src/events/index.js';
@@ -89,10 +97,10 @@ describe('taskService', () => {
       expect(prisma.task.findMany).toHaveBeenCalledWith({
         take: 21,
         where: {},
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+        orderBy: [{ sortOrder: 'asc' }, { identifier: 'asc' }],
         include: {
-          assignee: true,
           status: true,
+          assignee: true,
           feature: {
             select: {
               id: true,
@@ -183,13 +191,15 @@ describe('taskService', () => {
 
     it('should filter by assignee using resolveAssigneeId', async () => {
       vi.mocked(prisma.task.findMany).mockResolvedValue([]);
+      vi.mocked(hasAccessibleScopes).mockReturnValueOnce(true);
+      vi.mocked(getAccessibleScopes).mockResolvedValueOnce({ personalScopeId: 'ps-1', teamIds: ['team-1'] });
 
       await listTasks({ assignee: 'user@test.com', currentUserId: 'current-user' });
 
       expect(resolveAssigneeId).toHaveBeenCalledWith('user@test.com', 'current-user');
       expect(prisma.task.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { assigneeId: 'user-123' },
+          where: expect.objectContaining({ assigneeId: 'user-123' }),
         })
       );
     });
@@ -334,6 +344,7 @@ describe('taskService', () => {
       vi.mocked(prisma.feature.findUnique).mockResolvedValue({
         id: 'feat-123',
         identifier: 'COM-5',
+        project: { teamId: 'team-123' },
       } as any);
       // Mock findMany to return existing tasks for identifier generation
       vi.mocked(prisma.task.findMany).mockResolvedValue([
@@ -349,6 +360,7 @@ describe('taskService', () => {
         title: 'New Task',
         identifier: 'COM-5-3',
         sortOrder: 1.0,
+        statusId: 'backlog-status-id',
       };
       vi.mocked(prisma.task.create).mockResolvedValue(mockTask as any);
 
@@ -364,6 +376,7 @@ describe('taskService', () => {
           featureId: 'feat-123',
           identifier: 'COM-5-3',
           sortOrder: 1.0,
+          statusId: 'backlog-status-id', // Auto-assigned backlog status
         },
       });
     });
@@ -599,6 +612,7 @@ describe('taskService', () => {
       vi.mocked(prisma.feature.findUnique).mockResolvedValue({
         id: 'feat-123',
         identifier: 'DEV-42',
+        project: { teamId: 'team-123' },
       } as any);
       // Mock findMany to return existing tasks with identifiers
       vi.mocked(prisma.task.findMany).mockResolvedValue([
@@ -628,6 +642,7 @@ describe('taskService', () => {
       vi.mocked(prisma.feature.findUnique).mockResolvedValue({
         id: 'feat-123',
         identifier: 'API-1',
+        project: { teamId: 'team-123' },
       } as any);
       // Mock findMany to return empty array (no existing tasks)
       vi.mocked(prisma.task.findMany).mockResolvedValue([]);

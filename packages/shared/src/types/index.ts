@@ -2,6 +2,11 @@
  * Common type definitions shared across packages
  */
 
+// Domain types
+export * from "./user.js";
+export * from "./auth.js";
+export * from "./invitation.js";
+
 /**
  * Result type for operations that can fail
  */

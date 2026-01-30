@@ -1,5 +1,8 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../lib/db.js";
+import { createPersonalScope } from "./personalScopeService.js";
+import { getTeamsWhereUserIsLastAdmin } from "./membershipService.js";
+import { ForbiddenError } from "../errors/index.js";
 
 const SALT_ROUNDS = 10;
 
@@ -131,46 +134,28 @@ export async function emailExists(email: string, excludeId?: string): Promise<bo
 
 /**
  * Create a new user
- * Automatically adds the user to all existing teams as a member
+ * Automatically provisions a PersonalScope for the new user.
+ * Users must be invited to teams (no auto-join).
  */
 export async function createUser(input: CreateUserInput): Promise<UserResponse> {
   const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
 
-  // Create user and add to all existing teams in a transaction
-  const user = await prisma.$transaction(async (tx) => {
-    // Create the user
-    const newUser = await tx.user.create({
-      data: {
-        email: input.email,
-        name: input.name,
-        passwordHash,
-        avatarUrl: input.avatarUrl ?? null,
-      },
-      select: {
-        ...userSelectFields,
-        id: true,
-      },
-    });
-
-    // Get all existing teams
-    const teams = await tx.team.findMany({
-      where: { isArchived: false },
-      select: { id: true },
-    });
-
-    // Add user to all teams as member
-    if (teams.length > 0) {
-      await tx.membership.createMany({
-        data: teams.map((team) => ({
-          userId: newUser.id,
-          teamId: team.id,
-          role: "member",
-        })),
-      });
-    }
-
-    return newUser;
+  // Create user
+  const user = await prisma.user.create({
+    data: {
+      email: input.email,
+      name: input.name,
+      passwordHash,
+      avatarUrl: input.avatarUrl ?? null,
+    },
+    select: {
+      ...userSelectFields,
+      id: true,
+    },
   });
+
+  // Create PersonalScope for the new user (with default statuses)
+  await createPersonalScope(user.id);
 
   return user;
 }
@@ -221,8 +206,25 @@ export async function updateUser(
 
 /**
  * Soft delete a user (set isActive = false)
+ * 
+ * GUARDRAIL: Cannot delete a user if they are the last admin of any team.
+ * This prevents orphaning teams without administrators.
  */
 export async function softDeleteUser(id: string): Promise<UserResponse | null> {
+  // GUARDRAIL: Check if user is the last admin of any team
+  const lastAdminTeams = await getTeamsWhereUserIsLastAdmin(id);
+  if (lastAdminTeams.length > 0) {
+    // Get team names for a more helpful error message
+    const teams = await prisma.team.findMany({
+      where: { id: { in: lastAdminTeams } },
+      select: { name: true },
+    });
+    const teamNames = teams.map((t) => t.name).join(", ");
+    throw new ForbiddenError(
+      `Cannot delete user who is the last admin of team(s): ${teamNames}. Promote another member to admin first.`
+    );
+  }
+
   try {
     return await prisma.user.update({
       where: { id },

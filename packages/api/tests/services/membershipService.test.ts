@@ -9,6 +9,7 @@ vi.mock('../../src/lib/db.js', () => ({
       findMany: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      count: vi.fn(),
     },
     team: {
       findUnique: vi.fn(),
@@ -28,8 +29,10 @@ import {
   listUserTeams,
   isValidRole,
   VALID_ROLES,
+  isLastAdmin,
+  getTeamsWhereUserIsLastAdmin,
 } from '../../src/services/membershipService.js';
-import { NotFoundError, ConflictError, ValidationError } from '../../src/errors/index.js';
+import { NotFoundError, ConflictError, ValidationError, ForbiddenError } from '../../src/errors/index.js';
 
 describe('membershipService', () => {
   beforeEach(() => {
@@ -503,8 +506,9 @@ describe('membershipService', () => {
       result = await updateMemberRole('team-123', 'user-123', { role: 'guest' });
       expect(result.role).toBe('guest');
 
-      // admin -> member (set mock)
+      // admin -> member (set mock) - needs count mock for guardrail
       vi.mocked(prisma.membership.findUnique).mockResolvedValue({ id: 'mem-123', role: 'admin' } as any);
+      vi.mocked(prisma.membership.count).mockResolvedValue(2); // Not the last admin
       result = await updateMemberRole('team-123', 'user-123', { role: 'member' });
       expect(result.role).toBe('member');
 
@@ -512,6 +516,216 @@ describe('membershipService', () => {
       vi.mocked(prisma.membership.findUnique).mockResolvedValue({ id: 'mem-123', role: 'guest' } as any);
       result = await updateMemberRole('team-123', 'user-123', { role: 'admin' });
       expect(result.role).toBe('admin');
+    });
+  });
+
+  describe('isLastAdmin', () => {
+    it('should return true when user is the only admin', async () => {
+      vi.mocked(prisma.membership.count).mockResolvedValue(1);
+      vi.mocked(prisma.membership.findUnique).mockResolvedValue({
+        id: 'mem-123',
+        userId: 'user-123',
+        teamId: 'team-123',
+        role: 'admin',
+      } as any);
+
+      const result = await isLastAdmin('team-123', 'user-123');
+      expect(result).toBe(true);
+    });
+
+    it('should return false when there are multiple admins', async () => {
+      vi.mocked(prisma.membership.count).mockResolvedValue(2);
+
+      const result = await isLastAdmin('team-123', 'user-123');
+      expect(result).toBe(false);
+    });
+
+    it('should return false when user is not an admin', async () => {
+      vi.mocked(prisma.membership.count).mockResolvedValue(1);
+      vi.mocked(prisma.membership.findUnique).mockResolvedValue({
+        id: 'mem-123',
+        role: 'member',
+      } as any);
+
+      const result = await isLastAdmin('team-123', 'user-123');
+      expect(result).toBe(false);
+    });
+
+    it('should return false when there are no admins at all', async () => {
+      vi.mocked(prisma.membership.count).mockResolvedValue(0);
+
+      const result = await isLastAdmin('team-123', 'user-123');
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('getTeamsWhereUserIsLastAdmin', () => {
+    it('should return empty array when user is not admin of any team', async () => {
+      vi.mocked(prisma.membership.findMany).mockResolvedValue([]);
+
+      const result = await getTeamsWhereUserIsLastAdmin('user-123');
+      expect(result).toEqual([]);
+    });
+
+    it('should return team IDs where user is the last admin', async () => {
+      vi.mocked(prisma.membership.findMany).mockResolvedValue([
+        { teamId: 'team-1' },
+        { teamId: 'team-2' },
+      ] as any);
+      vi.mocked(prisma.membership.count)
+        .mockResolvedValueOnce(1) // team-1: only one admin (user)
+        .mockResolvedValueOnce(2); // team-2: two admins
+
+      const result = await getTeamsWhereUserIsLastAdmin('user-123');
+      expect(result).toEqual(['team-1']);
+    });
+
+    it('should return multiple team IDs when user is last admin of multiple teams', async () => {
+      vi.mocked(prisma.membership.findMany).mockResolvedValue([
+        { teamId: 'team-1' },
+        { teamId: 'team-2' },
+        { teamId: 'team-3' },
+      ] as any);
+      vi.mocked(prisma.membership.count)
+        .mockResolvedValueOnce(1) // team-1: only one admin
+        .mockResolvedValueOnce(1) // team-2: only one admin
+        .mockResolvedValueOnce(3); // team-3: three admins
+
+      const result = await getTeamsWhereUserIsLastAdmin('user-123');
+      expect(result).toEqual(['team-1', 'team-2']);
+    });
+  });
+
+  describe('last-admin guardrails', () => {
+    describe('updateMemberRole guardrail', () => {
+      beforeEach(() => {
+        vi.mocked(prisma.team.findUnique).mockResolvedValue({
+          id: 'team-123',
+          isArchived: false,
+        } as any);
+      });
+
+      it('should throw ForbiddenError when demoting the last admin', async () => {
+        vi.mocked(prisma.membership.findUnique).mockResolvedValue({
+          id: 'mem-123',
+          userId: 'user-123',
+          teamId: 'team-123',
+          role: 'admin',
+        } as any);
+        vi.mocked(prisma.membership.count).mockResolvedValue(1); // Only one admin
+
+        await expect(updateMemberRole('team-123', 'user-123', { role: 'member' }))
+          .rejects.toThrow(ForbiddenError);
+        
+        await expect(updateMemberRole('team-123', 'user-123', { role: 'member' }))
+          .rejects.toThrow('Cannot demote the last admin');
+      });
+
+      it('should allow demoting admin when there are multiple admins', async () => {
+        vi.mocked(prisma.membership.findUnique).mockResolvedValue({
+          id: 'mem-123',
+          role: 'admin',
+        } as any);
+        vi.mocked(prisma.membership.count).mockResolvedValue(2); // Multiple admins
+        vi.mocked(prisma.membership.update).mockResolvedValue({
+          id: 'mem-123',
+          role: 'member',
+        } as any);
+
+        const result = await updateMemberRole('team-123', 'user-123', { role: 'member' });
+        expect(result.role).toBe('member');
+      });
+
+      it('should allow promoting to admin regardless of current admin count', async () => {
+        vi.mocked(prisma.membership.findUnique).mockResolvedValue({
+          id: 'mem-123',
+          role: 'member',
+        } as any);
+        vi.mocked(prisma.membership.update).mockResolvedValue({
+          id: 'mem-123',
+          role: 'admin',
+        } as any);
+
+        const result = await updateMemberRole('team-123', 'user-123', { role: 'admin' });
+        expect(result.role).toBe('admin');
+        // count should not have been called since we're promoting, not demoting
+      });
+
+      it('should allow changing role from member to guest (not demotion from admin)', async () => {
+        vi.mocked(prisma.membership.findUnique).mockResolvedValue({
+          id: 'mem-123',
+          role: 'member',
+        } as any);
+        vi.mocked(prisma.membership.update).mockResolvedValue({
+          id: 'mem-123',
+          role: 'guest',
+        } as any);
+
+        const result = await updateMemberRole('team-123', 'user-123', { role: 'guest' });
+        expect(result.role).toBe('guest');
+      });
+    });
+
+    describe('removeMemberFromTeam guardrail', () => {
+      beforeEach(() => {
+        vi.mocked(prisma.team.findUnique).mockResolvedValue({
+          id: 'team-123',
+          isArchived: false,
+        } as any);
+      });
+
+      it('should throw ForbiddenError when removing the last admin', async () => {
+        vi.mocked(prisma.membership.findUnique).mockResolvedValue({
+          id: 'mem-123',
+          userId: 'user-123',
+          teamId: 'team-123',
+          role: 'admin',
+        } as any);
+        vi.mocked(prisma.membership.count).mockResolvedValue(1); // Only one admin
+
+        await expect(removeMemberFromTeam('team-123', 'user-123'))
+          .rejects.toThrow(ForbiddenError);
+        
+        await expect(removeMemberFromTeam('team-123', 'user-123'))
+          .rejects.toThrow('Cannot remove the last admin');
+      });
+
+      it('should allow removing admin when there are multiple admins', async () => {
+        vi.mocked(prisma.membership.findUnique).mockResolvedValue({
+          id: 'mem-123',
+          role: 'admin',
+        } as any);
+        vi.mocked(prisma.membership.count).mockResolvedValue(2); // Multiple admins
+        vi.mocked(prisma.membership.delete).mockResolvedValue({ id: 'mem-123' } as any);
+
+        await removeMemberFromTeam('team-123', 'user-123');
+        expect(prisma.membership.delete).toHaveBeenCalledWith({
+          where: { id: 'mem-123' },
+        });
+      });
+
+      it('should allow removing non-admin members regardless of admin count', async () => {
+        vi.mocked(prisma.membership.findUnique).mockResolvedValue({
+          id: 'mem-123',
+          role: 'member',
+        } as any);
+        vi.mocked(prisma.membership.delete).mockResolvedValue({ id: 'mem-123' } as any);
+
+        await removeMemberFromTeam('team-123', 'user-123');
+        expect(prisma.membership.delete).toHaveBeenCalled();
+        // count should not be called since user is not an admin
+      });
+
+      it('should allow removing guest regardless of admin count', async () => {
+        vi.mocked(prisma.membership.findUnique).mockResolvedValue({
+          id: 'mem-123',
+          role: 'guest',
+        } as any);
+        vi.mocked(prisma.membership.delete).mockResolvedValue({ id: 'mem-123' } as any);
+
+        await removeMemberFromTeam('team-123', 'user-123');
+        expect(prisma.membership.delete).toHaveBeenCalled();
+      });
     });
   });
 });
