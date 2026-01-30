@@ -138,29 +138,48 @@ describe('projectService', () => {
   });
 
   describe('getProjectById', () => {
+    const validUuid = '550e8400-e29b-41d4-a716-446655440000';
+
     it('should return project with feature count', async () => {
       const mockProject = {
-        id: 'proj-123',
+        id: validUuid,
         name: 'Test Project',
         _count: { features: 10 },
       };
-      vi.mocked(prisma.project.findUnique).mockResolvedValue(mockProject as any);
+      vi.mocked(prisma.project.findFirst).mockResolvedValue(mockProject as any);
 
-      const result = await getProjectById('proj-123');
+      const result = await getProjectById(validUuid);
 
       expect(result).toEqual(mockProject);
-      expect(prisma.project.findUnique).toHaveBeenCalledWith({
-        where: { id: 'proj-123', isArchived: false },
+      expect(prisma.project.findFirst).toHaveBeenCalledWith({
+        where: { id: validUuid, isArchived: false },
         include: { _count: { select: { features: true } } },
       });
     });
 
     it('should return null when project not found', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.project.findFirst).mockResolvedValue(null);
 
       const result = await getProjectById('nonexistent');
 
       expect(result).toBeNull();
+    });
+
+    it('should lookup by name when not a UUID', async () => {
+      const mockProject = {
+        id: validUuid,
+        name: 'My Project',
+        _count: { features: 5 },
+      };
+      vi.mocked(prisma.project.findFirst).mockResolvedValue(mockProject as any);
+
+      const result = await getProjectById('My Project');
+
+      expect(result).toEqual(mockProject);
+      expect(prisma.project.findFirst).toHaveBeenCalledWith({
+        where: { name: 'My Project', isArchived: false },
+        include: { _count: { select: { features: true } } },
+      });
     });
   });
 
@@ -302,7 +321,7 @@ describe('projectService', () => {
 
   describe('updateProject', () => {
     beforeEach(() => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({
+      vi.mocked(prisma.project.findFirst).mockResolvedValue({
         id: 'proj-123',
         name: 'Original Name',
         isArchived: false,
@@ -365,14 +384,14 @@ describe('projectService', () => {
     });
 
     it('should throw NotFoundError when project does not exist', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.project.findFirst).mockResolvedValue(null);
 
       await expect(updateProject('nonexistent', { name: 'Test' }))
         .rejects.toThrow(NotFoundError);
     });
 
     it('should throw NotFoundError when project is archived', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({
+      vi.mocked(prisma.project.findFirst).mockResolvedValue({
         id: 'proj-123',
         isArchived: true,
       } as any);
@@ -400,7 +419,7 @@ describe('projectService', () => {
 
   describe('deleteProject', () => {
     it('should soft delete project by setting isArchived to true', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({
+      vi.mocked(prisma.project.findFirst).mockResolvedValue({
         id: 'proj-123',
         isArchived: false,
       } as any);
@@ -418,14 +437,14 @@ describe('projectService', () => {
     });
 
     it('should throw NotFoundError when project does not exist', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.project.findFirst).mockResolvedValue(null);
 
       await expect(deleteProject('nonexistent'))
         .rejects.toThrow(NotFoundError);
     });
 
     it('should throw NotFoundError when project is already archived', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({
+      vi.mocked(prisma.project.findFirst).mockResolvedValue({
         id: 'proj-123',
         isArchived: true,
       } as any);

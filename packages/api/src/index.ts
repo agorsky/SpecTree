@@ -6,6 +6,8 @@ import compress from "@fastify/compress";
 import { prisma } from "./lib/db.js";
 import { registerErrorHandler } from "./middleware/errorHandler.js";
 import { NotFoundError } from "./errors/index.js";
+import { initializeJwtSecret } from "./utils/jwt.js";
+import { getSecretsProvider } from "./lib/secrets/index.js";
 import usersRoutes from "./routes/users.js";
 import teamsRoutes from "./routes/teams.js";
 import projectsRoutes from "./routes/projects.js";
@@ -20,6 +22,13 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const HOST = process.env.HOST ?? "0.0.0.0";
 
 async function main(): Promise<void> {
+  // Initialize secrets provider and load secrets
+  const secretsProvider = getSecretsProvider();
+  console.log(`[startup] Secrets provider: ${secretsProvider.providerName}`);
+  
+  // Initialize JWT secret from secrets provider
+  await initializeJwtSecret();
+
   const fastify = Fastify({
     logger: true,
   });

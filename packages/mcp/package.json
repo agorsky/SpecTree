@@ -2,7 +2,7 @@
   "name": "@spectree/mcp",
   "version": "0.1.0",
   "private": true,
-  "description": "SpecTree MCP server",
+  "description": "SpecTree MCP server - Uses HTTP API client (no direct database access)",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
@@ -17,13 +17,12 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run tests/integration/",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
-    "@spectree/api": "workspace:*",
     "@spectree/shared": "workspace:*",
-    "dotenv": "^17.2.3",
     "zod": "^3.24.0"
   }
 }

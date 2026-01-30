@@ -310,22 +310,50 @@ describe('featureService', () => {
   });
 
   describe('getFeatureById', () => {
-    it('should return feature with nested tasks', async () => {
+    it('should return feature with nested tasks when found by UUID', async () => {
       const mockFeature = {
-        id: 'feat-123',
+        id: '550e8400-e29b-41d4-a716-446655440000',
         title: 'Test Feature',
         tasks: [{ id: 'task-1' }, { id: 'task-2' }],
       };
-      vi.mocked(prisma.feature.findUnique).mockResolvedValue(mockFeature as any);
+      vi.mocked(prisma.feature.findFirst).mockResolvedValue(mockFeature as any);
 
-      const result = await getFeatureById('feat-123');
+      const result = await getFeatureById('550e8400-e29b-41d4-a716-446655440000');
 
       expect(result).toEqual(mockFeature);
-      expect(prisma.feature.findUnique).toHaveBeenCalledWith({
-        where: { id: 'feat-123' },
+      expect(prisma.feature.findFirst).toHaveBeenCalledWith({
+        where: { id: '550e8400-e29b-41d4-a716-446655440000' },
         include: {
           tasks: {
-            orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+            orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+          },
+          project: {
+            select: {
+              id: true,
+              teamId: true,
+            },
+          },
+        },
+      });
+    });
+
+    it('should return feature when found by identifier', async () => {
+      const mockFeature = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        identifier: 'ENG-4',
+        title: 'Test Feature',
+        tasks: [],
+      };
+      vi.mocked(prisma.feature.findFirst).mockResolvedValue(mockFeature as any);
+
+      const result = await getFeatureById('ENG-4');
+
+      expect(result).toEqual(mockFeature);
+      expect(prisma.feature.findFirst).toHaveBeenCalledWith({
+        where: { identifier: 'ENG-4' },
+        include: {
+          tasks: {
+            orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
           },
           project: {
             select: {
@@ -338,7 +366,7 @@ describe('featureService', () => {
     });
 
     it('should return null when feature not found', async () => {
-      vi.mocked(prisma.feature.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.feature.findFirst).mockResolvedValue(null);
 
       const result = await getFeatureById('nonexistent');
 
@@ -498,7 +526,7 @@ describe('featureService', () => {
 
   describe('updateFeature', () => {
     beforeEach(() => {
-      vi.mocked(prisma.feature.findUnique).mockResolvedValue({
+      vi.mocked(prisma.feature.findFirst).mockResolvedValue({
         id: 'feat-123',
         title: 'Original Title',
         statusId: 'old-status',
@@ -525,12 +553,11 @@ describe('featureService', () => {
         id: 'new-status',
         teamId: 'team-123',
       } as any);
-      vi.mocked(prisma.feature.findUnique)
-        .mockResolvedValueOnce({ id: 'feat-123', statusId: 'old-status' } as any)
-        .mockResolvedValueOnce({
-          id: 'feat-123',
-          project: { teamId: 'team-123' },
-        } as any);
+      vi.mocked(prisma.feature.findFirst).mockResolvedValueOnce({ id: 'feat-123', statusId: 'old-status' } as any);
+      vi.mocked(prisma.feature.findUnique).mockResolvedValueOnce({
+        id: 'feat-123',
+        project: { teamId: 'team-123' },
+      } as any);
       vi.mocked(prisma.feature.update).mockResolvedValue({ id: 'feat-123', statusId: 'new-status' } as any);
 
       await updateFeature('feat-123', { statusId: 'new-status' });
@@ -545,9 +572,8 @@ describe('featureService', () => {
     });
 
     it('should not emit event when status unchanged', async () => {
-      vi.mocked(prisma.feature.findUnique)
-        .mockResolvedValueOnce({ id: 'feat-123', statusId: 'same-status' } as any)
-        .mockResolvedValueOnce({ id: 'feat-123', project: { teamId: 'team-123' } } as any);
+      vi.mocked(prisma.feature.findFirst).mockResolvedValueOnce({ id: 'feat-123', statusId: 'same-status' } as any);
+      vi.mocked(prisma.feature.findUnique).mockResolvedValueOnce({ id: 'feat-123', project: { teamId: 'team-123' } } as any);
       vi.mocked(prisma.status.findUnique).mockResolvedValue({ id: 'same-status', teamId: 'team-123' } as any);
       vi.mocked(prisma.feature.update).mockResolvedValue({ id: 'feat-123' } as any);
 
@@ -557,7 +583,7 @@ describe('featureService', () => {
     });
 
     it('should throw NotFoundError when feature does not exist', async () => {
-      vi.mocked(prisma.feature.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.feature.findFirst).mockResolvedValue(null);
 
       await expect(updateFeature('nonexistent', { title: 'Test' }))
         .rejects.toThrow(NotFoundError);
@@ -580,12 +606,11 @@ describe('featureService', () => {
         id: 'status-123',
         teamId: 'different-team',
       } as any);
-      vi.mocked(prisma.feature.findUnique)
-        .mockResolvedValueOnce({ id: 'feat-123' } as any)
-        .mockResolvedValueOnce({
-          id: 'feat-123',
-          project: { teamId: 'original-team' },
-        } as any);
+      vi.mocked(prisma.feature.findFirst).mockResolvedValueOnce({ id: 'feat-123' } as any);
+      vi.mocked(prisma.feature.findUnique).mockResolvedValueOnce({
+        id: 'feat-123',
+        project: { teamId: 'original-team' },
+      } as any);
 
       await expect(updateFeature('feat-123', { statusId: 'status-123' }))
         .rejects.toThrow(ValidationError);
@@ -623,7 +648,7 @@ describe('featureService', () => {
     });
 
     it('should throw NotFoundError when feature does not exist', async () => {
-      vi.mocked(prisma.feature.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.feature.findFirst).mockResolvedValue(null);
 
       await expect(deleteFeature('nonexistent'))
         .rejects.toThrow(NotFoundError);

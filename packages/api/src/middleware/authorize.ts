@@ -92,23 +92,42 @@ async function getTeamIdFromProject(projectId: string): Promise<string | null> {
  * @param featureId - The feature ID
  * @returns The team ID or null if feature/project not found
  */
-async function getTeamIdFromFeature(featureId: string): Promise<string | null> {
-  const feature = await prisma.feature.findUnique({
-    where: { id: featureId },
+/**
+ * Looks up the team ID for a feature (via project).
+ * Supports both UUID and identifier (e.g., "ENG-4") lookups.
+ *
+ * @param featureIdOrIdentifier - The feature ID (UUID) or identifier
+ * @returns The team ID or null if feature/project not found
+ */
+async function getTeamIdFromFeature(featureIdOrIdentifier: string): Promise<string | null> {
+  const isUuid = UUID_REGEX.test(featureIdOrIdentifier);
+  const feature = await prisma.feature.findFirst({
+    where: isUuid
+      ? { id: featureIdOrIdentifier }
+      : { identifier: featureIdOrIdentifier },
     select: { project: { select: { teamId: true } } },
   });
   return feature?.project.teamId ?? null;
 }
 
 /**
+ * UUID v4 regex pattern for validation
+ */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
  * Looks up the team ID for a task (via feature → project).
+ * Supports both UUID and identifier (e.g., "ENG-4-1") lookups.
  *
- * @param taskId - The task ID
+ * @param taskIdOrIdentifier - The task ID (UUID) or identifier (e.g., "ENG-4-1")
  * @returns The team ID or null if task/feature/project not found
  */
-async function getTeamIdFromTask(taskId: string): Promise<string | null> {
-  const task = await prisma.task.findUnique({
-    where: { id: taskId },
+async function getTeamIdFromTask(taskIdOrIdentifier: string): Promise<string | null> {
+  const isUuid = UUID_REGEX.test(taskIdOrIdentifier);
+  const task = await prisma.task.findFirst({
+    where: isUuid
+      ? { id: taskIdOrIdentifier }
+      : { identifier: taskIdOrIdentifier },
     select: { feature: { select: { project: { select: { teamId: true } } } } },
   });
   return task?.feature.project.teamId ?? null;

@@ -10,16 +10,64 @@ Thank you for your interest in contributing to SpecTree! This guide covers our d
 - [Pull Request Process](#pull-request-process)
 - [Commit Messages](#commit-messages)
 - [Code Review](#code-review)
+- [Security Best Practices](#security-best-practices)
+- [Running Tests](#running-tests)
 
 ## Development Setup
 
 Before contributing, ensure your environment is set up correctly:
 
-1. **Prerequisites**: Node.js 20+, pnpm 9+
-2. **Clone and install**: See [README.md Quick Start](./README.md#quick-start)
-3. **Verify setup**: Run `pnpm build && pnpm test` to ensure everything works
+### 1. Prerequisites
+
+- Node.js 20+
+- pnpm 9+
+
+### 2. Install Dependencies
+
+```bash
+pnpm install
+```
+
+### 3. Start the API Server
+
+```bash
+cd packages/api
+npm run dev
+# API running at http://localhost:3001
+```
 
 > **Note**: The database uses SQLite, which is file-based and requires no separate database server.
+
+### 4. Configure MCP for Development
+
+For MCP development, you need an API token:
+
+1. The dev server auto-creates a test user
+2. Generate a token via the API:
+   ```bash
+   # Get a JWT first (dev mode allows this)
+   curl -X POST http://localhost:3001/api/v1/auth/dev-login
+   
+   # Create API token
+   curl -X POST http://localhost:3001/api/v1/tokens \
+     -H "Authorization: Bearer <jwt>" \
+     -H "Content-Type: application/json" \
+     -d '{"name":"Dev MCP"}'
+   ```
+
+3. Set environment for MCP development:
+   ```bash
+   export API_TOKEN="st_your_token"
+   export API_BASE_URL="http://localhost:3001"
+   cd packages/mcp
+   npm run dev
+   ```
+
+### 5. Verify Setup
+
+```bash
+pnpm build && pnpm test
+```
 
 ## Code Style Guidelines
 
@@ -374,6 +422,64 @@ Closes COM-456
 - [ ] No unnecessary complexity added
 - [ ] Error handling is appropriate
 - [ ] Documentation is updated if needed
+
+## Security Best Practices
+
+When contributing to SpecTree, follow these security guidelines:
+
+### Secrets Management
+
+- **Never** commit API tokens, passwords, or secrets
+- Use environment variables for all sensitive values
+- In production, use Azure Key Vault (see [Azure deployment guide](./docs/MCP/azure-deployment.md))
+
+### API Authentication
+
+- All MCP requests must go through the API (not direct DB)
+- Use API tokens for programmatic access
+- JWTs are for web UI sessions only
+
+### Database Access
+
+- MCP package should NEVER import Prisma directly
+- All database operations go through the API
+- Tests may use direct Prisma in test setup only
+
+### Security Code Review Checklist
+
+- [ ] No hardcoded secrets
+- [ ] No direct database imports in MCP
+- [ ] API tokens validated in all protected routes
+- [ ] Sensitive data not logged
+
+For more details, see the [Security Architecture](./docs/MCP/security-architecture.md) documentation.
+
+## Running Tests
+
+### API Tests
+
+```bash
+cd packages/api
+npm test
+```
+
+### MCP Integration Tests
+
+MCP tests require the API server to be running:
+
+```bash
+# Terminal 1: Start API
+cd packages/api && npm run dev
+
+# Terminal 2: Run MCP tests
+cd packages/mcp && npm test
+```
+
+### Full Test Suite
+
+```bash
+pnpm test
+```
 
 ## Questions?
 

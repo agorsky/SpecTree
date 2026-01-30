@@ -2,52 +2,12 @@
  * MCP Tools for Search Operations
  *
  * Provides a unified search tool for searching across features and tasks
- * in the SpecTree application with various filter options.
+ * in the SpecTree application. Uses HTTP API client for all operations.
  */
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  featureService,
-  taskService,
-  userService,
-  prisma,
-  NotFoundError,
-} from "@spectree/api/src/services/index.js";
-import { isValidUUID } from "../utils.js";
-
-/**
- * Helper to resolve "me" assignee value to actual user ID
- */
-async function resolveCurrentUserId(): Promise<string | undefined> {
-  const currentUser = await userService.getCurrentUser();
-  return currentUser?.id;
-}
-
-/**
- * Helper to resolve project name/ID to project ID
- */
-async function resolveProjectId(project: string): Promise<string> {
-  // First try to find by ID (UUID) - only if it's a valid UUID format
-  if (isValidUUID(project)) {
-    const projectById = await prisma.project.findUnique({
-      where: { id: project },
-      select: { id: true },
-    });
-
-    if (projectById) return projectById.id;
-  }
-
-  // Try to find by name
-  const projectByName = await prisma.project.findFirst({
-    where: { name: project, isArchived: false },
-    select: { id: true },
-  });
-
-  if (projectByName) return projectByName.id;
-
-  throw new NotFoundError(`Project '${project}' not found`);
-}
+import { getApiClient, ApiError } from "../api-client.js";
 
 /**
  * Create MCP-compliant response
@@ -67,23 +27,6 @@ function createErrorResponse(error: unknown) {
     content: [{ type: "text" as const, text: `Error: ${message}` }],
     isError: true,
   };
-}
-
-// Search result item with type indicator
-interface SearchResultItem {
-  type: "feature" | "task";
-  id: string;
-  identifier: string;
-  title: string;
-  description: string | null;
-  statusId: string | null;
-  assigneeId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  // Feature-specific fields
-  projectId?: string;
-  // Task-specific fields
-  featureId?: string;
 }
 
 // Register search tool
@@ -185,166 +128,29 @@ export function registerSearchTools(server: McpServer): void {
     },
     async (input) => {
       try {
-        const searchType = input.type ?? "all";
-        const limit = input.limit ?? 50;
+        const apiClient = getApiClient();
 
-        // Resolve project ID if provided
-        let projectId: string | undefined;
-        if (input.project) {
-          projectId = await resolveProjectId(input.project);
-        }
-
-        // Get current user ID for resolving "me" in assignee filter
-        const currentUserId = await resolveCurrentUserId();
-
-        // Build common filter options
-        const commonFilters = {
+        const result = await apiClient.search({
           query: input.query,
+          project: input.project,
           status: input.status,
           statusCategory: input.statusCategory,
           assignee: input.assignee,
-          currentUserId,
           createdAt: input.createdAt,
           updatedAt: input.updatedAt,
-        };
-
-        const results: SearchResultItem[] = [];
-        let featureCursor: string | null = null;
-        let taskCursor: string | null = null;
-        let hasMoreFeatures = false;
-        let hasMoreTasks = false;
-
-        // Parse cursor if provided
-        if (input.cursor) {
-          if (input.cursor.startsWith("feature:")) {
-            featureCursor = input.cursor.slice(8) || null;
-          } else if (input.cursor.startsWith("task:")) {
-            taskCursor = input.cursor.slice(5) || null;
-          } else if (input.cursor.startsWith("combined:")) {
-            // Parse combined cursor format: combined:feature_cursor|task_cursor
-            const parts = input.cursor.slice(9).split("|");
-            featureCursor = parts[0] && parts[0] !== "null" ? parts[0] : null;
-            taskCursor = parts[1] && parts[1] !== "null" ? parts[1] : null;
-          }
-        }
-
-        // Search features if requested
-        if (searchType === "feature" || searchType === "all") {
-          const featureResult = await featureService.listFeatures({
-            ...commonFilters,
-            projectId,
-            limit: searchType === "all" ? limit : limit,
-            cursor: featureCursor ?? undefined,
-            orderBy: "createdAt",
-          });
-
-          hasMoreFeatures = featureResult.meta.hasMore;
-          featureCursor = featureResult.meta.cursor;
-
-          for (const feature of featureResult.data) {
-            results.push({
-              type: "feature",
-              id: feature.id,
-              identifier: feature.identifier,
-              title: feature.title,
-              description: feature.description,
-              statusId: feature.statusId,
-              assigneeId: feature.assigneeId,
-              createdAt: feature.createdAt,
-              updatedAt: feature.updatedAt,
-              projectId: feature.projectId,
-            });
-          }
-        }
-
-        // Search tasks if requested
-        if (searchType === "task" || searchType === "all") {
-          // For tasks, we need to filter by project indirectly through features
-          // The task service doesn't have a projectId filter, so we'll rely on the
-          // other filters and filter client-side if project is specified.
-          const taskResult = await taskService.listTasks({
-            ...commonFilters,
-            limit: searchType === "all" ? limit : limit,
-            cursor: taskCursor ?? undefined,
-            orderBy: "createdAt",
-          });
-
-          hasMoreTasks = taskResult.meta.hasMore;
-          taskCursor = taskResult.meta.cursor;
-
-          // If project filter is specified and we're searching tasks,
-          // we need to filter tasks by their parent feature's project
-          let filteredTasks = taskResult.data;
-          if (projectId) {
-            // Get feature IDs that belong to this project
-            const featureIds = new Set(
-              (await prisma.feature.findMany({
-                where: { projectId },
-                select: { id: true },
-              })).map(f => f.id)
-            );
-            
-            filteredTasks = filteredTasks.filter(task => 
-              featureIds.has(task.featureId)
-            );
-          }
-
-          for (const task of filteredTasks) {
-            results.push({
-              type: "task",
-              id: task.id,
-              identifier: task.identifier,
-              title: task.title,
-              description: task.description,
-              statusId: task.statusId,
-              assigneeId: task.assigneeId,
-              createdAt: task.createdAt,
-              updatedAt: task.updatedAt,
-              featureId: task.featureId,
-            });
-          }
-        }
-
-        // Sort combined results by createdAt (newest first)
-        if (searchType === "all") {
-          results.sort((a, b) => 
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-          
-          // Trim to limit
-          if (results.length > limit) {
-            results.length = limit;
-          }
-        }
-
-        // Build pagination cursor
-        let nextCursor: string | null = null;
-        const hasMore = searchType === "all" 
-          ? hasMoreFeatures || hasMoreTasks
-          : searchType === "feature" 
-            ? hasMoreFeatures 
-            : hasMoreTasks;
-
-        if (hasMore) {
-          if (searchType === "feature") {
-            nextCursor = featureCursor ? `feature:${featureCursor}` : null;
-          } else if (searchType === "task") {
-            nextCursor = taskCursor ? `task:${taskCursor}` : null;
-          } else {
-            // Combined cursor for "all" type
-            nextCursor = `combined:${featureCursor ?? "null"}|${taskCursor ?? "null"}`;
-          }
-        }
+          type: input.type,
+          limit: input.limit,
+          cursor: input.cursor,
+        });
 
         return createResponse({
-          results,
-          meta: {
-            total: results.length,
-            cursor: nextCursor,
-            hasMore,
-          },
+          results: result.results,
+          meta: result.meta,
         });
       } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(new Error(`Project '${input.project}' not found`));
+        }
         return createErrorResponse(error);
       }
     }

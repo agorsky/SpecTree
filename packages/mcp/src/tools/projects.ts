@@ -2,58 +2,12 @@
  * MCP Tools for Project operations
  *
  * Provides tools for listing, retrieving, and creating projects in SpecTree.
+ * Uses HTTP API client for all operations.
  */
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  projectService,
-  prisma,
-  NotFoundError,
-} from "@spectree/api/src/services/index.js";
-import { isValidUUID } from "../utils.js";
-
-/**
- * Helper to resolve team identifier (ID, name, or key) to team ID
- */
-async function resolveTeamId(teamQuery: string): Promise<string | null> {
-  // First try to find by ID (UUID) - only if it's a valid UUID format
-  if (isValidUUID(teamQuery)) {
-    const teamById = await prisma.team.findUnique({
-      where: { id: teamQuery },
-      select: { id: true, isArchived: true },
-    });
-    if (teamById && !teamById.isArchived) {
-      return teamById.id;
-    }
-  }
-
-  // Then try to find by name (exact match, case-sensitive)
-  const teamByName = await prisma.team.findFirst({
-    where: {
-      name: teamQuery,
-      isArchived: false,
-    },
-    select: { id: true },
-  });
-  if (teamByName) {
-    return teamByName.id;
-  }
-
-  // Also try by key (exact match)
-  const teamByKey = await prisma.team.findFirst({
-    where: {
-      key: teamQuery,
-      isArchived: false,
-    },
-    select: { id: true },
-  });
-  if (teamByKey) {
-    return teamByKey.id;
-  }
-
-  return null;
-}
+import { getApiClient, ApiError } from "../api-client.js";
 
 /**
  * Create MCP-compliant response
@@ -73,6 +27,15 @@ function createErrorResponse(error: unknown) {
     content: [{ type: "text" as const, text: `Error: ${message}` }],
     isError: true,
   };
+}
+
+/**
+ * Helper to resolve team ID from name/key/id via API
+ */
+async function resolveTeamId(teamQuery: string): Promise<string | null> {
+  const apiClient = getApiClient();
+  const result = await apiClient.getTeam(teamQuery);
+  return result?.data.id ?? null;
 }
 
 /**
@@ -126,98 +89,42 @@ export function registerProjectTools(server: McpServer): void {
     },
     async (input) => {
       try {
+        const apiClient = getApiClient();
+
         // Resolve team if provided
         let teamId: string | undefined;
         if (input.team) {
           const resolvedTeamId = await resolveTeamId(input.team);
           if (!resolvedTeamId) {
-            throw new NotFoundError(`Team '${input.team}' not found`);
+            throw new Error(`Team '${input.team}' not found`);
           }
           teamId = resolvedTeamId;
         }
 
-        // Query directly if includeArchived is true (service doesn't support this yet)
-        if (input.includeArchived) {
-          const limit = Math.min(100, Math.max(1, input.limit ?? 20));
-          const whereClause: { teamId?: string } = {};
-          if (teamId) {
-            whereClause.teamId = teamId;
-          }
-
-          const projects = await prisma.project.findMany({
-            take: limit + 1,
-            ...(input.cursor ? { cursor: { id: input.cursor } } : {}),
-            where: whereClause,
-            orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-            include: {
-              _count: { select: { features: true } },
-              team: { select: { id: true, name: true, key: true } },
-            },
-          });
-
-          const hasMore = projects.length > limit;
-          if (hasMore) {
-            projects.pop();
-          }
-
-          const lastProject = projects.at(-1);
-          const nextCursor = hasMore && lastProject ? lastProject.id : null;
-
-          const result = {
-            projects: projects.map((p) => ({
-              id: p.id,
-              name: p.name,
-              description: p.description,
-              icon: p.icon,
-              color: p.color,
-              sortOrder: p.sortOrder,
-              isArchived: p.isArchived,
-              team: p.team,
-              featureCount: p._count.features,
-              createdAt: p.createdAt.toISOString(),
-              updatedAt: p.updatedAt.toISOString(),
-            })),
-            meta: {
-              cursor: nextCursor,
-              hasMore,
-            },
-          };
-
-          return createResponse(result);
-        }
-
-        // Use the service for non-archived projects
-        const result = await projectService.listProjects({
-          cursor: input.cursor,
+        const result = await apiClient.listProjects({
+          team: teamId,
+          includeArchived: input.includeArchived,
           limit: input.limit,
-          teamId,
+          cursor: input.cursor,
         });
 
-        // Fetch team info for each project
-        const projectsWithTeam = await Promise.all(
-          result.data.map(async (p) => {
-            const team = await prisma.team.findUnique({
-              where: { id: p.teamId },
-              select: { id: true, name: true, key: true },
-            });
-            return {
-              id: p.id,
-              name: p.name,
-              description: p.description,
-              icon: p.icon,
-              color: p.color,
-              sortOrder: p.sortOrder,
-              isArchived: p.isArchived,
-              team,
-              featureCount: p._count.features,
-              createdAt: p.createdAt.toISOString(),
-              updatedAt: p.updatedAt.toISOString(),
-            };
-          })
-        );
+        // Transform response to expected format
+        const projects = result.data.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          icon: p.icon,
+          color: p.color,
+          sortOrder: p.sortOrder,
+          isArchived: p.isArchived,
+          team: p.team,
+          featureCount: p._count?.features ?? 0,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+        }));
 
         return createResponse({
-          projects: projectsWithTeam,
+          projects,
           meta: result.meta,
         });
       } catch (error) {
@@ -249,58 +156,14 @@ export function registerProjectTools(server: McpServer): void {
     },
     async (input) => {
       try {
-        // First try to find by ID (UUID)
-        let project = await prisma.project.findUnique({
-          where: { id: input.query, isArchived: false },
-          include: {
-            _count: { select: { features: true } },
-            team: { select: { id: true, name: true, key: true } },
-            features: {
-              orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-              select: {
-                id: true,
-                identifier: true,
-                title: true,
-                description: true,
-                statusId: true,
-                assigneeId: true,
-                sortOrder: true,
-                createdAt: true,
-                updatedAt: true,
-              },
-            },
-          },
+        const apiClient = getApiClient();
+        const { data: project } = await apiClient.getProject(input.query);
+
+        // Fetch features for this project
+        const featuresResult = await apiClient.listFeatures({
+          projectId: project.id,
+          limit: 100,
         });
-
-        // If not found by ID, try by name (exact match)
-        project ??= await prisma.project.findFirst({
-            where: {
-              name: input.query,
-              isArchived: false,
-            },
-            include: {
-              _count: { select: { features: true } },
-              team: { select: { id: true, name: true, key: true } },
-              features: {
-                orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-                select: {
-                  id: true,
-                  identifier: true,
-                  title: true,
-                  description: true,
-                  statusId: true,
-                  assigneeId: true,
-                  sortOrder: true,
-                  createdAt: true,
-                  updatedAt: true,
-                },
-              },
-            },
-          });
-
-        if (!project) {
-          throw new NotFoundError(`Project '${input.query}' not found`);
-        }
 
         const result = {
           id: project.id,
@@ -311,8 +174,8 @@ export function registerProjectTools(server: McpServer): void {
           sortOrder: project.sortOrder,
           isArchived: project.isArchived,
           team: project.team,
-          featureCount: project._count.features,
-          features: project.features.map((f) => ({
+          featureCount: project._count?.features ?? featuresResult.data.length,
+          features: featuresResult.data.map((f) => ({
             id: f.id,
             identifier: f.identifier,
             title: f.title,
@@ -320,15 +183,18 @@ export function registerProjectTools(server: McpServer): void {
             statusId: f.statusId,
             assigneeId: f.assigneeId,
             sortOrder: f.sortOrder,
-            createdAt: f.createdAt.toISOString(),
-            updatedAt: f.updatedAt.toISOString(),
+            createdAt: f.createdAt,
+            updatedAt: f.updatedAt,
           })),
-          createdAt: project.createdAt.toISOString(),
-          updatedAt: project.updatedAt.toISOString(),
+          createdAt: project.createdAt,
+          updatedAt: project.updatedAt,
         };
 
         return createResponse(result);
       } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(new Error(`Project '${input.query}' not found`));
+        }
         return createErrorResponse(error);
       }
     }
@@ -384,25 +250,20 @@ export function registerProjectTools(server: McpServer): void {
     },
     async (input) => {
       try {
-        // Resolve team
+        const apiClient = getApiClient();
+
+        // Resolve team ID
         const teamId = await resolveTeamId(input.team);
         if (!teamId) {
-          throw new NotFoundError(`Team '${input.team}' not found`);
+          throw new Error(`Team '${input.team}' not found`);
         }
 
-        // Create the project using the service
-        const project = await projectService.createProject({
+        const { data: project } = await apiClient.createProject({
           name: input.name,
           teamId,
           description: input.description,
           icon: input.icon,
           color: input.color,
-        });
-
-        // Fetch the team info for the response
-        const team = await prisma.team.findUnique({
-          where: { id: teamId },
-          select: { id: true, name: true, key: true },
         });
 
         const result = {
@@ -413,10 +274,10 @@ export function registerProjectTools(server: McpServer): void {
           color: project.color,
           sortOrder: project.sortOrder,
           isArchived: project.isArchived,
-          team,
+          team: project.team,
           featureCount: 0,
-          createdAt: project.createdAt.toISOString(),
-          updatedAt: project.updatedAt.toISOString(),
+          createdAt: project.createdAt,
+          updatedAt: project.updatedAt,
         };
 
         return createResponse(result);

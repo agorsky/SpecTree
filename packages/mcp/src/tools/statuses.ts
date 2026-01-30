@@ -2,16 +2,12 @@
  * MCP Tools for Status Management
  *
  * Provides tools for listing and retrieving statuses in SpecTree.
+ * Uses HTTP API client for all operations.
  */
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  statusService,
-  prisma,
-  NotFoundError,
-} from "@spectree/api/src/services/index.js";
-import { isValidUUID } from "../utils.js";
+import { getApiClient, ApiError } from "../api-client.js";
 
 // Input schemas
 const listStatusesSchema = {
@@ -42,58 +38,13 @@ const getStatusSchema = {
     ),
 };
 
-// Helper to resolve team ID from name or ID
-async function resolveTeamId(teamNameOrId: string): Promise<string> {
-  // First try to find by ID - only if it's a valid UUID format
-  if (isValidUUID(teamNameOrId)) {
-    const teamById = await prisma.team.findUnique({
-      where: { id: teamNameOrId },
-      select: { id: true },
-    });
-
-    if (teamById) {
-      return teamById.id;
-    }
-  }
-
-  // Try to find by name
-  const teamByName = await prisma.team.findFirst({
-    where: { name: teamNameOrId },
-    select: { id: true },
-  });
-
-  if (teamByName) {
-    return teamByName.id;
-  }
-
-  // Try to find by key
-  const teamByKey = await prisma.team.findFirst({
-    where: { key: teamNameOrId },
-    select: { id: true },
-  });
-
-  if (teamByKey) {
-    return teamByKey.id;
-  }
-
-  throw new NotFoundError(`Team '${teamNameOrId}' not found`);
-}
-
-// Helper to format status for response
-function formatStatus(status: {
-  id: string;
-  name: string;
-  category: string;
-  color: string | null;
-  position: number;
-}) {
-  return {
-    id: status.id,
-    name: status.name,
-    category: status.category,
-    color: status.color,
-    position: status.position,
-  };
+/**
+ * Helper to resolve team ID from name/key/id via API
+ */
+async function resolveTeamId(teamQuery: string): Promise<string | null> {
+  const apiClient = getApiClient();
+  const result = await apiClient.getTeam(teamQuery);
+  return result?.data.id ?? null;
 }
 
 // Register all status tools
@@ -111,22 +62,28 @@ export function registerStatusTools(server: McpServer): void {
     },
     async (input) => {
       try {
+        const apiClient = getApiClient();
+
+        // Resolve team ID
         const teamId = await resolveTeamId(input.team);
-        const statuses = await statusService.listStatuses({ teamId });
-
-        const result = statuses.map(formatStatus);
-
-        return {
-          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-        };
-      } catch (error) {
-        if (error instanceof NotFoundError) {
+        if (!teamId) {
           return {
-            content: [{ type: "text", text: JSON.stringify({ error: error.message }, null, 2) }],
+            content: [{ type: "text", text: JSON.stringify({ error: `Team '${input.team}' not found` }, null, 2) }],
             isError: true,
           };
         }
-        throw error;
+
+        const result = await apiClient.listStatuses(teamId);
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: "text", text: JSON.stringify({ error: message }, null, 2) }],
+          isError: true,
+        };
       }
     }
   );
@@ -144,69 +101,80 @@ export function registerStatusTools(server: McpServer): void {
     },
     async (input) => {
       try {
+        const apiClient = getApiClient();
+
         // First try to get by ID
-        const statusById = await statusService.getStatusById(input.id);
-
-        if (statusById) {
+        try {
+          const { data: status } = await apiClient.getStatus(input.id);
           return {
-            content: [{ type: "text", text: JSON.stringify(formatStatus(statusById), null, 2) }],
+            content: [{ type: "text", text: JSON.stringify(status, null, 2) }],
           };
-        }
+        } catch (error) {
+          // If not found by ID and team is provided, try by name within team
+          if (error instanceof ApiError && error.status === 404 && input.team) {
+            const teamId = await resolveTeamId(input.team);
+            if (!teamId) {
+              return {
+                content: [
+                  {
+                    type: "text",
+                    text: JSON.stringify({ error: `Team '${input.team}' not found` }, null, 2),
+                  },
+                ],
+                isError: true,
+              };
+            }
 
-        // If not found by ID and team is provided, try by name within team
-        if (input.team) {
-          const teamId = await resolveTeamId(input.team);
+            // Get all statuses for the team and find by name
+            const { data: statuses } = await apiClient.listStatuses(teamId);
+            const statusByName = statuses.find((s) => s.name === input.id);
 
-          const statusByName = await prisma.status.findFirst({
-            where: {
-              name: input.id,
-              teamId: teamId,
-            },
-          });
+            if (statusByName) {
+              return {
+                content: [{ type: "text", text: JSON.stringify(statusByName, null, 2) }],
+              };
+            }
 
-          if (statusByName) {
             return {
-              content: [{ type: "text", text: JSON.stringify(formatStatus(statusByName), null, 2) }],
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify(
+                    { error: `Status '${input.id}' not found in team '${input.team}'` },
+                    null,
+                    2
+                  ),
+                },
+              ],
+              isError: true,
             };
           }
 
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify(
-                  { error: `Status '${input.id}' not found in team '${input.team}'` },
-                  null,
-                  2
-                ),
-              },
-            ],
-            isError: true,
-          };
-        }
+          // No team provided and not found by ID
+          if (error instanceof ApiError && error.status === 404) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify(
+                    { error: `Status with ID '${input.id}' not found. Provide a team parameter to search by name.` },
+                    null,
+                    2
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
 
-        // No team provided and not found by ID
+          throw error;
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
         return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                { error: `Status with ID '${input.id}' not found. Provide a team parameter to search by name.` },
-                null,
-                2
-              ),
-            },
-          ],
+          content: [{ type: "text", text: JSON.stringify({ error: message }, null, 2) }],
           isError: true,
         };
-      } catch (error) {
-        if (error instanceof NotFoundError) {
-          return {
-            content: [{ type: "text", text: JSON.stringify({ error: error.message }, null, 2) }],
-            isError: true,
-          };
-        }
-        throw error;
       }
     }
   );

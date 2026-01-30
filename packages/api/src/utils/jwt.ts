@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import type { SignOptions, JwtPayload } from "jsonwebtoken";
+import { getSecret } from "../lib/secrets/index.js";
 
 /**
  * JWT utility functions for token generation and verification.
@@ -9,6 +10,9 @@ import type { SignOptions, JwtPayload } from "jsonwebtoken";
 // Token expiration times
 const ACCESS_TOKEN_EXPIRY = "15m"; // 15 minutes
 const REFRESH_TOKEN_EXPIRY = "7d"; // 7 days
+
+// Cached JWT secret (loaded once at startup)
+let cachedJwtSecret: string | null = null;
 
 /**
  * Token payload structure returned by verifyToken.
@@ -24,15 +28,32 @@ export interface TokenPayload {
  */
 export type TokenType = "access" | "refresh";
 
+/**
+ * Initializes the JWT secret from the configured secrets provider.
+ * Must be called during application startup before using JWT functions.
+ */
+export async function initializeJwtSecret(): Promise<void> {
+  if (cachedJwtSecret) return;
+  cachedJwtSecret = await getSecret("JWT_SECRET");
+  console.log("[jwt] JWT secret initialized from secrets provider");
+}
 
 /**
- * Gets the JWT secret from environment variables.
- * Throws an error if JWT_SECRET is not configured.
+ * Gets the JWT secret. Must call initializeJwtSecret() first.
+ * Falls back to environment variable for backward compatibility.
  */
 function getJwtSecret(): string {
+  if (cachedJwtSecret) {
+    return cachedJwtSecret;
+  }
+  
+  // Fallback to env var for backward compatibility
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    throw new Error("JWT_SECRET environment variable is not configured");
+    throw new Error(
+      "JWT_SECRET not initialized. Call initializeJwtSecret() at startup, " +
+      "or set JWT_SECRET environment variable."
+    );
   }
   return secret;
 }

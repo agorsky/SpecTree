@@ -10,6 +10,7 @@ import {
   type CreateFeatureInput,
   type UpdateFeatureInput,
 } from '@/lib/api/features';
+import { issueKeys } from './use-issues';
 
 export const featureKeys = {
   all: ['features'] as const,
@@ -46,6 +47,7 @@ export function useCreateFeature() {
     mutationFn: (input: CreateFeatureInput) => featuresApi.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: featureKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all });
     },
   });
 }
@@ -57,6 +59,7 @@ export function useUpdateFeature() {
     mutationFn: (input: UpdateFeatureInput) => featuresApi.update(input),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: featureKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all });
       queryClient.setQueryData(featureKeys.detail(response.data.id), response);
     },
   });
@@ -69,6 +72,7 @@ export function useDeleteFeature() {
     mutationFn: (id: string) => featuresApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: featureKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all });
     },
   });
 }
