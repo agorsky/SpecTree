@@ -122,12 +122,13 @@ export async function cleanupTestDatabase(): Promise<void> {
   // 1. ApiTokens (depends on User)
   // 2. Tasks (depends on Feature, Status, User)
   // 3. Features (depends on Project, Status, User)
-  // 4. Projects (depends on Team)
-  // 5. Statuses (depends on Team)
+  // 4. Projects (depends on Team or PersonalScope)
+  // 5. Statuses (depends on Team or PersonalScope)
   // 6. Memberships (depends on Team, User)
   // 7. Teams
-  // 8. Users
-  // 9. HealthCheck (no dependencies)
+  // 8. PersonalScopes (depends on User)
+  // 9. Users
+  // 10. HealthCheck (no dependencies)
 
   await prisma.apiToken.deleteMany();
   await prisma.task.deleteMany();
@@ -136,6 +137,8 @@ export async function cleanupTestDatabase(): Promise<void> {
   await prisma.status.deleteMany();
   await prisma.membership.deleteMany();
   await prisma.team.deleteMany();
+  await prisma.personalScope.deleteMany();
+  await prisma.userInvitation.deleteMany();
   await prisma.user.deleteMany();
   await prisma.healthCheck.deleteMany();
 }

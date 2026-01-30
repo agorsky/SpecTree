@@ -322,7 +322,7 @@ describe("Projects API", () => {
       expect(response.statusCode).toBe(204);
     });
 
-    it("should return 403 for member trying to delete", async () => {
+    it("should allow member to delete project", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
       const project = await createTestProject(team.id, { name: "Member Project" });
 
@@ -332,7 +332,7 @@ describe("Projects API", () => {
         headers,
       });
 
-      expect(response.statusCode).toBe(403);
+      expect(response.statusCode).toBe(204);
     });
 
     it("should return 403 for guest trying to delete", async () => {

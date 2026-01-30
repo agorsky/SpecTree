@@ -96,6 +96,72 @@ export async function getTeamById(id: string): Promise<TeamWithCount | null> {
 }
 
 /**
+ * UUID v4 regex pattern for validation
+ */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Get a single team by ID, name, or key.
+ * Supports UUID (e.g., "550e8400-e29b-41d4-a716-446655440000"),
+ * exact team name (e.g., "Engineering"), or team key (e.g., "ENG").
+ *
+ * Resolution order:
+ * 1. If input is a UUID, lookup by id
+ * 2. If input is not a UUID, lookup by key first (exact match)
+ * 3. If no match by key, try key uppercase
+ * 4. If no match, lookup by name (exact match)
+ * 
+ * Note: SQLite doesn't support case-insensitive queries natively in Prisma,
+ * so we try exact match first, then uppercase for keys.
+ */
+export async function getTeamByIdOrNameOrKey(idOrNameOrKey: string): Promise<TeamWithCount | null> {
+  const isUuid = UUID_REGEX.test(idOrNameOrKey);
+
+  if (isUuid) {
+    // Direct ID lookup
+    return prisma.team.findUnique({
+      where: { id: idOrNameOrKey, isArchived: false },
+      include: { _count: { select: { memberships: true } } },
+    }) as Promise<TeamWithCount | null>;
+  }
+
+  // Try lookup by key first (exact match)
+  let team = await prisma.team.findFirst({
+    where: {
+      key: idOrNameOrKey,
+      isArchived: false,
+    },
+    include: { _count: { select: { memberships: true } } },
+  }) as TeamWithCount | null;
+
+  if (team) {
+    return team;
+  }
+
+  // Try key uppercase (keys are typically uppercase like "ENG")
+  team = await prisma.team.findFirst({
+    where: {
+      key: idOrNameOrKey.toUpperCase(),
+      isArchived: false,
+    },
+    include: { _count: { select: { memberships: true } } },
+  }) as TeamWithCount | null;
+
+  if (team) {
+    return team;
+  }
+
+  // Fall back to name lookup (exact match)
+  return prisma.team.findFirst({
+    where: {
+      name: idOrNameOrKey,
+      isArchived: false,
+    },
+    include: { _count: { select: { memberships: true } } },
+  }) as Promise<TeamWithCount | null>;
+}
+
+/**
  * Create a new team with default statuses.
  * Uses a transaction to ensure atomicity (team + statuses created together or not at all).
  */

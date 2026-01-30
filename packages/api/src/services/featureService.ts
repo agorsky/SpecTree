@@ -14,6 +14,7 @@ import {
   isAssigneeInvalid,
 } from "../utils/assignee.js";
 import { emitStatusChanged } from "../events/index.js";
+import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
 
 // Types for feature operations
 export interface CreateFeatureInput {
@@ -99,6 +100,10 @@ async function generateIdentifier(projectId: string): Promise<string> {
     throw new NotFoundError(`Project with id '${projectId}' not found`);
   }
 
+  if (!project.team) {
+    throw new Error(`Project with id '${projectId}' has no associated team`);
+  }
+
   const teamKey = project.team.key;
 
   // Count existing features in projects belonging to this team
@@ -114,6 +119,7 @@ async function generateIdentifier(projectId: string): Promise<string> {
 /**
  * List features with cursor-based pagination
  * Ordered by sortOrder (asc), then createdAt (desc)
+ * When currentUserId is provided, filters to only show features in accessible scopes
  */
 export async function listFeatures(
   options: ListFeaturesOptions = {}
@@ -144,6 +150,9 @@ export async function listFeatures(
   // Build where clause conditionally to avoid undefined values
   const whereClause: {
     projectId?: string;
+    project?: {
+      OR?: Array<{ teamId?: { in: string[] }; personalScopeId?: string }>;
+    };
     statusId?: string | { in: string[] };
     assigneeId?: string | null;
     createdAt?: { gte?: Date; lt?: Date };
@@ -153,6 +162,31 @@ export async function listFeatures(
       description?: { contains: string };
     }[];
   } = {};
+
+  // Apply scope-based filtering when currentUserId is provided
+  if (options.currentUserId) {
+    const accessibleScopes = await getAccessibleScopes(options.currentUserId);
+
+    // If user has no accessible scopes, return empty result
+    if (!hasAccessibleScopes(accessibleScopes)) {
+      return {
+        data: [],
+        meta: { cursor: null, hasMore: false },
+      };
+    }
+
+    // Build OR clause for projects in accessible scopes
+    const scopeConditions: Array<{ teamId?: { in: string[] }; personalScopeId?: string }> = [];
+
+    if (accessibleScopes.teamIds.length > 0) {
+      scopeConditions.push({ teamId: { in: accessibleScopes.teamIds } });
+    }
+    if (accessibleScopes.personalScopeId) {
+      scopeConditions.push({ personalScopeId: accessibleScopes.personalScopeId });
+    }
+
+    whereClause.project = { OR: scopeConditions };
+  }
 
   if (options.projectId !== undefined) {
     whereClause.projectId = options.projectId;
@@ -349,7 +383,7 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
     if (!status) {
       throw new NotFoundError(`Status with id '${statusId}' not found`);
     }
-  } else {
+  } else if (project.teamId) {
     // Default to Backlog status for the team
     const backlogStatus = await getDefaultBacklogStatus(project.teamId);
     if (backlogStatus) {

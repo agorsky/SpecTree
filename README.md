@@ -4,6 +4,7 @@ Project Management & Issue Tracking Platform
 
 ## Table of Contents
 
+- [Overview](#overview)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
@@ -15,6 +16,27 @@ Project Management & Issue Tracking Platform
 - [Database](#database)
 - [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
+
+## Overview
+
+SpecTree is a Linear-inspired project management tool with support for:
+
+- **Team-based collaboration** — Organize work into teams with role-based access (admin, member, guest)
+- **Personal scopes** — Private workspace for personal projects and tasks not shared with any team
+- **Hierarchical work items** — Projects contain features, which contain tasks
+- **Customizable workflows** — Each team (and personal scope) has its own workflow statuses
+- **AI integration** — Full MCP server support for AI assistants like Claude
+
+### Identity & Collaboration Model
+
+SpecTree implements an invite-only collaboration model:
+
+| Concept | Description |
+|---------|-------------|
+| **Personal Scope** | Each user has a private container for personal work (auto-created on signup) |
+| **Team Membership** | Users must be explicitly invited to teams (no auto-join) |
+| **Scope Isolation** | Personal data is only visible to the owner; team data requires membership |
+| **Admin Guardrails** | Teams always have at least one admin (cannot remove/demote last admin) |
 
 ## Prerequisites
 
@@ -346,6 +368,37 @@ GET /api/v1/features?query=auth&assignee=me&createdAt=-P30D
 GET /api/v1/tasks?statusCategory=started&updatedAt=-P7D
 ```
 
+### Personal Scope API (`/me/*`)
+
+Personal scope endpoints allow users to manage their private workspace:
+
+```bash
+# Get personal scope (auto-creates if doesn't exist)
+GET /api/v1/me/scope
+
+# List personal projects
+GET /api/v1/me/projects
+
+# Create personal project
+POST /api/v1/me/projects
+{
+  "name": "Side Project Ideas",
+  "description": "Personal project tracking"
+}
+
+# List personal workflow statuses
+GET /api/v1/me/statuses
+
+# Create personal status
+POST /api/v1/me/statuses
+{
+  "name": "Research",
+  "category": "started"
+}
+```
+
+Personal scope features and tasks use the same `/api/v1/features` and `/api/v1/tasks` endpoints—they're automatically scoped by the project they belong to.
+
 ## MCP Server with Claude Code
 
 The SpecTree MCP server enables AI assistants like Claude to interact with the project management platform through secure API token authentication.
@@ -434,19 +487,33 @@ pnpm --filter @spectree/mcp start
 
 | Tool | Description |
 |------|-------------|
+| **Search** | |
 | `spectree__search` | Unified search across features and tasks with all filter options |
-| `spectree__list_projects` | List all projects |
-| `spectree__get_project` | Get project details |
-| `spectree__create_project` | Create a new project |
+| **Projects** | |
+| `spectree__list_projects` | List projects with optional team/scope filtering |
+| `spectree__get_project` | Get project details by ID or name |
+| `spectree__create_project` | Create a new team-scoped project |
+| `spectree__reorder_project` | Change project position within its team |
+| **Features** | |
 | `spectree__list_features` | List features with optional filters |
-| `spectree__get_feature` | Get feature details |
-| `spectree__create_feature` | Create a new feature |
-| `spectree__update_feature` | Update a feature |
+| `spectree__get_feature` | Get feature details by ID or identifier |
+| `spectree__create_feature` | Create a new feature in a project |
+| `spectree__update_feature` | Update feature title, status, assignee, etc. |
+| `spectree__reorder_feature` | Change feature position within its project |
+| **Tasks** | |
 | `spectree__list_tasks` | List tasks with optional filters |
-| `spectree__get_task` | Get task details |
-| `spectree__create_task` | Create a new task |
-| `spectree__update_task` | Update a task |
-| `spectree__list_statuses` | List available statuses |
+| `spectree__get_task` | Get task details by ID or identifier |
+| `spectree__create_task` | Create a new task under a feature |
+| `spectree__update_task` | Update task title, status, assignee, etc. |
+| `spectree__reorder_task` | Change task position within its feature |
+| **Statuses** | |
+| `spectree__list_statuses` | List workflow statuses for a team |
+| `spectree__get_status` | Get status details by ID or name |
+| **Personal Scope** | |
+| `spectree__get_personal_scope` | Get user's personal scope info (creates if needed) |
+| `spectree__list_personal_projects` | List projects in personal scope |
+| `spectree__create_personal_project` | Create a project in personal scope |
+| `spectree__list_personal_statuses` | List workflow statuses in personal scope |
 
 ### Search Tool (`spectree__search`)
 
@@ -629,3 +696,15 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 | **Linting** | ESLint 9 (flat config) |
 | **Formatting** | Prettier |
 | **Infrastructure** | Azure (Bicep) |
+
+## Documentation
+
+Additional documentation is available in the `docs/` directory:
+
+| Document | Description |
+|----------|-------------|
+| [Database Safety Guide](./docs/database-safety-guide.md) | Critical safety rules for database operations |
+| [Identity & Collaboration Reference](./docs/identity-collaboration-vnext-implementation-reference.md) | Implementation details for personal scopes and team membership |
+| [MCP Documentation](./docs/MCP/) | MCP server setup, authentication, and security |
+| [Azure Deployment Guide](./docs/azure-deployment-guide.md) | Production deployment to Azure |
+| [Design References](./docs/DESIGN-REFERENCES/) | Architectural decisions and Linear API patterns |

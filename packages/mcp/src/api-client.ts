@@ -196,11 +196,71 @@ export interface Status {
   category: string;
   color: string | null;
   position: number;
-  teamId: string;
+  teamId: string | null;
+  personalScopeId?: string | null;
 }
 
 export interface ListStatusesResponse {
   data: Status[];
+}
+
+// -----------------------------------------------------------------------------
+// Personal Scope Types
+// -----------------------------------------------------------------------------
+
+/** Personal scope information */
+export interface PersonalScope {
+  id: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Personal project (extends Project but has personalScopeId) */
+export interface PersonalProject {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
+  sortOrder: number;
+  isArchived: boolean;
+  personalScopeId: string;
+  teamId: null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { features: number };
+}
+
+export interface ListPersonalProjectsParams {
+  limit?: number | undefined;
+  cursor?: string | undefined;
+}
+
+export interface ListPersonalProjectsResponse {
+  data: PersonalProject[];
+  meta: PaginationMeta;
+}
+
+export interface CreatePersonalProjectData {
+  name: string;
+  description?: string | undefined;
+  icon?: string | undefined;
+  color?: string | undefined;
+}
+
+export interface PersonalStatus {
+  id: string;
+  name: string;
+  category: string;
+  color: string | null;
+  position: number;
+  personalScopeId: string;
+  teamId: null;
+}
+
+export interface ListPersonalStatusesResponse {
+  data: PersonalStatus[];
 }
 
 // -----------------------------------------------------------------------------
@@ -639,6 +699,78 @@ export class ApiClient {
       }
       throw error;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Personal Scope Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get the current user's personal scope.
+   * Creates the personal scope if it doesn't exist (lazy initialization).
+   */
+  async getPersonalScope(): Promise<{ data: PersonalScope }> {
+    return this.request<{ data: PersonalScope }>("GET", "/api/v1/me/scope");
+  }
+
+  /**
+   * List projects in the current user's personal scope.
+   */
+  async listPersonalProjects(params?: ListPersonalProjectsParams): Promise<ListPersonalProjectsResponse> {
+    const query = this.buildQueryString({
+      limit: params?.limit,
+      cursor: params?.cursor,
+    });
+    return this.request<ListPersonalProjectsResponse>("GET", `/api/v1/me/projects${query}`);
+  }
+
+  /**
+   * Create a new project in the current user's personal scope.
+   */
+  async createPersonalProject(data: CreatePersonalProjectData): Promise<{ data: PersonalProject }> {
+    return this.request<{ data: PersonalProject }>("POST", "/api/v1/me/projects", data);
+  }
+
+  /**
+   * List statuses in the current user's personal scope.
+   */
+  async listPersonalStatuses(): Promise<ListPersonalStatusesResponse> {
+    return this.request<ListPersonalStatusesResponse>("GET", "/api/v1/me/statuses");
+  }
+
+  /**
+   * Resolve a status name or UUID to a status UUID within the personal scope.
+   */
+  async resolvePersonalStatusId(statusNameOrId: string): Promise<string> {
+    // UUID regex pattern
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    if (UUID_REGEX.test(statusNameOrId)) {
+      // Already a UUID - validate it exists
+      try {
+        await this.getStatus(statusNameOrId);
+        return statusNameOrId;
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          throw new Error(`Status with id '${statusNameOrId}' not found`);
+        }
+        throw error;
+      }
+    }
+
+    // Look up by name in the personal scope
+    const { data: statuses } = await this.listPersonalStatuses();
+    const status = statuses.find(
+      (s) => s.name.toLowerCase() === statusNameOrId.toLowerCase()
+    );
+
+    if (!status) {
+      throw new Error(
+        `Status '${statusNameOrId}' not found in personal scope. Available statuses: ${statuses.map((s) => s.name).join(", ")}`
+      );
+    }
+
+    return status.id;
   }
 
   // ---------------------------------------------------------------------------

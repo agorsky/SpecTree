@@ -2,12 +2,12 @@ import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import {
   getUsers,
   getUserById,
-  createUser,
   updateUser,
   softDeleteUser,
   emailExists,
 } from "../services/userService.js";
 import { authenticate } from "../middleware/authenticate.js";
+import { ForbiddenError } from "../errors/index.js";
 
 // Request/Response type definitions
 interface GetUsersQuery {
@@ -100,41 +100,15 @@ export default async function usersRoutes(
 
   /**
    * POST /api/v1/users
-   * Create a new user (registration)
-   * Public endpoint - no authentication required
+   * Registration endpoint - DISABLED
+   * Self-registration is disabled. New users must be invited by an administrator.
    */
   fastify.post<{ Body: CreateUserBody }>(
     "/",
-    async (request, reply) => {
-      const { email, name, password, avatarUrl } = request.body;
-
-      // Validate required fields
-      if (!email || !name || !password) {
-        return reply.status(400).send({
-          error: "Bad Request",
-          message: "email, name, and password are required",
-        });
-      }
-
-      // Check if email already exists
-      if (await emailExists(email)) {
-        return reply.status(409).send({
-          error: "Conflict",
-          message: "A user with this email already exists",
-        });
-      }
-
-      const createInput: { email: string; name: string; password: string; avatarUrl?: string | null } = {
-        email,
-        name,
-        password,
-      };
-      if (avatarUrl !== undefined) {
-        createInput.avatarUrl = avatarUrl;
-      }
-
-      const user = await createUser(createInput);
-      return reply.status(201).send({ data: user });
+    async () => {
+      throw new ForbiddenError(
+        "Self-registration is disabled. Please contact an administrator for an invitation code."
+      );
     }
   );
 

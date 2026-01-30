@@ -9,6 +9,8 @@ export * as taskService from "./taskService.js";
 export * as statusService from "./statusService.js";
 export * as teamService from "./teamService.js";
 export * as userService from "./userService.js";
+export * as personalScopeService from "./personalScopeService.js";
+export * as invitationService from "./invitationService.js";
 
 // Re-export the database client
 export { prisma } from "../lib/db.js";

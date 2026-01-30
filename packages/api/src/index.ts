@@ -3,6 +3,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import compress from "@fastify/compress";
+import rateLimit from "@fastify/rate-limit";
 import { prisma } from "./lib/db.js";
 import { registerErrorHandler } from "./middleware/errorHandler.js";
 import { NotFoundError } from "./errors/index.js";
@@ -17,6 +18,8 @@ import featuresRoutes from "./routes/features.js";
 import tasksRoutes, { featureTasksRoutes } from "./routes/tasks.js";
 import authRoutes from "./routes/auth.js";
 import tokensRoutes from "./routes/tokens.js";
+import meRoutes from "./routes/me.js";
+import invitationRoutes from "./routes/admin/invitations.js";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const HOST = process.env.HOST ?? "0.0.0.0";
@@ -39,6 +42,11 @@ async function main(): Promise<void> {
   });
   await fastify.register(helmet);
   await fastify.register(compress);
+  
+  // Register rate limit plugin (allows per-route config via route.config.rateLimit)
+  await fastify.register(rateLimit, {
+    global: false, // Don't apply rate limiting globally, only to routes with explicit config
+  });
 
   // Register error handler
   registerErrorHandler(fastify);
@@ -55,6 +63,8 @@ async function main(): Promise<void> {
   await fastify.register(tasksRoutes, { prefix: "/api/v1/tasks" });
   await fastify.register(authRoutes, { prefix: "/api/v1/auth" });
   await fastify.register(tokensRoutes, { prefix: "/api/v1/tokens" });
+  await fastify.register(meRoutes, { prefix: "/api/v1/me" });
+  await fastify.register(invitationRoutes, { prefix: "/api/v1/admin/invitations" });
 
   // Graceful shutdown - disconnect Prisma
   fastify.addHook("onClose", async () => {

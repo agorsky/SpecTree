@@ -2,6 +2,7 @@ import { prisma } from "../lib/db.js";
 import type { Project } from "../generated/prisma/index.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
+import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
 
 // Types for project operations
 export interface CreateProjectInput {
@@ -28,6 +29,8 @@ export interface ListProjectsOptions {
   limit?: number | undefined;
   teamId?: string | undefined;
   orderBy?: ProjectOrderBy | undefined;
+  /** Current user ID - when provided, filters to only show projects in accessible scopes */
+  currentUserId?: string | undefined;
 }
 
 export interface ProjectWithCount extends Project {
@@ -47,6 +50,7 @@ export interface PaginatedResult<T> {
 /**
  * List projects with cursor-based pagination
  * Ordered by sortOrder, then createdAt
+ * When currentUserId is provided, filters to only show projects in accessible scopes
  */
 export async function listProjects(
   options: ListProjectsOptions = {}
@@ -54,8 +58,43 @@ export async function listProjects(
   const limit = Math.min(100, Math.max(1, options.limit ?? 20));
 
   // Build where clause conditionally to avoid undefined values
-  const whereClause: { isArchived: boolean; teamId?: string } = { isArchived: false };
+  const whereClause: {
+    isArchived: boolean;
+    teamId?: string;
+    OR?: Array<{ teamId?: { in: string[] }; personalScopeId?: string | { in: string[] } }>;
+  } = { isArchived: false };
+
+  // Apply scope-based filtering when currentUserId is provided
+  if (options.currentUserId) {
+    const accessibleScopes = await getAccessibleScopes(options.currentUserId);
+
+    // If user has no accessible scopes, return empty result
+    if (!hasAccessibleScopes(accessibleScopes)) {
+      return {
+        data: [],
+        meta: { cursor: null, hasMore: false },
+      };
+    }
+
+    // Build OR clause for accessible scopes
+    const scopeConditions: Array<{ teamId?: { in: string[] }; personalScopeId?: string }> = [];
+
+    if (accessibleScopes.teamIds.length > 0) {
+      scopeConditions.push({ teamId: { in: accessibleScopes.teamIds } });
+    }
+    if (accessibleScopes.personalScopeId) {
+      scopeConditions.push({ personalScopeId: accessibleScopes.personalScopeId });
+    }
+
+    whereClause.OR = scopeConditions;
+  }
+
+  // If teamId filter is provided, apply it (overrides scope filter for specific team queries)
   if (options.teamId !== undefined) {
+    // When teamId is explicitly provided, use it directly
+    // The scope filter above already ensures user can only see their accessible projects
+    // But if explicitly requesting a team, we filter to just that team
+    delete whereClause.OR;
     whereClause.teamId = options.teamId;
   }
 

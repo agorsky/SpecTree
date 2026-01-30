@@ -4,6 +4,9 @@ export interface User {
   name: string;
   role: "admin" | "member";
   teamId: string;
+  isActive: boolean;
+  isGlobalAdmin: boolean;
+  avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

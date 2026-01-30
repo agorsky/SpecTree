@@ -164,8 +164,8 @@ describe("Users API", () => {
     });
   });
 
-  describe("POST /api/v1/users (registration)", () => {
-    it("should create a new user", async () => {
+  describe("POST /api/v1/users (registration - DISABLED)", () => {
+    it("rejects all registration attempts with 403", async () => {
       const response = await app.inject({
         method: "POST",
         url: "/api/v1/users",
@@ -176,86 +176,36 @@ describe("Users API", () => {
         },
       });
 
-      expect(response.statusCode).toBe(201);
+      expect(response.statusCode).toBe(403);
       const body = JSON.parse(response.body);
-      expect(body.data.email).toBe("newuser@example.com");
-      expect(body.data.name).toBe("New User");
-      expect(body.data.id).toBeDefined();
-      expect(body.data.passwordHash).toBeUndefined();
+      expect(body.error.code).toBe("FORBIDDEN");
+      expect(body.error.message).toContain("Self-registration is disabled");
+      expect(body.error.message).toContain("invitation");
     });
 
-    it("should create user with avatar URL", async () => {
+    it("rejects registration even with all valid fields", async () => {
       const response = await app.inject({
         method: "POST",
         url: "/api/v1/users",
         payload: {
-          email: "avatar@example.com",
-          name: "Avatar User",
-          password: "securePassword123",
+          email: "validuser@example.com",
+          name: "Valid User",
+          password: "ValidPassword123!",
           avatarUrl: "https://example.com/avatar.png",
         },
       });
 
-      expect(response.statusCode).toBe(201);
-      const body = JSON.parse(response.body);
-      expect(body.data.avatarUrl).toBe("https://example.com/avatar.png");
+      expect(response.statusCode).toBe(403);
     });
 
-    it("should return 409 for duplicate email", async () => {
-      await createTestUser({ email: "duplicate@example.com" });
-
+    it("rejects registration with empty payload", async () => {
       const response = await app.inject({
         method: "POST",
         url: "/api/v1/users",
-        payload: {
-          email: "duplicate@example.com",
-          name: "Duplicate User",
-          password: "securePassword123",
-        },
+        payload: {},
       });
 
-      expect(response.statusCode).toBe(409);
-      const body = JSON.parse(response.body);
-      expect(body.error).toBe("Conflict");
-    });
-
-    it("should return 400 for missing required fields", async () => {
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/users",
-        payload: {
-          email: "incomplete@example.com",
-          // Missing name and password
-        },
-      });
-
-      expect(response.statusCode).toBe(400);
-    });
-
-    it("should return 400 for missing email", async () => {
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/users",
-        payload: {
-          name: "No Email User",
-          password: "securePassword123",
-        },
-      });
-
-      expect(response.statusCode).toBe(400);
-    });
-
-    it("should return 400 for missing password", async () => {
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/users",
-        payload: {
-          email: "nopassword@example.com",
-          name: "No Password User",
-        },
-      });
-
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(403);
     });
   });
 

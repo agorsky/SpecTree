@@ -10,6 +10,14 @@ import { ForbiddenError } from "../errors/index.js";
 import type { MembershipRole } from "../services/membershipService.js";
 
 /**
+ * Special marker for personal scope resources.
+ * When a resource belongs to a personal scope (not a team), we use this
+ * to indicate that team-based authorization should be bypassed in favor
+ * of personal scope ownership checks.
+ */
+export const PERSONAL_SCOPE_MARKER = "__personal_scope__";
+
+/**
  * User's team membership info for authorization.
  * Cached on req.userTeams for reuse across middleware calls.
  */
@@ -23,6 +31,8 @@ declare module "fastify" {
     userTeams?: UserTeamMembership[];
     /** The resolved team ID from requireTeamAccess middleware */
     teamId?: string;
+    /** The personal scope ID if the resource belongs to a personal scope */
+    personalScopeId?: string;
   }
 }
 
@@ -73,31 +83,68 @@ function hasTeamAccess(
 }
 
 /**
- * Looks up the team ID for a project.
- *
- * @param projectId - The project ID
- * @returns The team ID or null if project not found
+ * Result of looking up a project for authorization.
+ * Contains teamId (null for personal projects) and personalScopeId if applicable.
  */
-async function getTeamIdFromProject(projectId: string): Promise<string | null> {
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-    select: { teamId: true },
-  });
-  return project?.teamId ?? null;
+interface ProjectAuthInfo {
+  teamId: string | null;
+  personalScopeId: string | null;
 }
 
 /**
- * Looks up the team ID for a feature (via its project).
+ * Looks up the team ID for a project.
+ * Supports both UUID and exact project name lookups.
  *
- * @param featureId - The feature ID
- * @returns The team ID or null if feature/project not found
+ * For personal scope projects (teamId = null), returns the personalScopeId
+ * to enable ownership verification.
+ *
+ * @param projectIdOrName - The project ID (UUID) or exact name
+ * @returns Project auth info or null if project not found
  */
+async function getProjectAuthInfo(projectIdOrName: string): Promise<ProjectAuthInfo | null> {
+  const isUuid = UUID_REGEX.test(projectIdOrName);
+  const project = await prisma.project.findFirst({
+    where: isUuid
+      ? { id: projectIdOrName }
+      : { name: projectIdOrName },
+    select: { teamId: true, personalScopeId: true },
+  });
+
+  if (!project) {
+    return null;
+  }
+
+  return {
+    teamId: project.teamId,
+    personalScopeId: project.personalScopeId,
+  };
+}
+
+/**
+ * Looks up the team ID for a project (legacy function for compatibility).
+ * Use getProjectAuthInfo for full support including personal scope.
+ *
+ * @param projectIdOrName - The project ID (UUID) or exact name
+ * @returns The team ID, PERSONAL_SCOPE_MARKER for personal projects, or null if not found
+ */
+async function getTeamIdFromProject(projectIdOrName: string): Promise<string | null> {
+  const authInfo = await getProjectAuthInfo(projectIdOrName);
+  if (!authInfo) {
+    return null;
+  }
+  // For personal scope projects, return marker
+  if (authInfo.teamId === null && authInfo.personalScopeId) {
+    return PERSONAL_SCOPE_MARKER;
+  }
+  return authInfo.teamId;
+}
+
 /**
  * Looks up the team ID for a feature (via project).
  * Supports both UUID and identifier (e.g., "ENG-4") lookups.
  *
  * @param featureIdOrIdentifier - The feature ID (UUID) or identifier
- * @returns The team ID or null if feature/project not found
+ * @returns The team ID, PERSONAL_SCOPE_MARKER for personal features, or null if not found
  */
 async function getTeamIdFromFeature(featureIdOrIdentifier: string): Promise<string | null> {
   const isUuid = UUID_REGEX.test(featureIdOrIdentifier);
@@ -105,9 +152,16 @@ async function getTeamIdFromFeature(featureIdOrIdentifier: string): Promise<stri
     where: isUuid
       ? { id: featureIdOrIdentifier }
       : { identifier: featureIdOrIdentifier },
-    select: { project: { select: { teamId: true } } },
+    select: { project: { select: { teamId: true, personalScopeId: true } } },
   });
-  return feature?.project.teamId ?? null;
+  if (!feature) {
+    return null;
+  }
+  // For personal scope features, return marker
+  if (feature.project.teamId === null && feature.project.personalScopeId) {
+    return PERSONAL_SCOPE_MARKER;
+  }
+  return feature.project.teamId ?? null;
 }
 
 /**
@@ -120,7 +174,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * Supports both UUID and identifier (e.g., "ENG-4-1") lookups.
  *
  * @param taskIdOrIdentifier - The task ID (UUID) or identifier (e.g., "ENG-4-1")
- * @returns The team ID or null if task/feature/project not found
+ * @returns The team ID, PERSONAL_SCOPE_MARKER for personal tasks, or null if not found
  */
 async function getTeamIdFromTask(taskIdOrIdentifier: string): Promise<string | null> {
   const isUuid = UUID_REGEX.test(taskIdOrIdentifier);
@@ -128,23 +182,95 @@ async function getTeamIdFromTask(taskIdOrIdentifier: string): Promise<string | n
     where: isUuid
       ? { id: taskIdOrIdentifier }
       : { identifier: taskIdOrIdentifier },
-    select: { feature: { select: { project: { select: { teamId: true } } } } },
+    select: { feature: { select: { project: { select: { teamId: true, personalScopeId: true } } } } },
   });
-  return task?.feature.project.teamId ?? null;
+  if (!task) {
+    return null;
+  }
+  // For personal scope tasks, return marker
+  if (task.feature.project.teamId === null && task.feature.project.personalScopeId) {
+    return PERSONAL_SCOPE_MARKER;
+  }
+  return task.feature.project.teamId ?? null;
 }
 
 /**
  * Looks up the team ID for a status.
+ * For personal statuses, returns PERSONAL_SCOPE_MARKER.
  *
  * @param statusId - The status ID
- * @returns The team ID or null if status not found
+ * @returns The team ID, PERSONAL_SCOPE_MARKER for personal statuses, or null if not found
  */
 async function getTeamIdFromStatus(statusId: string): Promise<string | null> {
   const status = await prisma.status.findUnique({
     where: { id: statusId },
-    select: { teamId: true },
+    select: { teamId: true, personalScopeId: true },
   });
-  return status?.teamId ?? null;
+  if (!status) {
+    return null;
+  }
+  // For personal scope statuses, return marker
+  if (status.teamId === null && status.personalScopeId) {
+    return PERSONAL_SCOPE_MARKER;
+  }
+  return status.teamId ?? null;
+}
+
+/**
+ * Resolves a team ID, name, or key to the actual team UUID.
+ * Supports UUID (e.g., "550e8400-..."), team key (e.g., "ENG"), or team name (e.g., "Engineering").
+ *
+ * @param teamIdOrNameOrKey - The team ID (UUID), name, or key
+ * @returns The team UUID or null if not found
+ */
+async function resolveTeamId(teamIdOrNameOrKey: string): Promise<string | null> {
+  const isUuid = UUID_REGEX.test(teamIdOrNameOrKey);
+
+  if (isUuid) {
+    // Verify the UUID exists
+    const team = await prisma.team.findUnique({
+      where: { id: teamIdOrNameOrKey, isArchived: false },
+      select: { id: true },
+    });
+    return team?.id ?? null;
+  }
+
+  // Try lookup by key first (exact match)
+  let team = await prisma.team.findFirst({
+    where: {
+      key: teamIdOrNameOrKey,
+      isArchived: false,
+    },
+    select: { id: true },
+  });
+
+  if (team) {
+    return team.id;
+  }
+
+  // Try key uppercase (keys are typically uppercase like "ENG")
+  team = await prisma.team.findFirst({
+    where: {
+      key: teamIdOrNameOrKey.toUpperCase(),
+      isArchived: false,
+    },
+    select: { id: true },
+  });
+
+  if (team) {
+    return team.id;
+  }
+
+  // Fall back to name lookup (exact match)
+  team = await prisma.team.findFirst({
+    where: {
+      name: teamIdOrNameOrKey,
+      isArchived: false,
+    },
+    select: { id: true },
+  });
+
+  return team?.id ?? null;
 }
 
 /**
@@ -234,35 +360,50 @@ export function requireTeamAccess(
     const typeLower = resourceType.toLowerCase();
 
     if (typeLower === "teamid" || typeLower === "team_id") {
-      // Direct team ID
-      teamId = resourceId;
-    } else if (typeLower === "projectid" || typeLower === "project_id") {
-      // Lookup team via project
-      teamId = await getTeamIdFromProject(resourceId);
+      // Direct team ID - resolve name/key to UUID if needed
+      teamId = await resolveTeamId(resourceId);
       if (!teamId) {
+        throw new ForbiddenError("Team not found");
+      }
+    } else if (typeLower === "projectid" || typeLower === "project_id") {
+      // Lookup team via project (supports UUID and name)
+      teamId = await getTeamIdFromProject(resourceId);
+      if (teamId === null) {
         throw new ForbiddenError("Project not found");
       }
     } else if (typeLower === "featureid" || typeLower === "feature_id") {
       // Lookup team via feature → project
       teamId = await getTeamIdFromFeature(resourceId);
-      if (!teamId) {
+      if (teamId === null) {
         throw new ForbiddenError("Feature not found");
       }
     } else if (typeLower === "taskid" || typeLower === "task_id") {
       // Lookup team via task → feature → project
       teamId = await getTeamIdFromTask(resourceId);
-      if (!teamId) {
+      if (teamId === null) {
         throw new ForbiddenError("Task not found");
       }
     } else if (typeLower === "statusid" || typeLower === "status_id") {
       // Lookup team via status
       teamId = await getTeamIdFromStatus(resourceId);
-      if (!teamId) {
+      if (teamId === null) {
         throw new ForbiddenError("Status not found");
       }
     } else {
-      // Unknown resource type - treat as direct team ID
-      teamId = resourceId;
+      // Unknown resource type - try to resolve as team ID/name/key
+      teamId = await resolveTeamId(resourceId);
+      if (!teamId) {
+        // Not a known team, treat as direct ID (for backwards compatibility)
+        teamId = resourceId;
+      }
+    }
+
+    // Handle personal scope resources - allow access if user owns the personal scope
+    if (teamId === PERSONAL_SCOPE_MARKER) {
+      // Personal scope resources don't require team membership
+      // The resource itself validates ownership (via user's personal scope ID)
+      // Don't set teamId - leave it undefined for personal scope
+      return;  // Allow access - actual ownership validated by route handler
     }
 
     // Check if user has access to the team
@@ -419,10 +560,12 @@ export function requireRole(
     // Get team ID from request context
     const teamId = getTeamIdFromRequest(request);
 
+    // If no team context, this is a personal scope resource
+    // For personal scope, the user has full access to their own resources
+    // (ownership is validated by the API token, which links to the user's personal scope)
     if (!teamId) {
-      throw new ForbiddenError(
-        "Team context not found. Unable to determine team for role check."
-      );
+      // Personal scope - allow access (user owns their personal resources)
+      return;
     }
 
     // Get user's role in this team

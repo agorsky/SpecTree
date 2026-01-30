@@ -1,6 +1,8 @@
 # SpecTree User, Team, and Project Model
 
-This document provides a comprehensive overview of how SpecTree currently handles users, teams, and projects, including their relationships, creation, management, and configuration. This is intended as a reference for planning feature expansions.
+This document provides a comprehensive overview of how SpecTree handles users, teams, and projects, including their relationships, creation, management, and configuration.
+
+> **Note:** This document was updated to reflect the Identity & Collaboration vNext changes. See [identity-collaboration-vnext-implementation-reference.md](./identity-collaboration-vnext-implementation-reference.md) for implementation details.
 
 ---
 
@@ -11,36 +13,43 @@ This document provides a comprehensive overview of how SpecTree currently handle
 3. [User Management](#user-management)
 4. [Team Management](#team-management)
 5. [Membership Model](#membership-model)
-6. [Project Management](#project-management)
-7. [Authentication & Authorization](#authentication--authorization)
-8. [Relationships Summary](#relationships-summary)
-9. [Current Limitations & Gaps](#current-limitations--gaps)
+6. [Personal Scope](#personal-scope)
+7. [Project Management](#project-management)
+8. [Authentication & Authorization](#authentication--authorization)
+9. [Relationships Summary](#relationships-summary)
+10. [Current Limitations & Gaps](#current-limitations--gaps)
 
 ---
 
 ## Entity Overview
 
-SpecTree is a project management tool with a hierarchical data model:
+SpecTree is a project management tool with a hierarchical data model supporting both team-based and personal work:
 
 ```
 User ─────────────────────────────────────────────────────────────────┐
   │                                                                   │
-  └──► Membership (role: admin|member|guest) ──► Team                 │
+  ├──► PersonalScope ──► Project ──► Feature ──► Task                │
+  │        │                                                          │
+  │        └──► Status (personal workflow)                           │
+  │                                                                   │
+  └──► Membership (role: admin|member|guest) ──► Team                │
                                                    │                  │
-                                                   └──► Project       │
-                                                         │            │
-                                                         └──► Feature ◄─ assigneeId
-                                                               │      │
-                                                               └──► Task ◄─ assigneeId
+                                                   ├──► Project       │
+                                                   │     └──► Feature ◄─ assigneeId
+                                                   │           └──► Task ◄─ assigneeId
+                                                   │                  │
+                                                   └──► Status (team workflow)
 ```
 
 **Core Entities:**
 - **User**: Individual account with authentication credentials
+- **PersonalScope**: Private container for each user's personal work (1:1 with User)
 - **Team**: Organizational unit that owns projects and defines workflow statuses
 - **Membership**: Join table linking users to teams with role-based permissions
-- **Project**: Container for features, belongs to exactly one team
+- **Project**: Container for features, belongs to either a team OR a personal scope
 - **Feature**: Primary work item (like Linear's "Issue"), belongs to a project
 - **Task**: Sub-item of a feature, for breaking down work
+- **Status**: Workflow state, belongs to either a team OR a personal scope
 
 ---
 
@@ -60,9 +69,10 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   memberships      Membership[]
-  assignedFeatures Feature[]    @relation("AssignedFeatures")
-  assignedTasks    Task[]       @relation("AssignedTasks")
+  assignedFeatures Feature[]      @relation("AssignedFeatures")
+  assignedTasks    Task[]         @relation("AssignedTasks")
   apiTokens        ApiToken[]
+  personalScope    PersonalScope?
 
   @@index([email])
   @@map("users")
@@ -78,6 +88,29 @@ model User {
 | `passwordHash` | String | bcrypt-hashed password (10 rounds) |
 | `avatarUrl` | String? | Optional profile image URL |
 | `isActive` | Boolean | Soft delete flag (default: true) |
+| `personalScope` | PersonalScope? | One-to-one relation to user's personal scope |
+
+### PersonalScope Model
+
+```prisma
+model PersonalScope {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statuses Status[]
+  projects Project[]
+
+  @@map("personal_scopes")
+}
+```
+
+**Key Constraints:**
+- One PersonalScope per user (enforced by `@unique` on `userId`)
+- Cascade delete when user is deleted
+- Owns statuses and projects within the personal scope
 
 ### Team Model
 
@@ -139,25 +172,38 @@ model Membership {
 
 ```prisma
 model Project {
-  id          String   @id @default(uuid())
-  teamId      String   @map("team_id")
-  name        String
-  description String?
-  icon        String?
-  color       String?
-  sortOrder   Float    @default(0) @map("sort_order")
-  isArchived  Boolean  @default(false) @map("is_archived")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  icon            String?
+  color           String?
+  sortOrder       Float    @default(0) @map("sort_order")
+  isArchived      Boolean  @default(false) @map("is_archived")
+  scopeType       String   @default("team") @map("scope_type") // 'team' or 'personal'
+  teamId          String?  @map("team_id")
+  personalScopeId String?  @map("personal_scope_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  team     Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  features Feature[]
+  team          Team?          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  personalScope PersonalScope? @relation(fields: [personalScopeId], references: [id], onDelete: Cascade)
+  features      Feature[]
 
   @@index([teamId])
   @@index([teamId, sortOrder])
+  @@index([personalScopeId])
   @@map("projects")
 }
 ```
+
+**Key Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `scopeType` | String | Either "team" or "personal" |
+| `teamId` | String? | FK to Team (null for personal projects) |
+| `personalScopeId` | String? | FK to PersonalScope (null for team projects) |
+
+**Note:** A project belongs to exactly one scope - either a team OR a personal scope, never both.
 
 ### API Token Model
 
@@ -198,7 +244,7 @@ export async function createUser(input: CreateUserInput): Promise<UserResponse>
 **Creation Process:**
 1. Hash password with bcrypt (10 salt rounds)
 2. Create user record in database
-3. **Automatic team membership:** New users are automatically added to **all existing non-archived teams** as `member` role
+3. **Create PersonalScope** with default statuses (Backlog, Todo, In Progress, Done, Canceled)
 4. Return user (without passwordHash)
 
 **Input:**
@@ -213,7 +259,8 @@ interface CreateUserInput {
 
 **Important Behavior:**
 - Email uniqueness is enforced at the database level
-- New users automatically join all existing teams (simplified multi-tenancy)
+- PersonalScope is automatically created for every new user
+- Users must be **explicitly invited** to teams (no auto-join)
 - No email verification is currently implemented
 - No password strength requirements beyond non-empty
 
@@ -237,6 +284,10 @@ Users are **soft deleted** by setting `isActive = false`. This:
 - Prevents login
 - Preserves historical data (assigned features/tasks remain)
 - Allows potential reactivation
+
+**Guardrails:**
+- Cannot delete a user who is the **last admin** of any team
+- Must promote another member to admin first, or delete the team
 
 ### User Retrieval
 
@@ -304,7 +355,7 @@ interface CreateTeamInput {
 }
 ```
 
-**⚠️ Important:** When a team is created, **existing users are NOT automatically added**. However, when a **user is created**, they are added to all existing teams. This creates an asymmetry in the current implementation.
+**⚠️ Important:** When a team is created, users must be **explicitly invited** as members. Users do not auto-join teams.
 
 ### Team Updates
 
@@ -384,12 +435,20 @@ interface AddMemberInput {
 **Endpoint:** `PUT /api/v1/teams/:teamId/members/:userId`  
 **Authorization:** Admin role in the team
 
+**Guardrails:**
+- Cannot demote the **last admin** of a team to a non-admin role
+- Must promote another member to admin first
+
 ### Removing Members
 
 **Endpoint:** `DELETE /api/v1/teams/:teamId/members/:userId`  
 **Authorization:** Admin role in the team
 
 **Behavior:** Hard delete of the membership record.
+
+**Guardrails:**
+- Cannot remove the **last admin** from a team
+- Must promote another member to admin first
 
 ### Listing Members
 
@@ -420,14 +479,62 @@ interface MembershipWithUser {
 
 ---
 
+## Personal Scope
+
+### Overview
+
+Personal Scope provides each user with a private workspace for work items not shared with any team. It is a 1:1 relationship with User.
+
+**Service:** `packages/api/src/services/personalScopeService.ts`
+
+### Personal Scope Creation
+
+Personal scopes are created automatically:
+1. **On user creation** - Every new user gets a PersonalScope with default statuses
+2. **On first access** - Lazy initialization via `GET /api/v1/me/scope`
+
+### Default Personal Statuses
+
+When a PersonalScope is created, these statuses are automatically provisioned:
+
+| Name | Category | Position |
+|------|----------|----------|
+| Backlog | backlog | 0 |
+| Todo | unstarted | 1 |
+| In Progress | started | 2 |
+| Done | completed | 3 |
+| Canceled | canceled | 4 |
+
+### Personal Scope API (`/me/*`)
+
+**Endpoints:**
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/me/scope` | Get personal scope info (creates if needed) |
+| `GET /api/v1/me/projects` | List personal projects (paginated) |
+| `POST /api/v1/me/projects` | Create a personal project |
+| `GET /api/v1/me/statuses` | List personal workflow statuses |
+| `POST /api/v1/me/statuses` | Create a personal status |
+
+### Personal vs Team Projects
+
+| Aspect | Personal Project | Team Project |
+|--------|------------------|--------------|
+| Visibility | Owner only | Team members |
+| Scope | `personalScopeId` set | `teamId` set |
+| Statuses | Personal statuses | Team statuses |
+| Feature identifiers | `USER-{NUM}` format | `{TEAM_KEY}-{NUM}` format |
+
+---
+
 ## Project Management
 
 ### Project Creation
 
+#### Team Projects
+
 **Endpoint:** `POST /api/v1/projects`  
 **Authentication:** Required
-
-**Service:** `packages/api/src/services/projectService.ts`
 
 ```typescript
 interface CreateProjectInput {
@@ -440,16 +547,28 @@ interface CreateProjectInput {
 }
 ```
 
-**Validation:**
-- Team must exist and not be archived
-- Name is required
+#### Personal Projects
 
-### Project-Team Relationship
+**Endpoint:** `POST /api/v1/me/projects`  
+**Authentication:** Required
 
-Projects belong to exactly **one team**:
-- Features in the project inherit the team's workflow statuses
-- Feature identifiers use the team's key
-- Authorization checks traverse: Feature → Project → Team → Membership
+```typescript
+interface CreatePersonalProjectInput {
+  name: string;        // Required
+  description?: string;
+  icon?: string;
+  color?: string;
+}
+```
+
+### Project Scope Types
+
+Projects belong to exactly **one scope** - either a team OR a personal scope:
+
+| Scope Type | Owner | Visibility | Status Source |
+|------------|-------|------------|---------------|
+| `team` | Team (via `teamId`) | Team members | Team's statuses |
+| `personal` | User (via `personalScopeId`) | Owner only | Personal statuses |
 
 ### Sort Order
 
@@ -582,34 +701,42 @@ fastify.post(
 │                              SpecTree Data Model                            │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-  ┌─────────┐                    ┌─────────────┐                  ┌──────────┐
-  │  User   │ ◄──────────────────│ Membership  │──────────────────► │  Team   │
-  └────┬────┘   N:1              └─────────────┘        N:1        └────┬─────┘
-       │                              role:                             │
-       │                         admin|member|guest                     │
-       │                                                                │
-       │ 1:N (apiTokens)                                         1:N    │
-       ▼                                                                ▼
-  ┌─────────┐                                                    ┌──────────┐
-  │ApiToken │                                                    │ Project  │
-  └─────────┘                                                    └────┬─────┘
-                                                                      │
-       ┌──────────────────────────────────────────────────────────────┘
-       │ 1:N (features)
-       ▼
-  ┌─────────┐                    ┌─────────────┐
-  │ Feature │ ◄──────────────────│   Status    │ ◄──────── Team (1:N)
-  └────┬────┘   N:1 (statusId)   └─────────────┘
-       │
-       │ 1:N (tasks)
-       ▼
-  ┌─────────┐
-  │  Task   │
-  └─────────┘
+  ┌─────────┐                                                     ┌──────────┐
+  │  User   │ ──────────────────────────────────────────────────► │  Team   │
+  └────┬────┘             Membership (N:M)                        └────┬─────┘
+       │                  role: admin|member|guest                     │
+       │                                                               │
+       │ 1:1                                                     1:N   │
+       ▼                                                               ▼
+  ┌───────────────┐                                              ┌──────────┐
+  │ PersonalScope │                                              │ Project  │
+  └───────┬───────┘                                              └────┬─────┘
+          │                                                           │
+          │ 1:N                                                  1:N  │
+          ▼                                                           ▼
+    ┌──────────┐                                                ┌─────────┐
+    │ Project  │                                                │ Feature │
+    │(personal)│                                                └────┬────┘
+    └────┬─────┘                                                     │
+         │                                                      1:N  │
+    1:N  │                                                           ▼
+         ▼                                                      ┌─────────┐
+    ┌─────────┐                                                 │  Task   │
+    │ Feature │                                                 └─────────┘
+    └────┬────┘
+         │
+    1:N  │
+         ▼
+    ┌─────────┐
+    │  Task   │
+    └─────────┘
 
   Additional Relations:
   - User 1:N Feature (assigneeId, optional)
   - User 1:N Task (assigneeId, optional)
+  - User 1:N ApiToken
+  - PersonalScope 1:N Status (personal statuses)
+  - Team 1:N Status (team statuses)
   - Feature N:1 Status (statusId, optional)
   - Task N:1 Status (statusId, optional)
 ```
@@ -620,6 +747,9 @@ fastify.post(
 |--------|-------|-----------|
 | User | Membership | CASCADE |
 | User | ApiToken | CASCADE |
+| User | PersonalScope | CASCADE |
+| PersonalScope | Project | CASCADE |
+| PersonalScope | Status | CASCADE |
 | Team | Membership | CASCADE |
 | Team | Project | CASCADE |
 | Team | Status | CASCADE |
@@ -645,15 +775,13 @@ fastify.post(
 7. **No OAuth/SSO integration** - Only email/password authentication
 8. **No session management** - Stateless JWT with no revocation capability
 9. **No activity tracking** - No audit log for user actions
-10. **Placeholder getCurrentUser()** - Returns first active user, not truly contextual
 
 ### Team Management Gaps
 
 1. **No team invitations** - Must directly add users by ID
-2. **No team ownership concept** - All admins are equal
-3. **Asymmetric auto-membership** - New users join all teams, but new teams don't get all users
-4. **No team settings/preferences** - No configurable team-level options
-5. **No team-level permissions** - Role system is basic (3 levels)
+2. **No team ownership concept** - All admins are equal (but guardrails prevent orphaning)
+3. **No team settings/preferences** - No configurable team-level options
+4. **No team-level permissions** - Role system is basic (3 levels)
 
 ### Membership Gaps
 
@@ -703,7 +831,8 @@ fastify.post(
 |------|---------|
 | `packages/api/src/services/userService.ts` | User CRUD operations |
 | `packages/api/src/services/teamService.ts` | Team CRUD operations |
-| `packages/api/src/services/membershipService.ts` | Membership management |
+| `packages/api/src/services/membershipService.ts` | Membership management + last-admin guardrails |
+| `packages/api/src/services/personalScopeService.ts` | Personal scope CRUD + default statuses |
 | `packages/api/src/services/projectService.ts` | Project CRUD operations |
 | `packages/api/src/services/tokenService.ts` | API token management |
 | `packages/api/src/services/featureService.ts` | Feature CRUD + assignee handling |
@@ -716,6 +845,7 @@ fastify.post(
 | `packages/api/src/routes/users.ts` | `/api/v1/users/*` |
 | `packages/api/src/routes/teams.ts` | `/api/v1/teams/*` |
 | `packages/api/src/routes/memberships.ts` | Team member management |
+| `packages/api/src/routes/me.ts` | `/api/v1/me/*` (personal scope) |
 | `packages/api/src/routes/auth.ts` | `/api/v1/auth/*` |
 | `packages/api/src/routes/tokens.ts` | `/api/v1/tokens/*` |
 
@@ -733,18 +863,20 @@ fastify.post(
 | `packages/api/prisma/schema.prisma` | Database schema definition |
 | `packages/api/src/schemas/auth.ts` | Auth request validation |
 | `packages/api/src/schemas/user.ts` | User request validation |
+| `packages/api/src/schemas/me.ts` | Personal scope request validation |
 
 ---
 
 ## Summary
 
-SpecTree currently implements a basic but functional user/team/project model:
+SpecTree implements a comprehensive user/team/project model with support for both collaborative and personal work:
 
-- **Users** are created with email/password, automatically join all teams
-- **Teams** are isolated organizational units with their own statuses
-- **Memberships** connect users to teams with three role levels
-- **Projects** belong to teams and contain features/tasks
-- **Authentication** supports JWT and API tokens
-- **Authorization** is team-scoped with role-based checks
+- **Users** are created with email/password and get a PersonalScope for private work
+- **PersonalScopes** provide isolated workspaces with their own statuses and projects
+- **Teams** are invite-only organizational units with their own statuses
+- **Memberships** connect users to teams with three role levels (admin, member, guest)
+- **Projects** belong to either a team (shared) or personal scope (private)
+- **Authentication** supports JWT and long-lived API tokens
+- **Authorization** is scope-aware with team role checks and last-admin guardrails
 
-The system is functional for small teams but lacks enterprise features like SSO, advanced permissions, team hierarchies, and audit logging. The automatic "add to all teams" behavior may need revision for multi-tenant scenarios.
+The system supports small teams with proper access control. Enterprise features like SSO, advanced permissions, and audit logging are not yet implemented.

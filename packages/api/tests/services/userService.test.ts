@@ -8,6 +8,16 @@ vi.mock('bcrypt', () => ({
   },
 }));
 
+// Mock personalScopeService
+vi.mock('../../src/services/personalScopeService.js', () => ({
+  createPersonalScope: vi.fn().mockResolvedValue({ id: 'scope-123', userId: 'user-123' }),
+}));
+
+// Mock membershipService
+vi.mock('../../src/services/membershipService.js', () => ({
+  getTeamsWhereUserIsLastAdmin: vi.fn().mockResolvedValue([]),
+}));
+
 // Mock the db module
 vi.mock('../../src/lib/db.js', () => ({
   prisma: {
@@ -19,11 +29,20 @@ vi.mock('../../src/lib/db.js', () => ({
       update: vi.fn(),
       count: vi.fn(),
     },
+    team: {
+      findMany: vi.fn(),
+    },
+    membership: {
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+    },
   },
 }));
 
 import bcrypt from 'bcrypt';
 import { prisma } from '../../src/lib/db.js';
+import { createPersonalScope } from '../../src/services/personalScopeService.js';
+import { getTeamsWhereUserIsLastAdmin } from '../../src/services/membershipService.js';
 import {
   getUsers,
   getUserById,
@@ -35,6 +54,7 @@ import {
   softDeleteUser,
   getUserByEmailWithPassword,
 } from '../../src/services/userService.js';
+import { ForbiddenError } from '../../src/errors/index.js';
 
 describe('userService', () => {
   beforeEach(() => {
@@ -231,7 +251,7 @@ describe('userService', () => {
   });
 
   describe('createUser', () => {
-    it('should create user with hashed password', async () => {
+    it('should create user with hashed password and provision PersonalScope', async () => {
       const mockUser = {
         id: 'user-123',
         email: 'new@test.com',
@@ -256,6 +276,8 @@ describe('userService', () => {
         },
         select: expect.objectContaining({ id: true, passwordHash: false }),
       });
+      // Verify PersonalScope is created
+      expect(createPersonalScope).toHaveBeenCalledWith('user-123');
     });
 
     it('should create user with avatar URL', async () => {
@@ -275,6 +297,37 @@ describe('userService', () => {
         }),
         select: expect.any(Object),
       });
+    });
+
+    it('should NOT auto-join user to any teams', async () => {
+      const mockUser = { id: 'user-123', email: 'new@test.com', name: 'New User' };
+      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as any);
+
+      await createUser({
+        email: 'new@test.com',
+        name: 'New User',
+        password: 'secret123',
+      });
+
+      // Verify team lookup is NOT called
+      expect(prisma.team.findMany).not.toHaveBeenCalled();
+      // Verify membership creation is NOT called
+      expect(prisma.membership.createMany).not.toHaveBeenCalled();
+    });
+
+    it('should provision PersonalScope with default statuses for new users', async () => {
+      const mockUser = { id: 'user-456', email: 'test@test.com', name: 'Test' };
+      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as any);
+
+      await createUser({
+        email: 'test@test.com',
+        name: 'Test',
+        password: 'password123',
+      });
+
+      // createPersonalScope creates the scope AND default statuses
+      expect(createPersonalScope).toHaveBeenCalledWith('user-456');
+      expect(createPersonalScope).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -375,6 +428,11 @@ describe('userService', () => {
   });
 
   describe('softDeleteUser', () => {
+    beforeEach(() => {
+      // Reset the mock to default (no teams where user is last admin)
+      vi.mocked(getTeamsWhereUserIsLastAdmin).mockResolvedValue([]);
+    });
+
     it('should set isActive to false', async () => {
       const deactivatedUser = { id: 'user-123', isActive: false };
       vi.mocked(prisma.user.update).mockResolvedValue(deactivatedUser as any);
@@ -395,6 +453,54 @@ describe('userService', () => {
       const result = await softDeleteUser('nonexistent');
 
       expect(result).toBeNull();
+    });
+
+    describe('last-admin guardrail', () => {
+      it('should throw ForbiddenError when user is last admin of a team', async () => {
+        vi.mocked(getTeamsWhereUserIsLastAdmin).mockResolvedValue(['team-123']);
+        vi.mocked(prisma.team.findMany).mockResolvedValue([
+          { id: 'team-123', name: 'Engineering Team' },
+        ] as any);
+
+        await expect(softDeleteUser('user-123')).rejects.toThrow(ForbiddenError);
+        await expect(softDeleteUser('user-123')).rejects.toThrow(
+          'Cannot delete user who is the last admin of team(s): Engineering Team'
+        );
+      });
+
+      it('should throw ForbiddenError when user is last admin of multiple teams', async () => {
+        vi.mocked(getTeamsWhereUserIsLastAdmin).mockResolvedValue(['team-1', 'team-2']);
+        vi.mocked(prisma.team.findMany).mockResolvedValue([
+          { id: 'team-1', name: 'Team Alpha' },
+          { id: 'team-2', name: 'Team Beta' },
+        ] as any);
+
+        await expect(softDeleteUser('user-123')).rejects.toThrow(ForbiddenError);
+        await expect(softDeleteUser('user-123')).rejects.toThrow(
+          'Cannot delete user who is the last admin of team(s): Team Alpha, Team Beta'
+        );
+      });
+
+      it('should allow deletion when user is not last admin of any team', async () => {
+        vi.mocked(getTeamsWhereUserIsLastAdmin).mockResolvedValue([]);
+        vi.mocked(prisma.user.update).mockResolvedValue({ id: 'user-123', isActive: false } as any);
+
+        const result = await softDeleteUser('user-123');
+
+        expect(result).toEqual({ id: 'user-123', isActive: false });
+        expect(prisma.user.update).toHaveBeenCalled();
+      });
+
+      it('should check last-admin status before deleting', async () => {
+        vi.mocked(getTeamsWhereUserIsLastAdmin).mockResolvedValue([]);
+        vi.mocked(prisma.user.update).mockResolvedValue({ id: 'user-123', isActive: false } as any);
+
+        await softDeleteUser('user-123');
+
+        // Verify the guardrail check is called first
+        expect(getTeamsWhereUserIsLastAdmin).toHaveBeenCalledWith('user-123');
+        expect(getTeamsWhereUserIsLastAdmin).toHaveBeenCalledTimes(1);
+      });
     });
   });
 

@@ -6,6 +6,7 @@
 // Common schemas
 export {
   uuidParamSchema,
+  flexibleIdParamSchema,
   paginationQuerySchema,
   searchQuerySchema,
   dateFilterQuerySchema,

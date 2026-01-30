@@ -32,6 +32,13 @@ vi.mock('../../src/lib/db.js', () => ({
 vi.mock('../../src/services/statusService.js', () => ({
   resolveStatusesToIds: vi.fn().mockResolvedValue(['status-1']),
   getStatusIdsByCategory: vi.fn().mockResolvedValue(['status-1', 'status-2']),
+  getDefaultBacklogStatus: vi.fn().mockResolvedValue({ id: 'backlog-status-id', name: 'Backlog' }),
+}));
+
+// Mock scope context utility
+vi.mock('../../src/utils/scopeContext.js', () => ({
+  getAccessibleScopes: vi.fn().mockResolvedValue({ personalScopeIds: [], teamIds: [] }),
+  hasAccessibleScopes: vi.fn().mockReturnValue(false),
 }));
 
 // Mock assignee utility
@@ -66,7 +73,8 @@ import {
   updateFeature,
   deleteFeature,
 } from '../../src/services/featureService.js';
-import { resolveStatusesToIds, getStatusIdsByCategory } from '../../src/services/statusService.js';
+import { resolveStatusesToIds, getStatusIdsByCategory, getDefaultBacklogStatus } from '../../src/services/statusService.js';
+import { getAccessibleScopes, hasAccessibleScopes } from '../../src/utils/scopeContext.js';
 import { resolveAssigneeId, isAssigneeNone, isAssigneeInvalid, ASSIGNEE_NONE, ASSIGNEE_INVALID } from '../../src/utils/assignee.js';
 import { generateSortOrderBetween } from '../../src/utils/ordering.js';
 import { emitStatusChanged } from '../../src/events/index.js';
@@ -200,13 +208,15 @@ describe('featureService', () => {
 
     it('should filter by assignee using resolveAssigneeId', async () => {
       vi.mocked(prisma.feature.findMany).mockResolvedValue([]);
+      vi.mocked(hasAccessibleScopes).mockReturnValueOnce(true);
+      vi.mocked(getAccessibleScopes).mockResolvedValueOnce({ personalScopeId: 'ps-1', teamIds: ['team-1'] });
 
       await listFeatures({ assignee: 'test@test.com', currentUserId: 'user-current' });
 
       expect(resolveAssigneeId).toHaveBeenCalledWith('test@test.com', 'user-current');
       expect(prisma.feature.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { assigneeId: 'user-123' },
+          where: expect.objectContaining({ assigneeId: 'user-123' }),
         })
       );
     });
@@ -393,6 +403,7 @@ describe('featureService', () => {
         title: 'New Feature',
         identifier: 'TEST-6',
         sortOrder: 1.0,
+        statusId: 'backlog-status-id',
       };
       vi.mocked(prisma.feature.create).mockResolvedValue(mockFeature as any);
 
@@ -408,6 +419,7 @@ describe('featureService', () => {
           projectId: 'proj-123',
           identifier: 'TEST-6',
           sortOrder: 1.0,
+          statusId: 'backlog-status-id', // Auto-assigned backlog status
         },
       });
     });

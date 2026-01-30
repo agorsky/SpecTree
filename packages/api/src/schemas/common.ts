@@ -12,6 +12,14 @@ export const uuidParamSchema = z.object({
 });
 
 /**
+ * Schema for validating flexible ID parameters that can be UUID, name, or key.
+ * Used by routes that support lookup by multiple identifiers (e.g., teams by id/name/key).
+ */
+export const flexibleIdParamSchema = z.object({
+  id: z.string().min(1, "ID is required"),
+});
+
+/**
  * Schema for cursor-based pagination query parameters
  */
 export const paginationQuerySchema = z.object({

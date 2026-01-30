@@ -1,6 +1,6 @@
 import { prisma } from "../lib/db.js";
 import type { Membership } from "../generated/prisma/index.js";
-import { NotFoundError, ConflictError, ValidationError } from "../errors/index.js";
+import { NotFoundError, ConflictError, ValidationError, ForbiddenError } from "../errors/index.js";
 
 // Valid membership roles (SQL Server doesn't support native enums)
 export const VALID_ROLES = ["admin", "member", "guest"] as const;
@@ -206,6 +206,17 @@ export async function updateMemberRole(
     );
   }
 
+  // GUARDRAIL: Prevent demoting the last admin
+  // Only check if we're demoting from admin to a non-admin role
+  if (membership.role === "admin" && input.role !== "admin") {
+    const userIsLastAdmin = await isLastAdmin(teamId, userId);
+    if (userIsLastAdmin) {
+      throw new ForbiddenError(
+        "Cannot demote the last admin of a team. Promote another member to admin first."
+      );
+    }
+  }
+
   // Update membership
   return prisma.membership.update({
     where: { id: membership.id },
@@ -239,10 +250,91 @@ export async function removeMemberFromTeam(
     );
   }
 
+  // GUARDRAIL: Prevent removing the last admin
+  if (membership.role === "admin") {
+    const userIsLastAdmin = await isLastAdmin(teamId, userId);
+    if (userIsLastAdmin) {
+      throw new ForbiddenError(
+        "Cannot remove the last admin from a team. Promote another member to admin first."
+      );
+    }
+  }
+
   // Delete membership
   await prisma.membership.delete({
     where: { id: membership.id },
   });
+}
+
+/**
+ * Check if a user is the last admin of a specific team.
+ * Returns true if the user is an admin AND there are no other admins.
+ */
+export async function isLastAdmin(teamId: string, userId: string): Promise<boolean> {
+  // Count admins for this team
+  const adminCount = await prisma.membership.count({
+    where: {
+      teamId,
+      role: "admin",
+    },
+  });
+
+  // If more than one admin, user cannot be the last admin
+  if (adminCount > 1) {
+    return false;
+  }
+
+  // If exactly one admin, check if it's this user
+  if (adminCount === 1) {
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_teamId: {
+          userId,
+          teamId,
+        },
+      },
+      select: { role: true },
+    });
+
+    return membership?.role === "admin";
+  }
+
+  // No admins at all - user cannot be the last admin
+  return false;
+}
+
+/**
+ * Check if a user is the last admin of ANY team they belong to.
+ * Returns array of team IDs where user is the last admin.
+ */
+export async function getTeamsWhereUserIsLastAdmin(userId: string): Promise<string[]> {
+  // Get all teams where this user is an admin
+  const adminMemberships = await prisma.membership.findMany({
+    where: {
+      userId,
+      role: "admin",
+    },
+    select: { teamId: true },
+  });
+
+  const lastAdminTeamIds: string[] = [];
+
+  for (const membership of adminMemberships) {
+    // Count admins for this team
+    const adminCount = await prisma.membership.count({
+      where: {
+        teamId: membership.teamId,
+        role: "admin",
+      },
+    });
+
+    // If only one admin (this user), add to the list
+    if (adminCount === 1) {
+      lastAdminTeamIds.push(membership.teamId);
+    }
+  }
+
+  return lastAdminTeamIds;
 }
 
 /**
