@@ -18,10 +18,10 @@ import { ForbiddenError } from "../errors/index.js";
  *   preHandler: [authenticate, requireGlobalAdmin]
  * }, handler);
  */
-export function requireGlobalAdmin(
+export async function requireGlobalAdmin(
   request: FastifyRequest,
   _reply: FastifyReply
-): void {
+): Promise<void> {
   // Assumes authenticate middleware has already run and set request.user
   if (!request.user) {
     throw new ForbiddenError("Authentication required");

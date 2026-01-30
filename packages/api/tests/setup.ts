@@ -31,19 +31,42 @@
 import { PrismaClient } from "../src/generated/prisma/index.js";
 import { execSync } from "child_process";
 
-// Create a dedicated test Prisma client instance
-// This ensures tests use the test database regardless of global singleton
+// Global reference for ensuring app code uses the same client as tests
+// This MUST be defined early, before any other imports could create a PrismaClient
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+// Create a dedicated test Prisma client instance IMMEDIATELY
+// This ensures it's set in the global singleton before lib/db.ts is imported
+// which fixes issues where authenticate middleware couldn't find test users
 let testPrisma: PrismaClient | null = null;
+
+// Initialize immediately if DATABASE_URL is set (vitest.config.ts sets it via env)
+if (process.env.DATABASE_URL && !globalForPrisma.prisma) {
+  testPrisma = new PrismaClient({
+    log: process.env.DEBUG_TESTS ? ["query", "error", "warn"] : ["error"],
+  });
+  globalForPrisma.prisma = testPrisma;
+}
 
 /**
  * Gets or creates the test Prisma client instance.
  * Uses the test database URL from environment.
+ * 
+ * NOTE: The client is typically already created at module load time
+ * (see initialization above). This function exists for backward compatibility
+ * and to ensure the client is available.
  */
 export function getTestPrisma(): PrismaClient {
   if (!testPrisma) {
     testPrisma = new PrismaClient({
       log: process.env.DEBUG_TESTS ? ["query", "error", "warn"] : ["error"],
     });
+    // Ensure the global singleton is set for lib/db.ts compatibility
+    if (!globalForPrisma.prisma) {
+      globalForPrisma.prisma = testPrisma;
+    }
   }
   return testPrisma;
 }
