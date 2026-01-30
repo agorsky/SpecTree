@@ -2,54 +2,12 @@
  * MCP Tools for Task Operations
  *
  * Tasks are sub-issues under features. They inherit team scope
- * from their parent feature.
+ * from their parent feature. Uses HTTP API client for all operations.
  */
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  taskService,
-  prisma,
-  NotFoundError,
-} from "@spectree/api/src/services/index.js";
-
-/**
- * Helper to get task by ID or identifier (e.g., PROJ-123-1)
- */
-async function getTaskByIdOrIdentifier(id: string) {
-  // Check if this looks like a UUID
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-  if (uuidRegex.test(id)) {
-    return taskService.getTaskById(id);
-  }
-
-  // Try to find by identifier (e.g., PROJ-123-1)
-  return prisma.task.findUnique({
-    where: { identifier: id },
-  });
-}
-
-/**
- * Helper to resolve feature ID by UUID or identifier
- */
-async function resolveFeatureId(feature: string): Promise<string | null> {
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-  if (uuidRegex.test(feature)) {
-    return feature;
-  }
-
-  // Look up by identifier
-  const featureRecord = await prisma.feature.findUnique({
-    where: { identifier: feature },
-    select: { id: true },
-  });
-
-  return featureRecord?.id ?? null;
-}
+import { getApiClient, ApiError } from "../api-client.js";
 
 /**
  * Create MCP-compliant response
@@ -128,22 +86,14 @@ export function registerTaskTools(server: McpServer): void {
     },
     async (input) => {
       try {
-        // Resolve feature ID if provided
-        let featureId: string | undefined;
-        if (input.feature) {
-          const resolved = await resolveFeatureId(input.feature);
-          if (!resolved) {
-            throw new NotFoundError(`Feature '${input.feature}' not found`);
-          }
-          featureId = resolved;
-        }
+        const apiClient = getApiClient();
 
-        const result = await taskService.listTasks({
-          cursor: input.cursor,
+        const result = await apiClient.listTasks({
+          feature: input.feature,
+          status: input.status,
+          assignee: input.assignee,
           limit: input.limit,
-          featureId,
-          statusId: input.status,
-          assigneeId: input.assignee,
+          cursor: input.cursor,
         });
 
         return createResponse({
@@ -151,6 +101,9 @@ export function registerTaskTools(server: McpServer): void {
           meta: result.meta,
         });
       } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(new Error(`Feature '${input.feature}' not found`));
+        }
         return createErrorResponse(error);
       }
     }
@@ -178,14 +131,13 @@ export function registerTaskTools(server: McpServer): void {
     },
     async (input) => {
       try {
-        const task = await getTaskByIdOrIdentifier(input.id);
-
-        if (!task) {
-          throw new NotFoundError(`Task '${input.id}' not found`);
-        }
-
+        const apiClient = getApiClient();
+        const { data: task } = await apiClient.getTask(input.id);
         return createResponse(task);
       } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(new Error(`Task '${input.id}' not found`));
+        }
         return createErrorResponse(error);
       }
     }
@@ -228,8 +180,9 @@ export function registerTaskTools(server: McpServer): void {
           .string()
           .optional()
           .describe(
-            "Initial status ID (UUID) for the task. Uses the same status system as features, " +
-            "scoped to the parent feature's team. If not provided, the task is created without a status."
+            "Initial status for the task. Accepts status ID (UUID) or exact status name " +
+            "(e.g., 'Backlog', 'In Progress'). Status names are resolved within the parent " +
+            "feature's team context. If not provided, the task is created without a status."
           ),
         assignee: z
           .string()
@@ -241,22 +194,31 @@ export function registerTaskTools(server: McpServer): void {
     },
     async (input) => {
       try {
-        // Resolve feature ID
-        const featureId = await resolveFeatureId(input.feature_id);
-        if (!featureId) {
-          throw new NotFoundError(`Feature '${input.feature_id}' not found`);
+        const apiClient = getApiClient();
+
+        // Resolve feature to get featureId
+        const { data: feature } = await apiClient.getFeature(input.feature_id);
+
+        // Resolve status name to ID if provided
+        let statusId = input.status;
+        if (statusId) {
+          const { data: project } = await apiClient.getProject(feature.projectId);
+          statusId = await apiClient.resolveStatusId(statusId, project.teamId);
         }
 
-        const task = await taskService.createTask({
+        const { data: task } = await apiClient.createTask({
           title: input.title,
-          featureId,
+          featureId: feature.id,
           description: input.description,
-          statusId: input.status,
+          statusId,
           assigneeId: input.assignee,
         });
 
         return createResponse(task);
       } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(new Error(`Feature '${input.feature_id}' not found`));
+        }
         return createErrorResponse(error);
       }
     }
@@ -299,8 +261,9 @@ export function registerTaskTools(server: McpServer): void {
           .string()
           .optional()
           .describe(
-            "New status ID (UUID) for the task. Uses the same status system as features, " +
-            "scoped to the parent feature's team."
+            "New status for the task. Accepts status ID (UUID) or exact status name " +
+            "(e.g., 'In Progress', 'Done'). Status names are resolved within the parent " +
+            "feature's team context."
           ),
         assignee: z
           .string()
@@ -312,21 +275,30 @@ export function registerTaskTools(server: McpServer): void {
     },
     async (input) => {
       try {
-        // First, find the task to get its UUID
-        const existingTask = await getTaskByIdOrIdentifier(input.id);
-        if (!existingTask) {
-          throw new NotFoundError(`Task '${input.id}' not found`);
+        const apiClient = getApiClient();
+
+        // Resolve status name to ID if provided
+        let statusId = input.status;
+        if (statusId) {
+          // Get task to find its team context
+          const { data: task } = await apiClient.getTask(input.id);
+          const { data: feature } = await apiClient.getFeature(task.featureId);
+          const { data: project } = await apiClient.getProject(feature.projectId);
+          statusId = await apiClient.resolveStatusId(statusId, project.teamId);
         }
 
-        const task = await taskService.updateTask(existingTask.id, {
+        const { data: task } = await apiClient.updateTask(input.id, {
           title: input.title,
           description: input.description,
-          statusId: input.status,
+          statusId,
           assigneeId: input.assignee,
         });
 
         return createResponse(task);
       } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(new Error(`Task '${input.id}' not found`));
+        }
         return createErrorResponse(error);
       }
     }

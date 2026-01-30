@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { router } from "@/router";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -25,7 +26,9 @@ function App(): React.ReactNode {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="spectree-ui-theme">
-        <RouterProvider router={router} />
+        <TooltipProvider>
+          <RouterProvider router={router} />
+        </TooltipProvider>
       </ThemeProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

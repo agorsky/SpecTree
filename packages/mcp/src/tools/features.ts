@@ -2,118 +2,12 @@
  * MCP Tools for Feature operations
  *
  * Provides tools for listing, getting, creating, and updating features
- * in the SpecTree application.
+ * in the SpecTree application. Uses HTTP API client for all operations.
  */
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  featureService,
-  userService,
-  prisma,
-  NotFoundError,
-} from "@spectree/api/src/services/index.js";
-import { isValidUUID } from "../utils.js";
-
-/**
- * Helper to resolve "me" assignee value to actual user ID
- */
-async function resolveAssigneeId(
-  assignee: string | undefined
-): Promise<string | undefined> {
-  if (!assignee) return undefined;
-
-  if (assignee.toLowerCase() === "me") {
-    const currentUser = await userService.getCurrentUser();
-    if (!currentUser) {
-      throw new Error("No current user context available to resolve 'me'");
-    }
-    return currentUser.id;
-  }
-
-  return assignee;
-}
-
-/**
- * Helper to resolve project name/ID to project ID
- */
-async function resolveProjectId(project: string): Promise<string> {
-  // First try to find by ID (UUID) - only if it's a valid UUID format
-  if (isValidUUID(project)) {
-    const projectById = await prisma.project.findUnique({
-      where: { id: project },
-      select: { id: true },
-    });
-
-    if (projectById) return projectById.id;
-  }
-
-  // Try to find by name
-  const projectByName = await prisma.project.findFirst({
-    where: { name: project, isArchived: false },
-    select: { id: true },
-  });
-
-  if (projectByName) return projectByName.id;
-
-  throw new NotFoundError(`Project '${project}' not found`);
-}
-
-/**
- * Helper to resolve status name/ID to status ID
- */
-async function resolveStatusId(
-  status: string,
-  teamId?: string
-): Promise<string> {
-  // First try to find by ID (UUID) - only if it's a valid UUID format
-  if (isValidUUID(status)) {
-    const statusById = await prisma.status.findUnique({
-      where: { id: status },
-      select: { id: true },
-    });
-
-    if (statusById) return statusById.id;
-  }
-
-  // Try to find by name (optionally scoped to team)
-  const statusByName = await prisma.status.findFirst({
-    where: {
-      name: status,
-      ...(teamId ? { teamId } : {}),
-    },
-    select: { id: true },
-  });
-
-  if (statusByName) return statusByName.id;
-
-  throw new NotFoundError(`Status '${status}' not found`);
-}
-
-/**
- * Helper to get feature by ID or identifier (e.g., COM-123)
- */
-async function getFeatureByIdOrIdentifier(id: string) {
-  // Check if this looks like a UUID
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-  if (uuidRegex.test(id)) {
-    return featureService.getFeatureById(id);
-  }
-
-  // Try to find by identifier (e.g., COM-123)
-  const feature = await prisma.feature.findUnique({
-    where: { identifier: id },
-    include: {
-      tasks: {
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-      },
-    },
-  });
-
-  return feature;
-}
+import { getApiClient, ApiError } from "../api-client.js";
 
 /**
  * Create MCP-compliant response
@@ -200,42 +94,19 @@ export function registerFeatureTools(server: McpServer): void {
     },
     async (input) => {
       try {
-        // Resolve project ID if provided
-        let projectId: string | undefined;
-        if (input.project) {
-          projectId = await resolveProjectId(input.project);
-        }
+        const apiClient = getApiClient();
 
-        // Resolve assignee ID if provided
-        const assigneeId = await resolveAssigneeId(input.assignee);
-
-        // Resolve status ID if provided
-        let statusId: string | undefined;
-        if (input.status) {
-          statusId = await resolveStatusId(input.status);
-        }
-
-        // List features with filters
-        const result = await featureService.listFeatures({
-          projectId,
-          statusId,
-          assigneeId,
+        const result = await apiClient.listFeatures({
+          project: input.project,
+          status: input.status,
+          assignee: input.assignee,
+          query: input.query,
           limit: input.limit,
           cursor: input.cursor,
         });
 
-        // If query is provided, filter results by title (client-side filtering)
-        // Note: For production, this should be done at the database level
-        let features = result.data;
-        if (input.query) {
-          const queryLower = input.query.toLowerCase();
-          features = features.filter((f) =>
-            f.title.toLowerCase().includes(queryLower)
-          );
-        }
-
         return createResponse({
-          features,
+          features: result.data,
           meta: result.meta,
         });
       } catch (error) {
@@ -267,14 +138,23 @@ export function registerFeatureTools(server: McpServer): void {
     },
     async (input) => {
       try {
-        const feature = await getFeatureByIdOrIdentifier(input.id);
+        const apiClient = getApiClient();
+        const { data: feature } = await apiClient.getFeature(input.id);
 
-        if (!feature) {
-          throw new NotFoundError(`Feature '${input.id}' not found`);
-        }
+        // Fetch tasks for this feature
+        const tasksResult = await apiClient.listTasks({
+          featureId: feature.id,
+          limit: 100,
+        });
 
-        return createResponse(feature);
+        return createResponse({
+          ...feature,
+          tasks: tasksResult.data,
+        });
       } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(new Error(`Feature '${input.id}' not found`));
+        }
         return createErrorResponse(error);
       }
     }
@@ -332,36 +212,30 @@ export function registerFeatureTools(server: McpServer): void {
     },
     async (input) => {
       try {
-        // Resolve project ID
-        const projectId = await resolveProjectId(input.project);
+        const apiClient = getApiClient();
 
-        // Resolve assignee ID if provided
-        const assigneeId = await resolveAssigneeId(input.assignee);
+        // Resolve project to get projectId and teamId
+        const { data: project } = await apiClient.getProject(input.project);
 
-        // Resolve status ID if provided
-        let statusId: string | undefined;
-        if (input.status) {
-          // Get the project to find its team for status resolution
-          const project = await prisma.project.findUnique({
-            where: { id: projectId },
-            select: { teamId: true },
-          });
-          if (project) {
-            statusId = await resolveStatusId(input.status, project.teamId);
-          }
+        // Resolve status name to ID if provided
+        let statusId = input.status;
+        if (statusId) {
+          statusId = await apiClient.resolveStatusId(statusId, project.teamId);
         }
 
-        // Create the feature
-        const feature = await featureService.createFeature({
+        const { data: feature } = await apiClient.createFeature({
           title: input.title,
-          projectId,
+          projectId: project.id,
           description: input.description,
           statusId,
-          assigneeId,
+          assigneeId: input.assignee,
         });
 
         return createResponse(feature);
       } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(new Error(`Project '${input.project}' not found`));
+        }
         return createErrorResponse(error);
       }
     }
@@ -419,38 +293,29 @@ export function registerFeatureTools(server: McpServer): void {
     },
     async (input) => {
       try {
-        // First, find the feature to get its UUID
-        const existingFeature = await getFeatureByIdOrIdentifier(input.id);
-        if (!existingFeature) {
-          throw new NotFoundError(`Feature '${input.id}' not found`);
+        const apiClient = getApiClient();
+
+        // Resolve status name to ID if provided
+        let statusId = input.status;
+        if (statusId) {
+          // Get feature to find its team context
+          const { data: feature } = await apiClient.getFeature(input.id);
+          const { data: project } = await apiClient.getProject(feature.projectId);
+          statusId = await apiClient.resolveStatusId(statusId, project.teamId);
         }
 
-        // Resolve assignee ID if provided
-        const assigneeId = await resolveAssigneeId(input.assignee);
-
-        // Resolve status ID if provided
-        let statusId: string | undefined;
-        if (input.status) {
-          // Get the project to find its team for status resolution
-          const project = await prisma.project.findUnique({
-            where: { id: existingFeature.projectId },
-            select: { teamId: true },
-          });
-          if (project) {
-            statusId = await resolveStatusId(input.status, project.teamId);
-          }
-        }
-
-        // Update the feature
-        const feature = await featureService.updateFeature(existingFeature.id, {
+        const { data: feature } = await apiClient.updateFeature(input.id, {
           title: input.title,
           description: input.description,
           statusId,
-          assigneeId,
+          assigneeId: input.assignee,
         });
 
         return createResponse(feature);
       } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(new Error(`Feature '${input.id}' not found`));
+        }
         return createErrorResponse(error);
       }
     }

@@ -8,7 +8,7 @@
  * - spectree__update_task
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from "vitest";
 
 // Type for tool handler
 interface ToolResponse {
@@ -17,65 +17,62 @@ interface ToolResponse {
 }
 
 // Use vi.hoisted to declare variables available to hoisted mocks
-const { registeredTools } = vi.hoisted(() => {
-  const registeredTools = new Map<
-    string,
-    {
-      config: { description: string; inputSchema: Record<string, unknown> };
-      handler: (input: Record<string, unknown>) => Promise<ToolResponse>;
-    }
-  >();
-  return { registeredTools };
-});
-
-// Mock the API services before importing the tools
-vi.mock("@spectree/api/src/services/index.js", () => ({
-  taskService: {
+const { mockApiClient } = vi.hoisted(() => {
+  const mockApiClient = {
     listTasks: vi.fn(),
-    getTaskById: vi.fn(),
+    getTask: vi.fn(),
     createTask: vi.fn(),
     updateTask: vi.fn(),
-  },
-  prisma: {
-    feature: {
-      findUnique: vi.fn(),
-    },
-    task: {
-      findUnique: vi.fn(),
-    },
-  },
-  NotFoundError: class NotFoundError extends Error {
-    constructor(message: string) {
+    getFeature: vi.fn(),
+    getProject: vi.fn(),
+    listStatuses: vi.fn(),
+    resolveStatusId: vi.fn(),
+  };
+  return { mockApiClient };
+});
+
+// Mock the API client before importing the tools
+vi.mock("../src/api-client.js", () => ({
+  getApiClient: () => mockApiClient,
+  ApiError: class ApiError extends Error {
+    status: number;
+    body: unknown;
+    constructor(message: string, status: number, body?: unknown) {
       super(message);
-      this.name = "NotFoundError";
+      this.name = "ApiError";
+      this.status = status;
+      this.body = body;
     }
   },
 }));
 
-// Mock the tool registry
-vi.mock("../src/tools/index.js", () => ({
-  addToolRegistrar: vi.fn((registrar) => {
-    const mockServer = {
-      registerTool: (
-        name: string,
-        config: { description: string; inputSchema: Record<string, unknown> },
-        handler: (input: Record<string, unknown>) => Promise<ToolResponse>
-      ) => {
-        registeredTools.set(name, { config, handler });
-      },
-    };
-    registrar(mockServer);
-  }),
-}));
+// Store registered tools
+const registeredTools = new Map<
+  string,
+  {
+    config: { description: string; inputSchema: Record<string, unknown> };
+    handler: (input: Record<string, unknown>) => Promise<ToolResponse>;
+  }
+>();
 
 // Import after mocking
-import {
-  taskService,
-  prisma,
-} from "@spectree/api/src/services/index.js";
+import { registerTaskTools } from "../src/tools/tasks.js";
 
-// Import the tools module to trigger registration
-import "../src/tools/tasks.js";
+// Create mock server and register tools
+const mockServer = {
+  registerTool: (
+    name: string,
+    config: { description: string; inputSchema: Record<string, unknown> },
+    handler: (input: Record<string, unknown>) => Promise<ToolResponse>
+  ) => {
+    registeredTools.set(name, { config, handler });
+  },
+};
+
+// Register tools before tests
+beforeAll(() => {
+  registerTaskTools(mockServer as any);
+});
 
 describe("MCP Tasks Tools", () => {
   beforeEach(() => {
@@ -100,8 +97,8 @@ describe("MCP Tasks Tools", () => {
           statusId: "status-1",
           assigneeId: "user-1",
           sortOrder: 1,
-          createdAt: new Date("2024-01-01"),
-          updatedAt: new Date("2024-01-02"),
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-02T00:00:00.000Z",
         },
         {
           id: "task-2",
@@ -112,12 +109,12 @@ describe("MCP Tasks Tools", () => {
           statusId: null,
           assigneeId: null,
           sortOrder: 2,
-          createdAt: new Date("2024-01-03"),
-          updatedAt: new Date("2024-01-04"),
+          createdAt: "2024-01-03T00:00:00.000Z",
+          updatedAt: "2024-01-04T00:00:00.000Z",
         },
       ];
 
-      vi.mocked(taskService.listTasks).mockResolvedValue({
+      mockApiClient.listTasks.mockResolvedValue({
         data: mockTasks,
         meta: { cursor: null, hasMore: false },
       });
@@ -135,38 +132,8 @@ describe("MCP Tasks Tools", () => {
       expect(data.tasks[1].identifier).toBe("ENG-1-2");
     });
 
-    it("should filter by feature UUID", async () => {
-      vi.mocked(taskService.listTasks).mockResolvedValue({
-        data: [],
-        meta: { cursor: null, hasMore: false },
-      });
-
-      const handler = getHandler();
-      const result = await handler!({ feature: "550e8400-e29b-41d4-a716-446655440000" });
-
-      expect(vi.mocked(taskService.listTasks)).toHaveBeenCalledWith(
-        expect.objectContaining({ featureId: "550e8400-e29b-41d4-a716-446655440000" })
-      );
-      expect(result.isError).toBeUndefined();
-    });
-
-    it("should filter by feature identifier (e.g., COM-123)", async () => {
-      const mockFeature = {
-        id: "resolved-feature-id",
-        identifier: "COM-123",
-        title: "Test Feature",
-        description: null,
-        projectId: "proj-1",
-        statusId: null,
-        assigneeId: null,
-        sortOrder: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      vi.mocked(prisma.feature.findUnique).mockResolvedValue(mockFeature);
-
-      vi.mocked(taskService.listTasks).mockResolvedValue({
+    it("should filter by feature", async () => {
+      mockApiClient.listTasks.mockResolvedValue({
         data: [],
         meta: { cursor: null, hasMore: false },
       });
@@ -174,18 +141,14 @@ describe("MCP Tasks Tools", () => {
       const handler = getHandler();
       const result = await handler!({ feature: "COM-123" });
 
-      expect(vi.mocked(prisma.feature.findUnique)).toHaveBeenCalledWith({
-        where: { identifier: "COM-123" },
-        select: { id: true },
-      });
-      expect(vi.mocked(taskService.listTasks)).toHaveBeenCalledWith(
-        expect.objectContaining({ featureId: "resolved-feature-id" })
+      expect(mockApiClient.listTasks).toHaveBeenCalledWith(
+        expect.objectContaining({ feature: "COM-123" })
       );
       expect(result.isError).toBeUndefined();
     });
 
     it("should filter by status", async () => {
-      vi.mocked(taskService.listTasks).mockResolvedValue({
+      mockApiClient.listTasks.mockResolvedValue({
         data: [],
         meta: { cursor: null, hasMore: false },
       });
@@ -193,14 +156,14 @@ describe("MCP Tasks Tools", () => {
       const handler = getHandler();
       const result = await handler!({ status: "status-uuid-123" });
 
-      expect(vi.mocked(taskService.listTasks)).toHaveBeenCalledWith(
-        expect.objectContaining({ statusId: "status-uuid-123" })
+      expect(mockApiClient.listTasks).toHaveBeenCalledWith(
+        expect.objectContaining({ status: "status-uuid-123" })
       );
       expect(result.isError).toBeUndefined();
     });
 
     it("should filter by assignee", async () => {
-      vi.mocked(taskService.listTasks).mockResolvedValue({
+      mockApiClient.listTasks.mockResolvedValue({
         data: [],
         meta: { cursor: null, hasMore: false },
       });
@@ -208,14 +171,14 @@ describe("MCP Tasks Tools", () => {
       const handler = getHandler();
       const result = await handler!({ assignee: "user-uuid-456" });
 
-      expect(vi.mocked(taskService.listTasks)).toHaveBeenCalledWith(
-        expect.objectContaining({ assigneeId: "user-uuid-456" })
+      expect(mockApiClient.listTasks).toHaveBeenCalledWith(
+        expect.objectContaining({ assignee: "user-uuid-456" })
       );
       expect(result.isError).toBeUndefined();
     });
 
     it("should handle pagination", async () => {
-      vi.mocked(taskService.listTasks).mockResolvedValue({
+      mockApiClient.listTasks.mockResolvedValue({
         data: [],
         meta: { cursor: "next-cursor-token", hasMore: true },
       });
@@ -223,7 +186,7 @@ describe("MCP Tasks Tools", () => {
       const handler = getHandler();
       const result = await handler!({ limit: 10, cursor: "prev-cursor" });
 
-      expect(vi.mocked(taskService.listTasks)).toHaveBeenCalledWith(
+      expect(mockApiClient.listTasks).toHaveBeenCalledWith(
         expect.objectContaining({ limit: 10, cursor: "prev-cursor" })
       );
 
@@ -232,8 +195,9 @@ describe("MCP Tasks Tools", () => {
       expect(data.meta.cursor).toBe("next-cursor-token");
     });
 
-    it("should return error for non-existent feature", async () => {
-      vi.mocked(prisma.feature.findUnique).mockResolvedValue(null);
+    it("should handle API errors", async () => {
+      const ApiError = (await import("../src/api-client.js")).ApiError;
+      mockApiClient.listTasks.mockRejectedValue(new ApiError("Not found", 404));
 
       const handler = getHandler();
       const result = await handler!({ feature: "NON-EXISTENT" });
@@ -256,59 +220,54 @@ describe("MCP Tasks Tools", () => {
         statusId: "status-1",
         assigneeId: "user-1",
         sortOrder: 1,
-        createdAt: new Date("2024-01-01"),
-        updatedAt: new Date("2024-01-02"),
+        createdAt: "2024-01-01T00:00:00.000Z",
+        updatedAt: "2024-01-02T00:00:00.000Z",
       };
 
-      vi.mocked(taskService.getTaskById).mockResolvedValue(mockTask);
+      mockApiClient.getTask.mockResolvedValue({ data: mockTask });
 
       const handler = getHandler();
       expect(handler).toBeDefined();
 
       const result = await handler!({ id: "550e8400-e29b-41d4-a716-446655440000" });
 
-      expect(vi.mocked(taskService.getTaskById)).toHaveBeenCalledWith(
-        "550e8400-e29b-41d4-a716-446655440000"
-      );
+      expect(mockApiClient.getTask).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440000");
       expect(result.isError).toBeUndefined();
 
       const data = JSON.parse(result.content[0]?.text || "{}");
       expect(data.id).toBe("550e8400-e29b-41d4-a716-446655440000");
-      expect(data.identifier).toBe("ENG-42-1");
       expect(data.title).toBe("Implement validation");
     });
 
-    it("should get task by identifier (e.g., COM-123-1)", async () => {
+    it("should get task by identifier", async () => {
       const mockTask = {
         id: "task-uuid",
-        identifier: "COM-123-1",
-        title: "Task from identifier",
+        identifier: "COM-42-3",
+        title: "Test task",
         description: null,
         featureId: "feat-1",
         statusId: null,
         assigneeId: null,
         sortOrder: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: "2024-01-01T00:00:00.000Z",
+        updatedAt: "2024-01-02T00:00:00.000Z",
       };
 
-      vi.mocked(prisma.task.findUnique).mockResolvedValue(mockTask);
+      mockApiClient.getTask.mockResolvedValue({ data: mockTask });
 
       const handler = getHandler();
-      const result = await handler!({ id: "COM-123-1" });
+      const result = await handler!({ id: "COM-42-3" });
 
-      expect(vi.mocked(prisma.task.findUnique)).toHaveBeenCalledWith({
-        where: { identifier: "COM-123-1" },
-      });
+      expect(mockApiClient.getTask).toHaveBeenCalledWith("COM-42-3");
       expect(result.isError).toBeUndefined();
 
       const data = JSON.parse(result.content[0]?.text || "{}");
-      expect(data.identifier).toBe("COM-123-1");
+      expect(data.identifier).toBe("COM-42-3");
     });
 
     it("should return error for non-existent task", async () => {
-      vi.mocked(taskService.getTaskById).mockResolvedValue(null);
-      vi.mocked(prisma.task.findUnique).mockResolvedValue(null);
+      const ApiError = (await import("../src/api-client.js")).ApiError;
+      mockApiClient.getTask.mockRejectedValue(new ApiError("Task not found", 404));
 
       const handler = getHandler();
       const result = await handler!({ id: "non-existent" });
@@ -321,9 +280,16 @@ describe("MCP Tasks Tools", () => {
   describe("spectree__create_task", () => {
     const getHandler = () => registeredTools.get("spectree__create_task")?.handler;
 
-    it("should create a task with required fields", async () => {
-      const mockCreatedTask = {
-        id: "new-task-1",
+    it("should create task with required fields only", async () => {
+      const mockFeature = {
+        id: "feat-1",
+        identifier: "ENG-1",
+        title: "Feature",
+        projectId: "proj-1",
+      };
+      
+      const mockTask = {
+        id: "new-task-id",
         identifier: "ENG-1-1",
         title: "New Task",
         description: null,
@@ -331,124 +297,94 @@ describe("MCP Tasks Tools", () => {
         statusId: null,
         assigneeId: null,
         sortOrder: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: "2024-01-01T00:00:00.000Z",
+        updatedAt: "2024-01-01T00:00:00.000Z",
       };
 
-      // UUID check passes, feature ID is valid
-      vi.mocked(taskService.createTask).mockResolvedValue(mockCreatedTask);
+      mockApiClient.getFeature.mockResolvedValue({ data: mockFeature });
+      mockApiClient.createTask.mockResolvedValue({ data: mockTask });
 
       const handler = getHandler();
       expect(handler).toBeDefined();
 
       const result = await handler!({
         title: "New Task",
-        feature_id: "550e8400-e29b-41d4-a716-446655440000",
+        feature_id: "feat-1",
       });
 
-      expect(vi.mocked(taskService.createTask)).toHaveBeenCalledWith({
-        title: "New Task",
-        featureId: "550e8400-e29b-41d4-a716-446655440000",
-        description: undefined,
-        statusId: undefined,
-        assigneeId: undefined,
-      });
+      expect(mockApiClient.createTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "New Task",
+          featureId: "feat-1",
+        })
+      );
       expect(result.isError).toBeUndefined();
 
       const data = JSON.parse(result.content[0]?.text || "{}");
       expect(data.title).toBe("New Task");
-      expect(data.identifier).toBe("ENG-1-1");
     });
 
-    it("should create a task with all optional fields", async () => {
-      const mockCreatedTask = {
-        id: "new-task-2",
-        identifier: "ENG-2-1",
+    it("should create task with all fields", async () => {
+      const mockFeature = {
+        id: "feat-1",
+        identifier: "ENG-1",
+        title: "Feature",
+        projectId: "proj-1",
+      };
+      
+      const mockProject = {
+        id: "proj-1",
+        name: "Test Project",
+        teamId: "team-1",
+      };
+      
+      const mockTask = {
+        id: "new-task-id",
+        identifier: "ENG-1-1",
         title: "Full Task",
-        description: "Detailed task description",
+        description: "Task description",
         featureId: "feat-1",
         statusId: "status-1",
         assigneeId: "user-1",
         sortOrder: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: "2024-01-01T00:00:00.000Z",
+        updatedAt: "2024-01-01T00:00:00.000Z",
       };
 
-      vi.mocked(taskService.createTask).mockResolvedValue(mockCreatedTask);
+      mockApiClient.getFeature.mockResolvedValue({ data: mockFeature });
+      mockApiClient.getProject.mockResolvedValue({ data: mockProject });
+      mockApiClient.resolveStatusId.mockResolvedValue("status-1");
+      mockApiClient.createTask.mockResolvedValue({ data: mockTask });
 
       const handler = getHandler();
       const result = await handler!({
         title: "Full Task",
-        feature_id: "550e8400-e29b-41d4-a716-446655440000",
-        description: "Detailed task description",
+        feature_id: "feat-1",
+        description: "Task description",
         status: "status-1",
         assignee: "user-1",
       });
 
-      expect(vi.mocked(taskService.createTask)).toHaveBeenCalledWith({
-        title: "Full Task",
-        featureId: "550e8400-e29b-41d4-a716-446655440000",
-        description: "Detailed task description",
-        statusId: "status-1",
-        assigneeId: "user-1",
-      });
-      expect(result.isError).toBeUndefined();
-
-      const data = JSON.parse(result.content[0]?.text || "{}");
-      expect(data.description).toBe("Detailed task description");
-    });
-
-    it("should resolve feature identifier when creating task", async () => {
-      const mockFeature = {
-        id: "resolved-feature-uuid",
-        identifier: "COM-123",
-        title: "Test Feature",
-        description: null,
-        projectId: "proj-1",
-        statusId: null,
-        assigneeId: null,
-        sortOrder: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      vi.mocked(prisma.feature.findUnique).mockResolvedValue(mockFeature);
-      vi.mocked(taskService.createTask).mockResolvedValue({
-        id: "task-1",
-        identifier: "COM-123-1",
-        title: "Test",
-        description: null,
-        featureId: "resolved-feature-uuid",
-        statusId: null,
-        assigneeId: null,
-        sortOrder: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      const handler = getHandler();
-      const result = await handler!({
-        title: "Test",
-        feature_id: "COM-123",
-      });
-
-      expect(vi.mocked(prisma.feature.findUnique)).toHaveBeenCalledWith({
-        where: { identifier: "COM-123" },
-        select: { id: true },
-      });
-      expect(vi.mocked(taskService.createTask)).toHaveBeenCalledWith(
-        expect.objectContaining({ featureId: "resolved-feature-uuid" })
+      expect(mockApiClient.createTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Full Task",
+          featureId: "feat-1",
+          description: "Task description",
+          statusId: "status-1",
+          assigneeId: "user-1",
+        })
       );
       expect(result.isError).toBeUndefined();
     });
 
-    it("should return error for non-existent feature", async () => {
-      vi.mocked(prisma.feature.findUnique).mockResolvedValue(null);
+    it("should handle API errors on create", async () => {
+      const ApiError = (await import("../src/api-client.js")).ApiError;
+      mockApiClient.getFeature.mockRejectedValue(new ApiError("Feature not found", 404));
 
       const handler = getHandler();
       const result = await handler!({
-        title: "Test Task",
-        feature_id: "NON-EXISTENT",
+        title: "New Task",
+        feature_id: "non-existent",
       });
 
       expect(result.isError).toBe(true);
@@ -460,28 +396,20 @@ describe("MCP Tasks Tools", () => {
     const getHandler = () => registeredTools.get("spectree__update_task")?.handler;
 
     it("should update task by UUID", async () => {
-      const existingTask = {
+      const mockTask = {
         id: "550e8400-e29b-41d4-a716-446655440000",
         identifier: "ENG-1-1",
-        title: "Old Title",
-        description: null,
-        featureId: "feat-1",
-        statusId: null,
-        assigneeId: null,
-        sortOrder: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      const updatedTask = {
-        ...existingTask,
         title: "Updated Title",
-        description: "New description",
-        updatedAt: new Date(),
+        description: "Updated description",
+        featureId: "feat-1",
+        statusId: "new-status",
+        assigneeId: "new-user",
+        sortOrder: 1,
+        createdAt: "2024-01-01T00:00:00.000Z",
+        updatedAt: "2024-01-02T00:00:00.000Z",
       };
 
-      vi.mocked(taskService.getTaskById).mockResolvedValue(existingTask);
-      vi.mocked(taskService.updateTask).mockResolvedValue(updatedTask);
+      mockApiClient.updateTask.mockResolvedValue({ data: mockTask });
 
       const handler = getHandler();
       expect(handler).toBeDefined();
@@ -489,41 +417,34 @@ describe("MCP Tasks Tools", () => {
       const result = await handler!({
         id: "550e8400-e29b-41d4-a716-446655440000",
         title: "Updated Title",
-        description: "New description",
+        description: "Updated description",
       });
 
-      expect(vi.mocked(taskService.updateTask)).toHaveBeenCalledWith(
+      expect(mockApiClient.updateTask).toHaveBeenCalledWith(
         "550e8400-e29b-41d4-a716-446655440000",
         expect.objectContaining({
           title: "Updated Title",
-          description: "New description",
+          description: "Updated description",
         })
       );
       expect(result.isError).toBeUndefined();
-
-      const data = JSON.parse(result.content[0]?.text || "{}");
-      expect(data.title).toBe("Updated Title");
     });
 
     it("should update task by identifier", async () => {
-      const existingTask = {
+      const mockTask = {
         id: "task-uuid",
         identifier: "COM-42-3",
-        title: "Original",
+        title: "Changed",
         description: null,
         featureId: "feat-1",
         statusId: null,
         assigneeId: null,
         sortOrder: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: "2024-01-01T00:00:00.000Z",
+        updatedAt: "2024-01-02T00:00:00.000Z",
       };
 
-      vi.mocked(prisma.task.findUnique).mockResolvedValue(existingTask);
-      vi.mocked(taskService.updateTask).mockResolvedValue({
-        ...existingTask,
-        title: "Changed",
-      });
+      mockApiClient.updateTask.mockResolvedValue({ data: mockTask });
 
       const handler = getHandler();
       const result = await handler!({
@@ -531,35 +452,42 @@ describe("MCP Tasks Tools", () => {
         title: "Changed",
       });
 
-      expect(vi.mocked(prisma.task.findUnique)).toHaveBeenCalledWith({
-        where: { identifier: "COM-42-3" },
-      });
-      expect(vi.mocked(taskService.updateTask)).toHaveBeenCalledWith(
-        "task-uuid",
-        expect.any(Object)
-      );
+      expect(mockApiClient.updateTask).toHaveBeenCalledWith("COM-42-3", expect.any(Object));
       expect(result.isError).toBeUndefined();
     });
 
     it("should update task status", async () => {
-      const existingTask = {
-        id: "task-1",
+      const mockTask = {
+        id: "550e8400-e29b-41d4-a716-446655440000",
         identifier: "ENG-1-1",
-        title: "Test",
+        title: "Task",
         description: null,
         featureId: "feat-1",
-        statusId: "old-status",
+        statusId: "new-status-uuid",
         assigneeId: null,
         sortOrder: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: "2024-01-01T00:00:00.000Z",
+        updatedAt: "2024-01-02T00:00:00.000Z",
       };
 
-      vi.mocked(taskService.getTaskById).mockResolvedValue(existingTask);
-      vi.mocked(taskService.updateTask).mockResolvedValue({
-        ...existingTask,
-        statusId: "new-status-uuid",
-      });
+      const mockFeature = {
+        id: "feat-1",
+        identifier: "ENG-1",
+        title: "Feature",
+        projectId: "proj-1",
+      };
+
+      const mockProject = {
+        id: "proj-1",
+        name: "Test Project",
+        teamId: "team-1",
+      };
+
+      mockApiClient.getTask.mockResolvedValue({ data: mockTask });
+      mockApiClient.getFeature.mockResolvedValue({ data: mockFeature });
+      mockApiClient.getProject.mockResolvedValue({ data: mockProject });
+      mockApiClient.resolveStatusId.mockResolvedValue("new-status-uuid");
+      mockApiClient.updateTask.mockResolvedValue({ data: mockTask });
 
       const handler = getHandler();
       const result = await handler!({
@@ -567,32 +495,30 @@ describe("MCP Tasks Tools", () => {
         status: "new-status-uuid",
       });
 
-      expect(vi.mocked(taskService.updateTask)).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({ statusId: "new-status-uuid" })
+      expect(mockApiClient.updateTask).toHaveBeenCalledWith(
+        "550e8400-e29b-41d4-a716-446655440000",
+        expect.objectContaining({
+          statusId: "new-status-uuid",
+        })
       );
       expect(result.isError).toBeUndefined();
     });
 
     it("should update task assignee", async () => {
-      const existingTask = {
-        id: "task-1",
+      const mockTask = {
+        id: "550e8400-e29b-41d4-a716-446655440000",
         identifier: "ENG-1-1",
-        title: "Test",
+        title: "Task",
         description: null,
         featureId: "feat-1",
         statusId: null,
-        assigneeId: null,
+        assigneeId: "new-assignee-uuid",
         sortOrder: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: "2024-01-01T00:00:00.000Z",
+        updatedAt: "2024-01-02T00:00:00.000Z",
       };
 
-      vi.mocked(taskService.getTaskById).mockResolvedValue(existingTask);
-      vi.mocked(taskService.updateTask).mockResolvedValue({
-        ...existingTask,
-        assigneeId: "new-assignee-uuid",
-      });
+      mockApiClient.updateTask.mockResolvedValue({ data: mockTask });
 
       const handler = getHandler();
       const result = await handler!({
@@ -600,16 +526,70 @@ describe("MCP Tasks Tools", () => {
         assignee: "new-assignee-uuid",
       });
 
-      expect(vi.mocked(taskService.updateTask)).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({ assigneeId: "new-assignee-uuid" })
+      expect(mockApiClient.updateTask).toHaveBeenCalledWith(
+        "550e8400-e29b-41d4-a716-446655440000",
+        expect.objectContaining({
+          assigneeId: "new-assignee-uuid",
+        })
+      );
+      expect(result.isError).toBeUndefined();
+    });
+
+    it("should resolve status name to UUID when updating", async () => {
+      const mockTask = {
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        identifier: "ENG-1-1",
+        title: "Task",
+        description: null,
+        featureId: "feat-1",
+        statusId: "resolved-status-uuid",
+        assigneeId: null,
+        sortOrder: 1,
+        createdAt: "2024-01-01T00:00:00.000Z",
+        updatedAt: "2024-01-02T00:00:00.000Z",
+      };
+
+      const mockFeature = {
+        id: "feat-1",
+        identifier: "ENG-1",
+        title: "Feature",
+        projectId: "proj-1",
+      };
+
+      const mockProject = {
+        id: "proj-1",
+        name: "Test Project",
+        teamId: "team-1",
+      };
+
+      mockApiClient.getTask.mockResolvedValue({ data: mockTask });
+      mockApiClient.getFeature.mockResolvedValue({ data: mockFeature });
+      mockApiClient.getProject.mockResolvedValue({ data: mockProject });
+      mockApiClient.resolveStatusId.mockResolvedValue("resolved-status-uuid");
+      mockApiClient.updateTask.mockResolvedValue({ data: mockTask });
+
+      const handler = getHandler();
+      const result = await handler!({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        status: "Done",  // Pass status name instead of UUID
+      });
+
+      // Verify resolveStatusId was called with the status name
+      expect(mockApiClient.resolveStatusId).toHaveBeenCalledWith("Done", "team-1");
+      
+      // Verify updateTask was called with the resolved UUID
+      expect(mockApiClient.updateTask).toHaveBeenCalledWith(
+        "550e8400-e29b-41d4-a716-446655440000",
+        expect.objectContaining({
+          statusId: "resolved-status-uuid",
+        })
       );
       expect(result.isError).toBeUndefined();
     });
 
     it("should return error for non-existent task", async () => {
-      vi.mocked(taskService.getTaskById).mockResolvedValue(null);
-      vi.mocked(prisma.task.findUnique).mockResolvedValue(null);
+      const ApiError = (await import("../src/api-client.js")).ApiError;
+      mockApiClient.updateTask.mockRejectedValue(new ApiError("Task not found", 404));
 
       const handler = getHandler();
       const result = await handler!({

@@ -304,6 +304,21 @@ export async function createDefaultStatuses(teamId: string): Promise<Status[]> {
 }
 
 /**
+ * Get the default "Backlog" status for a team.
+ * Returns the first status with category "backlog" for the team.
+ * Returns null if no backlog status exists.
+ */
+export async function getDefaultBacklogStatus(teamId: string): Promise<Status | null> {
+  return prisma.status.findFirst({
+    where: {
+      teamId,
+      category: "backlog",
+    },
+    orderBy: { position: "asc" },
+  });
+}
+
+/**
  * Delete a status (only if not in use by any features or tasks)
  */
 export async function deleteStatus(id: string): Promise<void> {

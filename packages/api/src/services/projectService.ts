@@ -91,11 +91,21 @@ export async function listProjects(
 }
 
 /**
- * Get a single project by ID
+ * UUID v4 regex pattern for validation
  */
-export async function getProjectById(id: string): Promise<ProjectWithCount | null> {
-  return prisma.project.findUnique({
-    where: { id, isArchived: false },
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Get a single project by ID or name.
+ * Supports both UUID (e.g., "550e8400-e29b-41d4-a716-446655440000") and
+ * exact project name (case-sensitive) lookups.
+ */
+export async function getProjectById(idOrName: string): Promise<ProjectWithCount | null> {
+  const isUuid = UUID_REGEX.test(idOrName);
+  return prisma.project.findFirst({
+    where: isUuid
+      ? { id: idOrName, isArchived: false }
+      : { name: idOrName, isArchived: false },
     include: { _count: { select: { features: true } } },
   }) as Promise<ProjectWithCount | null>;
 }
@@ -161,20 +171,27 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
 }
 
 /**
- * Update an existing project
+ * Update an existing project.
+ * Supports both UUID and exact project name lookups.
  */
 export async function updateProject(
-  id: string,
+  idOrName: string,
   input: UpdateProjectInput
 ): Promise<Project> {
   // First check if project exists and is not archived
-  const existing = await prisma.project.findUnique({
-    where: { id },
+  const isUuid = UUID_REGEX.test(idOrName);
+  const existing = await prisma.project.findFirst({
+    where: isUuid
+      ? { id: idOrName }
+      : { name: idOrName },
   });
 
   if (!existing || existing.isArchived) {
-    throw new NotFoundError(`Project with id '${id}' not found`);
+    throw new NotFoundError(`Project with id '${idOrName}' not found`);
   }
+
+  // Use the resolved UUID for the update
+  const id = existing.id;
 
   // Validate fields if provided
   if (input.name?.trim() === "") {
@@ -213,20 +230,24 @@ export async function updateProject(
 }
 
 /**
- * Soft delete a project (set isArchived = true)
+ * Soft delete a project (set isArchived = true).
+ * Supports both UUID and exact project name lookups.
  */
-export async function deleteProject(id: string): Promise<void> {
+export async function deleteProject(idOrName: string): Promise<void> {
   // First check if project exists and is not already archived
-  const existing = await prisma.project.findUnique({
-    where: { id },
+  const isUuid = UUID_REGEX.test(idOrName);
+  const existing = await prisma.project.findFirst({
+    where: isUuid
+      ? { id: idOrName }
+      : { name: idOrName },
   });
 
   if (!existing || existing.isArchived) {
-    throw new NotFoundError(`Project with id '${id}' not found`);
+    throw new NotFoundError(`Project with id '${idOrName}' not found`);
   }
 
   await prisma.project.update({
-    where: { id },
+    where: { id: existing.id },
     data: { isArchived: true },
   });
 }

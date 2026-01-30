@@ -6,6 +6,7 @@ import { buildDateFilters } from "../utils/dateParser.js";
 import {
   resolveStatusesToIds,
   getStatusIdsByCategory,
+  getDefaultBacklogStatus,
 } from "./statusService.js";
 import {
   resolveAssigneeId,
@@ -273,14 +274,36 @@ export async function listFeatures(
 }
 
 /**
- * Get a single feature by ID with nested tasks
+ * UUID v4 regex pattern for validation
  */
-export async function getFeatureById(id: string): Promise<FeatureWithTasks | null> {
-  return prisma.feature.findUnique({
-    where: { id },
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Feature identifier pattern (e.g., "ENG-123")
+ */
+const IDENTIFIER_REGEX = /^[A-Z]+-\d+$/i;
+
+/**
+ * Get a single feature by ID, identifier, or title with nested tasks.
+ * Supports UUID (e.g., "550e8400-e29b-41d4-a716-446655440000"),
+ * identifier (e.g., "ENG-4"), or exact title (case-sensitive) lookups.
+ */
+export async function getFeatureById(idOrIdentifierOrTitle: string): Promise<FeatureWithTasks | null> {
+  const isUuid = UUID_REGEX.test(idOrIdentifierOrTitle);
+  const isIdentifier = IDENTIFIER_REGEX.test(idOrIdentifierOrTitle);
+  
+  // Determine lookup strategy: UUID > identifier > title
+  const whereClause = isUuid
+    ? { id: idOrIdentifierOrTitle }
+    : isIdentifier
+      ? { identifier: idOrIdentifierOrTitle }
+      : { title: idOrIdentifierOrTitle };
+
+  return prisma.feature.findFirst({
+    where: whereClause,
     include: {
       tasks: {
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       },
       project: {
         select: {
@@ -293,7 +316,8 @@ export async function getFeatureById(id: string): Promise<FeatureWithTasks | nul
 }
 
 /**
- * Create a new feature with auto-generated identifier
+ * Create a new feature with auto-generated identifier.
+ * Defaults to "Backlog" status if no status is provided.
  */
 export async function createFeature(input: CreateFeatureInput): Promise<Feature> {
   // Validate required fields
@@ -304,24 +328,32 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
     throw new ValidationError("Project ID is required");
   }
 
-  // Verify project exists and is not archived
+  // Verify project exists and is not archived, get teamId for status lookup
   const project = await prisma.project.findUnique({
     where: { id: input.projectId },
-    select: { id: true, isArchived: true },
+    select: { id: true, isArchived: true, teamId: true },
   });
 
   if (!project || project.isArchived) {
     throw new NotFoundError(`Project with id '${input.projectId}' not found`);
   }
 
-  // Verify status exists if provided
-  if (input.statusId !== undefined) {
+  // Determine statusId: use provided, or default to Backlog
+  let statusId = input.statusId;
+  if (statusId !== undefined) {
+    // Verify provided status exists
     const status = await prisma.status.findUnique({
-      where: { id: input.statusId },
+      where: { id: statusId },
       select: { id: true },
     });
     if (!status) {
-      throw new NotFoundError(`Status with id '${input.statusId}' not found`);
+      throw new NotFoundError(`Status with id '${statusId}' not found`);
+    }
+  } else {
+    // Default to Backlog status for the team
+    const backlogStatus = await getDefaultBacklogStatus(project.teamId);
+    if (backlogStatus) {
+      statusId = backlogStatus.id;
     }
   }
 
@@ -369,8 +401,8 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
   if (input.description !== undefined) {
     data.description = input.description.trim();
   }
-  if (input.statusId !== undefined) {
-    data.statusId = input.statusId;
+  if (statusId !== undefined) {
+    data.statusId = statusId;
   }
   if (input.assigneeId !== undefined) {
     data.assigneeId = input.assigneeId;
@@ -380,20 +412,34 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
 }
 
 /**
- * Update an existing feature
+ * Update an existing feature.
+ * Supports UUID, identifier (e.g., "ENG-4"), or exact title lookups.
  */
 export async function updateFeature(
-  id: string,
+  idOrIdentifierOrTitle: string,
   input: UpdateFeatureInput
 ): Promise<Feature> {
+  // Resolve to UUID using same logic as getFeatureById
+  const isUuid = UUID_REGEX.test(idOrIdentifierOrTitle);
+  const isIdentifier = IDENTIFIER_REGEX.test(idOrIdentifierOrTitle);
+  
+  const whereClause = isUuid
+    ? { id: idOrIdentifierOrTitle }
+    : isIdentifier
+      ? { identifier: idOrIdentifierOrTitle }
+      : { title: idOrIdentifierOrTitle };
+  
   // First check if feature exists
-  const existing = await prisma.feature.findUnique({
-    where: { id },
+  const existing = await prisma.feature.findFirst({
+    where: whereClause,
   });
 
   if (!existing) {
-    throw new NotFoundError(`Feature with id '${id}' not found`);
+    throw new NotFoundError(`Feature with id '${idOrIdentifierOrTitle}' not found`);
   }
+
+  // Use the actual UUID for all subsequent operations
+  const id = existing.id;
 
   // Validate fields if provided
   if (input.title?.trim() === "") {
@@ -480,19 +526,30 @@ export async function updateFeature(
 }
 
 /**
- * Delete a feature (hard delete - cascade will remove tasks)
+ * Delete a feature (hard delete - cascade will remove tasks).
+ * Supports UUID, identifier (e.g., "ENG-4"), or exact title lookups.
  */
-export async function deleteFeature(id: string): Promise<void> {
+export async function deleteFeature(idOrIdentifierOrTitle: string): Promise<void> {
+  // Resolve to UUID using same logic as getFeatureById
+  const isUuid = UUID_REGEX.test(idOrIdentifierOrTitle);
+  const isIdentifier = IDENTIFIER_REGEX.test(idOrIdentifierOrTitle);
+  
+  const whereClause = isUuid
+    ? { id: idOrIdentifierOrTitle }
+    : isIdentifier
+      ? { identifier: idOrIdentifierOrTitle }
+      : { title: idOrIdentifierOrTitle };
+  
   // First check if feature exists
-  const existing = await prisma.feature.findUnique({
-    where: { id },
+  const existing = await prisma.feature.findFirst({
+    where: whereClause,
   });
 
   if (!existing) {
-    throw new NotFoundError(`Feature with id '${id}' not found`);
+    throw new NotFoundError(`Feature with id '${idOrIdentifierOrTitle}' not found`);
   }
 
   await prisma.feature.delete({
-    where: { id },
+    where: { id: existing.id },
   });
 }

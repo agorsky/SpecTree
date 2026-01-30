@@ -68,7 +68,7 @@ describe("JWT Utilities", () => {
       const { generateAccessToken } = await import("../../src/utils/jwt.js");
 
       expect(() => generateAccessToken(TEST_USER_ID)).toThrow(
-        "JWT_SECRET environment variable is not configured"
+        "JWT_SECRET not initialized"
       );
     });
   });
@@ -113,7 +113,7 @@ describe("JWT Utilities", () => {
       const { generateRefreshToken } = await import("../../src/utils/jwt.js");
 
       expect(() => generateRefreshToken(TEST_USER_ID)).toThrow(
-        "JWT_SECRET environment variable is not configured"
+        "JWT_SECRET not initialized"
       );
     });
   });

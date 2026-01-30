@@ -11,6 +11,7 @@ import {
 import {
   resolveStatusesToIds,
   getStatusIdsByCategory,
+  getDefaultBacklogStatus,
 } from "./statusService.js";
 import { emitStatusChanged } from "../events/index.js";
 
@@ -226,7 +227,7 @@ export async function listTasks(
   // Determine order by field
   const orderByField = options.orderBy ?? 'sortOrder';
   const orderBy = orderByField === 'sortOrder'
-    ? [{ sortOrder: "asc" as const }, { createdAt: "desc" as const }]
+    ? [{ sortOrder: "asc" as const }, { identifier: "asc" as const }]
     : [{ [orderByField]: "desc" as const }];
 
   const tasks = await prisma.task.findMany({
@@ -265,16 +266,27 @@ export async function listTasks(
 }
 
 /**
- * Get a single task by ID
+ * UUID v4 regex pattern for validation
  */
-export async function getTaskById(id: string): Promise<Task | null> {
-  return prisma.task.findUnique({
-    where: { id },
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Get a single task by ID or identifier.
+ * Supports both UUID (e.g., "550e8400-e29b-41d4-a716-446655440000") and
+ * identifier (e.g., "ENG-4-1") lookups.
+ */
+export async function getTaskById(idOrIdentifier: string): Promise<Task | null> {
+  const isUuid = UUID_REGEX.test(idOrIdentifier);
+  return prisma.task.findFirst({
+    where: isUuid
+      ? { id: idOrIdentifier }
+      : { identifier: idOrIdentifier },
   });
 }
 
 /**
- * Create a new task with auto-generated identifier
+ * Create a new task with auto-generated identifier.
+ * Defaults to "Backlog" status if no status is provided.
  */
 export async function createTask(input: CreateTaskInput): Promise<Task> {
   // Validate required fields
@@ -285,24 +297,37 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     throw new ValidationError("Feature ID is required");
   }
 
-  // Verify feature exists
+  // Verify feature exists and get teamId for status lookup
   const feature = await prisma.feature.findUnique({
     where: { id: input.featureId },
-    select: { id: true },
+    select: { 
+      id: true, 
+      project: { 
+        select: { teamId: true } 
+      } 
+    },
   });
 
   if (!feature) {
     throw new NotFoundError(`Feature with id '${input.featureId}' not found`);
   }
 
-  // Verify status exists if provided
-  if (input.statusId !== undefined) {
+  // Determine statusId: use provided, or default to Backlog
+  let statusId = input.statusId;
+  if (statusId !== undefined) {
+    // Verify provided status exists
     const status = await prisma.status.findUnique({
-      where: { id: input.statusId },
+      where: { id: statusId },
       select: { id: true },
     });
     if (!status) {
-      throw new NotFoundError(`Status with id '${input.statusId}' not found`);
+      throw new NotFoundError(`Status with id '${statusId}' not found`);
+    }
+  } else {
+    // Default to Backlog status for the team
+    const backlogStatus = await getDefaultBacklogStatus(feature.project.teamId);
+    if (backlogStatus) {
+      statusId = backlogStatus.id;
     }
   }
 
@@ -356,8 +381,8 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
       if (input.description !== undefined) {
         data.description = input.description.trim();
       }
-      if (input.statusId !== undefined) {
-        data.statusId = input.statusId;
+      if (statusId !== undefined) {
+        data.statusId = statusId;
       }
       if (input.assigneeId !== undefined) {
         data.assigneeId = input.assigneeId;
@@ -388,17 +413,25 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
  * Update an existing task
  */
 export async function updateTask(
-  id: string,
+  idOrIdentifier: string,
   input: UpdateTaskInput
 ): Promise<Task> {
+  // Resolve identifier to UUID if needed
+  const isUuid = UUID_REGEX.test(idOrIdentifier);
+  
   // First check if task exists
-  const existing = await prisma.task.findUnique({
-    where: { id },
+  const existing = await prisma.task.findFirst({
+    where: isUuid
+      ? { id: idOrIdentifier }
+      : { identifier: idOrIdentifier },
   });
 
   if (!existing) {
-    throw new NotFoundError(`Task with id '${id}' not found`);
+    throw new NotFoundError(`Task with id '${idOrIdentifier}' not found`);
   }
+
+  // Use the actual UUID for all subsequent operations
+  const id = existing.id;
 
   // Validate fields if provided
   if (input.title?.trim() === "") {
@@ -487,17 +520,22 @@ export async function updateTask(
 /**
  * Delete a task (hard delete)
  */
-export async function deleteTask(id: string): Promise<void> {
+export async function deleteTask(idOrIdentifier: string): Promise<void> {
+  // Resolve identifier to UUID if needed
+  const isUuid = UUID_REGEX.test(idOrIdentifier);
+  
   // First check if task exists
-  const existing = await prisma.task.findUnique({
-    where: { id },
+  const existing = await prisma.task.findFirst({
+    where: isUuid
+      ? { id: idOrIdentifier }
+      : { identifier: idOrIdentifier },
   });
 
   if (!existing) {
-    throw new NotFoundError(`Task with id '${id}' not found`);
+    throw new NotFoundError(`Task with id '${idOrIdentifier}' not found`);
   }
 
   await prisma.task.delete({
-    where: { id },
+    where: { id: existing.id },
   });
 }

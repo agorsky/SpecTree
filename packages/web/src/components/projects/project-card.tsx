@@ -17,6 +17,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Folder, MoreVertical, Trash2, Pencil } from "lucide-react";
 import { useDeleteProject } from "@/hooks/queries/use-projects";
 import { ApiError } from "@/lib/api/client";
@@ -61,9 +66,16 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
               <div className="flex-1 min-w-0">
                 <CardTitle className="text-base truncate">{project.name}</CardTitle>
                 {project.description && (
-                  <CardDescription className="truncate">
-                    {project.description}
-                  </CardDescription>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <CardDescription className="truncate cursor-help">
+                        {project.description}
+                      </CardDescription>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="start">
+                      <p className="max-w-sm">{project.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </div>
             </div>

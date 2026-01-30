@@ -3,7 +3,7 @@ import type { Feature, Task } from "@/lib/api/types";
 import { StatusDot } from "@/components/common/status-dot";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { CircleDot, GitCommitVertical } from "lucide-react";
+import { CircleDot, GitCommitVertical, CheckCircle2 } from "lucide-react";
 
 type IssueItem =
   | { type: "feature"; data: Feature }
@@ -32,6 +32,11 @@ export function IssueRow({ item, className, isLastTask, hideFeatureStatus }: Iss
   const status = data.status;
   const assignee = data.assignee;
 
+  // Check if item is completed or canceled
+  const isCompleted = status?.category === "completed";
+  const isCanceled = status?.category === "canceled";
+  const isDone = isCompleted || isCanceled;
+
   // For features: show task count (completed/total)
   const taskCount = isFeature
     ? {
@@ -46,6 +51,7 @@ export function IssueRow({ item, className, isLastTask, hideFeatureStatus }: Iss
       className={cn(
         "flex items-center gap-3 px-4 py-2.5 hover:bg-muted/50 transition-colors group",
         isTask && "pl-8",
+        isDone && "opacity-60",
         className
       )}
     >
@@ -64,13 +70,15 @@ export function IssueRow({ item, className, isLastTask, hideFeatureStatus }: Iss
         </span>
       )}
 
-      {/* Icon: Status dot for features, sub-task icon for tasks */}
+      {/* Icon: Status dot for features, status-aware icon for tasks */}
       {isFeature ? (
         hideFeatureStatus ? null : status ? (
           <StatusDot status={status} />
         ) : (
           <CircleDot className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
         )
+      ) : isCompleted ? (
+        <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
       ) : (
         <GitCommitVertical className="h-3.5 w-3.5 text-muted-foreground/60 flex-shrink-0 rotate-90" />
       )}
@@ -87,11 +95,12 @@ export function IssueRow({ item, className, isLastTask, hideFeatureStatus }: Iss
         {identifier}
       </span>
 
-      {/* Title - muted for tasks */}
+      {/* Title - muted for tasks, strikethrough for completed */}
       <span
         className={cn(
           "flex-1 truncate text-sm",
-          isFeature ? "font-medium" : "font-normal text-muted-foreground"
+          isFeature ? "font-medium" : "font-normal text-muted-foreground",
+          isDone && "line-through"
         )}
       >
         {title}

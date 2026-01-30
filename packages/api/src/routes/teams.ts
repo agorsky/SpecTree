@@ -6,6 +6,7 @@ import {
   updateTeam,
   deleteTeam,
 } from "../services/teamService.js";
+import { addMemberToTeam } from "../services/membershipService.js";
 import {
   validateBody,
   validateParams,
@@ -103,6 +104,13 @@ export default async function teamsRoutes(
       if (color !== undefined) input.color = color;
 
       const team = await createTeam(input);
+
+      // Add the creator as an admin member of the team
+      await addMemberToTeam(team.id, {
+        userId: request.user!.id,
+        role: "admin",
+      });
+
       return reply.status(201).send({ data: team });
     }
   );

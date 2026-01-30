@@ -3,16 +3,12 @@
  *
  * Provides tools for reordering projects, features, and tasks in SpecTree.
  * Enables AI agents to programmatically organize work items.
+ * Uses HTTP API client for all operations.
  */
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  prisma,
-  NotFoundError,
-  ValidationError,
-} from "@spectree/api/src/services/index.js";
-import { generateSortOrderBetween } from "@spectree/api/src/utils/ordering.js";
+import { getApiClient, ApiError } from "../api-client.js";
 
 /**
  * Create MCP-compliant response
@@ -81,78 +77,33 @@ export function registerOrderingTools(server: McpServer): void {
       try {
         // Validate that at least one position reference is provided
         if (!input.afterId && !input.beforeId) {
-          throw new ValidationError("At least one of afterId or beforeId must be provided");
+          return createErrorResponse(new Error("At least one of afterId or beforeId must be provided"));
         }
 
-        // Fetch the project being reordered
-        const project = await prisma.project.findUnique({
-          where: { id: input.id },
-          select: { id: true, teamId: true, isArchived: true },
-        });
+        const apiClient = getApiClient();
 
-        if (!project || project.isArchived) {
-          throw new NotFoundError(`Project with id '${input.id}' not found`);
-        }
-
-        let beforeSortOrder: number | null = null;
-        let afterSortOrder: number | null = null;
-
-        // If afterId is provided, fetch that project's sortOrder
-        if (input.afterId) {
-          const afterProject = await prisma.project.findUnique({
-            where: { id: input.afterId },
-            select: { teamId: true, sortOrder: true, isArchived: true },
-          });
-
-          if (!afterProject || afterProject.isArchived) {
-            throw new NotFoundError(`After project with id '${input.afterId}' not found`);
-          }
-
-          if (afterProject.teamId !== project.teamId) {
-            throw new ValidationError("Projects must belong to the same team");
-          }
-
-          beforeSortOrder = afterProject.sortOrder;
-        }
-
-        // If beforeId is provided, fetch that project's sortOrder
-        if (input.beforeId) {
-          const beforeProject = await prisma.project.findUnique({
-            where: { id: input.beforeId },
-            select: { teamId: true, sortOrder: true, isArchived: true },
-          });
-
-          if (!beforeProject || beforeProject.isArchived) {
-            throw new NotFoundError(`Before project with id '${input.beforeId}' not found`);
-          }
-
-          if (beforeProject.teamId !== project.teamId) {
-            throw new ValidationError("Projects must belong to the same team");
-          }
-
-          afterSortOrder = beforeProject.sortOrder;
-        }
-
-        // Calculate the new sortOrder
-        const newSortOrder = generateSortOrderBetween(beforeSortOrder, afterSortOrder);
-
-        // Update the project's sortOrder
-        const updatedProject = await prisma.project.update({
-          where: { id: input.id },
-          data: { sortOrder: newSortOrder },
-          include: {
-            team: { select: { id: true, name: true, key: true } },
-          },
+        const { data: project } = await apiClient.reorderProject(input.id, {
+          afterId: input.afterId,
+          beforeId: input.beforeId,
         });
 
         return createResponse({
-          id: updatedProject.id,
-          name: updatedProject.name,
-          sortOrder: updatedProject.sortOrder,
-          team: updatedProject.team,
-          updatedAt: updatedProject.updatedAt.toISOString(),
+          id: project.id,
+          name: project.name,
+          sortOrder: project.sortOrder,
+          team: project.team,
+          updatedAt: project.updatedAt,
         });
       } catch (error) {
+        if (error instanceof ApiError) {
+          if (error.status === 404) {
+            return createErrorResponse(new Error(`Project with id '${input.id}' not found`));
+          }
+          if (error.status === 400) {
+            const body = error.body as { message?: string } | undefined;
+            return createErrorResponse(new Error(body?.message ?? "Invalid request"));
+          }
+        }
         return createErrorResponse(error);
       }
     }
@@ -201,79 +152,33 @@ export function registerOrderingTools(server: McpServer): void {
       try {
         // Validate that at least one position reference is provided
         if (!input.afterId && !input.beforeId) {
-          throw new ValidationError("At least one of afterId or beforeId must be provided");
+          return createErrorResponse(new Error("At least one of afterId or beforeId must be provided"));
         }
 
-        // Fetch the feature being reordered
-        const feature = await prisma.feature.findUnique({
-          where: { id: input.id },
-          select: { id: true, projectId: true, identifier: true },
-        });
+        const apiClient = getApiClient();
 
-        if (!feature) {
-          throw new NotFoundError(`Feature with id '${input.id}' not found`);
-        }
-
-        let beforeSortOrder: number | null = null;
-        let afterSortOrder: number | null = null;
-
-        // If afterId is provided, fetch that feature's sortOrder
-        if (input.afterId) {
-          const afterFeature = await prisma.feature.findUnique({
-            where: { id: input.afterId },
-            select: { projectId: true, sortOrder: true },
-          });
-
-          if (!afterFeature) {
-            throw new NotFoundError(`After feature with id '${input.afterId}' not found`);
-          }
-
-          if (afterFeature.projectId !== feature.projectId) {
-            throw new ValidationError("Features must belong to the same project");
-          }
-
-          beforeSortOrder = afterFeature.sortOrder;
-        }
-
-        // If beforeId is provided, fetch that feature's sortOrder
-        if (input.beforeId) {
-          const beforeFeature = await prisma.feature.findUnique({
-            where: { id: input.beforeId },
-            select: { projectId: true, sortOrder: true },
-          });
-
-          if (!beforeFeature) {
-            throw new NotFoundError(`Before feature with id '${input.beforeId}' not found`);
-          }
-
-          if (beforeFeature.projectId !== feature.projectId) {
-            throw new ValidationError("Features must belong to the same project");
-          }
-
-          afterSortOrder = beforeFeature.sortOrder;
-        }
-
-        // Calculate the new sortOrder
-        const newSortOrder = generateSortOrderBetween(beforeSortOrder, afterSortOrder);
-
-        // Update the feature's sortOrder
-        const updatedFeature = await prisma.feature.update({
-          where: { id: input.id },
-          data: { sortOrder: newSortOrder },
-          include: {
-            project: { select: { id: true, name: true } },
-          },
+        const { data: feature } = await apiClient.reorderFeature(input.id, {
+          afterId: input.afterId,
+          beforeId: input.beforeId,
         });
 
         return createResponse({
-          id: updatedFeature.id,
-          identifier: updatedFeature.identifier,
-          title: updatedFeature.title,
-          sortOrder: updatedFeature.sortOrder,
-          project: updatedFeature.project,
-          updatedAt: updatedFeature.updatedAt.toISOString(),
+          id: feature.id,
+          identifier: feature.identifier,
+          title: feature.title,
+          sortOrder: feature.sortOrder,
+          updatedAt: feature.updatedAt,
         });
       } catch (error) {
+        if (error instanceof ApiError) {
+          if (error.status === 404) {
+            return createErrorResponse(new Error(`Feature with id '${input.id}' not found`));
+          }
+          if (error.status === 400) {
+            const body = error.body as { message?: string } | undefined;
+            return createErrorResponse(new Error(body?.message ?? "Invalid request"));
+          }
+        }
         return createErrorResponse(error);
       }
     }
@@ -322,79 +227,33 @@ export function registerOrderingTools(server: McpServer): void {
       try {
         // Validate that at least one position reference is provided
         if (!input.afterId && !input.beforeId) {
-          throw new ValidationError("At least one of afterId or beforeId must be provided");
+          return createErrorResponse(new Error("At least one of afterId or beforeId must be provided"));
         }
 
-        // Fetch the task being reordered
-        const task = await prisma.task.findUnique({
-          where: { id: input.id },
-          select: { id: true, featureId: true, identifier: true },
-        });
+        const apiClient = getApiClient();
 
-        if (!task) {
-          throw new NotFoundError(`Task with id '${input.id}' not found`);
-        }
-
-        let beforeSortOrder: number | null = null;
-        let afterSortOrder: number | null = null;
-
-        // If afterId is provided, fetch that task's sortOrder
-        if (input.afterId) {
-          const afterTask = await prisma.task.findUnique({
-            where: { id: input.afterId },
-            select: { featureId: true, sortOrder: true },
-          });
-
-          if (!afterTask) {
-            throw new NotFoundError(`After task with id '${input.afterId}' not found`);
-          }
-
-          if (afterTask.featureId !== task.featureId) {
-            throw new ValidationError("Tasks must belong to the same feature");
-          }
-
-          beforeSortOrder = afterTask.sortOrder;
-        }
-
-        // If beforeId is provided, fetch that task's sortOrder
-        if (input.beforeId) {
-          const beforeTask = await prisma.task.findUnique({
-            where: { id: input.beforeId },
-            select: { featureId: true, sortOrder: true },
-          });
-
-          if (!beforeTask) {
-            throw new NotFoundError(`Before task with id '${input.beforeId}' not found`);
-          }
-
-          if (beforeTask.featureId !== task.featureId) {
-            throw new ValidationError("Tasks must belong to the same feature");
-          }
-
-          afterSortOrder = beforeTask.sortOrder;
-        }
-
-        // Calculate the new sortOrder
-        const newSortOrder = generateSortOrderBetween(beforeSortOrder, afterSortOrder);
-
-        // Update the task's sortOrder
-        const updatedTask = await prisma.task.update({
-          where: { id: input.id },
-          data: { sortOrder: newSortOrder },
-          include: {
-            feature: { select: { id: true, identifier: true, title: true } },
-          },
+        const { data: task } = await apiClient.reorderTask(input.id, {
+          afterId: input.afterId,
+          beforeId: input.beforeId,
         });
 
         return createResponse({
-          id: updatedTask.id,
-          identifier: updatedTask.identifier,
-          title: updatedTask.title,
-          sortOrder: updatedTask.sortOrder,
-          feature: updatedTask.feature,
-          updatedAt: updatedTask.updatedAt.toISOString(),
+          id: task.id,
+          identifier: task.identifier,
+          title: task.title,
+          sortOrder: task.sortOrder,
+          updatedAt: task.updatedAt,
         });
       } catch (error) {
+        if (error instanceof ApiError) {
+          if (error.status === 404) {
+            return createErrorResponse(new Error(`Task with id '${input.id}' not found`));
+          }
+          if (error.status === 400) {
+            const body = error.body as { message?: string } | undefined;
+            return createErrorResponse(new Error(body?.message ?? "Invalid request"));
+          }
+        }
         return createErrorResponse(error);
       }
     }

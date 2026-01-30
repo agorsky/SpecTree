@@ -1,78 +1,106 @@
 # Copilot Instructions for SpecTree
 
-These instructions are automatically loaded by GitHub Copilot and AI coding agents.
+SpecTree is a project management tool similar to Linear, with a REST API, React frontend, and MCP server for AI integration.
 
 ---
 
-## 🔴 CRITICAL: Database Safety Rules
+## 🔴 CRITICAL: Database Safety
 
-**READ THIS FIRST**: This project has experienced multiple data loss incidents from unsafe database commands.
+This project has experienced data loss from unsafe Prisma commands. Follow these rules strictly.
 
-### NEVER Run These Commands
+**NEVER run:**
+- `npx prisma migrate reset` - Deletes all data
+- `npx prisma migrate dev` - May require reset
+- `npx prisma db push --force-reset` - Deletes all data
 
-| Command | Why It's Dangerous |
-|---------|-------------------|
-| `npx prisma migrate reset` | **DELETES ALL DATA** |
-| `npx prisma migrate dev` | May require reset, causing data loss |
-| `npx prisma db push --force-reset` | **DELETES ALL DATA** |
-| `npm run db:migrate` | Blocked - shows warning |
-
-### ALWAYS Do This Instead
-
+**ALWAYS:**
 ```bash
-# 1. Create backup FIRST
-npm run db:backup
-
-# 2. Use safe migration (backs up automatically)
-npm run db:migrate:safe
-
-# 3. For schema changes without migrations (safe)
-npx prisma db push
+npm run db:backup              # Backup first
+npm run db:migrate:safe        # Safe migration (backs up automatically)
+npx prisma db push             # Schema sync without --force-reset
 ```
 
-### Test vs Production Database
-
-| Database | File | Purpose |
-|----------|------|---------|
-| Production | `spectree.db` | Real user data |
-| Test | `spectree-test.db` | Test suite only |
-
-**Tests automatically use the test database** via `vitest.config.ts`. Do NOT change this configuration.
-
-### Before ANY Database Work
-
-1. Run `npm run db:backup` to create a backup
-2. Verify you're not modifying the test database configuration
-3. Read `docs/database-safety-guide.md` for full details
+Tests use a separate database (`spectree-test.db`) configured in `packages/api/vitest.config.ts`. Do not modify this configuration.
 
 ---
 
-## Project Structure
-
-- `packages/api` - Fastify REST API with Prisma ORM
-- `packages/web` - React frontend
-- `packages/mcp` - MCP server for AI tool integration
-- `packages/shared` - Shared types and utilities
-
-## Common Commands
+## Build, Test, and Lint
 
 ```bash
-# Development
-pnpm dev              # Start all packages in dev mode
+# Full suite
 pnpm build            # Build all packages
 pnpm test             # Run all tests
+pnpm lint             # Lint all packages
+pnpm typecheck        # TypeScript checking
 
-# API-specific
+# Single package
+pnpm --filter @spectree/api test
+pnpm --filter @spectree/web build
+
+# Single test file (from packages/api)
 cd packages/api
-npm run dev           # Start API server
-npm run test          # Run API tests
-npm run db:studio     # Open Prisma Studio
-npm run db:backup     # Backup database
+npx vitest run tests/services/featureService.test.ts
+
+# Watch mode for a specific test
+npx vitest tests/services/featureService.test.ts
 ```
 
-## Code Conventions
+---
 
-- TypeScript strict mode
-- ESLint + Prettier for formatting
-- Vitest for testing
-- Zod for validation schemas
+## Architecture
+
+### Monorepo Structure
+
+```
+packages/
+├── api/      → Fastify REST API + Prisma ORM (SQLite)
+├── web/      → React + Vite + Tailwind + Radix UI
+├── mcp/      → MCP server (imports from api package)
+└── shared/   → Shared TypeScript types (no dependencies)
+```
+
+Package dependencies: `shared` ← `api`, `web`, `mcp`; and `api` ← `mcp`
+
+### API Layer Pattern
+
+Routes → Services → Prisma. Each domain has:
+- `src/routes/{domain}.ts` - Fastify route handlers with Zod validation
+- `src/services/{domain}Service.ts` - Business logic and database access
+- `src/schemas/{domain}.ts` - Zod schemas for request/response validation
+
+### Error Handling
+
+Use custom error classes from `src/errors/index.ts`:
+- `ValidationError` (400), `NotFoundError` (404), `ConflictError` (409)
+- `UnauthorizedError` (401), `ForbiddenError` (403)
+
+All extend `AppError` with `statusCode`, `code`, and optional `details`.
+
+### Database
+
+- Schema: `packages/api/prisma/schema.prisma`
+- Data: `packages/api/prisma/data/spectree.db` (SQLite)
+- Generated client: `packages/api/src/generated/prisma/`
+
+---
+
+## Key Conventions
+
+### TypeScript
+- Strict mode enabled; avoid `any`
+- Use type-only imports: `import type { User } from "./types"`
+- Files: kebab-case (`user-service.ts`), React components: PascalCase (`UserProfile.tsx`)
+
+### Validation
+- All API inputs validated with Zod schemas
+- Common schemas in `src/schemas/common.ts` (pagination, date filters, UUID params)
+
+### Frontend
+- Functional components with hooks; prefer named exports
+- Use `cn()` utility for conditional Tailwind classes
+- State management: Zustand; data fetching: TanStack Query
+
+### Testing
+- Tests in `packages/api/tests/` mirror source structure
+- Integration tests use factories from `tests/fixtures/factories.ts`
+- Test setup handles separate test database automatically
