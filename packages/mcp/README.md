@@ -1,6 +1,6 @@
 # SpecTree MCP Server
 
-> Model Context Protocol (MCP) server for SpecTree, enabling AI agents like GitHub Copilot to manage projects, features, and tasks.
+> Model Context Protocol (MCP) server for SpecTree, enabling AI agents like GitHub Copilot to manage epics, features, and tasks.
 
 ## Table of Contents
 
@@ -178,10 +178,10 @@ If the package is published to npm:
 After configuration, test by asking Copilot:
 
 ```
-List all projects in SpecTree
+List all epics in SpecTree
 ```
 
-If configured correctly, Copilot will use the MCP server to fetch and display your projects.
+If configured correctly, Copilot will use the MCP server to fetch and display your epics.
 
 ---
 
@@ -189,19 +189,19 @@ If configured correctly, Copilot will use the MCP server to fetch and display yo
 
 The MCP server exposes the following tools:
 
-### Projects
+### Epics
 
 | Tool | Description |
 |------|-------------|
-| `spectree__list_projects` | List all projects (with pagination) |
-| `spectree__get_project` | Get project by ID or name |
-| `spectree__create_project` | Create a new project |
+| `spectree__list_epics` | List all epics (with pagination) |
+| `spectree__get_epic` | Get epic by ID or name |
+| `spectree__create_epic` | Create a new epic |
 
 ### Features
 
 | Tool | Description |
 |------|-------------|
-| `spectree__list_features` | List features (filter by project, status, assignee) |
+| `spectree__list_features` | List features (filter by epic, status, assignee) |
 | `spectree__get_feature` | Get feature by ID or identifier (e.g., `ENG-123`) |
 | `spectree__create_feature` | Create a new feature |
 | `spectree__update_feature` | Update feature title, description, status, or assignee |
@@ -226,8 +226,8 @@ The MCP server exposes the following tools:
 
 | Tool | Description |
 |------|-------------|
-| `spectree__reorder_project` | Change project order within team |
-| `spectree__reorder_feature` | Change feature order within project |
+| `spectree__reorder_epic` | Change epic order within team |
+| `spectree__reorder_feature` | Change feature order within epic |
 | `spectree__reorder_task` | Change task order within feature |
 
 ### Search
@@ -340,7 +340,7 @@ packages/mcp/
 │   ├── utils.ts          # Shared utilities
 │   └── tools/            # MCP tool definitions
 │       ├── index.ts      # Tool registry
-│       ├── projects.ts   # Project tools
+│       ├── epics.ts      # Epic tools
 │       ├── features.ts   # Feature tools
 │       ├── tasks.ts      # Task tools
 │       ├── statuses.ts   # Status tools

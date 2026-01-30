@@ -25,11 +25,12 @@ export interface Team {
   updatedAt: string;
 }
 
-export interface Project {
+export interface Epic {
   id: string;
   name: string;
   description?: string;
   teamId: string;
+  isArchived?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,8 +53,8 @@ export interface Feature {
   status?: Status;
   assigneeId?: string;
   assignee?: User;
-  projectId: string;
-  project?: Project;
+  epicId: string;
+  epic?: Epic;
   priority?: number;
   createdAt: string;
   updatedAt: string;

@@ -8,7 +8,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { buildTestApp } from "../helpers/app.js";
 import {
-  createTestProject,
+  createTestEpic,
   createTestFeature,
   createTestStatus,
   createAuthenticatedUser,
@@ -39,9 +39,9 @@ describe("Features API", () => {
   describe("GET /api/v1/features", () => {
     it("should list features for authenticated user", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Test Project" });
-      await createTestFeature(project.id, { title: "Feature 1" });
-      await createTestFeature(project.id, { title: "Feature 2" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
+      await createTestFeature(epic.id, { title: "Feature 1" });
+      await createTestFeature(epic.id, { title: "Feature 2" });
 
       const response = await app.inject({
         method: "GET",
@@ -55,30 +55,30 @@ describe("Features API", () => {
       expect(Array.isArray(body.data)).toBe(true);
     });
 
-    it("should filter features by projectId", async () => {
+    it("should filter features by epicId", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
-      const project1 = await createTestProject(team.id, { name: "Project 1" });
-      const project2 = await createTestProject(team.id, { name: "Project 2" });
-      await createTestFeature(project1.id, { title: "Feature in P1" });
-      await createTestFeature(project2.id, { title: "Feature in P2" });
+      const epic1 = await createTestEpic(team.id, { name: "Epic 1" });
+      const epic2 = await createTestEpic(team.id, { name: "Epic 2" });
+      await createTestFeature(epic1.id, { title: "Feature in P1" });
+      await createTestFeature(epic2.id, { title: "Feature in P2" });
 
       const response = await app.inject({
         method: "GET",
-        url: `/api/v1/features?projectId=${project1.id}`,
+        url: `/api/v1/features?epicId=${epic1.id}`,
         headers,
       });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
-      expect(body.data.every((f: { projectId: string }) => f.projectId === project1.id)).toBe(true);
+      expect(body.data.every((f: { epicId: string }) => f.epicId === epic1.id)).toBe(true);
     });
 
     it("should filter features by statusId", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Test Project" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
       const status = await createTestStatus(team.id, { name: "In Progress", category: "started" });
-      await createTestFeature(project.id, { title: "Feature with Status", statusId: status.id });
-      await createTestFeature(project.id, { title: "Feature without Status" });
+      await createTestFeature(epic.id, { title: "Feature with Status", statusId: status.id });
+      await createTestFeature(epic.id, { title: "Feature without Status" });
 
       const response = await app.inject({
         method: "GET",
@@ -93,9 +93,9 @@ describe("Features API", () => {
 
     it("should support text query search", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Test Project" });
-      await createTestFeature(project.id, { title: "Login Feature" });
-      await createTestFeature(project.id, { title: "Dashboard Feature" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
+      await createTestFeature(epic.id, { title: "Login Feature" });
+      await createTestFeature(epic.id, { title: "Dashboard Feature" });
 
       const response = await app.inject({
         method: "GET",
@@ -121,8 +121,8 @@ describe("Features API", () => {
   describe("GET /api/v1/features/:id", () => {
     it("should get feature by ID for team member", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Test Project" });
-      const feature = await createTestFeature(project.id, { title: "Test Feature" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
+      const feature = await createTestFeature(epic.id, { title: "Test Feature" });
 
       const response = await app.inject({
         method: "GET",
@@ -138,8 +138,8 @@ describe("Features API", () => {
 
     it("should allow guest to read feature", async () => {
       const { team, headers } = await createAuthenticatedGuest();
-      const project = await createTestProject(team.id, { name: "Guest Project" });
-      const feature = await createTestFeature(project.id, { title: "Guest Feature" });
+      const epic = await createTestEpic(team.id, { name: "Guest Epic" });
+      const feature = await createTestFeature(epic.id, { title: "Guest Feature" });
 
       const response = await app.inject({
         method: "GET",
@@ -154,8 +154,8 @@ describe("Features API", () => {
 
     it("should return 403 for non-team-member", async () => {
       const { team } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Protected Project" });
-      const feature = await createTestFeature(project.id, { title: "Protected Feature" });
+      const epic = await createTestEpic(team.id, { name: "Protected Epic" });
+      const feature = await createTestFeature(epic.id, { title: "Protected Feature" });
       const { headers: otherHeaders } = await createAuthenticatedUser();
 
       const response = await app.inject({
@@ -171,7 +171,7 @@ describe("Features API", () => {
   describe("POST /api/v1/features", () => {
     it("should create feature for team member with auto-generated identifier", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Test Project" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
 
       const response = await app.inject({
         method: "POST",
@@ -179,7 +179,7 @@ describe("Features API", () => {
         headers,
         payload: {
           title: "New Feature",
-          projectId: project.id,
+          epicId: epic.id,
           description: "A new feature description",
         },
       });
@@ -187,14 +187,14 @@ describe("Features API", () => {
       expect(response.statusCode).toBe(201);
       const body = JSON.parse(response.body);
       expect(body.data.title).toBe("New Feature");
-      expect(body.data.projectId).toBe(project.id);
+      expect(body.data.epicId).toBe(epic.id);
       expect(body.data.description).toBe("A new feature description");
       expect(body.data.identifier).toBeDefined();
     });
 
     it("should create feature with status", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Test Project" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
       const status = await createTestStatus(team.id, { name: "To Do", category: "unstarted" });
 
       const response = await app.inject({
@@ -203,7 +203,7 @@ describe("Features API", () => {
         headers,
         payload: {
           title: "Feature with Status",
-          projectId: project.id,
+          epicId: epic.id,
           statusId: status.id,
         },
       });
@@ -215,7 +215,7 @@ describe("Features API", () => {
 
     it("should create feature with assignee", async () => {
       const { team, headers, user } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Test Project" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
 
       const response = await app.inject({
         method: "POST",
@@ -223,7 +223,7 @@ describe("Features API", () => {
         headers,
         payload: {
           title: "Assigned Feature",
-          projectId: project.id,
+          epicId: epic.id,
           assigneeId: user.id,
         },
       });
@@ -235,7 +235,7 @@ describe("Features API", () => {
 
     it("should return 403 for guest trying to create", async () => {
       const { team, headers } = await createAuthenticatedGuest();
-      const project = await createTestProject(team.id, { name: "Guest Project" });
+      const epic = await createTestEpic(team.id, { name: "Guest Epic" });
 
       const response = await app.inject({
         method: "POST",
@@ -243,7 +243,7 @@ describe("Features API", () => {
         headers,
         payload: {
           title: "Guest Feature",
-          projectId: project.id,
+          epicId: epic.id,
         },
       });
 
@@ -252,7 +252,7 @@ describe("Features API", () => {
 
     it("should return 403 for non-team-member", async () => {
       const { team } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Protected Project" });
+      const epic = await createTestEpic(team.id, { name: "Protected Epic" });
       const { headers: otherHeaders } = await createAuthenticatedUser();
 
       const response = await app.inject({
@@ -261,7 +261,7 @@ describe("Features API", () => {
         headers: otherHeaders,
         payload: {
           title: "Unauthorized Feature",
-          projectId: project.id,
+          epicId: epic.id,
         },
       });
 
@@ -272,8 +272,8 @@ describe("Features API", () => {
   describe("PUT /api/v1/features/:id", () => {
     it("should update feature for team member", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Test Project" });
-      const feature = await createTestFeature(project.id, { title: "Original Title" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
+      const feature = await createTestFeature(epic.id, { title: "Original Title" });
 
       const response = await app.inject({
         method: "PUT",
@@ -291,9 +291,9 @@ describe("Features API", () => {
 
     it("should update feature status", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Test Project" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
       const status = await createTestStatus(team.id, { name: "In Progress", category: "started" });
-      const feature = await createTestFeature(project.id, { title: "Feature" });
+      const feature = await createTestFeature(epic.id, { title: "Feature" });
 
       const response = await app.inject({
         method: "PUT",
@@ -311,8 +311,8 @@ describe("Features API", () => {
 
     it("should return 403 for guest trying to update", async () => {
       const { team, headers } = await createAuthenticatedGuest();
-      const project = await createTestProject(team.id, { name: "Guest Project" });
-      const feature = await createTestFeature(project.id, { title: "Guest Feature" });
+      const epic = await createTestEpic(team.id, { name: "Guest Epic" });
+      const feature = await createTestFeature(epic.id, { title: "Guest Feature" });
 
       const response = await app.inject({
         method: "PUT",
@@ -328,8 +328,8 @@ describe("Features API", () => {
 
     it("should return 403 for non-team-member", async () => {
       const { team } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Protected Project" });
-      const feature = await createTestFeature(project.id, { title: "Protected Feature" });
+      const epic = await createTestEpic(team.id, { name: "Protected Epic" });
+      const feature = await createTestFeature(epic.id, { title: "Protected Feature" });
       const { headers: otherHeaders } = await createAuthenticatedUser();
 
       const response = await app.inject({
@@ -348,8 +348,8 @@ describe("Features API", () => {
   describe("DELETE /api/v1/features/:id", () => {
     it("should delete feature for admin", async () => {
       const { team, headers } = await createAuthenticatedAdmin();
-      const project = await createTestProject(team.id, { name: "Test Project" });
-      const feature = await createTestFeature(project.id, { title: "To Delete" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
+      const feature = await createTestFeature(epic.id, { title: "To Delete" });
 
       const response = await app.inject({
         method: "DELETE",
@@ -362,8 +362,8 @@ describe("Features API", () => {
 
     it("should return 403 for member trying to delete", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Test Project" });
-      const feature = await createTestFeature(project.id, { title: "Member Feature" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
+      const feature = await createTestFeature(epic.id, { title: "Member Feature" });
 
       const response = await app.inject({
         method: "DELETE",
@@ -376,8 +376,8 @@ describe("Features API", () => {
 
     it("should return 403 for guest trying to delete", async () => {
       const { team, headers } = await createAuthenticatedGuest();
-      const project = await createTestProject(team.id, { name: "Guest Project" });
-      const feature = await createTestFeature(project.id, { title: "Guest Feature" });
+      const epic = await createTestEpic(team.id, { name: "Guest Epic" });
+      const feature = await createTestFeature(epic.id, { title: "Guest Feature" });
 
       const response = await app.inject({
         method: "DELETE",
@@ -392,10 +392,10 @@ describe("Features API", () => {
   describe("PUT /api/v1/features/bulk-update", () => {
     it("should bulk update feature statuses", async () => {
       const { team, headers } = await createAuthenticatedTeamMember();
-      const project = await createTestProject(team.id, { name: "Test Project" });
+      const epic = await createTestEpic(team.id, { name: "Test Epic" });
       const status = await createTestStatus(team.id, { name: "Done", category: "completed" });
-      const feature1 = await createTestFeature(project.id, { title: "Feature 1" });
-      const feature2 = await createTestFeature(project.id, { title: "Feature 2" });
+      const feature1 = await createTestFeature(epic.id, { title: "Feature 1" });
+      const feature2 = await createTestFeature(epic.id, { title: "Feature 2" });
 
       const response = await app.inject({
         method: "PUT",

@@ -7,15 +7,15 @@ import type { SecretsProvider } from "./types.js";
 export class EnvSecretsProvider implements SecretsProvider {
   readonly providerName = "environment";
 
-  async getSecret(name: string): Promise<string> {
+  getSecret(name: string): Promise<string> {
     const value = process.env[name];
     if (!value) {
       throw new Error(`Secret '${name}' not found in environment variables`);
     }
-    return value;
+    return Promise.resolve(value);
   }
 
-  async getSecretOptional(name: string): Promise<string | undefined> {
-    return process.env[name];
+  getSecretOptional(name: string): Promise<string | undefined> {
+    return Promise.resolve(process.env[name]);
   }
 }

@@ -38,17 +38,17 @@ export function registerFeatureTools(server: McpServer): void {
     "spectree__list_features",
     {
       description:
-        "List features in SpecTree with optional filtering by project, status, assignee, " +
+        "List features in SpecTree with optional filtering by epic, status, assignee, " +
         "or search query. Returns paginated results ordered by sort order then creation date " +
         "(newest first). Features are the primary work items in SpecTree, similar to issues " +
         "in other project management tools. Each feature has an auto-generated identifier " +
         "(e.g., 'COM-123') based on its team key.",
       inputSchema: {
-        project: z
+        epic: z
           .string()
           .optional()
           .describe(
-            "Filter by project. Accepts project ID (UUID) or exact project name " +
+            "Filter by epic. Accepts epic ID (UUID) or exact epic name " +
             "(e.g., 'Mobile App Redesign' or '550e8400-e29b-41d4-a716-446655440000'). " +
             "Name matching is case-sensitive."
           ),
@@ -97,7 +97,7 @@ export function registerFeatureTools(server: McpServer): void {
         const apiClient = getApiClient();
 
         const result = await apiClient.listFeatures({
-          project: input.project,
+          epic: input.epic,
           status: input.status,
           assignee: input.assignee,
           query: input.query,
@@ -167,8 +167,8 @@ export function registerFeatureTools(server: McpServer): void {
     "spectree__create_feature",
     {
       description:
-        "Create a new feature in a project. Features are the primary work items in SpecTree. " +
-        "Each feature is automatically assigned a unique identifier based on the project's " +
+        "Create a new feature in an epic. Features are the primary work items in SpecTree. " +
+        "Each feature is automatically assigned a unique identifier based on the epic's " +
         "team key (e.g., if the team key is 'COM', the feature might be 'COM-123'). " +
         "Returns the created feature with all metadata including the generated identifier.",
       inputSchema: {
@@ -179,11 +179,11 @@ export function registerFeatureTools(server: McpServer): void {
             "The title of the feature (required). Should be a concise description of the work " +
             "(e.g., 'User Authentication Flow', 'Add Dark Mode Support')."
           ),
-        project: z
+        epic: z
           .string()
           .describe(
-            "The project to add this feature to (required). Accepts project ID (UUID) or " +
-            "exact project name (e.g., 'Mobile App Redesign'). The project's team determines " +
+            "The epic to add this feature to (required). Accepts epic ID (UUID) or " +
+            "exact epic name (e.g., 'Mobile App Redesign'). The epic's team determines " +
             "the identifier prefix and available statuses."
           ),
         description: z
@@ -199,7 +199,7 @@ export function registerFeatureTools(server: McpServer): void {
           .describe(
             "Initial status for the feature. Accepts status ID (UUID) or exact status name " +
             "(e.g., 'Backlog', 'In Progress'). If not provided, the feature is created without a status. " +
-            "Status names are resolved within the project's team context."
+            "Status names are resolved within the epic's team context."
           ),
         assignee: z
           .string()
@@ -214,18 +214,18 @@ export function registerFeatureTools(server: McpServer): void {
       try {
         const apiClient = getApiClient();
 
-        // Resolve project to get projectId and teamId
-        const { data: project } = await apiClient.getProject(input.project);
+        // Resolve epic to get epicId and teamId
+        const { data: epic } = await apiClient.getEpic(input.epic);
 
         // Resolve status name to ID if provided
         let statusId = input.status;
         if (statusId) {
-          statusId = await apiClient.resolveStatusId(statusId, project.teamId);
+          statusId = await apiClient.resolveStatusId(statusId, epic.teamId);
         }
 
         const { data: feature } = await apiClient.createFeature({
           title: input.title,
-          projectId: project.id,
+          epicId: epic.id,
           description: input.description,
           statusId,
           assigneeId: input.assignee,
@@ -234,7 +234,7 @@ export function registerFeatureTools(server: McpServer): void {
         return createResponse(feature);
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
-          return createErrorResponse(new Error(`Project '${input.project}' not found`));
+          return createErrorResponse(new Error(`Epic '${input.epic}' not found`));
         }
         return createErrorResponse(error);
       }
@@ -300,8 +300,8 @@ export function registerFeatureTools(server: McpServer): void {
         if (statusId) {
           // Get feature to find its team context
           const { data: feature } = await apiClient.getFeature(input.id);
-          const { data: project } = await apiClient.getProject(feature.projectId);
-          statusId = await apiClient.resolveStatusId(statusId, project.teamId);
+          const { data: epic } = await apiClient.getEpic(feature.epicId);
+          statusId = await apiClient.resolveStatusId(statusId, epic.teamId);
         }
 
         const { data: feature } = await apiClient.updateFeature(input.id, {

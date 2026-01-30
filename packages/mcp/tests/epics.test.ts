@@ -1,5 +1,5 @@
 /**
- * Integration tests for MCP Project tools
+ * Integration tests for MCP Epic tools
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from "vitest";
@@ -11,12 +11,12 @@ interface ToolResponse {
 
 const { mockApiClient } = vi.hoisted(() => {
   const mockApiClient = {
-    listProjects: vi.fn(),
-    getProject: vi.fn(),
-    createProject: vi.fn(),
+    listEpics: vi.fn(),
+    getEpic: vi.fn(),
+    createEpic: vi.fn(),
     getTeam: vi.fn(),
     listFeatures: vi.fn(),
-    listPersonalProjects: vi.fn(),
+    listPersonalEpics: vi.fn(),
   };
   return { mockApiClient };
 });
@@ -37,7 +37,7 @@ vi.mock("../src/api-client.js", () => ({
 
 const registeredTools = new Map<string, { config: any; handler: any }>();
 
-import { registerProjectTools } from "../src/tools/projects.js";
+import { registerEpicTools } from "../src/tools/epics.js";
 
 const mockServer = {
   registerTool: (name: string, config: any, handler: any) => {
@@ -46,29 +46,29 @@ const mockServer = {
 };
 
 beforeAll(() => {
-  registerProjectTools(mockServer as any);
+  registerEpicTools(mockServer as any);
 });
 
-describe("MCP Projects Tools", () => {
+describe("MCP Epics Tools", () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.resetAllMocks());
 
-  describe("spectree__list_projects", () => {
-    const getHandler = () => registeredTools.get("spectree__list_projects")?.handler;
+  describe("spectree__list_epics", () => {
+    const getHandler = () => registeredTools.get("spectree__list_epics")?.handler;
 
-    it("should list projects", async () => {
-      const mockProjects = [
-        { id: "proj-1", name: "Project Alpha", createdAt: "2026-01-10T00:00:00Z", updatedAt: "2026-01-10T00:00:00Z" },
-        { id: "proj-2", name: "Project Beta", createdAt: "2026-01-11T00:00:00Z", updatedAt: "2026-01-11T00:00:00Z" },
+    it("should list epics", async () => {
+      const mockEpics = [
+        { id: "epic-1", name: "Epic Alpha", createdAt: "2026-01-10T00:00:00Z", updatedAt: "2026-01-10T00:00:00Z" },
+        { id: "epic-2", name: "Epic Beta", createdAt: "2026-01-11T00:00:00Z", updatedAt: "2026-01-11T00:00:00Z" },
       ];
 
-      mockApiClient.listProjects.mockResolvedValue({
-        data: mockProjects,
+      mockApiClient.listEpics.mockResolvedValue({
+        data: mockEpics,
         meta: { cursor: null, hasMore: false },
       });
 
-      // Need to mock personal projects too since default scope is "all"
-      mockApiClient.listPersonalProjects.mockResolvedValue({
+      // Need to mock personal epics too since default scope is "all"
+      mockApiClient.listPersonalEpics.mockResolvedValue({
         data: [],
         meta: { cursor: null, hasMore: false },
       });
@@ -78,14 +78,14 @@ describe("MCP Projects Tools", () => {
 
       expect(result.isError).toBeUndefined();
       const data = JSON.parse(result.content[0]?.text || "{}");
-      expect(data.projects).toHaveLength(2);
+      expect(data.epics).toHaveLength(2);
     });
 
     it("should filter by team", async () => {
       const mockTeam = { id: "team-1", name: "Engineering", key: "ENG" };
       
       mockApiClient.getTeam.mockResolvedValue({ data: mockTeam });
-      mockApiClient.listProjects.mockResolvedValue({
+      mockApiClient.listEpics.mockResolvedValue({
         data: [],
         meta: { cursor: null, hasMore: false },
       });
@@ -107,25 +107,25 @@ describe("MCP Projects Tools", () => {
     });
   });
 
-  describe("spectree__get_project", () => {
-    const getHandler = () => registeredTools.get("spectree__get_project")?.handler;
+  describe("spectree__get_epic", () => {
+    const getHandler = () => registeredTools.get("spectree__get_epic")?.handler;
 
-    it("should get project by query", async () => {
-      const mockProject = { id: "proj-1", name: "Test Project" };
-      mockApiClient.getProject.mockResolvedValue({ data: mockProject });
+    it("should get epic by query", async () => {
+      const mockEpic = { id: "epic-1", name: "Test Epic" };
+      mockApiClient.getEpic.mockResolvedValue({ data: mockEpic });
       mockApiClient.listFeatures.mockResolvedValue({ data: [], meta: { cursor: null, hasMore: false } });
 
       const handler = getHandler();
-      const result = await handler!({ query: "Test Project" });
+      const result = await handler!({ query: "Test Epic" });
 
       expect(result.isError).toBeUndefined();
       const data = JSON.parse(result.content[0]?.text || "{}");
-      expect(data.name).toBe("Test Project");
+      expect(data.name).toBe("Test Epic");
     });
 
-    it("should return error for non-existent project", async () => {
+    it("should return error for non-existent epic", async () => {
       const ApiError = (await import("../src/api-client.js")).ApiError;
-      mockApiClient.getProject.mockRejectedValue(new ApiError("Not found", 404));
+      mockApiClient.getEpic.mockRejectedValue(new ApiError("Not found", 404));
 
       const handler = getHandler();
       const result = await handler!({ query: "Non-Existent" });
@@ -134,22 +134,22 @@ describe("MCP Projects Tools", () => {
     });
   });
 
-  describe("spectree__create_project", () => {
-    const getHandler = () => registeredTools.get("spectree__create_project")?.handler;
+  describe("spectree__create_epic", () => {
+    const getHandler = () => registeredTools.get("spectree__create_epic")?.handler;
 
-    it("should create project", async () => {
+    it("should create epic", async () => {
       const mockTeam = { id: "team-1", name: "Engineering", key: "ENG" };
-      const mockProject = { id: "proj-1", name: "New Project" };
+      const mockEpic = { id: "epic-1", name: "New Epic" };
 
       mockApiClient.getTeam.mockResolvedValue({ data: mockTeam });
-      mockApiClient.createProject.mockResolvedValue({ data: mockProject });
+      mockApiClient.createEpic.mockResolvedValue({ data: mockEpic });
 
       const handler = getHandler();
-      const result = await handler!({ name: "New Project", team: "Engineering" });
+      const result = await handler!({ name: "New Epic", team: "Engineering" });
 
       expect(result.isError).toBeUndefined();
       const data = JSON.parse(result.content[0]?.text || "{}");
-      expect(data.name).toBe("New Project");
+      expect(data.name).toBe("New Epic");
     });
 
     it("should handle API errors on create", async () => {
@@ -164,10 +164,10 @@ describe("MCP Projects Tools", () => {
   });
 
   describe("tool registration", () => {
-    it("should register all project tools", () => {
-      expect(registeredTools.has("spectree__list_projects")).toBe(true);
-      expect(registeredTools.has("spectree__get_project")).toBe(true);
-      expect(registeredTools.has("spectree__create_project")).toBe(true);
+    it("should register all epic tools", () => {
+      expect(registeredTools.has("spectree__list_epics")).toBe(true);
+      expect(registeredTools.has("spectree__get_epic")).toBe(true);
+      expect(registeredTools.has("spectree__create_epic")).toBe(true);
     });
   });
 });

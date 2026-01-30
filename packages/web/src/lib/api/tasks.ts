@@ -3,7 +3,7 @@ import type { Task, PaginatedResponse } from './types';
 
 export interface TaskFilters {
   featureId?: string | undefined;
-  projectId?: string | undefined;
+  epicId?: string | undefined;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
   cursor?: string | undefined;

@@ -6,7 +6,7 @@ import { ChevronDown, ChevronRight, Circle, CheckCircle2 } from "lucide-react";
 import type { Status } from "@/lib/api/types";
 
 interface IssuesListProps {
-  projectId: string;
+  epicId: string;
   className?: string;
 }
 
@@ -27,8 +27,8 @@ interface StatusGroup {
   featureCount: number;
 }
 
-export function IssuesList({ projectId, className }: IssuesListProps) {
-  const { data: issues, isLoading, error } = useIssues({ projectId });
+export function IssuesList({ epicId, className }: IssuesListProps) {
+  const { data: issues, isLoading, error } = useIssues({ epicId });
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   // Group issues by feature status

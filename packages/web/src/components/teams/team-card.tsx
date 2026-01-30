@@ -107,7 +107,7 @@ export function TeamCard({ team, memberCount }: TeamCardProps) {
             <DialogTitle>Delete Team</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete "{team.name}"? This will also
-              delete all projects, features, and tasks in this team. This action cannot be undone.
+              delete all epics, features, and tasks in this team. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           {error && <div className="text-sm text-destructive">{error}</div>}

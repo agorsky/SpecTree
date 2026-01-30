@@ -315,7 +315,7 @@ pnpm --filter @spectree/api db:seed      # Seed sample data
 
 **API Routes:**
 - `GET /health` - Health check
-- `GET /api/v1/projects` - List projects
+- `GET /api/v1/epics` - List epics
 - `GET /api/v1/features` - List features (with search/filter)
 - `GET /api/v1/tasks` - List tasks
 - `GET /api/v1/statuses` - List workflow statuses
@@ -363,7 +363,7 @@ The database contains these main tables:
 
 ```
 ┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│   Team   │────▶│  Project │────▶│  Feature │────▶│   Task   │
+│   Team   │────▶│   Epic   │────▶│  Feature │────▶│   Task   │
 └──────────┘     └──────────┘     └──────────┘     └──────────┘
      │                                  │               │
      │                                  │               │
@@ -382,7 +382,7 @@ The database contains these main tables:
 - **Team**: Organization unit (e.g., "Engineering", "Design")
 - **User**: User accounts with authentication
 - **Membership**: Joins users to teams with roles (admin/member/guest)
-- **Project**: Container for features within a team
+- **Epic**: Container for features within a team
 - **Status**: Workflow states (backlog/unstarted/started/completed/canceled)
 - **Feature**: Work items (like GitHub Issues)
 - **Task**: Sub-items within features
@@ -452,9 +452,9 @@ The MCP server allows AI agents (like Claude) to interact with SpecTree.
 | Tool | Description |
 |------|-------------|
 | `spectree__search` | Search across features and tasks |
-| `spectree__list_projects` | List all projects |
-| `spectree__get_project` | Get project details |
-| `spectree__create_project` | Create a new project |
+| `spectree__list_epics` | List all epics |
+| `spectree__get_epic` | Get epic details |
+| `spectree__create_epic` | Create a new epic |
 | `spectree__list_features` | List features with filters |
 | `spectree__get_feature` | Get feature details |
 | `spectree__create_feature` | Create a new feature |

@@ -344,7 +344,7 @@ describe('taskService', () => {
       vi.mocked(prisma.feature.findUnique).mockResolvedValue({
         id: 'feat-123',
         identifier: 'COM-5',
-        project: { teamId: 'team-123' },
+        epic: { teamId: 'team-123' },
       } as any);
       // Mock findMany to return existing tasks for identifier generation
       vi.mocked(prisma.task.findMany).mockResolvedValue([
@@ -376,7 +376,7 @@ describe('taskService', () => {
           featureId: 'feat-123',
           identifier: 'COM-5-3',
           sortOrder: 1.0,
-          statusId: 'backlog-status-id', // Auto-assigned backlog status
+          statusId: 'backlog-status-id', // Default backlog status is now auto-applied
         },
       });
     });
@@ -508,7 +508,7 @@ describe('taskService', () => {
       vi.mocked(prisma.task.findFirst).mockResolvedValueOnce({ id: 'task-123', statusId: 'old-status' } as any);
       vi.mocked(prisma.task.findUnique).mockResolvedValueOnce({
         id: 'task-123',
-        feature: { project: { teamId: 'team-123' } },
+        feature: { epic: { teamId: 'team-123' } },
       } as any);
       vi.mocked(prisma.task.update).mockResolvedValue({ id: 'task-123', statusId: 'new-status' } as any);
 
@@ -525,7 +525,7 @@ describe('taskService', () => {
 
     it('should not emit event when status unchanged', async () => {
       vi.mocked(prisma.task.findFirst).mockResolvedValueOnce({ id: 'task-123', statusId: 'same-status' } as any);
-      vi.mocked(prisma.task.findUnique).mockResolvedValueOnce({ id: 'task-123', feature: { project: { teamId: 'team-123' } } } as any);
+      vi.mocked(prisma.task.findUnique).mockResolvedValueOnce({ id: 'task-123', feature: { epic: { teamId: 'team-123' } } } as any);
       vi.mocked(prisma.status.findUnique).mockResolvedValue({ id: 'same-status', teamId: 'team-123' } as any);
       vi.mocked(prisma.task.update).mockResolvedValue({ id: 'task-123' } as any);
 
@@ -561,7 +561,7 @@ describe('taskService', () => {
       vi.mocked(prisma.task.findFirst).mockResolvedValueOnce({ id: 'task-123' } as any);
       vi.mocked(prisma.task.findUnique).mockResolvedValueOnce({
         id: 'task-123',
-        feature: { project: { teamId: 'original-team' } },
+        feature: { epic: { teamId: 'original-team' } },
       } as any);
 
       await expect(updateTask('task-123', { statusId: 'status-123' }))
@@ -612,7 +612,7 @@ describe('taskService', () => {
       vi.mocked(prisma.feature.findUnique).mockResolvedValue({
         id: 'feat-123',
         identifier: 'DEV-42',
-        project: { teamId: 'team-123' },
+        epic: { teamId: 'team-123' },
       } as any);
       // Mock findMany to return existing tasks with identifiers
       vi.mocked(prisma.task.findMany).mockResolvedValue([
@@ -642,7 +642,7 @@ describe('taskService', () => {
       vi.mocked(prisma.feature.findUnique).mockResolvedValue({
         id: 'feat-123',
         identifier: 'API-1',
-        project: { teamId: 'team-123' },
+        epic: { teamId: 'team-123' },
       } as any);
       // Mock findMany to return empty array (no existing tasks)
       vi.mocked(prisma.task.findMany).mockResolvedValue([]);

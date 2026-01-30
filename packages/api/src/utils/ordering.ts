@@ -16,6 +16,17 @@ const BASE = 62;
 const DEFAULT_FIRST_KEY = 'a0';
 
 /**
+ * Safely gets a character at the given index, throwing if out of bounds
+ */
+function charAt(str: string, index: number): string {
+  const char = str[index];
+  if (char === undefined) {
+    throw new Error(`Index ${String(index)} out of bounds for string of length ${String(str.length)}`);
+  }
+  return char;
+}
+
+/**
  * Gets the index of a character in the base62 alphabet
  */
 function getCharIndex(char: string): number {
@@ -31,10 +42,9 @@ function getCharIndex(char: string): number {
  */
 function getCharAt(index: number): string {
   if (index < 0 || index >= BASE) {
-    throw new Error(`Index out of range: ${index}`);
+    throw new Error(`Index out of range: ${String(index)}`);
   }
-  // Safe to assert non-null after bounds check
-  return BASE62_DIGITS[index]!;
+  return charAt(BASE62_DIGITS, index);
 }
 
 /**
@@ -82,6 +92,8 @@ export function generateKeyBetween(
   }
 
   // Both provided: generate key between them
+  // TypeScript narrowing doesn't work here after the complex conditionals above
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return generateKeyBetweenImpl(before!, after!);
 }
 
@@ -91,7 +103,7 @@ export function generateKeyBetween(
 function generateKeyBefore(key: string): string {
   // Find the first non-zero character from the right
   for (let i = key.length - 1; i >= 0; i--) {
-    const charIndex = getCharIndex(key[i]!);
+    const charIndex = getCharIndex(charAt(key, i));
     if (charIndex > 0) {
       // Decrement this character and return
       const midIndex = Math.floor(charIndex / 2);
@@ -114,7 +126,7 @@ function generateKeyBefore(key: string): string {
 function generateKeyAfter(key: string): string {
   // Find the first non-max character from the right
   for (let i = key.length - 1; i >= 0; i--) {
-    const charIndex = getCharIndex(key[i]!);
+    const charIndex = getCharIndex(charAt(key, i));
     if (charIndex < BASE - 1) {
       // Calculate midpoint between current and max
       const midIndex = Math.floor((charIndex + BASE) / 2);
@@ -134,8 +146,9 @@ function generateKeyAfter(key: string): string {
 function generateKeyBetweenImpl(before: string, after: string): string {
   // Pad keys to same length for comparison
   const maxLen = Math.max(before.length, after.length);
-  const paddedBefore = before.padEnd(maxLen, BASE62_DIGITS[0]!);
-  const paddedAfter = after.padEnd(maxLen, BASE62_DIGITS[0]!);
+  const firstChar = charAt(BASE62_DIGITS, 0);
+  const paddedBefore = before.padEnd(maxLen, firstChar);
+  const paddedAfter = after.padEnd(maxLen, firstChar);
 
   // Find the first differing position
   let diffPos = 0;
@@ -144,8 +157,8 @@ function generateKeyBetweenImpl(before: string, after: string): string {
   }
 
   // Get the indices at the differing position
-  const beforeIndex = diffPos < before.length ? getCharIndex(paddedBefore[diffPos]!) : 0;
-  const afterIndex = getCharIndex(paddedAfter[diffPos]!);
+  const beforeIndex = diffPos < before.length ? getCharIndex(charAt(paddedBefore, diffPos)) : 0;
+  const afterIndex = getCharIndex(charAt(paddedAfter, diffPos));
 
   // Calculate midpoint
   const midIndex = Math.floor((beforeIndex + afterIndex) / 2);
@@ -168,7 +181,7 @@ function generateKeyBetweenImpl(before: string, after: string): string {
   }
 
   // Generate between '' and afterSuffix
-  const suffixFirstIndex = getCharIndex(afterSuffix[0]!);
+  const suffixFirstIndex = getCharIndex(charAt(afterSuffix, 0));
   const suffixMid = Math.floor(suffixFirstIndex / 2);
   
   if (suffixMid > 0) {
@@ -226,7 +239,7 @@ export function isValidSortKey(key: string): boolean {
   }
   
   for (const char of key) {
-    if (BASE62_DIGITS.indexOf(char) === -1) {
+    if (!BASE62_DIGITS.includes(char)) {
       return false;
     }
   }
@@ -291,10 +304,15 @@ export function generateSortOrderBetween(
   }
 
   // Both provided: place in the middle
-  const midpoint = (before! + after!) / 2;
+  // TypeScript narrowing doesn't work here, but we've ruled out null cases above
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const beforeVal = before!;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const afterVal = after!;
+  const midpoint = (beforeVal + afterVal) / 2;
   
   // Check if we're running out of precision
-  if (Math.abs(after! - before!) < MIN_GAP) {
+  if (Math.abs(afterVal - beforeVal) < MIN_GAP) {
     throw new Error('Sort order gap too small - rebalancing required');
   }
   

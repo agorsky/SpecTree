@@ -29,7 +29,7 @@ export function useTasks(filters: TaskFilters = {}) {
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.nextCursor : undefined,
     initialPageParam: undefined as string | undefined,
-    enabled: !!filters.featureId || !!filters.projectId,
+    enabled: !!filters.featureId || !!filters.epicId,
   });
 }
 

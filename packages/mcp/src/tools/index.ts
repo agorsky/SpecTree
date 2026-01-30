@@ -8,7 +8,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 // Import tool modules - these export their registrar functions
-import { registerProjectTools } from "./projects.js";
+import { registerEpicTools } from "./epics.js";
 import { registerFeatureTools } from "./features.js";
 import { registerTaskTools } from "./tasks.js";
 import { registerStatusTools } from "./statuses.js";
@@ -21,7 +21,7 @@ export type ToolRegistrar = (server: McpServer) => void;
 
 // Registry of all tool registration functions
 const toolRegistrars: ToolRegistrar[] = [
-  registerProjectTools,
+  registerEpicTools,
   registerFeatureTools,
   registerTaskTools,
   registerStatusTools,

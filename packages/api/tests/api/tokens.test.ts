@@ -71,14 +71,14 @@ describe("Tokens API", () => {
         headers,
         payload: {
           name: "Scoped Token",
-          scopes: ["read:projects", "write:features"],
+          scopes: ["read:epics", "write:features"],
           expiresAt: futureDate,
         },
       });
 
       expect(response.statusCode).toBe(201);
       const body = JSON.parse(response.body);
-      expect(body.data.scopes).toEqual(["read:projects", "write:features"]);
+      expect(body.data.scopes).toEqual(["read:epics", "write:features"]);
       expect(body.data.expiresAt).toBeDefined();
     });
 

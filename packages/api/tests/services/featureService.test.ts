@@ -12,7 +12,7 @@ vi.mock('../../src/lib/db.js', () => ({
       delete: vi.fn(),
       count: vi.fn(),
     },
-    project: {
+    epic: {
       findUnique: vi.fn(),
     },
     status: {
@@ -129,14 +129,14 @@ describe('featureService', () => {
       });
     });
 
-    it('should filter by projectId', async () => {
+    it('should filter by epicId', async () => {
       vi.mocked(prisma.feature.findMany).mockResolvedValue([]);
 
-      await listFeatures({ projectId: 'proj-123' });
+      await listFeatures({ epicId: 'proj-123' });
 
       expect(prisma.feature.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { projectId: 'proj-123' },
+          where: { epicId: 'proj-123' },
         })
       );
     });
@@ -337,7 +337,7 @@ describe('featureService', () => {
           tasks: {
             orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
           },
-          project: {
+          epic: {
             select: {
               id: true,
               teamId: true,
@@ -365,7 +365,7 @@ describe('featureService', () => {
           tasks: {
             orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
           },
-          project: {
+          epic: {
             select: {
               id: true,
               teamId: true,
@@ -387,7 +387,7 @@ describe('featureService', () => {
   describe('createFeature', () => {
     beforeEach(() => {
       // Default mocks for successful creation
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue({
         id: 'proj-123',
         isArchived: false,
         teamId: 'team-123',
@@ -409,17 +409,17 @@ describe('featureService', () => {
 
       const result = await createFeature({
         title: 'New Feature',
-        projectId: 'proj-123',
+        epicId: 'proj-123',
       });
 
       expect(result).toEqual(mockFeature);
       expect(prisma.feature.create).toHaveBeenCalledWith({
         data: {
           title: 'New Feature',
-          projectId: 'proj-123',
+          epicId: 'proj-123',
           identifier: 'TEST-6',
           sortOrder: 1.0,
-          statusId: 'backlog-status-id', // Auto-assigned backlog status
+          statusId: 'backlog-status-id', // Default backlog status is now auto-applied
         },
       });
     });
@@ -431,7 +431,7 @@ describe('featureService', () => {
 
       await createFeature({
         title: 'New Feature',
-        projectId: 'proj-123',
+        epicId: 'proj-123',
         description: 'A description',
         statusId: 'status-123',
         assigneeId: 'user-123',
@@ -441,7 +441,7 @@ describe('featureService', () => {
       expect(prisma.feature.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           title: 'New Feature',
-          projectId: 'proj-123',
+          epicId: 'proj-123',
           description: 'A description',
           statusId: 'status-123',
           assigneeId: 'user-123',
@@ -456,7 +456,7 @@ describe('featureService', () => {
 
       await createFeature({
         title: 'New Feature',
-        projectId: 'proj-123',
+        epicId: 'proj-123',
       });
 
       expect(generateSortOrderBetween).toHaveBeenCalledWith(3.5, null);
@@ -467,7 +467,7 @@ describe('featureService', () => {
 
       await createFeature({
         title: '  Trimmed Title  ',
-        projectId: 'proj-123',
+        epicId: 'proj-123',
         description: '  Trimmed Desc  ',
       });
 
@@ -480,28 +480,28 @@ describe('featureService', () => {
     });
 
     it('should throw ValidationError when title is empty', async () => {
-      await expect(createFeature({ title: '', projectId: 'proj-123' }))
+      await expect(createFeature({ title: '', epicId: 'proj-123' }))
         .rejects.toThrow(ValidationError);
-      await expect(createFeature({ title: '  ', projectId: 'proj-123' }))
-        .rejects.toThrow(ValidationError);
-    });
-
-    it('should throw ValidationError when projectId is empty', async () => {
-      await expect(createFeature({ title: 'Test', projectId: '' }))
+      await expect(createFeature({ title: '  ', epicId: 'proj-123' }))
         .rejects.toThrow(ValidationError);
     });
 
-    it('should throw NotFoundError when project does not exist', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue(null);
+    it('should throw ValidationError when epicId is empty', async () => {
+      await expect(createFeature({ title: 'Test', epicId: '' }))
+        .rejects.toThrow(ValidationError);
+    });
 
-      await expect(createFeature({ title: 'Test', projectId: 'nonexistent' }))
+    it('should throw NotFoundError when epic does not exist', async () => {
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue(null);
+
+      await expect(createFeature({ title: 'Test', epicId: 'nonexistent' }))
         .rejects.toThrow(NotFoundError);
     });
 
-    it('should throw NotFoundError when project is archived', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({ id: 'proj-123', isArchived: true } as any);
+    it('should throw NotFoundError when epic is archived', async () => {
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue({ id: 'proj-123', isArchived: true } as any);
 
-      await expect(createFeature({ title: 'Test', projectId: 'proj-123' }))
+      await expect(createFeature({ title: 'Test', epicId: 'proj-123' }))
         .rejects.toThrow(NotFoundError);
     });
 
@@ -510,7 +510,7 @@ describe('featureService', () => {
 
       await expect(createFeature({
         title: 'Test',
-        projectId: 'proj-123',
+        epicId: 'proj-123',
         statusId: 'nonexistent',
       })).rejects.toThrow(NotFoundError);
     });
@@ -520,7 +520,7 @@ describe('featureService', () => {
 
       await expect(createFeature({
         title: 'Test',
-        projectId: 'proj-123',
+        epicId: 'proj-123',
         assigneeId: 'user-123',
       })).rejects.toThrow(NotFoundError);
     });
@@ -530,7 +530,7 @@ describe('featureService', () => {
 
       await expect(createFeature({
         title: 'Test',
-        projectId: 'proj-123',
+        epicId: 'proj-123',
         assigneeId: 'nonexistent',
       })).rejects.toThrow(NotFoundError);
     });
@@ -568,7 +568,7 @@ describe('featureService', () => {
       vi.mocked(prisma.feature.findFirst).mockResolvedValueOnce({ id: 'feat-123', statusId: 'old-status' } as any);
       vi.mocked(prisma.feature.findUnique).mockResolvedValueOnce({
         id: 'feat-123',
-        project: { teamId: 'team-123' },
+        epic: { teamId: 'team-123' },
       } as any);
       vi.mocked(prisma.feature.update).mockResolvedValue({ id: 'feat-123', statusId: 'new-status' } as any);
 
@@ -585,7 +585,7 @@ describe('featureService', () => {
 
     it('should not emit event when status unchanged', async () => {
       vi.mocked(prisma.feature.findFirst).mockResolvedValueOnce({ id: 'feat-123', statusId: 'same-status' } as any);
-      vi.mocked(prisma.feature.findUnique).mockResolvedValueOnce({ id: 'feat-123', project: { teamId: 'team-123' } } as any);
+      vi.mocked(prisma.feature.findUnique).mockResolvedValueOnce({ id: 'feat-123', epic: { teamId: 'team-123' } } as any);
       vi.mocked(prisma.status.findUnique).mockResolvedValue({ id: 'same-status', teamId: 'team-123' } as any);
       vi.mocked(prisma.feature.update).mockResolvedValue({ id: 'feat-123' } as any);
 
@@ -621,7 +621,7 @@ describe('featureService', () => {
       vi.mocked(prisma.feature.findFirst).mockResolvedValueOnce({ id: 'feat-123' } as any);
       vi.mocked(prisma.feature.findUnique).mockResolvedValueOnce({
         id: 'feat-123',
-        project: { teamId: 'original-team' },
+        epic: { teamId: 'original-team' },
       } as any);
 
       await expect(updateFeature('feat-123', { statusId: 'status-123' }))
@@ -669,7 +669,7 @@ describe('featureService', () => {
 
   describe('identifier generation', () => {
     it('should generate identifier based on team key and feature count', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue({
         id: 'proj-123',
         isArchived: false,
         teamId: 'team-123',
@@ -684,7 +684,7 @@ describe('featureService', () => {
 
       await createFeature({
         title: 'New Feature',
-        projectId: 'proj-123',
+        epicId: 'proj-123',
       });
 
       expect(prisma.feature.create).toHaveBeenCalledWith({
@@ -694,8 +694,8 @@ describe('featureService', () => {
       });
     });
 
-    it('should count features across all projects in the team', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({
+    it('should count features across all epics in the team', async () => {
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue({
         id: 'proj-123',
         isArchived: false,
         teamId: 'team-123',
@@ -707,12 +707,12 @@ describe('featureService', () => {
 
       await createFeature({
         title: 'First Feature',
-        projectId: 'proj-123',
+        epicId: 'proj-123',
       });
 
       expect(prisma.feature.count).toHaveBeenCalledWith({
         where: {
-          project: { teamId: 'team-123' },
+          epic: { teamId: 'team-123' },
         },
       });
       expect(prisma.feature.create).toHaveBeenCalledWith({

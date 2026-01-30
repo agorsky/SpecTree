@@ -12,7 +12,7 @@ import compress from "@fastify/compress";
 import { registerErrorHandler } from "../../src/middleware/errorHandler.js";
 import usersRoutes from "../../src/routes/users.js";
 import teamsRoutes from "../../src/routes/teams.js";
-import projectsRoutes from "../../src/routes/projects.js";
+import epicsRoutes from "../../src/routes/epics.js";
 import statusesRoutes from "../../src/routes/statuses.js";
 import { teamMembershipsRoutes, userTeamsRoutes } from "../../src/routes/memberships.js";
 import featuresRoutes from "../../src/routes/features.js";
@@ -55,7 +55,7 @@ export async function buildTestApp(): Promise<FastifyInstance> {
   // Register route plugins
   await fastify.register(usersRoutes, { prefix: "/api/v1/users" });
   await fastify.register(teamsRoutes, { prefix: "/api/v1/teams" });
-  await fastify.register(projectsRoutes, { prefix: "/api/v1/projects" });
+  await fastify.register(epicsRoutes, { prefix: "/api/v1/epics" });
   await fastify.register(statusesRoutes, { prefix: "/api/v1/statuses" });
   await fastify.register(teamMembershipsRoutes, { prefix: "/api/v1/teams" });
   await fastify.register(userTeamsRoutes, { prefix: "/api/v1/users" });

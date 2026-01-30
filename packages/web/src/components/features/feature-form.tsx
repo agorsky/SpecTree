@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusSelect } from "@/components/common/status-select";
 import { AssigneeSelect } from "@/components/common/assignee-select";
-import { ProjectSelect } from "@/components/common/project-select";
+import { EpicSelect } from "@/components/common/epic-select";
 import { useCreateFeature, useUpdateFeature } from "@/hooks/queries/use-features";
 import { useAuthStore } from "@/stores/auth-store";
 import type { Feature } from "@/lib/api/types";
@@ -21,14 +21,14 @@ interface FeatureFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   feature?: Feature | undefined;
-  defaultProjectId?: string | undefined;
+  defaultEpicId?: string | undefined;
 }
 
 export function FeatureForm({
   open,
   onOpenChange,
   feature,
-  defaultProjectId,
+  defaultEpicId,
 }: FeatureFormProps) {
   const isEditing = !!feature;
   const createFeature = useCreateFeature();
@@ -37,14 +37,14 @@ export function FeatureForm({
 
   const [title, setTitle] = useState(feature?.title ?? "");
   const [description, setDescription] = useState(feature?.description ?? "");
-  const [projectId, setProjectId] = useState(feature?.projectId ?? defaultProjectId ?? "");
+  const [epicId, setEpicId] = useState(feature?.epicId ?? defaultEpicId ?? "");
   const [statusId, setStatusId] = useState(feature?.statusId ?? "");
   const [assigneeId, setAssigneeId] = useState<string | undefined>(feature?.assigneeId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim() || !projectId) return;
+    if (!title.trim() || !epicId) return;
 
     try {
       if (isEditing) {
@@ -59,7 +59,7 @@ export function FeatureForm({
       } else {
         const createData: Parameters<typeof createFeature.mutateAsync>[0] = {
           title: title.trim(),
-          projectId,
+          epicId,
         };
         if (description.trim()) createData.description = description.trim();
         if (statusId) createData.statusId = statusId;
@@ -76,7 +76,7 @@ export function FeatureForm({
   const resetForm = () => {
     setTitle("");
     setDescription("");
-    setProjectId(defaultProjectId ?? "");
+    setEpicId(defaultEpicId ?? "");
     setStatusId("");
     setAssigneeId(undefined);
   };
@@ -118,10 +118,10 @@ export function FeatureForm({
 
             {!isEditing && (
               <div className="grid gap-2">
-                <Label>Project</Label>
-                <ProjectSelect
-                  value={projectId}
-                  onChange={setProjectId}
+                <Label>Epic</Label>
+                <EpicSelect
+                  value={epicId}
+                  onChange={setEpicId}
                 />
               </div>
             )}
@@ -153,7 +153,7 @@ export function FeatureForm({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending || !title.trim() || !projectId}>
+            <Button type="submit" disabled={isPending || !title.trim() || !epicId}>
               {isPending ? "Saving..." : isEditing ? "Save Changes" : "Create Feature"}
             </Button>
           </DialogFooter>

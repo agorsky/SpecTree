@@ -257,7 +257,7 @@ describe('userService', () => {
         email: 'new@test.com',
         name: 'New User',
       };
-      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as any);
+      txUserCreate.mockResolvedValue(mockUser as any);
 
       const result = await createUser({
         email: 'new@test.com',
@@ -267,7 +267,7 @@ describe('userService', () => {
 
       expect(result).toEqual(mockUser);
       expect(bcrypt.hash).toHaveBeenCalledWith('secret123', 10);
-      expect(prisma.user.create).toHaveBeenCalledWith({
+      expect(txUserCreate).toHaveBeenCalledWith({
         data: {
           email: 'new@test.com',
           name: 'New User',
@@ -282,7 +282,7 @@ describe('userService', () => {
 
     it('should create user with avatar URL', async () => {
       const mockUser = { id: 'user-123' };
-      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as any);
+      txUserCreate.mockResolvedValue(mockUser as any);
 
       await createUser({
         email: 'new@test.com',
@@ -291,7 +291,7 @@ describe('userService', () => {
         avatarUrl: 'https://example.com/avatar.png',
       });
 
-      expect(prisma.user.create).toHaveBeenCalledWith({
+      expect(txUserCreate).toHaveBeenCalledWith({
         data: expect.objectContaining({
           avatarUrl: 'https://example.com/avatar.png',
         }),

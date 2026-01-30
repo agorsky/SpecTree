@@ -125,9 +125,9 @@ Database (SQLite local, Azure SQL production)
 
 Key entities (from `packages/api/prisma/schema.prisma`):
 
-- **Team**: Organization unit with projects and statuses
+- **Team**: Organization unit with epics and statuses
 - **User**: User accounts with email/password authentication
-- **Project**: Container for features, belongs to a team
+- **Epic**: Container for features, belongs to a team
 - **Feature**: Primary work items (like issues)
 - **Task**: Sub-items under features
 - **Status**: Workflow states (backlog, in-progress, done, etc.)

@@ -18,7 +18,7 @@ import {
   ApiError,
   initializeApiClient,
   getApiClient,
-  type Project,
+  type Epic,
   type Feature,
   type Task,
   type Status,
@@ -33,18 +33,18 @@ const TEST_API_TOKEN = process.env.API_TOKEN || "";
 
 // Track created resources for cleanup
 const createdResources: {
-  projects: string[];
+  epics: string[];
   features: string[];
   tasks: string[];
 } = {
-  projects: [],
+  epics: [],
   features: [],
   tasks: [],
 };
 
 // Test data references (populated from existing seed data)
 let testTeam: { id: string; name: string; key: string } | null = null;
-let testProject: Project | null = null;
+let testEpic: Epic | null = null;
 let testFeature: Feature | null = null;
 let testStatus: Status | null = null;
 
@@ -87,18 +87,18 @@ beforeAll(async () => {
     }
   }
 
-  // Get an existing project
+  // Get an existing epic
   if (testTeam) {
-    const projectsResult = await client.listProjects({ team: testTeam.id, limit: 1 });
-    if (projectsResult.data.length > 0) {
-      testProject = projectsResult.data[0];
+    const epicsResult = await client.listEpics({ team: testTeam.id, limit: 1 });
+    if (epicsResult.data.length > 0) {
+      testEpic = epicsResult.data[0];
     }
   }
 
   // Get an existing feature
-  if (testProject) {
+  if (testEpic) {
     const featuresResult = await client.listFeatures({
-      projectId: testProject.id,
+      epicId: testEpic.id,
       limit: 1,
     });
     if (featuresResult.data.length > 0) {
@@ -126,8 +126,8 @@ afterAll(async () => {
   if (createdResources.features.length > 0) {
     console.log(`Would cleanup ${createdResources.features.length} features`);
   }
-  if (createdResources.projects.length > 0) {
-    console.log(`Would cleanup ${createdResources.projects.length} projects`);
+  if (createdResources.epics.length > 0) {
+    console.log(`Would cleanup ${createdResources.epics.length} epics`);
   }
 });
 
@@ -161,7 +161,7 @@ describe("Authentication", () => {
 
     const client = getApiClient();
     // A successful list call proves authentication works
-    const result = await client.listProjects({ limit: 1 });
+    const result = await client.listEpics({ limit: 1 });
     expect(result).toBeDefined();
     expect(Array.isArray(result.data)).toBe(true);
   });
@@ -169,10 +169,10 @@ describe("Authentication", () => {
   it("should reject invalid token with 401", async () => {
     const invalidClient = new ApiClient(TEST_API_URL, "invalid_token_12345");
 
-    await expect(invalidClient.listProjects()).rejects.toThrow(ApiError);
+    await expect(invalidClient.listEpics()).rejects.toThrow(ApiError);
 
     try {
-      await invalidClient.listProjects();
+      await invalidClient.listEpics();
     } catch (error) {
       expect(error).toBeInstanceOf(ApiError);
       expect((error as ApiError).status).toBe(401);
@@ -182,10 +182,10 @@ describe("Authentication", () => {
   it("should reject missing token with 401", async () => {
     const noTokenClient = new ApiClient(TEST_API_URL, "");
 
-    await expect(noTokenClient.listProjects()).rejects.toThrow(ApiError);
+    await expect(noTokenClient.listEpics()).rejects.toThrow(ApiError);
 
     try {
-      await noTokenClient.listProjects();
+      await noTokenClient.listEpics();
     } catch (error) {
       expect(error).toBeInstanceOf(ApiError);
       expect((error as ApiError).status).toBe(401);
@@ -194,15 +194,15 @@ describe("Authentication", () => {
 });
 
 // =============================================================================
-// Projects Tests
+// Epics Tests
 // =============================================================================
 
-describe("Projects", () => {
-  it("should list projects", async () => {
+describe("Epics", () => {
+  it("should list epics", async () => {
     if (skipIfNoToken()) return;
 
     const client = getApiClient();
-    const result = await client.listProjects();
+    const result = await client.listEpics();
 
     expect(result).toBeDefined();
     expect(Array.isArray(result.data)).toBe(true);
@@ -210,64 +210,64 @@ describe("Projects", () => {
     expect(typeof result.meta.hasMore).toBe("boolean");
   });
 
-  it("should list projects with team filter", async () => {
+  it("should list epics with team filter", async () => {
     if (skipIfNoToken()) return;
     if (skipIfNoTestData("team", testTeam)) return;
 
     const client = getApiClient();
-    const result = await client.listProjects({ team: testTeam!.id });
+    const result = await client.listEpics({ team: testTeam!.id });
 
     expect(result).toBeDefined();
     expect(Array.isArray(result.data)).toBe(true);
-    // All returned projects should belong to the team
-    for (const project of result.data) {
-      expect(project.teamId).toBe(testTeam!.id);
+    // All returned epics should belong to the team
+    for (const epic of result.data) {
+      expect(epic.teamId).toBe(testTeam!.id);
     }
   });
 
-  it("should list projects with pagination", async () => {
+  it("should list epics with pagination", async () => {
     if (skipIfNoToken()) return;
 
     const client = getApiClient();
-    const result = await client.listProjects({ limit: 2 });
+    const result = await client.listEpics({ limit: 2 });
 
     expect(result).toBeDefined();
     expect(result.data.length).toBeLessThanOrEqual(2);
     expect(result.meta).toBeDefined();
   });
 
-  it("should get project by ID", async () => {
+  it("should get epic by ID", async () => {
     if (skipIfNoToken()) return;
-    if (skipIfNoTestData("project", testProject)) return;
+    if (skipIfNoTestData("epic", testEpic)) return;
 
     const client = getApiClient();
-    const result = await client.getProject(testProject!.id);
+    const result = await client.getEpic(testEpic!.id);
 
     expect(result).toBeDefined();
     expect(result.data).toBeDefined();
-    expect(result.data.id).toBe(testProject!.id);
-    expect(result.data.name).toBe(testProject!.name);
+    expect(result.data.id).toBe(testEpic!.id);
+    expect(result.data.name).toBe(testEpic!.name);
   });
 
-  it("should get project by name", async () => {
+  it("should get epic by name", async () => {
     if (skipIfNoToken()) return;
-    if (skipIfNoTestData("project", testProject)) return;
+    if (skipIfNoTestData("epic", testEpic)) return;
 
     const client = getApiClient();
-    const result = await client.getProject(testProject!.name);
+    const result = await client.getEpic(testEpic!.name);
 
     expect(result).toBeDefined();
     expect(result.data).toBeDefined();
-    expect(result.data.name).toBe(testProject!.name);
+    expect(result.data.name).toBe(testEpic!.name);
   });
 
-  it("should return 403 or 404 for non-existent project", async () => {
+  it("should return 403 or 404 for non-existent epic", async () => {
     if (skipIfNoToken()) return;
 
     const client = getApiClient();
 
     try {
-      await client.getProject("non-existent-project-12345");
+      await client.getEpic("non-existent-epic-12345");
       expect.fail("Should have thrown ApiError");
     } catch (error) {
       expect(error).toBeInstanceOf(ApiError);
@@ -277,49 +277,49 @@ describe("Projects", () => {
     }
   });
 
-  it("should create project with all fields", async () => {
+  it("should create epic with all fields", async () => {
     if (skipIfNoToken()) return;
     if (skipIfNoTestData("team", testTeam)) return;
 
     const client = getApiClient();
-    const projectName = `Test Project ${Date.now()}`;
+    const epicName = `Test Epic ${Date.now()}`;
 
-    const result = await client.createProject({
-      name: projectName,
+    const result = await client.createEpic({
+      name: epicName,
       teamId: testTeam!.id,
-      description: "Integration test project",
+      description: "Integration test epic",
       icon: "🧪",
       color: "#FF5733",
     });
 
     expect(result).toBeDefined();
     expect(result.data).toBeDefined();
-    expect(result.data.name).toBe(projectName);
-    expect(result.data.description).toBe("Integration test project");
+    expect(result.data.name).toBe(epicName);
+    expect(result.data.description).toBe("Integration test epic");
     expect(result.data.icon).toBe("🧪");
     expect(result.data.teamId).toBe(testTeam!.id);
 
-    createdResources.projects.push(result.data.id);
+    createdResources.epics.push(result.data.id);
   });
 
-  it("should create project with minimal fields", async () => {
+  it("should create epic with minimal fields", async () => {
     if (skipIfNoToken()) return;
     if (skipIfNoTestData("team", testTeam)) return;
 
     const client = getApiClient();
-    const projectName = `Minimal Project ${Date.now()}`;
+    const epicName = `Minimal Epic ${Date.now()}`;
 
-    const result = await client.createProject({
-      name: projectName,
+    const result = await client.createEpic({
+      name: epicName,
       teamId: testTeam!.id,
     });
 
     expect(result).toBeDefined();
     expect(result.data).toBeDefined();
-    expect(result.data.name).toBe(projectName);
+    expect(result.data.name).toBe(epicName);
     expect(result.data.teamId).toBe(testTeam!.id);
 
-    createdResources.projects.push(result.data.id);
+    createdResources.epics.push(result.data.id);
   });
 });
 
@@ -339,18 +339,18 @@ describe("Features", () => {
     expect(result.meta).toBeDefined();
   });
 
-  it("should list features with project filter", async () => {
+  it("should list features with epic filter", async () => {
     if (skipIfNoToken()) return;
-    if (skipIfNoTestData("project", testProject)) return;
+    if (skipIfNoTestData("epic", testEpic)) return;
 
     const client = getApiClient();
-    const result = await client.listFeatures({ projectId: testProject!.id });
+    const result = await client.listFeatures({ epicId: testEpic!.id });
 
     expect(result).toBeDefined();
     expect(Array.isArray(result.data)).toBe(true);
-    // All returned features should belong to the project
+    // All returned features should belong to the epic
     for (const feature of result.data) {
-      expect(feature.projectId).toBe(testProject!.id);
+      expect(feature.epicId).toBe(testEpic!.id);
     }
   });
 
@@ -420,21 +420,21 @@ describe("Features", () => {
 
   it("should create feature", async () => {
     if (skipIfNoToken()) return;
-    if (skipIfNoTestData("project", testProject)) return;
+    if (skipIfNoTestData("epic", testEpic)) return;
 
     const client = getApiClient();
     const featureTitle = `Test Feature ${Date.now()}`;
 
     const result = await client.createFeature({
       title: featureTitle,
-      projectId: testProject!.id,
+      epicId: testEpic!.id,
       description: "Integration test feature",
     });
 
     expect(result).toBeDefined();
     expect(result.data).toBeDefined();
     expect(result.data.title).toBe(featureTitle);
-    expect(result.data.projectId).toBe(testProject!.id);
+    expect(result.data.epicId).toBe(testEpic!.id);
     expect(result.data.identifier).toBeDefined();
     expect(result.data.identifier.length).toBeGreaterThan(0);
 
@@ -443,7 +443,7 @@ describe("Features", () => {
 
   it("should create feature with status", async () => {
     if (skipIfNoToken()) return;
-    if (skipIfNoTestData("project", testProject)) return;
+    if (skipIfNoTestData("epic", testEpic)) return;
     if (skipIfNoTestData("status", testStatus)) return;
 
     const client = getApiClient();
@@ -451,7 +451,7 @@ describe("Features", () => {
 
     const result = await client.createFeature({
       title: featureTitle,
-      projectId: testProject!.id,
+      epicId: testEpic!.id,
       statusId: testStatus!.id,
     });
 
@@ -779,7 +779,7 @@ describe("Error Handling", () => {
       // Try to create a feature without required fields
       await client.createFeature({
         title: "",
-        projectId: "invalid-uuid",
+        epicId: "invalid-uuid",
       });
       expect.fail("Should have thrown ApiError");
     } catch (error) {
@@ -796,7 +796,7 @@ describe("Error Handling", () => {
     const client = getApiClient();
 
     try {
-      await client.getProject("00000000-0000-0000-0000-000000000000");
+      await client.getEpic("00000000-0000-0000-0000-000000000000");
       expect.fail("Should have thrown ApiError");
     } catch (error) {
       expect(error).toBeInstanceOf(ApiError);
@@ -846,7 +846,7 @@ describe("API Client Initialization", () => {
 
     // Create client with trailing slash - should work the same
     const client = new ApiClient(`${TEST_API_URL}/`, TEST_API_TOKEN);
-    const result = await client.listProjects({ limit: 1 });
+    const result = await client.listEpics({ limit: 1 });
     expect(result).toBeDefined();
   });
 });

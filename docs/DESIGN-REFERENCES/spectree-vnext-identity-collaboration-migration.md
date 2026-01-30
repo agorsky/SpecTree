@@ -7,7 +7,7 @@
 
 ## 0) Decisions Locked In
 
-1) **Personal project sharing behavior:** When a user shares a personal project, it **moves** to a Team scope (no copy/clone).  
+1) **Personal epic sharing behavior:** When a user shares a personal epic, it **moves** to a Team scope (no copy/clone).  
 2) **Team joining policy:** Teams are **invite-only** (no self-join).  
 3) **Membership creation UX:** **Admins can directly add users** to a team (no acceptance/pending required).
 
@@ -20,13 +20,13 @@ SpecTree currently uses a hierarchical model:
 
 - **User**
   - **Membership** (role: `admin | member | guest`) → **Team**
-    - **Project**
+    - **Epic**
       - **Feature** (optional assignee)
         - **Task** (optional assignee)
 
-### 1.2 Project ownership constraint
-- A **Project belongs to exactly one Team** (single `teamId` style ownership).
-- Therefore Features and Tasks inherit Team authorization via **Feature → Project → Team → Membership**.
+### 1.2 Epic ownership constraint
+- An **Epic belongs to exactly one Team** (single `teamId` style ownership).
+- Therefore Features and Tasks inherit Team authorization via **Feature → Epic → Team → Membership**.
 
 ### 1.3 Current onboarding behavior (key mismatch with vNext)
 - New users are currently **automatically added to all existing non-archived teams** as `member`.
@@ -38,7 +38,7 @@ The implementation document explicitly lists (among others):
 - **Placeholder getCurrentUser()** behavior (not truly contextual per logged-in user)
 - **No team invitations** (membership created immediately; must add by ID)
 - **No workspaces/organizations** (teams are the top-level org boundary)
-- **Single team per project** (no multi-team projects)
+- **Single team per epic** (no multi-team epics)
 
 These are important because enforcing private personal work requires **true per-user auth context** and membership rules that are not “everyone sees everything.”
 
@@ -47,7 +47,7 @@ These are important because enforcing private personal work requires **true per-
 ## 2) Product Goals (vNext)
 
 1) **Personal Work (private-by-default)**  
-   Each user can create private Projects/Features/Tasks that no other user can access.
+   Each user can create private Epics/Features/Tasks that no other user can access.
 
 2) **Team Collaboration (shared-by-membership)**  
    Users collaborate in Teams; membership controls visibility and permissions.
@@ -62,14 +62,14 @@ These are important because enforcing private personal work requires **true per-
 ## 3) Target Model (Concepts + Rules)
 
 ### 3.1 Core concept: Scope (visibility boundary)
-Every Project is owned by exactly one **Scope**:
+Every Epic is owned by exactly one **Scope**:
 
 - **Personal Scope** — private container owned by one user  
 - **Team Scope** — shared container owned by one team
 
-**Rule:** Project ownership is exclusive: **Personal OR Team**, never both.
+**Rule:** Epic ownership is exclusive: **Personal OR Team**, never both.
 
-> This deliberately preserves the current constraint “project belongs to exactly one owning container,” while adding a Personal container type.
+> This deliberately preserves the current constraint “epic belongs to exactly one owning container,” while adding a Personal container type.
 
 ---
 
@@ -78,7 +78,7 @@ Each user has exactly one Personal Scope.
 
 **Behavior**
 - Personal Scope is **non-discoverable** and accessible only by the owner.
-- Personal projects behave like team projects (statuses, ordering, features/tasks).
+- Personal epics behave like team epics (statuses, ordering, features/tasks).
 - Only the owner can create/update/delete content in Personal scope.
 - No one else can view/search/assign/modify Personal-scope items.
 
@@ -103,7 +103,7 @@ Teams remain the primary collaboration unit.
 ---
 
 ### 3.4 Authoritative visibility rules
-A user can view a Project/Feature/Task if and only if:
+A user can view an Epic/Feature/Task if and only if:
 
 - It is owned by the user’s **Personal Scope**, OR
 - It is owned by a **Team Scope** where the user has Membership (`guest` or higher)
@@ -114,15 +114,15 @@ No other visibility paths exist.
 
 ## 4) Sharing Personal Work (DECIDED: Move to Team Scope)
 
-**Sharing a personal project = Move Personal → Team**
+**Sharing a personal epic = Move Personal → Team**
 
 When the owner chooses to share:
 - The project’s scope changes from **Personal Scope** to a selected **Team Scope**
 - All contained Features/Tasks become Team-scoped content
-- The project disappears from the user’s Personal area and appears in the Team
+- The epic disappears from the user’s Personal area and appears in the Team
 
 **Not supported in v1**
-- Copy/clone personal project into a team while retaining a private original
+- Copy/clone personal epic into a team while retaining a private original
 
 ---
 
@@ -162,7 +162,7 @@ Current gaps mention “no invitations” and “must add by ID.”
 
 ## 7) Explicitly Out of Scope for vNext (to avoid plan sprawl)
 
-- **Multi-team projects** (project owned by multiple teams)
+- **Multi-team epics (epic owned by multiple teams)
 - **Workspaces/organizations / multi-tenancy**
 - **Advanced RBAC / permission grants beyond admin/member/guest**
 - **Audit log, MFA, token revocation** (may be added later)
@@ -172,12 +172,12 @@ Current gaps mention “no invitations” and “must add by ID.”
 ## 8) Acceptance Criteria (Copilot-ready)
 
 ### Personal Scope
-- A user can create a personal project and **no other user can view or query it**.
-- Personal projects support features/tasks and normal workflows (status, ordering, assignment-to-self).
+- A user can create a personal epic and **no other user can view or query it**.
+- Personal epics support features/tasks and normal workflows (status, ordering, assignment-to-self).
 - Personal scope content is never visible through team views or team search.
 
 ### Team Scope
-- A user can only view team projects if they are a member of that team (`guest`+).
+- A user can only view team epics if they are a member of that team (`guest`+).
 - `guest` is read-only; `member/admin` can create/update features/tasks.
 
 ### Onboarding
@@ -185,7 +185,7 @@ Current gaps mention “no invitations” and “must add by ID.”
 - New users start with: Personal Scope only.
 
 ### Share = Move
-- Sharing a personal project moves it into a team scope and removes it from Personal views.
+- Sharing a personal epic moves it into a team scope and removes it from Personal views.
 
 ### Direct Add
 - Team admins can directly add users to the team; membership is active immediately.
@@ -202,8 +202,8 @@ Do not silently remove existing user access during migration.
 ### 9.2 “Invite-only” applies going forward
 Existing memberships remain as-is; invite-only governs new membership creation going forward.
 
-### 9.3 Projects do not change scope automatically
-Existing team projects remain team-scoped; Personal scopes start empty.
+### 9.3 Epics do not change scope automatically
+Existing team epics remain team-scoped; Personal scopes start empty.
 
 ---
 
@@ -284,22 +284,22 @@ Pick one consistent rule (recommended):
 ## 14) Implementation-plan prompt (no code)
 Paste this into Copilot CLI:
 
-> Create an implementation plan to evolve SpecTree’s current model (User–Membership–Team–Project–Feature–Task) so that each user has a private Personal Scope for personal projects/features/tasks, and also can be invited into Teams for collaborative work.  
+> Create an implementation plan to evolve SpecTree’s current model (User–Membership–Team–Epic–Feature–Task) so that each user has a private Personal Scope for personal epics/features/tasks, and also can be invited into Teams for collaborative work.  
 >  
-> Current constraints: Projects belong to exactly one Team today, and authorization checks traverse Feature → Project → Team → Membership. New users currently auto-join all teams; this must change. The current implementation document also flags a placeholder getCurrentUser() behavior; vNext must have true per-request user context to enforce privacy.  
+> Current constraints: Epics belong to exactly one Team today, and authorization checks traverse Feature → Epic → Team → Membership. New users currently auto-join all teams; this must change. The current implementation document also flags a placeholder getCurrentUser() behavior; vNext must have true per-request user context to enforce privacy.  
 >  
 > vNext requirements (decisions locked):  
-> - Every user has a Personal Scope that is private-by-default and contains personal projects.  
+> - Every user has a Personal Scope that is private-by-default and contains personal epics.  
 > - Team membership is invite-only (no self-join), but admins can DIRECTLY ADD users (no acceptance/pending state).  
 > - Team-scoped work uses membership roles (admin/member/guest) for CRUD permissions; guests are read-only.  
 > - Visibility is derived from scope: users always see their Personal Scope; users only see Teams they are members of.  
 > - New user signup creates a Personal Scope and does NOT auto-join any team.  
-> - Sharing a personal project is a MOVE: the project changes from Personal Scope to Team Scope (no copy/clone).  
+> - Sharing a personal epic is a MOVE: the epic changes from Personal Scope to Team Scope (no copy/clone).  
 >  
 > Migration behavior policy:  
 > - Backfill a Personal Scope for every existing user; personal scopes start empty.  
 > - Preserve all existing team memberships exactly as-is (no automatic removals/downgrades). Invite-only governs how new memberships are created going forward.  
-> - Existing team projects remain team-scoped; no automatic project moves.  
+> - Existing team epics remain team-scoped; no automatic epic moves.  
 > - New users: create Personal Scope only; no auto-team membership.  
 > - Include guardrails for last-admin, archived teams behavior, and guest restrictions.  
 >  

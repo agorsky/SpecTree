@@ -12,7 +12,7 @@ import type { SecretsProvider } from "./types.js";
 export class AzureKeyVaultProvider implements SecretsProvider {
   readonly providerName = "azure-keyvault";
   private client: SecretClient;
-  private cache: Map<string, string> = new Map();
+  private cache = new Map<string, string>();
 
   /**
    * Creates a new Azure Key Vault provider.

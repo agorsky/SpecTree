@@ -11,7 +11,7 @@ interface ToolResponse {
 
 const { mockApiClient } = vi.hoisted(() => {
   const mockApiClient = {
-    reorderProject: vi.fn(),
+    reorderEpic: vi.fn(),
     reorderFeature: vi.fn(),
     reorderTask: vi.fn(),
   };
@@ -50,42 +50,42 @@ describe("MCP Ordering Tools", () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.resetAllMocks());
 
-  describe("spectree__reorder_project", () => {
-    const getHandler = () => registeredTools.get("spectree__reorder_project")?.handler;
+  describe("spectree__reorder_epic", () => {
+    const getHandler = () => registeredTools.get("spectree__reorder_epic")?.handler;
 
-    it("should reorder project with afterId", async () => {
-      const mockProject = { id: "proj-1", name: "Project Alpha", sortOrder: 2 };
-      mockApiClient.reorderProject.mockResolvedValue({ data: mockProject });
+    it("should reorder epic with afterId", async () => {
+      const mockEpic = { id: "epic-1", name: "Epic Alpha", sortOrder: 2 };
+      mockApiClient.reorderEpic.mockResolvedValue({ data: mockEpic });
 
       const handler = getHandler();
-      const result = await handler!({ id: "proj-1", afterId: "proj-2" });
+      const result = await handler!({ id: "epic-1", afterId: "epic-2" });
 
-      expect(mockApiClient.reorderProject).toHaveBeenCalledWith("proj-1", {
-        afterId: "proj-2",
+      expect(mockApiClient.reorderEpic).toHaveBeenCalledWith("epic-1", {
+        afterId: "epic-2",
         beforeId: undefined,
       });
       expect(result.isError).toBeUndefined();
     });
 
-    it("should reorder project with beforeId", async () => {
-      const mockProject = { id: "proj-1", name: "Project Alpha", sortOrder: 1 };
-      mockApiClient.reorderProject.mockResolvedValue({ data: mockProject });
+    it("should reorder epic with beforeId", async () => {
+      const mockEpic = { id: "epic-1", name: "Epic Alpha", sortOrder: 1 };
+      mockApiClient.reorderEpic.mockResolvedValue({ data: mockEpic });
 
       const handler = getHandler();
-      await handler!({ id: "proj-1", beforeId: "proj-3" });
+      await handler!({ id: "epic-1", beforeId: "epic-3" });
 
-      expect(mockApiClient.reorderProject).toHaveBeenCalledWith("proj-1", {
+      expect(mockApiClient.reorderEpic).toHaveBeenCalledWith("epic-1", {
         afterId: undefined,
-        beforeId: "proj-3",
+        beforeId: "epic-3",
       });
     });
 
     it("should handle API errors", async () => {
       const ApiError = (await import("../src/api-client.js")).ApiError;
-      mockApiClient.reorderProject.mockRejectedValue(new ApiError("Not found", 404));
+      mockApiClient.reorderEpic.mockRejectedValue(new ApiError("Not found", 404));
 
       const handler = getHandler();
-      const result = await handler!({ id: "non-existent", afterId: "proj-2" });
+      const result = await handler!({ id: "non-existent", afterId: "epic-2" });
 
       expect(result.isError).toBe(true);
     });
@@ -149,7 +149,7 @@ describe("MCP Ordering Tools", () => {
 
   describe("tool registration", () => {
     it("should register all ordering tools", () => {
-      expect(registeredTools.has("spectree__reorder_project")).toBe(true);
+      expect(registeredTools.has("spectree__reorder_epic")).toBe(true);
       expect(registeredTools.has("spectree__reorder_feature")).toBe(true);
       expect(registeredTools.has("spectree__reorder_task")).toBe(true);
     });

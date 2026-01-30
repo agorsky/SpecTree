@@ -7,7 +7,7 @@
  * Usage:
  *   const user = await createTestUser({ name: 'Custom Name' });
  *   const team = await createTestTeam();
- *   const project = await createTestProject(team.id);
+ *   const epic = await createTestEpic(team.id);
  */
 
 import { getTestPrisma } from "../setup.js";
@@ -15,7 +15,7 @@ import type {
   User,
   Team,
   Membership,
-  Project,
+  Epic,
   Status,
   Feature,
   Task,
@@ -48,7 +48,7 @@ export interface MembershipInput {
   role?: string;
 }
 
-export interface ProjectInput {
+export interface EpicInput {
   teamId: string;
   name: string;
   description?: string | null;
@@ -67,7 +67,7 @@ export interface StatusInput {
 }
 
 export interface FeatureInput {
-  projectId: string;
+  epicId: string;
   identifier: string;
   title: string;
   description?: string | null;
@@ -215,26 +215,26 @@ export async function createTestMembership(
 }
 
 /**
- * Creates a test project within a team.
+ * Creates a test epic within a team.
  *
- * @param teamId - The team ID this project belongs to
+ * @param teamId - The team ID this epic belongs to
  * @param overrides - Optional fields to override defaults
- * @returns The created Project entity
+ * @returns The created Epic entity
  *
  * @example
- * const project = await createTestProject(team.id);
- * const apiProject = await createTestProject(team.id, { name: 'API Project' });
+ * const epic = await createTestEpic(team.id);
+ * const apiEpic = await createTestEpic(team.id, { name: 'API Epic' });
  */
-export async function createTestProject(
+export async function createTestEpic(
   teamId: string,
-  overrides?: Partial<Omit<ProjectInput, "teamId">>
-): Promise<Project> {
+  overrides?: Partial<Omit<EpicInput, "teamId">>
+): Promise<Epic> {
   const prisma = getTestPrisma();
 
   const id = uniqueId();
   const defaults = {
     teamId,
-    name: `Test Project ${id}`,
+    name: `Test Epic ${id}`,
     description: null,
     icon: null,
     color: null,
@@ -244,7 +244,7 @@ export async function createTestProject(
 
   const data = { ...defaults, ...overrides };
 
-  return prisma.project.create({ data });
+  return prisma.epic.create({ data });
 }
 
 /**
@@ -282,28 +282,28 @@ export async function createTestStatus(
 }
 
 /**
- * Creates a test feature within a project.
+ * Creates a test feature within a epic.
  *
- * @param projectId - The project ID this feature belongs to
+ * @param epicId - The epic ID this feature belongs to
  * @param overrides - Optional fields to override defaults
  * @returns The created Feature entity
  *
  * @example
- * const feature = await createTestFeature(project.id);
- * const loginFeature = await createTestFeature(project.id, {
+ * const feature = await createTestFeature(epic.id);
+ * const loginFeature = await createTestFeature(epic.id, {
  *   title: 'User Login',
  *   identifier: 'PROJ-1'
  * });
  */
 export async function createTestFeature(
-  projectId: string,
-  overrides?: Partial<Omit<FeatureInput, "projectId">>
+  epicId: string,
+  overrides?: Partial<Omit<FeatureInput, "epicId">>
 ): Promise<Feature> {
   const prisma = getTestPrisma();
 
   const id = uniqueId();
   const defaults = {
-    projectId,
+    epicId,
     identifier: uniqueIdentifier("FEAT"),
     title: `Test Feature ${id}`,
     description: null,
@@ -384,50 +384,50 @@ export async function createTestUserWithTeam(options?: {
 }
 
 /**
- * Creates a complete project hierarchy with team, project, and optional features.
+ * Creates a complete epic hierarchy with team, epic, and optional features.
  *
  * @param options - Configuration options
  * @returns Object containing the created entities
  *
  * @example
- * const { team, project, features } = await createTestProjectWithFeatures({
+ * const { team, epic, features } = await createTestEpicWithFeatures({
  *   featureCount: 3
  * });
  */
-export async function createTestProjectWithFeatures(options?: {
+export async function createTestEpicWithFeatures(options?: {
   teamOverrides?: Partial<TeamInput>;
-  projectOverrides?: Partial<Omit<ProjectInput, "teamId">>;
+  epicOverrides?: Partial<Omit<EpicInput, "teamId">>;
   featureCount?: number;
-  featureOverrides?: Partial<Omit<FeatureInput, "projectId">>;
-}): Promise<{ team: Team; project: Project; features: Feature[] }> {
+  featureOverrides?: Partial<Omit<FeatureInput, "epicId">>;
+}): Promise<{ team: Team; epic: Epic; features: Feature[] }> {
   const team = await createTestTeam(options?.teamOverrides);
-  const project = await createTestProject(team.id, options?.projectOverrides);
+  const epic = await createTestEpic(team.id, options?.epicOverrides);
 
   const featureCount = options?.featureCount ?? 0;
   const features: Feature[] = [];
 
   for (let i = 0; i < featureCount; i++) {
-    const feature = await createTestFeature(project.id, options?.featureOverrides);
+    const feature = await createTestFeature(epic.id, options?.featureOverrides);
     features.push(feature);
   }
 
-  return { team, project, features };
+  return { team, epic, features };
 }
 
 /**
- * Creates a complete workflow setup with team, statuses, project, and feature.
+ * Creates a complete workflow setup with team, statuses, epic, and feature.
  * Includes default workflow statuses (Backlog, To Do, In Progress, Done).
  *
  * @param options - Configuration options
  * @returns Object containing all created entities
  *
  * @example
- * const { team, statuses, project, feature } = await createTestWorkflow();
+ * const { team, statuses, epic, feature } = await createTestWorkflow();
  */
 export async function createTestWorkflow(options?: {
   teamOverrides?: Partial<TeamInput>;
-  projectOverrides?: Partial<Omit<ProjectInput, "teamId">>;
-  featureOverrides?: Partial<Omit<FeatureInput, "projectId">>;
+  epicOverrides?: Partial<Omit<EpicInput, "teamId">>;
+  featureOverrides?: Partial<Omit<FeatureInput, "epicId">>;
 }): Promise<{
   team: Team;
   statuses: {
@@ -436,7 +436,7 @@ export async function createTestWorkflow(options?: {
     inProgress: Status;
     done: Status;
   };
-  project: Project;
+  epic: Epic;
   feature: Feature;
 }> {
   const team = await createTestTeam(options?.teamOverrides);
@@ -463,8 +463,8 @@ export async function createTestWorkflow(options?: {
     position: 3,
   });
 
-  const project = await createTestProject(team.id, options?.projectOverrides);
-  const feature = await createTestFeature(project.id, {
+  const epic = await createTestEpic(team.id, options?.epicOverrides);
+  const feature = await createTestFeature(epic.id, {
     statusId: todo.id,
     ...options?.featureOverrides,
   });
@@ -472,7 +472,7 @@ export async function createTestWorkflow(options?: {
   return {
     team,
     statuses: { backlog, todo, inProgress, done },
-    project,
+    epic,
     feature,
   };
 }

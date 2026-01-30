@@ -24,7 +24,7 @@ const { mockApiClient } = vi.hoisted(() => {
     createTask: vi.fn(),
     updateTask: vi.fn(),
     getFeature: vi.fn(),
-    getProject: vi.fn(),
+    getEpic: vi.fn(),
     listStatuses: vi.fn(),
     resolveStatusId: vi.fn(),
   };
@@ -285,7 +285,7 @@ describe("MCP Tasks Tools", () => {
         id: "feat-1",
         identifier: "ENG-1",
         title: "Feature",
-        projectId: "proj-1",
+        epicId: "epic-1",
       };
       
       const mockTask = {
@@ -329,12 +329,12 @@ describe("MCP Tasks Tools", () => {
         id: "feat-1",
         identifier: "ENG-1",
         title: "Feature",
-        projectId: "proj-1",
+        epicId: "epic-1",
       };
       
-      const mockProject = {
-        id: "proj-1",
-        name: "Test Project",
+      const mockEpic = {
+        id: "epic-1",
+        name: "Test Epic",
         teamId: "team-1",
       };
       
@@ -352,7 +352,7 @@ describe("MCP Tasks Tools", () => {
       };
 
       mockApiClient.getFeature.mockResolvedValue({ data: mockFeature });
-      mockApiClient.getProject.mockResolvedValue({ data: mockProject });
+      mockApiClient.getEpic.mockResolvedValue({ data: mockEpic });
       mockApiClient.resolveStatusId.mockResolvedValue("status-1");
       mockApiClient.createTask.mockResolvedValue({ data: mockTask });
 
@@ -474,18 +474,18 @@ describe("MCP Tasks Tools", () => {
         id: "feat-1",
         identifier: "ENG-1",
         title: "Feature",
-        projectId: "proj-1",
+        epicId: "epic-1",
       };
 
-      const mockProject = {
-        id: "proj-1",
-        name: "Test Project",
+      const mockEpic = {
+        id: "epic-1",
+        name: "Test Epic",
         teamId: "team-1",
       };
 
       mockApiClient.getTask.mockResolvedValue({ data: mockTask });
       mockApiClient.getFeature.mockResolvedValue({ data: mockFeature });
-      mockApiClient.getProject.mockResolvedValue({ data: mockProject });
+      mockApiClient.getEpic.mockResolvedValue({ data: mockEpic });
       mockApiClient.resolveStatusId.mockResolvedValue("new-status-uuid");
       mockApiClient.updateTask.mockResolvedValue({ data: mockTask });
 
@@ -553,18 +553,18 @@ describe("MCP Tasks Tools", () => {
         id: "feat-1",
         identifier: "ENG-1",
         title: "Feature",
-        projectId: "proj-1",
+        epicId: "epic-1",
       };
 
-      const mockProject = {
-        id: "proj-1",
-        name: "Test Project",
+      const mockEpic = {
+        id: "epic-1",
+        name: "Test Epic",
         teamId: "team-1",
       };
 
       mockApiClient.getTask.mockResolvedValue({ data: mockTask });
       mockApiClient.getFeature.mockResolvedValue({ data: mockFeature });
-      mockApiClient.getProject.mockResolvedValue({ data: mockProject });
+      mockApiClient.getEpic.mockResolvedValue({ data: mockEpic });
       mockApiClient.resolveStatusId.mockResolvedValue("resolved-status-uuid");
       mockApiClient.updateTask.mockResolvedValue({ data: mockTask });
 
