@@ -4,9 +4,7 @@ export interface User {
   name: string;
   role: "admin" | "member";
   teamId: string;
-  isActive: boolean;
-  isGlobalAdmin: boolean;
-  avatarUrl?: string;
+  isGlobalAdmin?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,6 +28,7 @@ export interface Epic {
   name: string;
   description?: string;
   teamId: string;
+  isArchived?: boolean;
   createdAt: string;
   updatedAt: string;
 }

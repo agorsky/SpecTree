@@ -3,12 +3,15 @@ import { useEpics } from "@/hooks/queries/use-epics";
 import { Button } from "@/components/ui/button";
 import { EpicForm } from "@/components/epics/epic-form";
 import { EpicCard } from "@/components/epics/epic-card";
-import { Plus } from "lucide-react";
+import { Plus, Archive } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export function EpicsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useEpics();
+    useEpics({ includeArchived: showArchived });
 
   const epics = data?.pages.flatMap((page) => page.data) ?? [];
 
@@ -16,10 +19,23 @@ export function EpicsPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Epics</h1>
-        <Button onClick={() => setIsFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Epic
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="show-archived"
+              checked={showArchived}
+              onCheckedChange={(checked) => setShowArchived(checked === true)}
+            />
+            <Label htmlFor="show-archived" className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
+              <Archive className="h-4 w-4" />
+              Show archived
+            </Label>
+          </div>
+          <Button onClick={() => setIsFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Epic
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -33,11 +49,15 @@ export function EpicsPage() {
         </div>
       ) : epics.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">No epics yet</p>
-          <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create your first epic
-          </Button>
+          <p className="text-muted-foreground mb-4">
+            {showArchived ? "No epics found" : "No epics yet"}
+          </p>
+          {!showArchived && (
+            <Button onClick={() => setIsFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create your first epic
+            </Button>
+          )}
         </div>
       ) : (
         <>

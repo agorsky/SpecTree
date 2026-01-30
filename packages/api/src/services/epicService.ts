@@ -2,7 +2,6 @@ import { prisma } from "../lib/db.js";
 import type { Epic } from "../generated/prisma/index.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
-import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
 
 // Types for epic operations
 export interface CreateEpicInput {
@@ -29,8 +28,7 @@ export interface ListEpicsOptions {
   limit?: number | undefined;
   teamId?: string | undefined;
   orderBy?: EpicOrderBy | undefined;
-  /** Current user ID - when provided, filters to only show epics in accessible scopes */
-  currentUserId?: string | undefined;
+  includeArchived?: boolean | undefined;
 }
 
 export interface EpicWithCount extends Epic {
@@ -50,7 +48,6 @@ export interface PaginatedResult<T> {
 /**
  * List epics with cursor-based pagination
  * Ordered by sortOrder, then createdAt
- * When currentUserId is provided, filters to only show epics in accessible scopes
  */
 export async function listEpics(
   options: ListEpicsOptions = {}
@@ -58,43 +55,11 @@ export async function listEpics(
   const limit = Math.min(100, Math.max(1, options.limit ?? 20));
 
   // Build where clause conditionally to avoid undefined values
-  const whereClause: {
-    isArchived: boolean;
-    teamId?: string;
-    OR?: Array<{ teamId?: { in: string[] }; personalScopeId?: string | { in: string[] } }>;
-  } = { isArchived: false };
-
-  // Apply scope-based filtering when currentUserId is provided
-  if (options.currentUserId) {
-    const accessibleScopes = await getAccessibleScopes(options.currentUserId);
-
-    // If user has no accessible scopes, return empty result
-    if (!hasAccessibleScopes(accessibleScopes)) {
-      return {
-        data: [],
-        meta: { cursor: null, hasMore: false },
-      };
-    }
-
-    // Build OR clause for accessible scopes
-    const scopeConditions: Array<{ teamId?: { in: string[] }; personalScopeId?: string }> = [];
-
-    if (accessibleScopes.teamIds.length > 0) {
-      scopeConditions.push({ teamId: { in: accessibleScopes.teamIds } });
-    }
-    if (accessibleScopes.personalScopeId) {
-      scopeConditions.push({ personalScopeId: accessibleScopes.personalScopeId });
-    }
-
-    whereClause.OR = scopeConditions;
+  const whereClause: { isArchived?: boolean; teamId?: string } = {};
+  if (!options.includeArchived) {
+    whereClause.isArchived = false;
   }
-
-  // If teamId filter is provided, apply it (overrides scope filter for specific team queries)
   if (options.teamId !== undefined) {
-    // When teamId is explicitly provided, use it directly
-    // The scope filter above already ensures user can only see their accessible epics
-    // But if explicitly requesting a team, we filter to just that team
-    delete whereClause.OR;
     whereClause.teamId = options.teamId;
   }
 
@@ -134,17 +99,30 @@ export async function listEpics(
  */
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export interface GetEpicOptions {
+  includeArchived?: boolean | undefined;
+}
+
 /**
  * Get a single epic by ID or name.
  * Supports both UUID (e.g., "550e8400-e29b-41d4-a716-446655440000") and
  * exact epic name (case-sensitive) lookups.
  */
-export async function getEpicById(idOrName: string): Promise<EpicWithCount | null> {
+export async function getEpicById(
+  idOrName: string,
+  options: GetEpicOptions = {}
+): Promise<EpicWithCount | null> {
   const isUuid = UUID_REGEX.test(idOrName);
+  const whereClause: { id?: string; name?: string; isArchived?: boolean } = isUuid
+    ? { id: idOrName }
+    : { name: idOrName };
+  
+  if (!options.includeArchived) {
+    whereClause.isArchived = false;
+  }
+  
   return prisma.epic.findFirst({
-    where: isUuid
-      ? { id: idOrName, isArchived: false }
-      : { name: idOrName, isArchived: false },
+    where: whereClause,
     include: { _count: { select: { features: true } } },
   }) as Promise<EpicWithCount | null>;
 }
@@ -270,10 +248,11 @@ export async function updateEpic(
 
 /**
  * Soft delete an epic (set isArchived = true).
+ * If already archived, this is a no-op (idempotent).
  * Supports both UUID and exact epic name lookups.
  */
 export async function deleteEpic(idOrName: string): Promise<void> {
-  // First check if epic exists and is not already archived
+  // First check if epic exists
   const isUuid = UUID_REGEX.test(idOrName);
   const existing = await prisma.epic.findFirst({
     where: isUuid
@@ -281,12 +260,71 @@ export async function deleteEpic(idOrName: string): Promise<void> {
       : { name: idOrName },
   });
 
-  if (!existing || existing.isArchived) {
+  if (!existing) {
     throw new NotFoundError(`Epic with id '${idOrName}' not found`);
+  }
+
+  // If already archived, no-op (idempotent)
+  if (existing.isArchived) {
+    return;
   }
 
   await prisma.epic.update({
     where: { id: existing.id },
     data: { isArchived: true },
+  });
+}
+
+/**
+ * Archive an epic (set isArchived = true).
+ * Returns the updated epic.
+ * Supports both UUID and exact epic name lookups.
+ */
+export async function archiveEpic(idOrName: string): Promise<Epic> {
+  const isUuid = UUID_REGEX.test(idOrName);
+  const existing = await prisma.epic.findFirst({
+    where: isUuid
+      ? { id: idOrName }
+      : { name: idOrName },
+  });
+
+  if (!existing) {
+    throw new NotFoundError(`Epic with id '${idOrName}' not found`);
+  }
+
+  if (existing.isArchived) {
+    throw new ValidationError("Epic is already archived");
+  }
+
+  return prisma.epic.update({
+    where: { id: existing.id },
+    data: { isArchived: true },
+  });
+}
+
+/**
+ * Unarchive an epic (set isArchived = false).
+ * Returns the updated epic.
+ * Supports both UUID and exact epic name lookups.
+ */
+export async function unarchiveEpic(idOrName: string): Promise<Epic> {
+  const isUuid = UUID_REGEX.test(idOrName);
+  const existing = await prisma.epic.findFirst({
+    where: isUuid
+      ? { id: idOrName }
+      : { name: idOrName },
+  });
+
+  if (!existing) {
+    throw new NotFoundError(`Epic with id '${idOrName}' not found`);
+  }
+
+  if (!existing.isArchived) {
+    throw new ValidationError("Epic is not archived");
+  }
+
+  return prisma.epic.update({
+    where: { id: existing.id },
+    data: { isArchived: false },
   });
 }

@@ -72,3 +72,27 @@ export function useDeleteEpic() {
     },
   });
 }
+
+export function useArchiveEpic() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => epicsApi.archive(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: epicKeys.lists() });
+      queryClient.setQueryData(epicKeys.detail(response.data.id), response);
+    },
+  });
+}
+
+export function useUnarchiveEpic() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => epicsApi.unarchive(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: epicKeys.lists() });
+      queryClient.setQueryData(epicKeys.detail(response.data.id), response);
+    },
+  });
+}
