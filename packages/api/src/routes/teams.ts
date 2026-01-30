@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import {
   listTeams,
-  getTeamById,
+  getTeamByIdOrNameOrKey,
   createTeam,
   updateTeam,
   deleteTeam,
@@ -16,6 +16,7 @@ import {
   createTeamSchema,
   updateTeamSchema,
   uuidParamSchema,
+  flexibleIdParamSchema,
   paginationQuerySchema,
   type CreateTeamInput,
   type UpdateTeamInput,
@@ -24,6 +25,13 @@ import {
 } from "../schemas/index.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
+
+/**
+ * Flexible ID parameter type - can be UUID, name, or key
+ */
+interface FlexibleIdParam {
+  id: string;
+}
 
 /**
  * Teams routes plugin
@@ -60,21 +68,21 @@ export default async function teamsRoutes(
 
   /**
    * GET /api/v1/teams/:id
-   * Get a single team by ID
+   * Get a single team by ID, name, or key
    * Requires authentication and team membership (guest+)
    */
-  fastify.get<{ Params: UuidParam }>(
+  fastify.get<{ Params: FlexibleIdParam }>(
     "/:id",
     {
       preHandler: [authenticate, requireTeamAccess("id"), requireRole("guest")],
-      preValidation: [validateParams(uuidParamSchema)],
+      preValidation: [validateParams(flexibleIdParamSchema)],
     },
     async (request, reply) => {
-      const team = await getTeamById(request.params.id);
+      const team = await getTeamByIdOrNameOrKey(request.params.id);
       if (!team) {
         return reply.status(404).send({
           error: "Not Found",
-          message: `Team with id '${request.params.id}' not found`,
+          message: `Team '${request.params.id}' not found`,
         });
       }
       return reply.send({ data: team });
