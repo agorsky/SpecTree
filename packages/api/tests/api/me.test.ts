@@ -60,7 +60,7 @@ describe("Me API (Personal Scope)", () => {
       expect(body.data).toBeDefined();
       expect(body.data.userId).toBe(user.id);
       expect(body.data._count).toBeDefined();
-      expect(body.data._count.projects).toBe(0);
+      expect(body.data._count.epics).toBe(0);
       expect(body.data._count.statuses).toBeGreaterThanOrEqual(0);
     });
 
@@ -141,14 +141,14 @@ describe("Me API (Personal Scope)", () => {
       const personalScope = await prisma.personalScope.create({
         data: { userId: user.id },
       });
-      await prisma.project.create({
+      await prisma.epic.create({
         data: {
           name: "Personal Project 1",
           personalScopeId: personalScope.id,
           sortOrder: 0,
         },
       });
-      await prisma.project.create({
+      await prisma.epic.create({
         data: {
           name: "Personal Project 2",
           personalScopeId: personalScope.id,
@@ -182,14 +182,14 @@ describe("Me API (Personal Scope)", () => {
         data: { userId: otherUser.id },
       });
 
-      await prisma.project.create({
+      await prisma.epic.create({
         data: {
           name: "My Project",
           personalScopeId: myScope.id,
           sortOrder: 0,
         },
       });
-      await prisma.project.create({
+      await prisma.epic.create({
         data: {
           name: "Other User Project",
           personalScopeId: otherScope.id,
@@ -219,7 +219,7 @@ describe("Me API (Personal Scope)", () => {
       });
 
       for (let i = 0; i < 5; i++) {
-        await prisma.project.create({
+        await prisma.epic.create({
           data: {
             name: `Project ${i}`,
             personalScopeId: personalScope.id,

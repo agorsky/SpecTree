@@ -216,8 +216,8 @@ export interface PersonalScope {
   updatedAt: string;
 }
 
-/** Personal project (extends Project but has personalScopeId) */
-export interface PersonalProject {
+/** Personal epic (extends Epic but has personalScopeId instead of teamId) */
+export interface PersonalEpic {
   id: string;
   name: string;
   description: string | null;
@@ -232,22 +232,28 @@ export interface PersonalProject {
   _count?: { features: number };
 }
 
-export interface ListPersonalProjectsParams {
+export interface ListPersonalEpicsParams {
   limit?: number | undefined;
   cursor?: string | undefined;
 }
 
-export interface ListPersonalProjectsResponse {
-  data: PersonalProject[];
+export interface ListPersonalEpicsResponse {
+  data: PersonalEpic[];
   meta: PaginationMeta;
 }
 
-export interface CreatePersonalProjectData {
+export interface CreatePersonalEpicData {
   name: string;
   description?: string | undefined;
   icon?: string | undefined;
   color?: string | undefined;
 }
+
+// Backwards compatibility aliases (API still uses /me/projects endpoints)
+export type PersonalProject = PersonalEpic;
+export type ListPersonalProjectsParams = ListPersonalEpicsParams;
+export type ListPersonalProjectsResponse = ListPersonalEpicsResponse;
+export type CreatePersonalProjectData = CreatePersonalEpicData;
 
 export interface PersonalStatus {
   id: string;
@@ -723,21 +729,32 @@ export class ApiClient {
   }
 
   /**
-   * List projects in the current user's personal scope.
+   * List epics in the current user's personal scope.
+   * (API endpoint is still /me/projects for backwards compatibility)
    */
-  async listPersonalProjects(params?: ListPersonalProjectsParams): Promise<ListPersonalProjectsResponse> {
+  async listPersonalEpics(params?: ListPersonalEpicsParams): Promise<ListPersonalEpicsResponse> {
     const query = this.buildQueryString({
       limit: params?.limit,
       cursor: params?.cursor,
     });
-    return this.request<ListPersonalProjectsResponse>("GET", `/api/v1/me/projects${query}`);
+    return this.request<ListPersonalEpicsResponse>("GET", `/api/v1/me/projects${query}`);
   }
 
   /**
-   * Create a new project in the current user's personal scope.
+   * Create a new epic in the current user's personal scope.
+   * (API endpoint is still /me/projects for backwards compatibility)
    */
+  async createPersonalEpic(data: CreatePersonalEpicData): Promise<{ data: PersonalEpic }> {
+    return this.request<{ data: PersonalEpic }>("POST", "/api/v1/me/projects", data);
+  }
+
+  // Backwards compatibility aliases
+  async listPersonalProjects(params?: ListPersonalProjectsParams): Promise<ListPersonalProjectsResponse> {
+    return this.listPersonalEpics(params);
+  }
+
   async createPersonalProject(data: CreatePersonalProjectData): Promise<{ data: PersonalProject }> {
-    return this.request<{ data: PersonalProject }>("POST", "/api/v1/me/projects", data);
+    return this.createPersonalEpic(data);
   }
 
   /**

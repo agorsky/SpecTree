@@ -16,14 +16,14 @@ import {
   createTestUser,
   createTestTeam,
   createTestMembership,
-  createTestProject,
+  createTestEpic,
   createTestStatus,
   createTestFeature,
   createTestTask,
 } from "../fixtures/factories.js";
 import {
-  listProjects,
-} from "../../src/services/projectService.js";
+  listEpics,
+} from "../../src/services/epicService.js";
 import {
   listStatuses,
 } from "../../src/services/statusService.js";
@@ -49,10 +49,10 @@ describe("Scope-Based List Query Filtering", () => {
   let membership2: Membership; // user2 in team2
 
   // Projects
-  let team1Project: Project;
-  let team2Project: Project;
-  let personal1Project: Project;
-  let personal2Project: Project;
+  let team1Epic: Project;
+  let team2Epic: Project;
+  let personal1Epic: Project;
+  let personal2Epic: Project;
 
   // Statuses
   let team1Status: Status;
@@ -80,7 +80,7 @@ describe("Scope-Based List Query Filtering", () => {
     // Clean up before each test
     await prisma.task.deleteMany();
     await prisma.feature.deleteMany();
-    await prisma.project.deleteMany();
+    await prisma.epic.deleteMany();
     await prisma.status.deleteMany();
     await prisma.membership.deleteMany();
     await prisma.team.deleteMany();
@@ -134,9 +134,9 @@ describe("Scope-Based List Query Filtering", () => {
     });
 
     // Create projects for each scope
-    team1Project = await createTestProject(team1.id, { name: "Team1 Project" });
-    team2Project = await createTestProject(team2.id, { name: "Team2 Project" });
-    personal1Project = await prisma.project.create({
+    team1Epic = await createTestEpic(team1.id, { name: "Team1 Project" });
+    team2Epic = await createTestEpic(team2.id, { name: "Team2 Project" });
+    personal1Epic = await prisma.epic.create({
       data: {
         name: "Personal1 Project",
         personalScopeId: personalScope1.id,
@@ -144,7 +144,7 @@ describe("Scope-Based List Query Filtering", () => {
         sortOrder: 0,
       },
     });
-    personal2Project = await prisma.project.create({
+    personal2Epic = await prisma.epic.create({
       data: {
         name: "Personal2 Project",
         personalScopeId: personalScope2.id,
@@ -154,22 +154,22 @@ describe("Scope-Based List Query Filtering", () => {
     });
 
     // Create features for each project
-    team1Feature = await createTestFeature(team1Project.id, {
+    team1Feature = await createTestFeature(team1Epic.id, {
       title: "Team1 Feature",
       identifier: "T1-1",
       statusId: team1Status.id,
     });
-    team2Feature = await createTestFeature(team2Project.id, {
+    team2Feature = await createTestFeature(team2Epic.id, {
       title: "Team2 Feature",
       identifier: "T2-1",
       statusId: team2Status.id,
     });
-    personal1Feature = await createTestFeature(personal1Project.id, {
+    personal1Feature = await createTestFeature(personal1Epic.id, {
       title: "Personal1 Feature",
       identifier: "P1-1",
       statusId: personal1Status.id,
     });
-    personal2Feature = await createTestFeature(personal2Project.id, {
+    personal2Feature = await createTestFeature(personal2Epic.id, {
       title: "Personal2 Feature",
       identifier: "P2-1",
       statusId: personal2Status.id,
@@ -202,18 +202,18 @@ describe("Scope-Based List Query Filtering", () => {
     await prisma.$disconnect();
   });
 
-  describe("listProjects with scope filtering", () => {
+  describe("listEpics with scope filtering", () => {
     it("should return only projects in user's accessible scopes", async () => {
-      // User1 should see team1Project and personal1Project
-      const result1 = await listProjects({ currentUserId: user1.id });
+      // User1 should see team1Epic and personal1Epic
+      const result1 = await listEpics({ currentUserId: user1.id });
       expect(result1.data.length).toBe(2);
       expect(result1.data.map(p => p.name).sort()).toEqual([
         "Personal1 Project",
         "Team1 Project",
       ]);
 
-      // User2 should see team2Project and personal2Project
-      const result2 = await listProjects({ currentUserId: user2.id });
+      // User2 should see team2Epic and personal2Epic
+      const result2 = await listEpics({ currentUserId: user2.id });
       expect(result2.data.length).toBe(2);
       expect(result2.data.map(p => p.name).sort()).toEqual([
         "Personal2 Project",
@@ -222,13 +222,13 @@ describe("Scope-Based List Query Filtering", () => {
     });
 
     it("should not show other users' personal projects", async () => {
-      const result = await listProjects({ currentUserId: user1.id });
+      const result = await listEpics({ currentUserId: user1.id });
       const projectNames = result.data.map(p => p.name);
       expect(projectNames).not.toContain("Personal2 Project");
     });
 
     it("should not show projects from teams user is not a member of", async () => {
-      const result = await listProjects({ currentUserId: user1.id });
+      const result = await listEpics({ currentUserId: user1.id });
       const projectNames = result.data.map(p => p.name);
       expect(projectNames).not.toContain("Team2 Project");
     });
@@ -237,18 +237,18 @@ describe("Scope-Based List Query Filtering", () => {
       // Create a user with no personal scope and no team memberships
       const isolatedUser = await createTestUser({ email: "isolated@test.com" });
 
-      const result = await listProjects({ currentUserId: isolatedUser.id });
+      const result = await listEpics({ currentUserId: isolatedUser.id });
       expect(result.data.length).toBe(0);
     });
 
     it("should return all projects when currentUserId is not provided (backward compatibility)", async () => {
-      const result = await listProjects();
+      const result = await listEpics();
       expect(result.data.length).toBe(4);
     });
 
     it("should respect teamId filter when combined with currentUserId", async () => {
       // User1 requests team1 projects specifically
-      const result = await listProjects({
+      const result = await listEpics({
         currentUserId: user1.id,
         teamId: team1.id,
       });
@@ -347,7 +347,7 @@ describe("Scope-Based List Query Filtering", () => {
     it("should respect projectId filter when combined with currentUserId", async () => {
       const result = await listFeatures({
         currentUserId: user1.id,
-        projectId: team1Project.id,
+        epicId: team1Epic.id,
       });
       expect(result.data.length).toBe(1);
       expect(result.data[0].title).toBe("Team1 Feature");
@@ -410,14 +410,14 @@ describe("Scope-Based List Query Filtering", () => {
   describe("Cross-scope access scenarios", () => {
     it("should allow user to see data after joining a new team", async () => {
       // Initially user1 should not see team2 data
-      let result = await listProjects({ currentUserId: user1.id });
+      let result = await listEpics({ currentUserId: user1.id });
       expect(result.data.map(p => p.name)).not.toContain("Team2 Project");
 
       // Add user1 to team2
       await createTestMembership(team2.id, user1.id, { role: "member" });
 
       // Now user1 should see team2 data
-      result = await listProjects({ currentUserId: user1.id });
+      result = await listEpics({ currentUserId: user1.id });
       expect(result.data.map(p => p.name)).toContain("Team2 Project");
     });
 
@@ -429,7 +429,7 @@ describe("Scope-Based List Query Filtering", () => {
       });
 
       // User1 should no longer see team1 projects
-      const result = await listProjects({ currentUserId: user1.id });
+      const result = await listEpics({ currentUserId: user1.id });
       expect(result.data.map(p => p.name)).not.toContain("Team1 Project");
       // But should still see personal projects
       expect(result.data.map(p => p.name)).toContain("Personal1 Project");

@@ -19,16 +19,16 @@ import {
   createTestUser,
   createTestTeam,
   createTestMembership,
-  createTestProject,
+  createTestEpic,
   createTestStatus,
   createTestFeature,
 } from "../fixtures/factories.js";
-import { listProjects } from "../../src/services/projectService.js";
+import { listEpics } from "../../src/services/epicService.js";
 import { listFeatures } from "../../src/services/featureService.js";
 import { listTasks } from "../../src/services/taskService.js";
 import { listStatuses } from "../../src/services/statusService.js";
 import { ForbiddenError, NotFoundError } from "../../src/errors/index.js";
-import type { User, Team, Project, Feature } from "../../src/generated/prisma/index.js";
+import type { User, Team, Epic, Feature } from "../../src/generated/prisma/index.js";
 
 describe("Cross-Scope Error Handling Integration Tests", () => {
   let prisma: ReturnType<typeof getTestPrisma>;
@@ -43,11 +43,11 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
   let alicePersonalScope: { id: string };
   let bobPersonalScope: { id: string };
 
-  let alicePersonalProject: Project;
+  let alicePersonalProject: Epic;
   let alicePersonalStatus: { id: string };
   let alicePersonalFeature: Feature;
 
-  let alphaProject: Project;
+  let alphaProject: Epic;
   let alphaStatus: { id: string };
   let alphaFeature: Feature;
 
@@ -92,9 +92,9 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
     });
 
     // Create Alice's personal project
-    alicePersonalProject = await prisma.project.create({
+    alicePersonalProject = await prisma.epic.create({
       data: {
-        name: "Alice's Secret Project",
+        name: "Alice's Secret Epic",
         personalScopeId: alicePersonalScope.id,
         scopeType: "personal",
         sortOrder: 0,
@@ -115,7 +115,7 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
     });
 
     // Create Team Alpha project
-    alphaProject = await createTestProject(teamAlpha.id, { name: "Alpha Team Project" });
+    alphaProject = await createTestEpic(teamAlpha.id, { name: "Alpha Team Epic" });
 
     // Create Team Alpha feature
     alphaFeature = await createTestFeature(alphaProject.id, {
@@ -132,24 +132,24 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
   describe("Personal Scope Access Filtering", () => {
     describe("Projects", () => {
       it("Bob cannot discover Alice's personal project via list query", async () => {
-        const result = await listProjects({ currentUserId: userBob.id });
+        const result = await listEpics({ currentUserId: userBob.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).not.toContain("Alice's Secret Project");
+        expect(projectNames).not.toContain("Alice's Secret Epic");
       });
 
       it("Alice can see her own personal project via list query", async () => {
-        const result = await listProjects({ currentUserId: userAlice.id });
+        const result = await listEpics({ currentUserId: userAlice.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).toContain("Alice's Secret Project");
+        expect(projectNames).toContain("Alice's Secret Epic");
       });
 
       it("Bob cannot see Alice's personal project even with specific search", async () => {
         // Even when using teamId filter, Bob shouldn't see Alice's personal data
-        const result = await listProjects({ currentUserId: userBob.id });
+        const result = await listEpics({ currentUserId: userBob.id });
         const aliceProjects = result.data.filter(
-          (p) => p.name === "Alice's Secret Project"
+          (p) => p.name === "Alice's Secret Epic"
         );
         expect(aliceProjects).toHaveLength(0);
       });
@@ -175,10 +175,10 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
   describe("Team Scope Access Filtering", () => {
     describe("Non-Member Access", () => {
       it("Bob (non-member) cannot discover Team Alpha projects", async () => {
-        const result = await listProjects({ currentUserId: userBob.id });
+        const result = await listEpics({ currentUserId: userBob.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).not.toContain("Alpha Team Project");
+        expect(projectNames).not.toContain("Alpha Team Epic");
       });
 
       it("Bob (non-member) cannot discover Team Alpha features", async () => {
@@ -198,10 +198,10 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
 
     describe("Guest (Read-Only) Access", () => {
       it("Guest can discover Team Alpha projects", async () => {
-        const result = await listProjects({ currentUserId: userGuest.id });
+        const result = await listEpics({ currentUserId: userGuest.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).toContain("Alpha Team Project");
+        expect(projectNames).toContain("Alpha Team Epic");
       });
 
       it("Guest can discover Team Alpha features", async () => {
@@ -221,10 +221,10 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
 
     describe("Member and Admin Access", () => {
       it("Alice (admin) can discover Team Alpha projects", async () => {
-        const result = await listProjects({ currentUserId: userAlice.id });
+        const result = await listEpics({ currentUserId: userAlice.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).toContain("Alpha Team Project");
+        expect(projectNames).toContain("Alpha Team Epic");
       });
 
       it("Alice (admin) can discover Team Alpha features", async () => {
@@ -235,11 +235,11 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
       });
 
       it("Alice can discover both personal and team data", async () => {
-        const projectResult = await listProjects({ currentUserId: userAlice.id });
+        const projectResult = await listEpics({ currentUserId: userAlice.id });
         const projectNames = projectResult.data.map((p) => p.name);
 
-        expect(projectNames).toContain("Alice's Secret Project");
-        expect(projectNames).toContain("Alpha Team Project");
+        expect(projectNames).toContain("Alice's Secret Epic");
+        expect(projectNames).toContain("Alpha Team Epic");
       });
     });
   });
@@ -252,7 +252,7 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
         name: "Isolated User",
       });
 
-      const projectResult = await listProjects({ currentUserId: isolatedUser.id });
+      const projectResult = await listEpics({ currentUserId: isolatedUser.id });
       expect(projectResult.data).toHaveLength(0);
 
       const featureResult = await listFeatures({ currentUserId: isolatedUser.id });
@@ -275,30 +275,30 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
       });
 
       // Create a personal project
-      await prisma.project.create({
+      await prisma.epic.create({
         data: {
-          name: "Personal Only Project",
+          name: "Personal Only Epic",
           personalScopeId: personalScope.id,
           scopeType: "personal",
           sortOrder: 0,
         },
       });
 
-      const result = await listProjects({ currentUserId: personalOnlyUser.id });
+      const result = await listEpics({ currentUserId: personalOnlyUser.id });
 
       expect(result.data).toHaveLength(1);
-      expect(result.data[0].name).toBe("Personal Only Project");
+      expect(result.data[0].name).toBe("Personal Only Epic");
     });
   });
 
   describe("Invalid User Context Handling", () => {
     it("returns empty result for invalid/nonexistent currentUserId", async () => {
-      const result = await listProjects({ currentUserId: "invalid-user-id" });
+      const result = await listEpics({ currentUserId: "invalid-user-id" });
       expect(result.data).toHaveLength(0);
     });
 
     it("returns empty result for malformed UUID as currentUserId", async () => {
-      const result = await listProjects({ currentUserId: "not-a-valid-uuid" });
+      const result = await listEpics({ currentUserId: "not-a-valid-uuid" });
       expect(result.data).toHaveLength(0);
     });
   });
@@ -311,13 +311,13 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
         data: { isArchived: true },
       });
 
-      const result = await listProjects({ currentUserId: userAlice.id });
+      const result = await listEpics({ currentUserId: userAlice.id });
       const projectNames = result.data.map((p) => p.name);
 
       // Archived team projects should not be visible
-      expect(projectNames).not.toContain("Alpha Team Project");
+      expect(projectNames).not.toContain("Alpha Team Epic");
       // Personal projects should still be visible
-      expect(projectNames).toContain("Alice's Secret Project");
+      expect(projectNames).toContain("Alice's Secret Epic");
     });
 
     it("statuses from archived teams are not visible", async () => {
@@ -336,12 +336,12 @@ describe("Cross-Scope Error Handling Integration Tests", () => {
 
   describe("Backward Compatibility (No currentUserId)", () => {
     it("returns all non-archived projects when currentUserId is omitted", async () => {
-      const result = await listProjects();
+      const result = await listEpics();
 
       // Should see all projects
       const projectNames = result.data.map((p) => p.name);
-      expect(projectNames).toContain("Alice's Secret Project");
-      expect(projectNames).toContain("Alpha Team Project");
+      expect(projectNames).toContain("Alice's Secret Epic");
+      expect(projectNames).toContain("Alpha Team Epic");
     });
 
     it("returns all non-archived features when currentUserId is omitted", async () => {

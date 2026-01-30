@@ -385,7 +385,7 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
     if (!status) {
       throw new NotFoundError(`Status with id '${statusId}' not found`);
     }
-  } else if (project.teamId) {
+  } else if (epic.teamId) {
     // Default to Backlog status for the team
     const backlogStatus = await getDefaultBacklogStatus(epic.teamId);
     if (backlogStatus) {

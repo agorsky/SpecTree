@@ -15,19 +15,19 @@ import {
   createTestUser,
   createTestTeam,
   createTestMembership,
-  createTestProject,
+  createTestEpic,
   createTestStatus,
   createTestFeature,
   createTestTask,
 } from "../fixtures/factories.js";
-import { listProjects } from "../../src/services/projectService.js";
+import { listEpics } from "../../src/services/epicService.js";
 import { listStatuses } from "../../src/services/statusService.js";
 import { listFeatures } from "../../src/services/featureService.js";
 import { listTasks } from "../../src/services/taskService.js";
 import type {
   User,
   Team,
-  Project,
+  Epic,
   Status,
   Feature,
   Task,
@@ -49,13 +49,13 @@ describe("Scope Isolation Integration Tests", () => {
   let charliePersonalScope: { id: string };
 
   // Personal projects
-  let alicePersonalProject: Project;
-  let bobPersonalProject: Project;
-  let charliePersonalProject: Project;
+  let alicePersonalProject: Epic;
+  let bobPersonalProject: Epic;
+  let charliePersonalProject: Epic;
 
   // Team projects
-  let alphaProject: Project;
-  let betaProject: Project;
+  let alphaProject: Epic;
+  let betaProject: Epic;
 
   // Personal statuses
   let alicePersonalStatus: Status;
@@ -140,25 +140,25 @@ describe("Scope Isolation Integration Tests", () => {
     });
 
     // Create personal projects
-    alicePersonalProject = await prisma.project.create({
+    alicePersonalProject = await prisma.epic.create({
       data: {
-        name: "Alice's Personal Project",
+        name: "Alice's Personal Epic",
         personalScopeId: alicePersonalScope.id,
         scopeType: "personal",
         sortOrder: 0,
       },
     });
-    bobPersonalProject = await prisma.project.create({
+    bobPersonalProject = await prisma.epic.create({
       data: {
-        name: "Bob's Personal Project",
+        name: "Bob's Personal Epic",
         personalScopeId: bobPersonalScope.id,
         scopeType: "personal",
         sortOrder: 0,
       },
     });
-    charliePersonalProject = await prisma.project.create({
+    charliePersonalProject = await prisma.epic.create({
       data: {
-        name: "Charlie's Personal Project",
+        name: "Charlie's Personal Epic",
         personalScopeId: charliePersonalScope.id,
         scopeType: "personal",
         sortOrder: 0,
@@ -166,8 +166,8 @@ describe("Scope Isolation Integration Tests", () => {
     });
 
     // Create team projects
-    alphaProject = await createTestProject(teamAlpha.id, { name: "Alpha Team Project" });
-    betaProject = await createTestProject(teamBeta.id, { name: "Beta Team Project" });
+    alphaProject = await createTestEpic(teamAlpha.id, { name: "Alpha Team Epic" });
+    betaProject = await createTestEpic(teamBeta.id, { name: "Beta Team Epic" });
 
     // Create features
     alicePersonalFeature = await createTestFeature(alicePersonalProject.id, {
@@ -221,34 +221,34 @@ describe("Scope Isolation Integration Tests", () => {
   describe("Personal Scope Isolation", () => {
     describe("Projects", () => {
       it("Alice cannot see Bob's personal project", async () => {
-        const result = await listProjects({ currentUserId: userAlice.id });
+        const result = await listEpics({ currentUserId: userAlice.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).not.toContain("Bob's Personal Project");
-        expect(projectNames).not.toContain("Charlie's Personal Project");
+        expect(projectNames).not.toContain("Bob's Personal Epic");
+        expect(projectNames).not.toContain("Charlie's Personal Epic");
       });
 
       it("Bob cannot see Alice's personal project", async () => {
-        const result = await listProjects({ currentUserId: userBob.id });
+        const result = await listEpics({ currentUserId: userBob.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).not.toContain("Alice's Personal Project");
-        expect(projectNames).not.toContain("Charlie's Personal Project");
+        expect(projectNames).not.toContain("Alice's Personal Epic");
+        expect(projectNames).not.toContain("Charlie's Personal Epic");
       });
 
       it("user can see their own personal project", async () => {
-        const aliceResult = await listProjects({ currentUserId: userAlice.id });
-        expect(aliceResult.data.map((p) => p.name)).toContain("Alice's Personal Project");
+        const aliceResult = await listEpics({ currentUserId: userAlice.id });
+        expect(aliceResult.data.map((p) => p.name)).toContain("Alice's Personal Epic");
 
-        const bobResult = await listProjects({ currentUserId: userBob.id });
-        expect(bobResult.data.map((p) => p.name)).toContain("Bob's Personal Project");
+        const bobResult = await listEpics({ currentUserId: userBob.id });
+        expect(bobResult.data.map((p) => p.name)).toContain("Bob's Personal Epic");
       });
 
       it("isolated user (Charlie) can only see their own personal project", async () => {
-        const result = await listProjects({ currentUserId: userCharlie.id });
+        const result = await listEpics({ currentUserId: userCharlie.id });
 
         expect(result.data).toHaveLength(1);
-        expect(result.data[0].name).toBe("Charlie's Personal Project");
+        expect(result.data[0].name).toBe("Charlie's Personal Epic");
       });
     });
 
@@ -328,39 +328,39 @@ describe("Scope Isolation Integration Tests", () => {
   describe("Team Scope Isolation", () => {
     describe("Projects", () => {
       it("Alice can see Team Alpha projects (is member)", async () => {
-        const result = await listProjects({ currentUserId: userAlice.id });
+        const result = await listEpics({ currentUserId: userAlice.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).toContain("Alpha Team Project");
+        expect(projectNames).toContain("Alpha Team Epic");
       });
 
       it("Alice cannot see Team Beta projects (not a member)", async () => {
-        const result = await listProjects({ currentUserId: userAlice.id });
+        const result = await listEpics({ currentUserId: userAlice.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).not.toContain("Beta Team Project");
+        expect(projectNames).not.toContain("Beta Team Epic");
       });
 
       it("Bob can see Team Beta projects (is member)", async () => {
-        const result = await listProjects({ currentUserId: userBob.id });
+        const result = await listEpics({ currentUserId: userBob.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).toContain("Beta Team Project");
+        expect(projectNames).toContain("Beta Team Epic");
       });
 
       it("Bob cannot see Team Alpha projects (not a member)", async () => {
-        const result = await listProjects({ currentUserId: userBob.id });
+        const result = await listEpics({ currentUserId: userBob.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).not.toContain("Alpha Team Project");
+        expect(projectNames).not.toContain("Alpha Team Epic");
       });
 
       it("Charlie cannot see any team projects (no memberships)", async () => {
-        const result = await listProjects({ currentUserId: userCharlie.id });
+        const result = await listEpics({ currentUserId: userCharlie.id });
         const projectNames = result.data.map((p) => p.name);
 
-        expect(projectNames).not.toContain("Alpha Team Project");
-        expect(projectNames).not.toContain("Beta Team Project");
+        expect(projectNames).not.toContain("Alpha Team Epic");
+        expect(projectNames).not.toContain("Beta Team Epic");
       });
     });
 
@@ -429,44 +429,44 @@ describe("Scope Isolation Integration Tests", () => {
 
   describe("Combined Scope Visibility", () => {
     it("Alice sees both her personal data and Team Alpha data", async () => {
-      const projectResult = await listProjects({ currentUserId: userAlice.id });
+      const projectResult = await listEpics({ currentUserId: userAlice.id });
       const projectNames = projectResult.data.map((p) => p.name);
 
       // Personal
-      expect(projectNames).toContain("Alice's Personal Project");
+      expect(projectNames).toContain("Alice's Personal Epic");
       // Team
-      expect(projectNames).toContain("Alpha Team Project");
+      expect(projectNames).toContain("Alpha Team Epic");
       // Should not see others
-      expect(projectNames).not.toContain("Bob's Personal Project");
-      expect(projectNames).not.toContain("Beta Team Project");
+      expect(projectNames).not.toContain("Bob's Personal Epic");
+      expect(projectNames).not.toContain("Beta Team Epic");
     });
 
     it("Bob sees both his personal data and Team Beta data", async () => {
-      const projectResult = await listProjects({ currentUserId: userBob.id });
+      const projectResult = await listEpics({ currentUserId: userBob.id });
       const projectNames = projectResult.data.map((p) => p.name);
 
       // Personal
-      expect(projectNames).toContain("Bob's Personal Project");
+      expect(projectNames).toContain("Bob's Personal Epic");
       // Team
-      expect(projectNames).toContain("Beta Team Project");
+      expect(projectNames).toContain("Beta Team Epic");
       // Should not see others
-      expect(projectNames).not.toContain("Alice's Personal Project");
-      expect(projectNames).not.toContain("Alpha Team Project");
+      expect(projectNames).not.toContain("Alice's Personal Epic");
+      expect(projectNames).not.toContain("Alpha Team Epic");
     });
   });
 
   describe("Dynamic Membership Changes", () => {
     it("user gains visibility after joining a team", async () => {
       // Initially Charlie cannot see Team Alpha
-      let result = await listProjects({ currentUserId: userCharlie.id });
-      expect(result.data.map((p) => p.name)).not.toContain("Alpha Team Project");
+      let result = await listEpics({ currentUserId: userCharlie.id });
+      expect(result.data.map((p) => p.name)).not.toContain("Alpha Team Epic");
 
       // Add Charlie to Team Alpha
       await createTestMembership(teamAlpha.id, userCharlie.id, { role: "member" });
 
       // Now Charlie can see Team Alpha
-      result = await listProjects({ currentUserId: userCharlie.id });
-      expect(result.data.map((p) => p.name)).toContain("Alpha Team Project");
+      result = await listEpics({ currentUserId: userCharlie.id });
+      expect(result.data.map((p) => p.name)).toContain("Alpha Team Epic");
     });
 
     it("user gains visibility to multiple teams when joining multiple teams", async () => {
@@ -474,13 +474,13 @@ describe("Scope Isolation Integration Tests", () => {
       await createTestMembership(teamAlpha.id, userCharlie.id, { role: "member" });
       await createTestMembership(teamBeta.id, userCharlie.id, { role: "guest" });
 
-      const result = await listProjects({ currentUserId: userCharlie.id });
+      const result = await listEpics({ currentUserId: userCharlie.id });
       const projectNames = result.data.map((p) => p.name);
 
       // Should see personal and both team projects
-      expect(projectNames).toContain("Charlie's Personal Project");
-      expect(projectNames).toContain("Alpha Team Project");
-      expect(projectNames).toContain("Beta Team Project");
+      expect(projectNames).toContain("Charlie's Personal Epic");
+      expect(projectNames).toContain("Alpha Team Epic");
+      expect(projectNames).toContain("Beta Team Epic");
     });
   });
 
@@ -492,13 +492,13 @@ describe("Scope Isolation Integration Tests", () => {
         data: { isArchived: true },
       });
 
-      const result = await listProjects({ currentUserId: userAlice.id });
+      const result = await listEpics({ currentUserId: userAlice.id });
       const projectNames = result.data.map((p) => p.name);
 
       // Should not see archived team projects
-      expect(projectNames).not.toContain("Alpha Team Project");
+      expect(projectNames).not.toContain("Alpha Team Epic");
       // Should still see personal projects
-      expect(projectNames).toContain("Alice's Personal Project");
+      expect(projectNames).toContain("Alice's Personal Epic");
     });
 
     it("should not show statuses from archived teams", async () => {
@@ -519,7 +519,7 @@ describe("Scope Isolation Integration Tests", () => {
 
   describe("No User Context (Backward Compatibility)", () => {
     it("should return all projects when currentUserId is not provided", async () => {
-      const result = await listProjects();
+      const result = await listEpics();
 
       // Should see all projects
       expect(result.data.length).toBeGreaterThanOrEqual(5);

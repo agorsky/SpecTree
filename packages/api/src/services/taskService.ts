@@ -364,7 +364,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     if (!status) {
       throw new NotFoundError(`Status with id '${statusId}' not found`);
     }
-  } else if (feature.project.teamId) {
+  } else if (feature.epic.teamId) {
     // Default to Backlog status for the team
     const backlogStatus = await getDefaultBacklogStatus(feature.epic.teamId);
     if (backlogStatus) {

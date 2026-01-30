@@ -178,7 +178,7 @@ export default function epicsRoutes(
    */
   fastify.delete<{ Params: EpicIdParams }>(
     "/:id",
-    { preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("admin")] },
+    { preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("member")] },
     async (request, reply) => {
       const { id } = request.params;
 

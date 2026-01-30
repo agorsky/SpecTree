@@ -221,7 +221,7 @@ model PersonalScope {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   statuses Status[]
-  projects Project[]
+  epics    Epic[]
 
   @@map("personal_scopes")
 }

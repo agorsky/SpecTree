@@ -185,16 +185,16 @@ describe("User Lifecycle Integration Tests", () => {
     it("should preserve user's personal projects after soft delete", async () => {
       const user = await createUser({
         email: "projectuser@test.com",
-        name: "Project User",
+        name: "Epic User",
         password: "password123",
       });
 
       const personalScope = await getPersonalScopeByUserId(user.id);
 
       // Create a personal project
-      const project = await prisma.project.create({
+      const project = await prisma.epic.create({
         data: {
-          name: "My Personal Project",
+          name: "My Personal Epic",
           personalScopeId: personalScope!.id,
           scopeType: "personal",
           sortOrder: 0,
@@ -204,12 +204,12 @@ describe("User Lifecycle Integration Tests", () => {
       // Soft delete user
       await softDeleteUser(user.id);
 
-      // Project should still exist
-      const foundProject = await prisma.project.findUnique({
+      // Epic should still exist
+      const foundProject = await prisma.epic.findUnique({
         where: { id: project.id },
       });
       expect(foundProject).not.toBeNull();
-      expect(foundProject!.name).toBe("My Personal Project");
+      expect(foundProject!.name).toBe("My Personal Epic");
     });
   });
 

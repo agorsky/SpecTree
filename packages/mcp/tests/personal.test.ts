@@ -6,7 +6,7 @@
  * - spectree__list_personal_projects
  * - spectree__create_personal_project
  * - spectree__list_personal_statuses
- * - Scope filtering in spectree__list_projects
+ * - Scope filtering in spectree__list_epics
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from "vitest";
@@ -23,7 +23,9 @@ const { mockApiClient } = vi.hoisted(() => {
     listPersonalProjects: vi.fn(),
     createPersonalProject: vi.fn(),
     listPersonalStatuses: vi.fn(),
-    listProjects: vi.fn(),
+    listPersonalEpics: vi.fn(),
+    createPersonalEpic: vi.fn(),
+    listEpics: vi.fn(),
     getTeam: vi.fn(),
   };
   return { mockApiClient };
@@ -46,7 +48,7 @@ vi.mock("../src/api-client.js", () => ({
 const registeredTools = new Map<string, { config: any; handler: any }>();
 
 import { registerPersonalTools } from "../src/tools/personal.js";
-import { registerProjectTools } from "../src/tools/projects.js";
+import { registerEpicTools } from "../src/tools/epics.js";
 
 const mockServer = {
   registerTool: (name: string, config: any, handler: any) => {
@@ -56,7 +58,7 @@ const mockServer = {
 
 beforeAll(() => {
   registerPersonalTools(mockServer as any);
-  registerProjectTools(mockServer as any);
+  registerEpicTools(mockServer as any);
 });
 
 describe("MCP Personal Scope Tools", () => {
@@ -314,11 +316,11 @@ describe("MCP Personal Scope Tools", () => {
 // ===========================================================================
 // Scope-aware list_projects tests
 // ===========================================================================
-describe("Scope-aware spectree__list_projects", () => {
+describe("Scope-aware spectree__list_epics", () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.resetAllMocks());
 
-  const getHandler = () => registeredTools.get("spectree__list_projects")?.handler;
+  const getHandler = () => registeredTools.get("spectree__list_epics")?.handler;
 
   it("should filter by scope='personal' and return only personal projects", async () => {
     const mockPersonalProjects = [
@@ -333,7 +335,7 @@ describe("Scope-aware spectree__list_projects", () => {
       },
     ];
 
-    mockApiClient.listPersonalProjects.mockResolvedValue({
+    mockApiClient.listPersonalEpics.mockResolvedValue({
       data: mockPersonalProjects,
       meta: { cursor: null, hasMore: false },
     });
@@ -343,10 +345,10 @@ describe("Scope-aware spectree__list_projects", () => {
 
     expect(result.isError).toBeUndefined();
     const data = JSON.parse(result.content[0]?.text || "{}");
-    expect(data.projects).toHaveLength(1);
-    expect(data.projects[0].scope).toBe("personal");
-    expect(mockApiClient.listPersonalProjects).toHaveBeenCalled();
-    expect(mockApiClient.listProjects).not.toHaveBeenCalled();
+    expect(data.epics).toHaveLength(1);
+    expect(data.epics[0].scope).toBe("personal");
+    expect(mockApiClient.listPersonalEpics).toHaveBeenCalled();
+    expect(mockApiClient.listEpics).not.toHaveBeenCalled();
   });
 
   it("should filter by scope='team' and return only team projects", async () => {
@@ -361,7 +363,7 @@ describe("Scope-aware spectree__list_projects", () => {
       },
     ];
 
-    mockApiClient.listProjects.mockResolvedValue({
+    mockApiClient.listEpics.mockResolvedValue({
       data: mockTeamProjects,
       meta: { cursor: null, hasMore: false },
     });
@@ -371,10 +373,10 @@ describe("Scope-aware spectree__list_projects", () => {
 
     expect(result.isError).toBeUndefined();
     const data = JSON.parse(result.content[0]?.text || "{}");
-    expect(data.projects).toHaveLength(1);
-    expect(data.projects[0].scope).toBe("team");
-    expect(mockApiClient.listProjects).toHaveBeenCalled();
-    expect(mockApiClient.listPersonalProjects).not.toHaveBeenCalled();
+    expect(data.epics).toHaveLength(1);
+    expect(data.epics[0].scope).toBe("team");
+    expect(mockApiClient.listEpics).toHaveBeenCalled();
+    expect(mockApiClient.listPersonalEpics).not.toHaveBeenCalled();
   });
 
   it("should combine personal and team projects when scope='all'", async () => {
@@ -401,12 +403,12 @@ describe("Scope-aware spectree__list_projects", () => {
       },
     ];
 
-    mockApiClient.listPersonalProjects.mockResolvedValue({
+    mockApiClient.listPersonalEpics.mockResolvedValue({
       data: mockPersonalProjects,
       meta: { cursor: null, hasMore: false },
     });
 
-    mockApiClient.listProjects.mockResolvedValue({
+    mockApiClient.listEpics.mockResolvedValue({
       data: mockTeamProjects,
       meta: { cursor: null, hasMore: false },
     });
@@ -416,21 +418,21 @@ describe("Scope-aware spectree__list_projects", () => {
 
     expect(result.isError).toBeUndefined();
     const data = JSON.parse(result.content[0]?.text || "{}");
-    expect(data.projects).toHaveLength(2);
+    expect(data.epics).toHaveLength(2);
     // Should be sorted by createdAt desc - personal project is newer
-    expect(data.projects[0].name).toBe("Personal Project");
-    expect(data.projects[0].scope).toBe("personal");
-    expect(data.projects[1].name).toBe("Team Project");
-    expect(data.projects[1].scope).toBe("team");
+    expect(data.epics[0].name).toBe("Personal Project");
+    expect(data.epics[0].scope).toBe("personal");
+    expect(data.epics[1].name).toBe("Team Project");
+    expect(data.epics[1].scope).toBe("team");
   });
 
   it("should default to scope='all' when not specified", async () => {
-    mockApiClient.listPersonalProjects.mockResolvedValue({
+    mockApiClient.listPersonalEpics.mockResolvedValue({
       data: [],
       meta: { cursor: null, hasMore: false },
     });
 
-    mockApiClient.listProjects.mockResolvedValue({
+    mockApiClient.listEpics.mockResolvedValue({
       data: [],
       meta: { cursor: null, hasMore: false },
     });
@@ -439,12 +441,12 @@ describe("Scope-aware spectree__list_projects", () => {
     await handler!({});
 
     // Both should be called when scope is not specified (defaults to 'all')
-    expect(mockApiClient.listPersonalProjects).toHaveBeenCalled();
-    expect(mockApiClient.listProjects).toHaveBeenCalled();
+    expect(mockApiClient.listPersonalEpics).toHaveBeenCalled();
+    expect(mockApiClient.listEpics).toHaveBeenCalled();
   });
 
   it("should ignore team filter when scope='personal'", async () => {
-    mockApiClient.listPersonalProjects.mockResolvedValue({
+    mockApiClient.listPersonalEpics.mockResolvedValue({
       data: [],
       meta: { cursor: null, hasMore: false },
     });
@@ -453,7 +455,7 @@ describe("Scope-aware spectree__list_projects", () => {
     await handler!({ scope: "personal", team: "Engineering" });
 
     // Team filter should be ignored for personal scope
-    expect(mockApiClient.listPersonalProjects).toHaveBeenCalled();
+    expect(mockApiClient.listPersonalEpics).toHaveBeenCalled();
     expect(mockApiClient.getTeam).not.toHaveBeenCalled();
   });
 
@@ -461,7 +463,7 @@ describe("Scope-aware spectree__list_projects", () => {
     const mockTeam = { id: "team-1", name: "Engineering", key: "ENG" };
     
     mockApiClient.getTeam.mockResolvedValue({ data: mockTeam });
-    mockApiClient.listProjects.mockResolvedValue({
+    mockApiClient.listEpics.mockResolvedValue({
       data: [],
       meta: { cursor: null, hasMore: false },
     });
@@ -470,7 +472,7 @@ describe("Scope-aware spectree__list_projects", () => {
     await handler!({ scope: "team", team: "Engineering" });
 
     expect(mockApiClient.getTeam).toHaveBeenCalledWith("Engineering");
-    expect(mockApiClient.listProjects).toHaveBeenCalledWith(
+    expect(mockApiClient.listEpics).toHaveBeenCalledWith(
       expect.objectContaining({ team: "team-1" })
     );
   });
