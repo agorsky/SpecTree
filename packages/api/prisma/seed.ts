@@ -80,7 +80,7 @@ async function main() {
 
   // =============================================================================
   // PersonalScope for Admin User (COM-316)
-  // Creates a private workspace for personal projects
+  // Creates a private workspace for personal epics
   // =============================================================================
   const adminPersonalScope = await prisma.personalScope.upsert({
     where: { userId: adminUser.id },
@@ -159,7 +159,7 @@ async function main() {
   console.log(`✓ Default statuses created for ${engineeringTeam.name}`);
 
   // =============================================================================
-  // Sample Personal Projects (COM-313)
+  // Sample Personal Epics (COM-313)
   // Demo projects in the admin's PersonalScope to showcase personal workspace
   // =============================================================================
   
@@ -178,14 +178,14 @@ async function main() {
     },
   });
 
-  // Personal Project 1: Side Project Ideas
-  const sideProjectIdeas = await prisma.project.upsert({
+  // Personal Epic 1: Side Epic Ideas
+  const sideProjectIdeas = await prisma.epic.upsert({
     where: { id: "personal-side-projects" },
     update: {},
     create: {
       id: "personal-side-projects",
-      name: "Side Project Ideas",
-      description: "A collection of personal project ideas to explore",
+      name: "Side Epic Ideas",
+      description: "A collection of personal epic ideas to explore",
       icon: "💡",
       color: "#8b5cf6",
       scopeType: "personal",
@@ -193,9 +193,9 @@ async function main() {
       sortOrder: 0,
     },
   });
-  console.log(`✓ Personal project created: ${sideProjectIdeas.name}`);
+  console.log(`✓ Personal epic created: ${sideProjectIdeas.name}`);
 
-  // Add sample features to Side Project Ideas
+  // Add sample features to Side Epic Ideas
   const existingFeature1 = await prisma.feature.findUnique({
     where: { identifier: "PERSONAL-1" },
   });
@@ -205,7 +205,7 @@ async function main() {
         identifier: "PERSONAL-1",
         title: "Build a habit tracker app",
         description: "Create a simple habit tracking app with daily reminders and streak tracking",
-        projectId: sideProjectIdeas.id,
+        epicId: sideProjectIdeas.id,
         statusId: personalBacklogStatus?.id,
         sortOrder: 0,
       },
@@ -221,15 +221,15 @@ async function main() {
         identifier: "PERSONAL-2",
         title: "Learn Rust by building a CLI tool",
         description: "Pick a simple CLI project to learn Rust fundamentals",
-        projectId: sideProjectIdeas.id,
+        epicId: sideProjectIdeas.id,
         statusId: personalTodoStatus?.id,
         sortOrder: 1,
       },
     });
   }
 
-  // Personal Project 2: Learning Goals
-  const learningGoals = await prisma.project.upsert({
+  // Personal Epic 2: Learning Goals
+  const learningGoals = await prisma.epic.upsert({
     where: { id: "personal-learning-goals" },
     update: {},
     create: {
@@ -243,7 +243,7 @@ async function main() {
       sortOrder: 1,
     },
   });
-  console.log(`✓ Personal project created: ${learningGoals.name}`);
+  console.log(`✓ Personal epic created: ${learningGoals.name}`);
 
   // Add sample features to Learning Goals
   const existingFeature3 = await prisma.feature.findUnique({
@@ -255,14 +255,14 @@ async function main() {
         identifier: "PERSONAL-3",
         title: "Complete TypeScript advanced patterns course",
         description: "Deep dive into advanced TypeScript patterns including mapped types and conditional types",
-        projectId: learningGoals.id,
+        epicId: learningGoals.id,
         statusId: personalBacklogStatus?.id,
         sortOrder: 0,
       },
     });
   }
 
-  console.log(`✓ Sample features created for personal projects`);
+  console.log(`✓ Sample features created for personal epics`);
 
   // =============================================================================
   // Summary
@@ -274,10 +274,10 @@ async function main() {
   console.log(`Admin: ${adminUser.email}`);
   console.log(`Password: ${DEFAULT_PASSWORD}`);
   console.log(`PersonalScope: ${adminPersonalScope.id}`);
-  console.log(`Personal Projects: ${sideProjectIdeas.name}, ${learningGoals.name}`);
+  console.log(`Personal Epics: ${sideProjectIdeas.name}, ${learningGoals.name}`);
   console.log("========================================\n");
   console.log("You can now log in and create your own projects, features, and tasks.");
-  console.log("Personal projects are private and only visible to you.");
+  console.log("Personal epics are private and only visible to you.");
 }
 
 main()

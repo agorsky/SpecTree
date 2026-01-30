@@ -278,7 +278,7 @@ export default async function tasksRoutes(
           id: true,
           feature: {
             select: {
-              project: {
+              epic: {
                 select: { teamId: true },
               },
             },
@@ -294,7 +294,7 @@ export default async function tasksRoutes(
 
       // Verify all tasks belong to the same team as the status
       const invalidTasks = tasks.filter(
-        (t) => t.feature.project.teamId !== status.teamId
+        (t) => t.feature.epic.teamId !== status.teamId
       );
       if (invalidTasks.length > 0) {
         throw new ValidationError(

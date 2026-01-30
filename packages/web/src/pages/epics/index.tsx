@@ -1,24 +1,24 @@
 import { useState } from "react";
-import { useProjects } from "@/hooks/queries/use-projects";
+import { useEpics } from "@/hooks/queries/use-epics";
 import { Button } from "@/components/ui/button";
-import { ProjectForm } from "@/components/projects/project-form";
-import { ProjectCard } from "@/components/projects/project-card";
+import { EpicForm } from "@/components/epics/epic-form";
+import { EpicCard } from "@/components/epics/epic-card";
 import { Plus } from "lucide-react";
 
-export function ProjectsPage() {
+export function EpicsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useProjects();
+    useEpics();
 
-  const projects = data?.pages.flatMap((page) => page.data) ?? [];
+  const epics = data?.pages.flatMap((page) => page.data) ?? [];
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Projects</h1>
+        <h1 className="text-2xl font-semibold">Epics</h1>
         <Button onClick={() => setIsFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          New Project
+          New Epic
         </Button>
       </div>
 
@@ -31,19 +31,19 @@ export function ProjectsPage() {
             />
           ))}
         </div>
-      ) : projects.length === 0 ? (
+      ) : epics.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">No projects yet</p>
+          <p className="text-muted-foreground mb-4">No epics yet</p>
           <Button onClick={() => setIsFormOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Create your first project
+            Create your first epic
           </Button>
         </div>
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+            {epics.map((epic) => (
+              <EpicCard key={epic.id} epic={epic} />
             ))}
           </div>
           {hasNextPage && (
@@ -60,7 +60,7 @@ export function ProjectsPage() {
         </>
       )}
 
-      <ProjectForm open={isFormOpen} onOpenChange={setIsFormOpen} />
+      <EpicForm open={isFormOpen} onOpenChange={setIsFormOpen} />
     </div>
   );
 }

@@ -45,7 +45,7 @@ export function FeatureDetail() {
   const { data: feature, isLoading } = useFeature(featureId ?? "");
   const updateFeature = useUpdateFeature();
   const deleteFeature = useDeleteFeature();
-  const { data: statuses } = useStatuses(feature?.project?.teamId);
+  const { data: statuses } = useStatuses(feature?.epic?.teamId);
   const { data: users } = useUsers();
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -197,7 +197,7 @@ export function FeatureDetail() {
 
             {/* Tasks */}
             <div className="border-t pt-6">
-              <TaskList featureId={feature.id} teamId={feature.project?.teamId} />
+              <TaskList featureId={feature.id} teamId={feature.epic?.teamId} />
             </div>
           </div>
         </div>
@@ -277,12 +277,12 @@ export function FeatureDetail() {
           </DropdownMenu>
 
           {/* Project info (read-only) */}
-          {feature.project && (
+          {feature.epic && (
             <div className="pt-4 mt-4 border-t">
               <div className="text-xs font-medium text-muted-foreground mb-2">Project</div>
               <div className="flex items-center gap-2 px-2 py-1.5 text-sm">
                 <div className="h-3 w-3 rounded-sm bg-primary/20" />
-                <span>{feature.project.name}</span>
+                <span>{feature.epic.name}</span>
               </div>
             </div>
           )}

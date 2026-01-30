@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useProject, useUpdateProject, useDeleteProject } from "@/hooks/queries/use-projects";
+import { useEpic, useUpdateEpic, useDeleteEpic } from "@/hooks/queries/use-epics";
 import { IssuesList } from "@/components/issues/issues-list";
 import { FeatureForm } from "@/components/features/feature-form";
 import { MarkdownRenderer } from "@/components/common/markdown-renderer";
@@ -23,12 +23,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function ProjectDetailPage() {
-  const { projectId } = useParams<{ projectId: string }>();
+export function EpicDetailPage() {
+  const { epicId } = useParams<{ epicId: string }>();
   const navigate = useNavigate();
-  const { data: project, isLoading } = useProject(projectId ?? "");
-  const updateProject = useUpdateProject();
-  const deleteProject = useDeleteProject();
+  const { data: epic, isLoading } = useEpic(epicId ?? "");
+  const updateEpic = useUpdateEpic();
+  const deleteEpic = useDeleteEpic();
 
   const [isFeatureFormOpen, setIsFeatureFormOpen] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -45,22 +45,22 @@ export function ProjectDetailPage() {
     );
   }
 
-  if (!project) {
+  if (!epic) {
     return (
       <div className="p-6">
-        <p className="text-muted-foreground">Project not found</p>
-        <Button variant="ghost" onClick={() => navigate("/projects")} className="mt-4">
+        <p className="text-muted-foreground">Epic not found</p>
+        <Button variant="ghost" onClick={() => navigate("/epics")} className="mt-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to projects
+          Back to epics
         </Button>
       </div>
     );
   }
 
   const handleNameSave = async () => {
-    if (editedName.trim() && editedName !== project.name) {
-      await updateProject.mutateAsync({
-        id: project.id,
+    if (editedName.trim() && editedName !== epic.name) {
+      await updateEpic.mutateAsync({
+        id: epic.id,
         name: editedName.trim(),
       });
     }
@@ -68,15 +68,15 @@ export function ProjectDetailPage() {
   };
 
   const handleDelete = async () => {
-    await deleteProject.mutateAsync(project.id);
-    navigate("/projects");
+    await deleteEpic.mutateAsync(epic.id);
+    navigate("/epics");
   };
 
   return (
     <div className="h-full flex flex-col">
       {/* Header - Clean top bar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b bg-background">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/projects")}>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/epics")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         
@@ -104,11 +104,11 @@ export function ProjectDetailPage() {
             <h1
               className="text-lg font-semibold truncate cursor-pointer hover:text-muted-foreground transition-colors"
               onClick={() => {
-                setEditedName(project.name);
+                setEditedName(epic.name);
                 setIsEditingName(true);
               }}
             >
-              {project.name}
+              {epic.name}
             </h1>
           )}
         </div>
@@ -136,7 +136,7 @@ export function ProjectDetailPage() {
                 onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete Project
+                Delete Epic
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -144,7 +144,7 @@ export function ProjectDetailPage() {
       </div>
 
       {/* Collapsible Description Section */}
-      {project.description && (
+      {epic.description && (
         <div className="border-b bg-muted/30">
           <button
             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
@@ -155,13 +155,13 @@ export function ProjectDetailPage() {
             ) : (
               <ChevronRight className="h-4 w-4" />
             )}
-            <span>Project Description</span>
+            <span>Epic Description</span>
           </button>
           {isDescriptionExpanded && (
             <div className="px-4 pb-4">
               <div className="bg-background rounded-lg border p-4">
                 <MarkdownRenderer 
-                  content={project.description} 
+                  content={epic.description} 
                   className="text-sm"
                 />
               </div>
@@ -172,15 +172,15 @@ export function ProjectDetailPage() {
 
       {/* Issues (Features + Tasks) */}
       <div className="flex-1 overflow-auto">
-        {projectId && <IssuesList projectId={projectId} />}
+        {epicId && <IssuesList epicId={epicId} />}
       </div>
 
       {/* Feature form */}
-      {projectId && (
+      {epicId && (
         <FeatureForm
           open={isFeatureFormOpen}
           onOpenChange={setIsFeatureFormOpen}
-          defaultProjectId={projectId}
+          defaultEpicId={epicId}
         />
       )}
 
@@ -188,10 +188,10 @@ export function ProjectDetailPage() {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Project</DialogTitle>
+            <DialogTitle>Delete Epic</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{project.name}"? This will also
-              delete all features in this project. This action cannot be undone.
+              Are you sure you want to delete "{epic.name}"? This will also
+              delete all features in this epic. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -201,9 +201,9 @@ export function ProjectDetailPage() {
             <Button
               variant="destructive"
               onClick={handleDelete}
-              disabled={deleteProject.isPending}
+              disabled={deleteEpic.isPending}
             >
-              {deleteProject.isPending ? "Deleting..." : "Delete"}
+              {deleteEpic.isPending ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
