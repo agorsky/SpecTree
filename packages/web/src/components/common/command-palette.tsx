@@ -10,7 +10,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { useFeatures } from "@/hooks/queries/use-features";
-import { useEpics } from "@/hooks/queries/use-epics";
+import { useProjects } from "@/hooks/queries/use-projects";
 import { Folder, FileText, Inbox, Settings } from "lucide-react";
 
 export function CommandPalette() {
@@ -20,7 +20,7 @@ export function CommandPalette() {
 
   // Fetch data for search
   const { data: featuresData } = useFeatures({ limit: 10 });
-  const { data: projectsData } = useEpics({});
+  const { data: projectsData } = useProjects({});
 
   const features = featuresData?.pages.flatMap((p) => p.data) ?? [];
   const projects = projectsData?.pages.flatMap((p) => p.data) ?? [];
@@ -29,7 +29,7 @@ export function CommandPalette() {
   const filteredFeatures = features.filter((f) =>
     f.title.toLowerCase().includes(search.toLowerCase())
   );
-  const filteredEpics = projects.filter((p) =>
+  const filteredProjects = projects.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -69,7 +69,7 @@ export function CommandPalette() {
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate("/projects"))}>
             <Folder className="mr-2 h-4 w-4" />
-            View Epics
+            View Projects
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate("/settings"))}>
             <Settings className="mr-2 h-4 w-4" />
@@ -79,18 +79,18 @@ export function CommandPalette() {
 
         <CommandSeparator />
 
-        {/* Epics */}
-        {filteredEpics.length > 0 && (
-          <CommandGroup heading="Epics">
-            {filteredEpics.slice(0, 5).map((epic) => (
+        {/* Projects */}
+        {filteredProjects.length > 0 && (
+          <CommandGroup heading="Projects">
+            {filteredProjects.slice(0, 5).map((project) => (
               <CommandItem
-                key={epic.id}
+                key={project.id}
                 onSelect={() =>
-                  runCommand(() => navigate(`/epics/${epic.id}`))
+                  runCommand(() => navigate(`/projects/${project.id}`))
                 }
               >
                 <Folder className="mr-2 h-4 w-4" />
-                {epic.name}
+                {project.name}
               </CommandItem>
             ))}
           </CommandGroup>

@@ -91,7 +91,7 @@ async function hasTeamScopeAccess(
  * @returns The resolved scope or null if project not found
  */
 async function getScopeFromProject(projectId: string): Promise<ResolvedScope | null> {
-  const epic = await prisma.epic.findUnique({
+  const project = await prisma.project.findUnique({
     where: { id: projectId },
     select: {
       teamId: true,
@@ -102,22 +102,22 @@ async function getScopeFromProject(projectId: string): Promise<ResolvedScope | n
     },
   });
 
-  if (!epic) {
+  if (!project) {
     return null;
   }
 
-  if (epic.personalScopeId) {
+  if (project.personalScopeId) {
     return {
       type: "personal",
-      id: epic.personalScopeId,
-      ownerId: epic.personalScope?.userId,
+      id: project.personalScopeId,
+      ownerId: project.personalScope?.userId,
     };
   }
 
-  if (epic.teamId) {
+  if (project.teamId) {
     return {
       type: "team",
-      id: epic.teamId,
+      id: project.teamId,
     };
   }
 
@@ -140,7 +140,7 @@ async function getScopeFromFeature(
       ? { id: featureIdOrIdentifier }
       : { identifier: featureIdOrIdentifier },
     select: {
-      epic: {
+      project: {
         select: {
           teamId: true,
           personalScopeId: true,
@@ -152,22 +152,22 @@ async function getScopeFromFeature(
     },
   });
 
-  if (!feature?.epic) {
+  if (!feature?.project) {
     return null;
   }
 
-  if (feature.epic.personalScopeId) {
+  if (feature.project.personalScopeId) {
     return {
       type: "personal",
-      id: feature.epic.personalScopeId,
-      ownerId: feature.epic.personalScope?.userId,
+      id: feature.project.personalScopeId,
+      ownerId: feature.project.personalScope?.userId,
     };
   }
 
-  if (feature.epic.teamId) {
+  if (feature.project.teamId) {
     return {
       type: "team",
-      id: feature.epic.teamId,
+      id: feature.project.teamId,
     };
   }
 
@@ -192,7 +192,7 @@ async function getScopeFromTask(
     select: {
       feature: {
         select: {
-          epic: {
+          project: {
             select: {
               teamId: true,
               personalScopeId: true,
@@ -206,24 +206,24 @@ async function getScopeFromTask(
     },
   });
 
-  if (!task?.feature?.epic) {
+  if (!task?.feature) {
     return null;
   }
 
-  const epic = task.feature.epic;
+  const project = task.feature.project;
 
-  if (epic.personalScopeId) {
+  if (project.personalScopeId) {
     return {
       type: "personal",
-      id: epic.personalScopeId,
-      ownerId: epic.personalScope?.userId,
+      id: project.personalScopeId,
+      ownerId: project.personalScope?.userId,
     };
   }
 
-  if (epic.teamId) {
+  if (project.teamId) {
     return {
       type: "team",
-      id: epic.teamId,
+      id: project.teamId,
     };
   }
 

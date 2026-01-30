@@ -3,7 +3,7 @@
  */
 
 // Re-export all services
-export * as epicService from "./epicService.js";
+export * as projectService from "./projectService.js";
 export * as featureService from "./featureService.js";
 export * as taskService from "./taskService.js";
 export * as statusService from "./statusService.js";

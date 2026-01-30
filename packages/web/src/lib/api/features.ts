@@ -2,7 +2,7 @@ import { api } from './client';
 import type { Feature, PaginatedResponse } from './types';
 
 export interface FeatureFilters {
-  epicId?: string | undefined;
+  projectId?: string | undefined;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
   assignee?: string | undefined;
@@ -16,13 +16,13 @@ export interface FeatureFilters {
 export interface CreateFeatureInput {
   title: string;
   description?: string | undefined;
-  epicId: string;
+  projectId: string;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
   priority?: number | undefined;
 }
 
-export interface UpdateFeatureInput extends Partial<Omit<CreateFeatureInput, 'epicId'>> {
+export interface UpdateFeatureInput extends Partial<Omit<CreateFeatureInput, 'projectId'>> {
   id: string;
 }
 

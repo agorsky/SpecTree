@@ -40,7 +40,7 @@ model Team {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   memberships Membership[]
-  epics       Epic[]
+  projects    Project[]
   statuses    Status[]
 
   @@map("teams")
@@ -116,7 +116,7 @@ model Membership {
   @@map("memberships")
 }
 
-model Epic {
+model Project {
   id              String   @id @default(uuid())
   name            String
   description     String?
@@ -137,7 +137,7 @@ model Epic {
   @@index([teamId])
   @@index([teamId, sortOrder])
   @@index([personalScopeId])
-  @@map("epics")
+  @@map("projects")
 }
 
 model Status {
@@ -165,7 +165,7 @@ model Status {
 
 model Feature {
   id          String   @id @default(uuid())
-  epicId      String   @map("epic_id")
+  projectId   String   @map("project_id")
   identifier  String   @unique
   title       String
   description String?
@@ -175,16 +175,16 @@ model Feature {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  epic     Epic    @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   status   Status? @relation(fields: [statusId], references: [id], onDelete: SetNull)
   assignee User?   @relation("AssignedFeatures", fields: [assigneeId], references: [id], onDelete: SetNull)
   tasks    Task[]
 
-  @@index([epicId])
+  @@index([projectId])
   @@index([statusId])
   @@index([assigneeId])
-  @@index([epicId, sortOrder])
-  @@index([epicId, statusId])
+  @@index([projectId, sortOrder])
+  @@index([projectId, statusId])
   @@index([assigneeId, statusId])
   @@map("features")
 }
@@ -221,7 +221,7 @@ model PersonalScope {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   statuses Status[]
-  epics    Epic[]
+  projects Project[]
 
   @@map("personal_scopes")
 }

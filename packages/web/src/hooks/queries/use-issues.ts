@@ -8,21 +8,21 @@ export type IssueItem =
   | { type: "task"; data: Task };
 
 export interface UseIssuesOptions {
-  epicId: string;
+  projectId: string;
   includesTasks?: boolean;
 }
 
 export const issueKeys = {
   all: ["issues"] as const,
-  list: (epicId: string) => [...issueKeys.all, "list", epicId] as const,
+  list: (projectId: string) => [...issueKeys.all, "list", projectId] as const,
 };
 
-export function useIssues({ epicId, includesTasks = true }: UseIssuesOptions) {
+export function useIssues({ projectId, includesTasks = true }: UseIssuesOptions) {
   return useQuery({
-    queryKey: issueKeys.list(epicId),
+    queryKey: issueKeys.list(projectId),
     queryFn: async (): Promise<IssueItem[]> => {
-      // Fetch features for the epic
-      const featureFilters: FeatureFilters = { epicId, limit: 100 };
+      // Fetch features for the project
+      const featureFilters: FeatureFilters = { projectId, limit: 100 };
       const featuresResponse = await featuresApi.list(featureFilters);
       const features = featuresResponse.data;
 
@@ -36,8 +36,8 @@ export function useIssues({ epicId, includesTasks = true }: UseIssuesOptions) {
         return featureItems;
       }
 
-      // Fetch tasks for the epic
-      const taskFilters: TaskFilters = { epicId, limit: 100 };
+      // Fetch tasks for the project
+      const taskFilters: TaskFilters = { projectId, limit: 100 };
       const tasksResponse = await tasksApi.list(taskFilters);
       const tasks = tasksResponse.data;
 
@@ -77,6 +77,6 @@ export function useIssues({ epicId, includesTasks = true }: UseIssuesOptions) {
 
       return result;
     },
-    enabled: !!epicId,
+    enabled: !!projectId,
   });
 }

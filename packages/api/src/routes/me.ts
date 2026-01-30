@@ -91,7 +91,7 @@ export default async function meRoutes(
       const cursor = request.query.cursor;
 
       // Query projects in user's personal scope
-      const projects = await prisma.epic.findMany({
+      const projects = await prisma.project.findMany({
         take: limit + 1,
         ...(cursor ? { cursor: { id: cursor } } : {}),
         where: {
@@ -158,7 +158,7 @@ export default async function meRoutes(
       // Auto-generate sortOrder if not provided
       let finalSortOrder = sortOrder;
       if (finalSortOrder === undefined) {
-        const lastProject = await prisma.epic.findFirst({
+        const lastProject = await prisma.project.findFirst({
           where: { personalScopeId: personalScope.id, isArchived: false },
           orderBy: { sortOrder: "desc" },
           select: { sortOrder: true },
@@ -190,7 +190,7 @@ export default async function meRoutes(
         data.color = color.trim();
       }
 
-      const project = await prisma.epic.create({ data });
+      const project = await prisma.project.create({ data });
       return reply.status(201).send({ data: project });
     }
   );

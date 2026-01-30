@@ -4,8 +4,8 @@ import { LoginPage } from "@/pages/login";
 import { RegisterPage } from "@/pages/register";
 import { ActivatePage } from "@/pages/activate";
 import { InboxPage } from "@/pages/inbox";
-import { EpicsPage } from "@/pages/epics/index";
-import { EpicDetailPage } from "@/pages/epics/epic-detail";
+import { ProjectsPage } from "@/pages/projects/index";
+import { ProjectDetailPage } from "@/pages/projects/project-detail";
 import { FeatureDetail } from "@/components/features/feature-detail";
 import { TeamsPage } from "@/pages/teams/index";
 import { TeamDetailPage } from "@/pages/teams/team-detail";
@@ -32,10 +32,10 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/inbox" replace /> },
       { path: "inbox", element: <InboxPage /> },
-      { path: "epics", element: <EpicsPage /> },
+      { path: "projects", element: <ProjectsPage /> },
       {
-        path: "epics/:epicId",
-        element: <EpicDetailPage />,
+        path: "projects/:projectId",
+        element: <ProjectDetailPage />,
       },
       {
         path: "features/:featureId",

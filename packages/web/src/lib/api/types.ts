@@ -4,7 +4,9 @@ export interface User {
   name: string;
   role: "admin" | "member";
   teamId: string;
-  isGlobalAdmin?: boolean;
+  isActive: boolean;
+  isGlobalAdmin: boolean;
+  avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,12 +25,11 @@ export interface Team {
   updatedAt: string;
 }
 
-export interface Epic {
+export interface Project {
   id: string;
   name: string;
   description?: string;
   teamId: string;
-  isArchived?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -51,8 +52,8 @@ export interface Feature {
   status?: Status;
   assigneeId?: string;
   assignee?: User;
-  epicId: string;
-  epic?: Epic;
+  projectId: string;
+  project?: Project;
   priority?: number;
   createdAt: string;
   updatedAt: string;

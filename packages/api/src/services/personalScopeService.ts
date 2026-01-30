@@ -25,7 +25,7 @@ const DEFAULT_PERSONAL_STATUSES: Array<{
 // Types for PersonalScope operations
 export interface PersonalScopeWithCount extends PersonalScope {
   _count: {
-    epics: number;
+    projects: number;
     statuses: number;
   };
 }
@@ -37,7 +37,7 @@ export interface PersonalScopeWithCount extends PersonalScope {
 export async function getPersonalScopeById(id: string): Promise<PersonalScopeWithCount | null> {
   return prisma.personalScope.findUnique({
     where: { id },
-    include: { _count: { select: { epics: true, statuses: true } } },
+    include: { _count: { select: { projects: true, statuses: true } } },
   }) as Promise<PersonalScopeWithCount | null>;
 }
 
@@ -48,7 +48,7 @@ export async function getPersonalScopeById(id: string): Promise<PersonalScopeWit
 export async function getPersonalScopeByUserId(userId: string): Promise<PersonalScopeWithCount | null> {
   return prisma.personalScope.findUnique({
     where: { userId },
-    include: { _count: { select: { epics: true, statuses: true } } },
+    include: { _count: { select: { projects: true, statuses: true } } },
   }) as Promise<PersonalScopeWithCount | null>;
 }
 
@@ -171,7 +171,7 @@ export async function getDefaultBacklogStatus(personalScopeId: string): Promise<
  * Useful for authorization checks.
  */
 export async function isProjectInPersonalScope(projectId: string, userId: string): Promise<boolean> {
-  const project = await prisma.epic.findFirst({
+  const project = await prisma.project.findFirst({
     where: {
       id: projectId,
       personalScope: { userId },
