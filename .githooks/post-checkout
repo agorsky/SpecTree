@@ -1,0 +1,25 @@
+#!/bin/bash
+# Git Release Flow - Post-checkout reminder
+# This hook reminds developers to sync with remote before starting new work
+
+# $3 = 1 means this was a branch checkout (not a file checkout)
+if [ "$3" = "1" ]; then
+  BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+  
+  # Check if this is a new feature/bugfix/hotfix branch
+  if [[ "$BRANCH" == feature/* ]] || [[ "$BRANCH" == bugfix/* ]] || [[ "$BRANCH" == hotfix/* ]]; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "⚠️  GIT RELEASE FLOW REMINDER"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Before starting work, ensure your branch is based on latest main:"
+    echo ""
+    echo "  git fetch origin"
+    echo "  git rebase origin/main"
+    echo ""
+    echo "Policy docs: docs/GIT/git-release-flow-cheat-sheet.md"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+  fi
+fi

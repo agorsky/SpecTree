@@ -1310,6 +1310,89 @@ zoneRedundant = true
 
 ---
 
+## MCP Server Configuration for Azure
+
+Once the API is deployed to Azure, configure the MCP server to connect to it.
+
+### Step 1: Generate an API Token
+
+```bash
+# Get the API URL
+API_URL=$(az containerapp show \
+  -n ca-spectree-api-dev \
+  -g rg-spectree-dev \
+  --query properties.configuration.ingress.fqdn -o tsv)
+
+echo "API URL: https://$API_URL"
+```
+
+Then generate a token:
+1. Open `https://$API_URL` in your browser
+2. Log in with your credentials
+3. Navigate to **Settings → API Tokens**
+4. Create a new token named "MCP" (or use the CLI)
+
+Alternatively, via API:
+```bash
+# Login and get access token
+ACCESS_TOKEN=$(curl -s -X POST "https://$API_URL/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"your@email.com","password":"yourpassword"}' \
+  | jq -r '.accessToken')
+
+# Create API token
+curl -X POST "https://$API_URL/api/v1/tokens" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"MCP"}'
+```
+
+### Step 2: Configure MCP
+
+Update your MCP configuration file (location varies by client):
+
+**GitHub Copilot CLI** (`~/.config/github-copilot/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "spectree": {
+      "command": "node",
+      "args": ["/path/to/spectree/packages/mcp/dist/index.js"],
+      "env": {
+        "API_TOKEN": "st_your_token_here",
+        "API_BASE_URL": "https://ca-spectree-api-dev.azurecontainerapps.io"
+      }
+    }
+  }
+}
+```
+
+**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+```json
+{
+  "mcpServers": {
+    "spectree": {
+      "command": "node",
+      "args": ["/path/to/spectree/packages/mcp/dist/index.js"],
+      "env": {
+        "API_TOKEN": "st_your_token_here",
+        "API_BASE_URL": "https://ca-spectree-api-dev.azurecontainerapps.io"
+      }
+    }
+  }
+}
+```
+
+### Step 3: Verify Connection
+
+Test by asking your AI assistant to list SpecTree epics or features. If connection fails:
+
+1. Verify API URL is accessible: `curl https://<api-url>/api/health`
+2. Check API token hasn't expired
+3. Ensure `API_BASE_URL` does not have a trailing slash
+
+---
+
 ## Document Information
 
 | Attribute | Value |
@@ -1326,5 +1409,6 @@ zoneRedundant = true
 
 - [README.md](/README.md) - Project overview and local development
 - [infra/README.md](/infra/README.md) - Infrastructure documentation
-- [docs/MCP/azure-deployment.md](/docs/MCP/azure-deployment.md) - MCP-specific Azure deployment
+- [docs/MCP/api-token-authentication.md](/docs/MCP/api-token-authentication.md) - Detailed API token documentation
+- [docs/MCP/security-architecture.md](/docs/MCP/security-architecture.md) - Security model explanation
 - [docs/database-safety-guide.md](/docs/database-safety-guide.md) - Database safety guidelines

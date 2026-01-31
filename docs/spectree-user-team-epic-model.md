@@ -11,10 +11,11 @@ This document provides a comprehensive overview of how SpecTree currently handle
 3. [User Management](#user-management)
 4. [Team Management](#team-management)
 5. [Membership Model](#membership-model)
-6. [Epic Management](#epic-management)
-7. [Authentication & Authorization](#authentication--authorization)
-8. [Relationships Summary](#relationships-summary)
-9. [Current Limitations & Gaps](#current-limitations--gaps)
+6. [Personal Scope](#personal-scope)
+7. [Epic Management](#epic-management)
+8. [Authentication & Authorization](#authentication--authorization)
+9. [Relationships Summary](#relationships-summary)
+10. [Current Limitations & Gaps](#current-limitations--gaps)
 
 ---
 
@@ -25,20 +26,31 @@ SpecTree is a project management tool with a hierarchical data model:
 ```
 User ─────────────────────────────────────────────────────────────────┐
   │                                                                   │
+  ├──► PersonalScope (optional, 1:1)                                  │
+  │         │                                                         │
+  │         ├──► Status (personal workflow statuses)                  │
+  │         └──► Epic (scopeType: "personal")                         │
+  │                  │                                                │
+  │                  └──► Feature ◄─────────────────── assigneeId ────┤
+  │                           │                                       │
+  │                           └──► Task ◄───────────── assigneeId ────┤
+  │                                                                   │
   └──► Membership (role: admin|member|guest) ──► Team                 │
                                                    │                  │
-                                                   └──► Epic          │
-                                                         │            │
-                                                         └──► Feature ◄─ assigneeId
-                                                               │      │
-                                                               └──► Task ◄─ assigneeId
+                                                   ├──► Status        │
+                                                   └──► Epic (scopeType: "team")
+                                                             │
+                                                             └──► Feature
+                                                                      │
+                                                                      └──► Task
 ```
 
 **Core Entities:**
 - **User**: Individual account with authentication credentials
 - **Team**: Organizational unit that owns epics and defines workflow statuses
+- **PersonalScope**: Private workspace for a user's personal epics (1:1 with User)
 - **Membership**: Join table linking users to teams with role-based permissions
-- **Epic**: Container for features, belongs to exactly one team
+- **Epic**: Container for features; belongs to either a team OR a user's personal scope (via `scopeType`)
 - **Feature**: Primary work item (like Linear's "Issue"), belongs to an epic
 - **Task**: Sub-item of a feature, for breaking down work
 
@@ -60,9 +72,11 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   memberships      Membership[]
-  assignedFeatures Feature[]    @relation("AssignedFeatures")
-  assignedTasks    Task[]       @relation("AssignedTasks")
+  assignedFeatures Feature[]       @relation("AssignedFeatures")
+  assignedTasks    Task[]          @relation("AssignedTasks")
   apiTokens        ApiToken[]
+  personalScope    PersonalScope?
+  invitations      UserInvitation[]
 
   @@index([email])
   @@map("users")
@@ -139,25 +153,80 @@ model Membership {
 
 ```prisma
 model Epic {
-  id          String   @id @default(uuid())
-  teamId      String   @map("team_id")
-  name        String
-  description String?
-  icon        String?
-  color       String?
-  sortOrder   Float    @default(0) @map("sort_order")
-  isArchived  Boolean  @default(false) @map("is_archived")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid())
+  teamId          String?  @map("team_id")
+  personalScopeId String?  @map("personal_scope_id")
+  scopeType       String   @default("team") @map("scope_type")
+  name            String
+  description     String?
+  icon            String?
+  color           String?
+  sortOrder       Float    @default(0) @map("sort_order")
+  isArchived      Boolean  @default(false) @map("is_archived")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  team     Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  features Feature[]
+  team          Team?          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  personalScope PersonalScope? @relation(fields: [personalScopeId], references: [id], onDelete: Cascade)
+  features      Feature[]
 
   @@index([teamId])
   @@index([teamId, sortOrder])
+  @@index([personalScopeId])
+  @@index([personalScopeId, sortOrder])
   @@map("epics")
 }
 ```
+
+**Key Changes:**
+- `teamId` is now **optional** (nullable) to support personal scope epics
+- `personalScopeId` - FK to PersonalScope (optional)
+- `scopeType` - Either `"team"` or `"personal"` (defaults to `"team"`)
+
+### PersonalScope Model
+
+```prisma
+model PersonalScope {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statuses Status[]
+  epics    Epic[]
+
+  @@map("personal_scopes")
+}
+```
+
+**Key Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Primary identifier |
+| `userId` | String | Unique FK to User (1:1 relationship) |
+
+### UserInvitation Model
+
+```prisma
+model UserInvitation {
+  id        String    @id @default(uuid())
+  email     String
+  code      String    @unique
+  inviterId String    @map("inviter_id")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  inviter User @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([code])
+  @@map("user_invitations")
+}
+```
+
+Used for invite-only registration. Only users with a valid invitation code can create an account.
 
 ### API Token Model
 
@@ -420,6 +489,78 @@ interface MembershipWithUser {
 
 ---
 
+## Personal Scope
+
+### Overview
+
+Personal Scope is a private workspace for each user, allowing them to create personal epics, features, and tasks that are not shared with any team. Each user has exactly one PersonalScope (created lazily on first access).
+
+**Service:** `packages/api/src/services/personalScopeService.ts`
+
+### Personal Scope Creation
+
+Personal scopes are **lazily initialized** - created automatically when first accessed via `GET /api/v1/me/scope`.
+
+**Creation Process:**
+1. Check if user already has a personal scope
+2. If not, create one with default statuses (same as team defaults)
+3. Return the scope with counts
+
+### Default Personal Statuses
+
+When a PersonalScope is created, it gets the same default statuses as teams:
+| Name | Category | Position |
+|------|----------|----------|
+| Backlog | backlog | 0 |
+| Todo | unstarted | 1 |
+| In Progress | started | 2 |
+| Done | completed | 3 |
+| Canceled | canceled | 4 |
+
+### Personal Scope Endpoints
+
+All endpoints under `/api/v1/me/*` operate on the authenticated user's personal scope.
+
+#### GET /api/v1/me/scope
+Get or create the user's personal scope.
+
+**Response:**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "userId": "uuid",
+    "createdAt": "datetime",
+    "updatedAt": "datetime",
+    "_count": { "epics": 0, "statuses": 5 }
+  }
+}
+```
+
+#### GET /api/v1/me/epics
+List epics in the user's personal scope with pagination.
+
+#### POST /api/v1/me/epics
+Create a new epic in the user's personal scope.
+
+```typescript
+interface CreatePersonalEpicInput {
+  name: string;        // Required
+  description?: string;
+  icon?: string;
+  color?: string;
+}
+```
+
+#### GET /api/v1/me/statuses
+List workflow statuses in the user's personal scope.
+
+### Authorization
+
+Personal scope resources are automatically authorized - only the owning user can access their personal scope. The authorization is implicit through the `/me/*` route pattern which uses the authenticated user's ID.
+
+---
+
 ## Epic Management
 
 ### Epic Creation
@@ -432,7 +573,7 @@ interface MembershipWithUser {
 ```typescript
 interface CreateEpicInput {
   name: string;        // Required
-  teamId: string;      // Required - team must exist
+  teamId: string;      // Required for team epics
   description?: string;
   icon?: string;
   color?: string;
@@ -441,15 +582,31 @@ interface CreateEpicInput {
 ```
 
 **Validation:**
-- Team must exist and not be archived
+- For team epics: Team must exist and not be archived
 - Name is required
 
-### Epic-Team Relationship
+### Epic Scope Types
 
-Epics belong to exactly **one team**:
+Epics now support two scope types via the `scopeType` field:
+
+| Scope Type | teamId | personalScopeId | Use Case |
+|------------|--------|-----------------|----------|
+| `"team"` | Required | null | Team-shared epics |
+| `"personal"` | null | Required | Private user epics |
+
+### Epic-Team Relationship (Team Scope)
+
+Team-scoped epics belong to exactly **one team**:
 - Features in the epic inherit the team's workflow statuses
 - Feature identifiers use the team's key
 - Authorization checks traverse: Feature → Epic → Team → Membership
+
+### Epic-PersonalScope Relationship (Personal Scope)
+
+Personal-scoped epics belong to the user's PersonalScope:
+- Features in the epic use the user's personal workflow statuses
+- Feature identifiers use "USR" prefix
+- Authorization is implicit (only the owning user can access)
 
 ### Sort Order
 
@@ -588,17 +745,23 @@ fastify.post(
        │                              role:                             │
        │                         admin|member|guest                     │
        │                                                                │
-       │ 1:N (apiTokens)                                         1:N    │
+       │ 1:1                                                      1:N   │
        ▼                                                                ▼
-  ┌─────────┐                                                    ┌──────────┐
-  │ApiToken │                                                    │   Epic   │
-  └─────────┘                                                    └────┬─────┘
-                                                                      │
-       ┌──────────────────────────────────────────────────────────────┘
-       │ 1:N (features)
-       ▼
+  ┌──────────────┐                                              ┌──────────┐
+  │PersonalScope │                                              │   Epic   │ (scopeType: "team")
+  └──────┬───────┘                                              └────┬─────┘
+         │                                                           │
+         │ 1:N (epics, statuses)                                     │
+         ▼                                                           │
+  ┌──────────┐                                                       │
+  │   Epic   │ (scopeType: "personal")                               │
+  └────┬─────┘                                                       │
+       │                                                             │
+       └─────────────────────────┬───────────────────────────────────┘
+                                 │ 1:N (features)
+                                 ▼
   ┌─────────┐                    ┌─────────────┐
-  │ Feature │ ◄──────────────────│   Status    │ ◄──────── Team (1:N)
+  │ Feature │ ◄──────────────────│   Status    │ ◄──────── Team or PersonalScope (1:N)
   └────┬────┘   N:1 (statusId)   └─────────────┘
        │
        │ 1:N (tasks)
@@ -610,6 +773,8 @@ fastify.post(
   Additional Relations:
   - User 1:N Feature (assigneeId, optional)
   - User 1:N Task (assigneeId, optional)
+  - User 1:N ApiToken
+  - User 1:N UserInvitation (as inviter)
   - Feature N:1 Status (statusId, optional)
   - Task N:1 Status (statusId, optional)
 ```
@@ -620,6 +785,10 @@ fastify.post(
 |--------|-------|-----------|
 | User | Membership | CASCADE |
 | User | ApiToken | CASCADE |
+| User | PersonalScope | CASCADE |
+| User | UserInvitation | CASCADE |
+| PersonalScope | Epic | CASCADE |
+| PersonalScope | Status | CASCADE |
 | Team | Membership | CASCADE |
 | Team | Epic | CASCADE |
 | Team | Status | CASCADE |
@@ -634,22 +803,24 @@ fastify.post(
 
 ## Current Limitations & Gaps
 
+> **Note:** Some limitations from the original design have been addressed. Addressed items are marked with ✅.
+
 ### User Management Gaps
 
-1. **No email verification** - Users can register with any email
-2. **No password requirements** - Only non-empty validation
-3. **No password reset flow** - No forgot password functionality
-4. **No user preferences/settings** - No timezone, notification settings, etc.
-5. **No profile customization** - Limited to name and avatarUrl
-6. **No user roles beyond team membership** - No global admin/superuser concept
-7. **No OAuth/SSO integration** - Only email/password authentication
-8. **No session management** - Stateless JWT with no revocation capability
-9. **No activity tracking** - No audit log for user actions
-10. **Placeholder getCurrentUser()** - Returns first active user, not truly contextual
+1. ✅ ~~**No invite-only registration**~~ - Now supports UserInvitation model for invite-only registration
+2. **No email verification** - Users can register with any email (if they have an invite code)
+3. **No password requirements** - Only non-empty validation
+4. **No password reset flow** - No forgot password functionality
+5. **No user preferences/settings** - No timezone, notification settings, etc.
+6. **No profile customization** - Limited to name and avatarUrl
+7. **No user roles beyond team membership** - No global admin/superuser concept
+8. **No OAuth/SSO integration** - Only email/password authentication
+9. **No session management** - Stateless JWT with no revocation capability
+10. **No activity tracking** - No audit log for user actions
 
 ### Team Management Gaps
 
-1. **No team invitations** - Must directly add users by ID
+1. ✅ ~~**No user invitations**~~ - UserInvitation model now allows inviting users by email
 2. **No team ownership concept** - All admins are equal
 3. **Asymmetric auto-membership** - New users join all teams, but new teams don't get all users
 4. **No team settings/preferences** - No configurable team-level options
@@ -657,7 +828,7 @@ fastify.post(
 
 ### Membership Gaps
 
-1. **No membership invitations** - No invite-by-email flow
+1. ✅ ~~**No membership invitations**~~ - UserInvitation model provides invite-by-email flow
 2. **No pending/invited state** - Memberships are immediately active
 3. **No self-removal** - Users cannot leave teams themselves
 4. **Single role per team** - Cannot have multiple roles/permissions per team
@@ -680,11 +851,12 @@ fastify.post(
 
 ### Data Model Gaps
 
-1. **Single team per epic** - Cannot share epics across teams
+1. **Single team per epic** - Cannot share epics across teams (though personal epics now provide private workspace)
 2. **No cross-team features** - Features bound to single team via epic
 3. **No user groups** - Cannot create subsets of users for permissions
 4. **No workspaces/organizations** - Teams are the highest organizational unit
 5. **No feature/task watchers** - Cannot subscribe to updates
+6. ✅ ~~**No personal workspace**~~ - PersonalScope now provides private epics/features/tasks per user
 
 ### API Gaps
 
@@ -708,6 +880,8 @@ fastify.post(
 | `packages/api/src/services/tokenService.ts` | API token management |
 | `packages/api/src/services/featureService.ts` | Feature CRUD + assignee handling |
 | `packages/api/src/services/taskService.ts` | Task CRUD + assignee handling |
+| `packages/api/src/services/personalScopeService.ts` | Personal scope management |
+| `packages/api/src/services/invitationService.ts` | User invitation management |
 
 ### Route Files
 
@@ -718,6 +892,8 @@ fastify.post(
 | `packages/api/src/routes/memberships.ts` | Team member management |
 | `packages/api/src/routes/auth.ts` | `/api/v1/auth/*` |
 | `packages/api/src/routes/tokens.ts` | `/api/v1/tokens/*` |
+| `packages/api/src/routes/me.ts` | `/api/v1/me/*` (personal scope) |
+| `packages/api/src/routes/invitations.ts` | `/api/v1/invitations/*` |
 
 ### Middleware Files
 
@@ -738,13 +914,14 @@ fastify.post(
 
 ## Summary
 
-SpecTree currently implements a basic but functional user/team/epic model:
+SpecTree currently implements a comprehensive user/team/epic model:
 
-- **Users** are created with email/password, automatically join all teams
+- **Users** are created via invite-only registration with email/password
 - **Teams** are isolated organizational units with their own statuses
+- **PersonalScope** provides private workspace for personal epics/features/tasks
 - **Memberships** connect users to teams with three role levels
-- **Epics** belong to teams and contain features/tasks
+- **Epics** can belong to teams (shared) or personal scope (private)
 - **Authentication** supports JWT and API tokens
 - **Authorization** is team-scoped with role-based checks
 
-The system is functional for small teams but lacks enterprise features like SSO, advanced permissions, team hierarchies, and audit logging. The automatic "add to all teams" behavior may need revision for multi-tenant scenarios.
+The system supports both collaborative team workflows and private personal task management. The invitation system provides controlled user onboarding.

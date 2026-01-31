@@ -422,7 +422,7 @@ file:./data/spectree.db
 
 ## MCP Server Integration
 
-The MCP server allows AI agents (like Claude) to interact with SpecTree.
+The MCP server allows AI agents (like Claude) to interact with SpecTree via authenticated API requests.
 
 ### Setup for Claude Code
 
@@ -431,39 +431,72 @@ The MCP server allows AI agents (like Claude) to interact with SpecTree.
    pnpm --filter @spectree/mcp build
    ```
 
-2. **Configure Claude Code** (`.claude/settings.json` in project root):
+2. **Start the API server and generate an API token:**
+   ```bash
+   pnpm dev
+   
+   # Login to get a JWT
+   curl -X POST http://localhost:3001/api/v1/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"admin@spectree.dev","password":"Password123!"}'
+   
+   # Create API token (use accessToken from login response)
+   curl -X POST http://localhost:3001/api/v1/tokens \
+     -H "Authorization: Bearer <jwt>" \
+     -H "Content-Type: application/json" \
+     -d '{"name":"Claude MCP"}'
+   ```
+
+3. **Configure Claude Code** (`~/.config/github-copilot/mcp.json` or project `.claude/settings.json`):
    ```json
    {
      "mcpServers": {
        "spectree": {
          "type": "stdio",
          "command": "node",
-         "args": ["packages/mcp/dist/index.js"],
-         "cwd": "/path/to/SpecTree"
+         "args": ["/path/to/SpecTree/packages/mcp/dist/index.js"],
+         "env": {
+           "API_TOKEN": "st_your_token_here",
+           "API_BASE_URL": "http://localhost:3001"
+         }
        }
      }
    }
    ```
 
-3. **Restart Claude Code** and verify tools appear.
+4. **Restart Claude Code** and verify tools appear.
 
 ### Available MCP Tools
 
 | Tool | Description |
 |------|-------------|
+| **Search** | |
 | `spectree__search` | Search across features and tasks |
+| **Epics** | |
 | `spectree__list_epics` | List all epics |
 | `spectree__get_epic` | Get epic details |
 | `spectree__create_epic` | Create a new epic |
+| `spectree__reorder_epic` | Change epic position |
+| **Features** | |
 | `spectree__list_features` | List features with filters |
 | `spectree__get_feature` | Get feature details |
 | `spectree__create_feature` | Create a new feature |
 | `spectree__update_feature` | Update a feature |
+| `spectree__reorder_feature` | Change feature position |
+| **Tasks** | |
 | `spectree__list_tasks` | List tasks with filters |
 | `spectree__get_task` | Get task details |
 | `spectree__create_task` | Create a new task |
 | `spectree__update_task` | Update a task |
+| `spectree__reorder_task` | Change task position |
+| **Statuses** | |
 | `spectree__list_statuses` | List available statuses |
+| `spectree__get_status` | Get status details |
+| **Personal Scope** | |
+| `spectree__get_personal_scope` | Get user's personal scope info |
+| `spectree__list_personal_projects` | List epics in personal scope |
+| `spectree__create_personal_project` | Create an epic in personal scope |
+| `spectree__list_personal_statuses` | List personal workflow statuses |
 
 ---
 

@@ -125,7 +125,7 @@ SpecTree/
        │
        ├── @spectree/api     (depends on shared)
        ├── @spectree/web     (depends on shared)
-       └── @spectree/mcp     (depends on shared)
+       └── @spectree/mcp     (depends on shared, api)
 ```
 
 ## Environment Variables
@@ -407,7 +407,7 @@ The SpecTree MCP server enables AI assistants like Claude to interact with the p
 > - [API Token Authentication](./docs/MCP/api-token-authentication.md) — Token system details
 > - [Security Architecture](./docs/MCP/security-architecture.md) — Security model
 > - [Migration Guide](./docs/MCP/migration-guide.md) — Migrating from older configurations
-> - [Azure Deployment](./docs/MCP/azure-deployment.md) — Production deployment
+> - [Azure Deployment](./docs/azure-deployment-guide.md) — Production deployment
 
 ### Quick Setup
 
@@ -511,8 +511,8 @@ pnpm --filter @spectree/mcp start
 | `spectree__get_status` | Get status details by ID or name |
 | **Personal Scope** | |
 | `spectree__get_personal_scope` | Get user's personal scope info (creates if needed) |
-| `spectree__list_personal_projects` | List projects in personal scope |
-| `spectree__create_personal_project` | Create a project in personal scope |
+| `spectree__list_personal_projects` | List epics in personal scope |
+| `spectree__create_personal_project` | Create an epic in personal scope |
 | `spectree__list_personal_statuses` | List workflow statuses in personal scope |
 
 ### Search Tool (`spectree__search`)

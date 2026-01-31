@@ -372,7 +372,7 @@ The new architecture implements multiple security layers:
 
 - [API Token Authentication](./api-token-authentication.md) — Detailed API documentation
 - [Migration Guide](./migration-guide.md) — Migrating from direct DB to API
-- [Azure Deployment](./azure-deployment.md) — Production deployment guide
+- [Azure Deployment](/docs/azure-deployment-guide.md) — Production deployment guide
 
 ---
 

@@ -10,6 +10,8 @@
   },
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "setup": "bash scripts/setup-git-hooks.sh",
+    "postinstall": "bash scripts/setup-git-hooks.sh",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",

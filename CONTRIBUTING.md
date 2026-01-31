@@ -42,13 +42,15 @@ npm run dev
 
 For MCP development, you need an API token:
 
-1. The dev server auto-creates a test user
+1. Start the dev server and log in
 2. Generate a token via the API:
    ```bash
-   # Get a JWT first (dev mode allows this)
-   curl -X POST http://localhost:3001/api/v1/auth/dev-login
+   # Login to get a JWT
+   curl -X POST http://localhost:3001/api/v1/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"admin@spectree.dev","password":"Password123!"}'
    
-   # Create API token
+   # Create API token (use accessToken from login response)
    curl -X POST http://localhost:3001/api/v1/tokens \
      -H "Authorization: Bearer <jwt>" \
      -H "Content-Type: application/json" \
@@ -60,7 +62,7 @@ For MCP development, you need an API token:
    export API_TOKEN="st_your_token"
    export API_BASE_URL="http://localhost:3001"
    cd packages/mcp
-   npm run dev
+   pnpm run dev
    ```
 
 ### 5. Verify Setup
@@ -431,7 +433,7 @@ When contributing to SpecTree, follow these security guidelines:
 
 - **Never** commit API tokens, passwords, or secrets
 - Use environment variables for all sensitive values
-- In production, use Azure Key Vault (see [Azure deployment guide](./docs/MCP/azure-deployment.md))
+- In production, use Azure Key Vault (see [Azure deployment guide](./docs/azure-deployment-guide.md))
 
 ### API Authentication
 
@@ -460,19 +462,16 @@ For more details, see the [Security Architecture](./docs/MCP/security-architectu
 
 ```bash
 cd packages/api
-npm test
+pnpm test
 ```
 
 ### MCP Integration Tests
 
-MCP tests require the API server to be running:
+MCP tests use mocked API responses and don't require a running API server:
 
 ```bash
-# Terminal 1: Start API
-cd packages/api && npm run dev
-
-# Terminal 2: Run MCP tests
-cd packages/mcp && npm test
+cd packages/mcp
+pnpm test
 ```
 
 ### Full Test Suite

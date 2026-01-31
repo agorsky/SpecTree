@@ -1,0 +1,38 @@
+name: Bug / Feature / Hotfix
+description: Standard issue template aligned to Git Release Flow
+body:
+  - type: dropdown
+    attributes:
+      label: Issue Type
+      options: [Feature, Bug, Hotfix]
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Version Found
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Reproducible on Latest Release?
+      options: [Yes, No, Unknown]
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Reproducible on main?
+      options: [Yes, No, Unknown]
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Severity
+      options: [S1, S2, S3, S4]
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Desired Outcome
+      options: [Upgrade-only, Hotfix required]
+    validations:
+      required: true

@@ -4,6 +4,32 @@ SpecTree is a project management tool similar to Linear, with a REST API, React 
 
 ---
 
+## 🚀 SESSION START CHECKLIST
+
+**At the start of every coding session, Copilot MUST:**
+
+1. **Check git status and branch state:**
+   ```bash
+   git fetch origin && git status
+   ```
+
+2. **If on `main`, remind user to create a feature branch before making changes**
+
+3. **If on a feature/bugfix branch, check if it's behind main:**
+   ```bash
+   git log HEAD..origin/main --oneline
+   ```
+   - If commits exist, recommend: `git rebase origin/main`
+
+4. **Before any code changes, confirm the branch is synced with remote**
+
+**Prompt the user if:**
+- Working directly on `main` (should create feature branch)
+- Branch is more than 1 day old without sync
+- About to commit without recent fetch
+
+---
+
 ## 🔴 CRITICAL: Database Safety
 
 This project has experienced data loss from unsafe Prisma commands. Follow these rules strictly.
@@ -104,3 +130,81 @@ All extend `AppError` with `statusCode`, `code`, and optional `details`.
 - Tests in `packages/api/tests/` mirror source structure
 - Integration tests use factories from `tests/fixtures/factories.ts`
 - Test setup handles separate test database automatically
+
+---
+
+## 🔴 CRITICAL: Git Workflow Safety
+
+This project follows the **Git Release Flow** strategy. Full documentation: `docs/GIT/`
+
+### Before Creating ANY Branch
+
+**ALWAYS sync with remote first:**
+```bash
+git fetch origin
+git checkout main
+git pull origin main
+```
+
+**Then create your branch:**
+```bash
+git checkout -b feature/TICKET-123-description
+```
+
+### Branch Source Rules
+
+| Work Type | Branch From | PR Target |
+|-----------|-------------|-----------|
+| New feature | `main` (freshly pulled) | `main` |
+| Bug fix (dev) | `main` (freshly pulled) | `main` |
+| Bug fix (QA/release) | `release/x.y` | `release/x.y` |
+| Hotfix (production) | Recreate from tag | `release/x.y` |
+
+### Before Opening a PR
+
+**ALWAYS check for upstream changes:**
+```bash
+git fetch origin
+git log HEAD..origin/main --oneline  # See what's new on main
+```
+
+**If main has advanced, rebase your feature branch:**
+```bash
+git rebase origin/main
+# Resolve any conflicts
+git push --force-with-lease  # Safe force push for your branch only
+```
+
+### Forbidden Actions
+
+**NEVER:**
+- Create a branch without fetching first
+- Work on a branch for extended periods without syncing with main
+- Force push to `main` or `release/*` branches
+- Rebase shared branches or release branches after RC tags exist
+- Cherry-pick as a primary strategy (use merge-forward)
+
+### Long-Running Work Sessions
+
+If working across multiple sessions or days:
+```bash
+# At start of each session
+git fetch origin
+git rebase origin/main  # Keep your branch current
+```
+
+### Forward-Port Requirement
+
+Every fix on `release/*` **MUST** be forward-ported to `main` within 2 business days:
+```bash
+git checkout main
+git pull origin main
+git merge release/x.y
+# Open PR for forward-port
+```
+
+### Quick Reference
+
+- **Policy docs:** `docs/GIT/git-release-flow-strategy-final-with-definitions.md`
+- **Cheat sheet:** `docs/GIT/git-release-flow-cheat-sheet.md`
+- **PR template:** `docs/GIT/PULL_REQUEST_TEMPLATE.md`

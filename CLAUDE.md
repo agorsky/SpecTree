@@ -60,3 +60,44 @@ SpecTree is a project management tool similar to Linear, with:
 
 Tests use a **separate database** (`spectree-test.db`). This is intentional.
 Do not modify `vitest.config.ts` to use the production database.
+
+---
+
+## 🔴 GIT WORKFLOW SAFETY - READ FIRST
+
+This project has experienced merge conflicts from working on stale branches. Follow Git Release Flow strictly.
+
+### Before Creating ANY Branch
+
+**ALWAYS sync first:**
+```bash
+git fetch origin
+git checkout main
+git pull origin main
+git checkout -b feature/TICKET-123-description
+```
+
+### Before Opening a PR
+
+**ALWAYS check for upstream changes and rebase:**
+```bash
+git fetch origin
+git rebase origin/main
+# Resolve conflicts if any
+```
+
+### Forbidden Git Actions
+
+- Creating branches without fetching first
+- Working for extended periods without syncing with main  
+- Force pushing to `main` or `release/*`
+- Rebasing shared/release branches after RC tags
+
+### Forward-Port Requirement
+
+Every fix on `release/*` MUST be forward-ported to `main` within 2 business days.
+
+### Full Documentation
+
+- **Policy:** `docs/GIT/git-release-flow-strategy-final-with-definitions.md`
+- **Cheat sheet:** `docs/GIT/git-release-flow-cheat-sheet.md`

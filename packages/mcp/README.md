@@ -236,6 +236,15 @@ The MCP server exposes the following tools:
 |------|-------------|
 | `spectree__search` | Search features and tasks with filters |
 
+### Personal Scope
+
+| Tool | Description |
+|------|-------------|
+| `spectree__get_personal_scope` | Get user's personal scope info |
+| `spectree__list_personal_projects` | List epics in personal scope |
+| `spectree__create_personal_project` | Create an epic in personal scope |
+| `spectree__list_personal_statuses` | List workflow statuses in personal scope |
+
 ---
 
 ## Troubleshooting
@@ -345,7 +354,8 @@ packages/mcp/
 │       ├── tasks.ts      # Task tools
 │       ├── statuses.ts   # Status tools
 │       ├── ordering.ts   # Reorder tools
-│       └── search.ts     # Search tool
+│       ├── search.ts     # Search tool
+│       └── personal.ts   # Personal scope tools
 ├── tests/
 │   └── ...
 ├── package.json

@@ -49,7 +49,7 @@ model PersonalScope {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   statuses Status[]
-  projects Project[]
+  epics    Epic[]
 
   @@map("personal_scopes")
 }
@@ -65,7 +65,7 @@ model PersonalScope {
 #### User Model
 - Added optional `personalScope` relation (one-to-one)
 
-#### Project Model
+#### Epic Model
 - `teamId` is now **optional** (nullable) - was required
 - Added `personalScopeId` (optional) - FK to PersonalScope
 - Added `scopeType` field: `"team"` or `"personal"` (defaults to `"team"`)
@@ -82,7 +82,7 @@ model PersonalScope {
 User (1) ─────────── (0..1) PersonalScope
                               │
                               ├── (0..*) Status
-                              └── (0..*) Project
+                              └── (0..*) Epic
                                           │
                                           └── (0..*) Feature
                                                       │
@@ -91,7 +91,7 @@ User (1) ─────────── (0..1) PersonalScope
 User (0..*) ─── Membership ─── (0..*) Team
                                         │
                                         ├── (0..*) Status
-                                        └── (0..*) Project
+                                        └── (0..*) Epic
 ```
 
 ---
@@ -111,7 +111,7 @@ User (0..*) ─── Membership ─── (0..*) Team
 | `createPersonalScope(userId)` | Create PersonalScope with default statuses |
 | `createDefaultStatuses(personalScopeId)` | Create default workflow statuses |
 | `getDefaultBacklogStatus(personalScopeId)` | Get the backlog status for a scope |
-| `isProjectInPersonalScope(projectId, userId)` | Authorization check |
+| `isEpicInPersonalScope(epicId, userId)` | Authorization check |
 | `isPersonalScopeOwner(personalScopeId, userId)` | Authorization check |
 
 ### Default Personal Statuses
@@ -153,20 +153,20 @@ Get the authenticated user's personal scope. Creates it if it doesn't exist (laz
     "userId": "uuid",
     "createdAt": "datetime",
     "updatedAt": "datetime",
-    "_count": { "projects": 0, "statuses": 5 }
+    "_count": { "epics": 0, "statuses": 5 }
   }
 }
 ```
 
-#### GET /api/v1/me/projects
-List all projects in the user's personal scope. Supports cursor-based pagination.
+#### GET /api/v1/me/epics
+List all epics in the user's personal scope. Supports cursor-based pagination.
 
 **Query Parameters:**
 - `cursor` - Pagination cursor
 - `limit` - Max results (1-100, default 20)
 
-#### POST /api/v1/me/projects
-Create a new project in the user's personal scope.
+#### POST /api/v1/me/epics
+Create a new epic in the user's personal scope.
 
 **Body:**
 ```json
