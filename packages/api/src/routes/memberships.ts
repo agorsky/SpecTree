@@ -40,10 +40,10 @@ interface UpdateMemberRoleBody {
  * Team memberships routes plugin
  * Prefix: /api/v1/teams
  */
-export async function teamMembershipsRoutes(
+export function teamMembershipsRoutes(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions
-): Promise<void> {
+): void {
   /**
    * GET /api/v1/teams/:teamId/members
    * List all members of a team
@@ -144,10 +144,10 @@ export async function teamMembershipsRoutes(
  * User teams routes plugin
  * Prefix: /api/v1/users
  */
-export async function userTeamsRoutes(
+export function userTeamsRoutes(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions
-): Promise<void> {
+): void {
   /**
    * GET /api/v1/users/:userId/teams
    * List all teams a user is a member of

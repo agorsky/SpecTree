@@ -40,8 +40,8 @@ export interface ListTasksOptions {
   cursor?: string | undefined;
   limit?: number | undefined;
   featureId?: string | undefined;
-  /** Filter by project ID (returns tasks across all features in the project) */
-  projectId?: string | undefined;
+  /** Filter by epic ID (returns tasks across all features in the epic) */
+  epicId?: string | undefined;
   /** @deprecated Use `status` instead for enhanced filtering */
   statusId?: string | undefined;
   /** Status filter - can be ID or name (single or array) */
@@ -112,7 +112,7 @@ async function generateIdentifier(featureId: string): Promise<string> {
     }
   }
 
-  return `${feature.identifier}-${maxNumber + 1}`;
+  return `${feature.identifier}-${String(maxNumber + 1)}`;
 }
 
 /**
@@ -150,8 +150,8 @@ export async function listTasks(
   const whereClause: {
     featureId?: string;
     feature?: {
-      projectId?: string;
-      project?: {
+      epicId?: string;
+      epic?: {
         OR?: Array<{ teamId?: { in: string[] }; personalScopeId?: string }>;
       };
     };
@@ -177,7 +177,7 @@ export async function listTasks(
       };
     }
 
-    // Build OR clause for projects in accessible scopes (via feature → project)
+    // Build OR clause for epics in accessible scopes (via feature → epic)
     const scopeConditions: Array<{ teamId?: { in: string[] }; personalScopeId?: string }> = [];
 
     if (accessibleScopes.teamIds.length > 0) {
@@ -187,25 +187,27 @@ export async function listTasks(
       scopeConditions.push({ personalScopeId: accessibleScopes.personalScopeId });
     }
 
-    whereClause.feature = { project: { OR: scopeConditions } };
+    whereClause.feature = { epic: { OR: scopeConditions } };
   }
 
   if (options.featureId !== undefined) {
     whereClause.featureId = options.featureId;
   }
 
-  // Filter by project (returns tasks across all features in the project)
-  if (options.projectId !== undefined) {
+  // Filter by epic (returns tasks across all features in the epic)
+  if (options.epicId !== undefined) {
     // Merge with existing feature filter if scope filtering applied
     if (whereClause.feature) {
-      whereClause.feature.projectId = options.projectId;
+      whereClause.feature.epicId = options.epicId;
     } else {
-      whereClause.feature = { projectId: options.projectId };
+      whereClause.feature = { epicId: options.epicId };
     }
   }
 
   // Handle status filtering (supports statusId, status name/array, and statusCategory)
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- Legacy support for direct statusId
   if (options.statusId !== undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     whereClause.statusId = options.statusId;
   } else if (options.status !== undefined) {
     // Normalize to array (status can be single string or array)
@@ -239,8 +241,10 @@ export async function listTasks(
       // Use the resolved user ID
       whereClause.assigneeId = resolvedAssignee;
     }
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- Legacy support for direct assigneeId
   } else if (options.assigneeId !== undefined) {
     // Legacy support for direct assigneeId
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     whereClause.assigneeId = options.assigneeId;
   }
 
@@ -339,7 +343,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     where: { id: input.featureId },
     select: { 
       id: true, 
-      project: { 
+      epic: { 
         select: { teamId: true } 
       } 
     },
@@ -360,9 +364,9 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     if (!status) {
       throw new NotFoundError(`Status with id '${statusId}' not found`);
     }
-  } else if (feature.project.teamId) {
+  } else if (feature.epic.teamId) {
     // Default to Backlog status for the team
-    const backlogStatus = await getDefaultBacklogStatus(feature.project.teamId);
+    const backlogStatus = await getDefaultBacklogStatus(feature.epic.teamId);
     if (backlogStatus) {
       statusId = backlogStatus.id;
     }
@@ -485,13 +489,13 @@ export async function updateTask(
       throw new NotFoundError(`Status with id '${input.statusId}' not found`);
     }
 
-    // Fetch the task with its feature and project to get the team
-    const taskWithFeatureProject = await prisma.task.findUnique({
+    // Fetch the task with its feature and epic to get the team
+    const taskWithFeatureEpic = await prisma.task.findUnique({
       where: { id },
-      include: { feature: { include: { project: { select: { teamId: true } } } } },
+      include: { feature: { include: { epic: { select: { teamId: true } } } } },
     });
 
-    if (taskWithFeatureProject && status.teamId !== taskWithFeatureProject.feature.project.teamId) {
+    if (taskWithFeatureEpic && status.teamId !== taskWithFeatureEpic.feature.epic.teamId) {
       throw new ValidationError("Cannot change status: status belongs to a different team");
     }
   }

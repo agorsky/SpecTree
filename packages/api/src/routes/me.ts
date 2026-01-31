@@ -90,8 +90,8 @@ export default async function meRoutes(
       const limit = Math.min(100, Math.max(1, parseInt(request.query.limit ?? "20", 10)));
       const cursor = request.query.cursor;
 
-      // Query projects in user's personal scope
-      const projects = await prisma.project.findMany({
+      // Query epics in user's personal scope
+      const epics = await prisma.epic.findMany({
         take: limit + 1,
         ...(cursor ? { cursor: { id: cursor } } : {}),
         where: {
@@ -102,16 +102,16 @@ export default async function meRoutes(
         include: { _count: { select: { features: true } } },
       });
 
-      const hasMore = projects.length > limit;
+      const hasMore = epics.length > limit;
       if (hasMore) {
-        projects.pop();
+        epics.pop();
       }
 
-      const lastProject = projects.at(-1);
-      const nextCursor = hasMore && lastProject ? lastProject.id : null;
+      const lastEpic = epics.at(-1);
+      const nextCursor = hasMore && lastEpic ? lastEpic.id : null;
 
       return reply.send({
-        data: projects,
+        data: epics,
         meta: {
           cursor: nextCursor,
           hasMore,
@@ -121,11 +121,11 @@ export default async function meRoutes(
   );
 
   // =========================================================================
-  // POST /me/projects - Create personal project
+  // POST /me/projects - Create personal epic
   // =========================================================================
   /**
    * POST /api/v1/me/projects
-   * Create a new project in the authenticated user's personal scope.
+   * Create a new epic in the authenticated user's personal scope.
    * Requires authentication.
    */
   fastify.post<{ Body: CreatePersonalProjectInput }>(
@@ -158,12 +158,12 @@ export default async function meRoutes(
       // Auto-generate sortOrder if not provided
       let finalSortOrder = sortOrder;
       if (finalSortOrder === undefined) {
-        const lastProject = await prisma.project.findFirst({
+        const lastEpic = await prisma.epic.findFirst({
           where: { personalScopeId: personalScope.id, isArchived: false },
           orderBy: { sortOrder: "desc" },
           select: { sortOrder: true },
         });
-        finalSortOrder = generateSortOrderBetween(lastProject?.sortOrder ?? null, null);
+        finalSortOrder = generateSortOrderBetween(lastEpic?.sortOrder ?? null, null);
       }
 
       // Build data object
@@ -190,8 +190,8 @@ export default async function meRoutes(
         data.color = color.trim();
       }
 
-      const project = await prisma.project.create({ data });
-      return reply.status(201).send({ data: project });
+      const epic = await prisma.epic.create({ data });
+      return reply.status(201).send({ data: epic });
     }
   );
 

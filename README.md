@@ -471,7 +471,7 @@ Add the MCP server to your Claude Code configuration (`~/.claude/settings.json` 
 After configuring, restart Claude Code and verify the connection:
 
 1. The MCP server should appear in the list of available tools
-2. Ask Claude to list projects: "List all projects in SpecTree"
+2. Ask Claude to list epics: "List all epics in SpecTree"
 
 ### MCP Server Development
 
@@ -489,11 +489,11 @@ pnpm --filter @spectree/mcp start
 |------|-------------|
 | **Search** | |
 | `spectree__search` | Unified search across features and tasks with all filter options |
-| **Projects** | |
-| `spectree__list_projects` | List projects with optional team/scope filtering |
-| `spectree__get_project` | Get project details by ID or name |
-| `spectree__create_project` | Create a new team-scoped project |
-| `spectree__reorder_project` | Change project position within its team |
+| **Epics** | |
+| `spectree__list_epics` | List epics with optional team/scope filtering |
+| `spectree__get_epic` | Get epic details by ID or name |
+| `spectree__create_epic` | Create a new team-scoped epic |
+| `spectree__reorder_epic` | Change epic position within its team |
 | **Features** | |
 | `spectree__list_features` | List features with optional filters |
 | `spectree__get_feature` | Get feature details by ID or identifier |
@@ -522,7 +522,7 @@ The search tool provides powerful filtering capabilities for AI assistants:
 ```
 Parameters:
   query         - Text search in title/description
-  project       - Filter by project name or ID
+  epic          - Filter by epic name or ID
   status        - Filter by status name or ID
   statusCategory - Filter by category (backlog, unstarted, started, completed, canceled)
   assignee      - Filter by assignee ("me", "none", email, or UUID)

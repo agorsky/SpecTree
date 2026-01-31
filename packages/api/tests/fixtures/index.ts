@@ -18,14 +18,14 @@ export {
   createTestUser,
   createTestTeam,
   createTestMembership,
-  createTestProject,
+  createTestEpic,
   createTestStatus,
   createTestFeature,
   createTestTask,
 
   // Composite factories for common scenarios
   createTestUserWithTeam,
-  createTestProjectWithFeatures,
+  createTestEpicWithFeatures,
   createTestWorkflow,
 
   // Utility functions
@@ -41,7 +41,7 @@ export {
   type UserInput,
   type TeamInput,
   type MembershipInput,
-  type ProjectInput,
+  type EpicInput,
   type StatusInput,
   type FeatureInput,
   type TaskInput,

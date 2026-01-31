@@ -42,10 +42,10 @@ interface UpdateStatusBody {
  * Statuses routes plugin
  * Prefix: /api/v1/statuses
  */
-export default async function statusesRoutes(
+export default function statusesRoutes(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions
-): Promise<void> {
+): void {
   /**
    * GET /api/v1/statuses
    * List statuses with optional team filter

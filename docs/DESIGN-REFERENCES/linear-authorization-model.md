@@ -205,8 +205,8 @@ Based on Linear's model, SpecTree simplifies authorization to:
 
 ```
 Users belong to Teams via Memberships (with roles)
-Projects belong to one Team
-Members only see their Teams' Projects
+Epics belong to one Team
+Members only see their Teams' Epics
 ```
 
 ### Proposed Roles
@@ -221,18 +221,18 @@ Members only see their Teams' Projects
 
 1. Users can belong to multiple teams via Memberships
 2. Each Membership has a role (Owner, Admin, Member)
-3. Projects belong to exactly one Team
-4. Issues belong to exactly one Project (and thus one Team)
-5. Users can only access Projects in Teams where they have a Membership
+3. Epics belong to exactly one Team
+4. Issues belong to exactly one Epic (and thus one Team)
+5. Users can only access Epics in Teams where they have a Membership
 6. Team scoping is enforced at the API layer
 
 ### API Authorization Pattern
 
 ```python
 # Pseudocode for SpecTree authorization
-def authorize_project_access(user_id, project_id):
-    project = get_project(project_id)
-    membership = get_membership(user_id, project.team_id)
+def authorize_epic_access(user_id, epic_id):
+    epic = get_epic(epic_id)
+    membership = get_membership(user_id, epic.team_id)
 
     if not membership:
         raise ForbiddenError("Not a member of this team")

@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-Linear uses a strict hierarchical structure: **Workspace > Teams > Projects > Issues > Sub-Issues**. SpecTree simplifies this to: **Teams > Projects > Features > Tasks**, where Features map to Linear Issues and Tasks map to Linear Sub-Issues.
+Linear uses a strict hierarchical structure: **Workspace > Teams > Projects > Issues > Sub-Issues**. SpecTree simplifies this to: **Teams > Epics > Features > Tasks**, where Features map to Linear Issues and Tasks map to Linear Sub-Issues.
 
 ---
 
@@ -75,7 +75,7 @@ The workspace is the top-level container, managed at the API/authentication leve
 
 **Foreign Keys**:
 - Teams belong to a Workspace (implicit)
-- Teams have many Projects
+- Teams have many Epics
 - Teams have many Issues (issues are scoped to teams)
 - Teams own their Workflow Statuses
 
@@ -407,7 +407,7 @@ Labels are defined at the **workspace level** but can be filtered by team. They 
 |--------------|-----------------|-----------------|
 | Workspace | (implicit) | No explicit workspace entity |
 | Team | Team | Identical structure |
-| Project | Project | Identical structure |
+| Project | Epic | Identical structure |
 | Issue | Feature | No nesting beyond tasks |
 | Sub-Issue | Task | Cannot have children |
 | Status | Status | Per-team, 5 categories |
@@ -451,7 +451,7 @@ Linear MCP tools support flexible identifier resolution:
 3. **Team-Scoped Statuses**: Create default statuses when team is created
 4. **Required Fields on Create**:
    - Team: `name`
-   - Project: `name`, `teamId`
+   - Epic: `name`, `teamId`
    - Feature: `title`, `teamId`
    - Task: `title`, `teamId`, `featureId` (parentId)
 5. **Cascade Deletes**: Consider soft-delete with orphan cleanup

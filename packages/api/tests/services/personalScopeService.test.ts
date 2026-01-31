@@ -14,7 +14,7 @@ vi.mock('../../src/lib/db.js', () => ({
       findFirst: vi.fn(),
       create: vi.fn(),
     },
-    project: {
+    epic: {
       findFirst: vi.fn(),
     },
     $transaction: vi.fn(),
@@ -30,7 +30,7 @@ import {
   createPersonalScope,
   createDefaultStatuses,
   getDefaultBacklogStatus,
-  isProjectInPersonalScope,
+  isEpicInPersonalScope,
   isPersonalScopeOwner,
 } from '../../src/services/personalScopeService.js';
 import { NotFoundError, ConflictError } from '../../src/errors/index.js';
@@ -56,7 +56,7 @@ describe('personalScopeService', () => {
       expect(result).toEqual(mockScope);
       expect(prisma.personalScope.findUnique).toHaveBeenCalledWith({
         where: { id: 'scope-123' },
-        include: { _count: { select: { projects: true, statuses: true } } },
+        include: { _count: { select: { epics: true, statuses: true } } },
       });
     });
 
@@ -83,7 +83,7 @@ describe('personalScopeService', () => {
       expect(result).toEqual(mockScope);
       expect(prisma.personalScope.findUnique).toHaveBeenCalledWith({
         where: { userId: 'user-123' },
-        include: { _count: { select: { projects: true, statuses: true } } },
+        include: { _count: { select: { epics: true, statuses: true } } },
       });
     });
 
@@ -110,7 +110,7 @@ describe('personalScopeService', () => {
       expect(result).toEqual(mockScope);
       expect(prisma.personalScope.findUnique).toHaveBeenCalledWith({
         where: { userId: 'user-123' },
-        include: { _count: { select: { projects: true, statuses: true } } },
+        include: { _count: { select: { epics: true, statuses: true } } },
       });
     });
   });
@@ -262,26 +262,26 @@ describe('personalScopeService', () => {
     });
   });
 
-  describe('isProjectInPersonalScope', () => {
-    it('should return true when project belongs to user personal scope', async () => {
-      vi.mocked(prisma.project.findFirst).mockResolvedValue({ id: 'project-123' } as any);
+  describe('isEpicInPersonalScope', () => {
+    it('should return true when epic belongs to user personal scope', async () => {
+      vi.mocked(prisma.epic.findFirst).mockResolvedValue({ id: 'epic-123' } as any);
 
-      const result = await isProjectInPersonalScope('project-123', 'user-123');
+      const result = await isEpicInPersonalScope('epic-123', 'user-123');
 
       expect(result).toBe(true);
-      expect(prisma.project.findFirst).toHaveBeenCalledWith({
+      expect(prisma.epic.findFirst).toHaveBeenCalledWith({
         where: {
-          id: 'project-123',
+          id: 'epic-123',
           personalScope: { userId: 'user-123' },
         },
         select: { id: true },
       });
     });
 
-    it('should return false when project does not belong to user personal scope', async () => {
-      vi.mocked(prisma.project.findFirst).mockResolvedValue(null);
+    it('should return false when epic does not belong to user personal scope', async () => {
+      vi.mocked(prisma.epic.findFirst).mockResolvedValue(null);
 
-      const result = await isProjectInPersonalScope('project-123', 'user-456');
+      const result = await isEpicInPersonalScope('epic-123', 'user-456');
 
       expect(result).toBe(false);
     });

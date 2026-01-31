@@ -10,4 +10,4 @@ async function main() {
   const allUsers = await prisma.user.findMany({ select: { email: true, name: true, isActive: true } });
   console.log("\nAll users:", JSON.stringify(allUsers, null, 2));
 }
-main().finally(() => prisma.$disconnect());
+void main().finally(() => prisma.$disconnect());

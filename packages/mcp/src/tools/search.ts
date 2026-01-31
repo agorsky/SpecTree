@@ -39,7 +39,7 @@ export function registerSearchTools(server: McpServer): void {
     {
       description:
         "Search for features and tasks in SpecTree with various filters. " +
-        "Supports text search, filtering by project, status, assignee, and date ranges. " +
+        "Supports text search, filtering by epic, status, assignee, and date ranges. " +
         "Can search features only, tasks only, or both combined. Results include a 'type' " +
         "field indicating whether each item is a 'feature' or 'task'. Features are the " +
         "primary work items, while tasks are sub-issues under features.",
@@ -51,12 +51,12 @@ export function registerSearchTools(server: McpServer): void {
             "Text search query. Searches in title and description (case-insensitive). " +
             "For example, 'login' will match 'User Login Flow' and items with 'login' in description."
           ),
-        project: z
+        epic: z
           .string()
           .optional()
           .describe(
-            "Filter by project. Accepts project ID (UUID) or exact project name. " +
-            "Only features in this project (and their tasks) will be returned. " +
+            "Filter by epic. Accepts epic ID (UUID) or exact epic name. " +
+            "Only features in this epic (and their tasks) will be returned. " +
             "Name matching is case-sensitive."
           ),
         status: z
@@ -132,7 +132,7 @@ export function registerSearchTools(server: McpServer): void {
 
         const result = await apiClient.search({
           query: input.query,
-          project: input.project,
+          epic: input.epic,
           status: input.status,
           statusCategory: input.statusCategory,
           assignee: input.assignee,
@@ -149,7 +149,7 @@ export function registerSearchTools(server: McpServer): void {
         });
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
-          return createErrorResponse(new Error(`Project '${input.project}' not found`));
+          return createErrorResponse(new Error(`Epic '${input.epic ?? "unknown"}' not found`));
         }
         return createErrorResponse(error);
       }

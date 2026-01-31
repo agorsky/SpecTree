@@ -71,9 +71,9 @@ export function LoginPage() {
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link to="/register" className="text-primary hover:underline">
-              Create one
+            Have an invitation code?{" "}
+            <Link to="/activate" className="text-primary hover:underline">
+              Activate your account
             </Link>
           </div>
         </CardContent>

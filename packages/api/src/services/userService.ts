@@ -237,6 +237,37 @@ export async function softDeleteUser(id: string): Promise<UserResponse | null> {
   }
 }
 
+/**
+ * Hard delete a user (permanently remove from database)
+ * 
+ * GUARDRAIL: Cannot delete a user if they are the last admin of any team.
+ * This prevents orphaning teams without administrators.
+ */
+export async function hardDeleteUser(id: string): Promise<boolean> {
+  // GUARDRAIL: Check if user is the last admin of any team
+  const lastAdminTeams = await getTeamsWhereUserIsLastAdmin(id);
+  if (lastAdminTeams.length > 0) {
+    const teams = await prisma.team.findMany({
+      where: { id: { in: lastAdminTeams } },
+      select: { name: true },
+    });
+    const teamNames = teams.map((t) => t.name).join(", ");
+    throw new ForbiddenError(
+      `Cannot delete user who is the last admin of team(s): ${teamNames}. Promote another member to admin first.`
+    );
+  }
+
+  try {
+    await prisma.user.delete({
+      where: { id },
+    });
+    return true;
+  } catch {
+    // User not found
+    return false;
+  }
+}
+
 
 /**
  * Get a user by email with password hash (for authentication)

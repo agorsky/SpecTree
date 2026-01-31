@@ -21,12 +21,13 @@ export function FeatureListItem({ feature, showStatus = true }: FeatureListItemP
       <span className="text-xs text-muted-foreground font-mono flex-shrink-0 w-16">
         {feature.identifier}
       </span>
-      <span className="flex-1 font-medium truncate text-sm">{feature.title}</span>
+      <span className="font-medium truncate text-sm">{feature.title}</span>
       {taskCount > 0 && (
-        <span className="text-xs text-muted-foreground flex-shrink-0 tabular-nums">
+        <span className="text-xs text-muted-foreground flex-shrink-0 tabular-nums ml-2">
           {completedCount}/{taskCount}
         </span>
       )}
+      <span className="flex-1" />
       {feature.assignee && (
         <Avatar className="h-5 w-5 flex-shrink-0">
           <AvatarFallback className="text-[10px]">

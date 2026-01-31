@@ -3,9 +3,7 @@
  * All errors extend AppError and provide structured error information.
  */
 
-export interface ErrorDetails {
-  [key: string]: unknown;
-}
+export type ErrorDetails = Record<string, unknown>;
 
 /**
  * Base application error class.

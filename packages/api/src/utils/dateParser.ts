@@ -39,9 +39,9 @@ const ISO_DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
  */
 export function parseDate(input: string): Date {
   // Check for duration format first
-  const durationMatch = input.match(DURATION_PATTERN);
-  if (durationMatch && durationMatch[1] && durationMatch[2]) {
-    return parseDuration(durationMatch[1]!, durationMatch[2]!);
+  const durationMatch = DURATION_PATTERN.exec(input);
+  if (durationMatch?.[1] && durationMatch[2]) {
+    return parseDuration(durationMatch[1], durationMatch[2]);
   }
 
   // Check for ISO date format (YYYY-MM-DD)

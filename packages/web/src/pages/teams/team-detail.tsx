@@ -106,7 +106,7 @@ export function TeamDetailPage() {
             <DialogTitle>Delete Team</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete "{team.name}"? This will remove all
-              members and archive all projects in this team. This action cannot be undone.
+              members and archive all epics in this team. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

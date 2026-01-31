@@ -41,10 +41,10 @@ export interface Team {
 }
 
 // -----------------------------------------------------------------------------
-// Project Types
+// Epic Types
 // -----------------------------------------------------------------------------
 
-export interface Project {
+export interface Epic {
   id: string;
   name: string;
   description: string | null;
@@ -59,19 +59,19 @@ export interface Project {
   _count?: { features: number };
 }
 
-export interface ListProjectsParams {
+export interface ListEpicsParams {
   team?: string | undefined;
   includeArchived?: boolean | undefined;
   limit?: number | undefined;
   cursor?: string | undefined;
 }
 
-export interface ListProjectsResponse {
-  data: Project[];
+export interface ListEpicsResponse {
+  data: Epic[];
   meta: PaginationMeta;
 }
 
-export interface CreateProjectData {
+export interface CreateEpicData {
   name: string;
   teamId: string;
   description?: string | undefined;
@@ -85,7 +85,7 @@ export interface CreateProjectData {
 
 export interface Feature {
   id: string;
-  projectId: string;
+  epicId: string;
   identifier: string;
   title: string;
   description: string | null;
@@ -99,8 +99,8 @@ export interface Feature {
 }
 
 export interface ListFeaturesParams {
-  project?: string | undefined;
-  projectId?: string | undefined;
+  epic?: string | undefined;
+  epicId?: string | undefined;
   status?: string | undefined;
   statusId?: string | undefined;
   statusCategory?: string | undefined;
@@ -120,7 +120,7 @@ export interface ListFeaturesResponse {
 
 export interface CreateFeatureData {
   title: string;
-  projectId: string;
+  epicId: string;
   description?: string | undefined;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
@@ -153,7 +153,7 @@ export interface Task {
 export interface ListTasksParams {
   feature?: string | undefined;
   featureId?: string | undefined;
-  projectId?: string | undefined;
+  epicId?: string | undefined;
   status?: string | undefined;
   statusId?: string | undefined;
   statusCategory?: string | undefined;
@@ -216,8 +216,8 @@ export interface PersonalScope {
   updatedAt: string;
 }
 
-/** Personal project (extends Project but has personalScopeId) */
-export interface PersonalProject {
+/** Personal epic (extends Epic but has personalScopeId instead of teamId) */
+export interface PersonalEpic {
   id: string;
   name: string;
   description: string | null;
@@ -232,22 +232,28 @@ export interface PersonalProject {
   _count?: { features: number };
 }
 
-export interface ListPersonalProjectsParams {
+export interface ListPersonalEpicsParams {
   limit?: number | undefined;
   cursor?: string | undefined;
 }
 
-export interface ListPersonalProjectsResponse {
-  data: PersonalProject[];
+export interface ListPersonalEpicsResponse {
+  data: PersonalEpic[];
   meta: PaginationMeta;
 }
 
-export interface CreatePersonalProjectData {
+export interface CreatePersonalEpicData {
   name: string;
   description?: string | undefined;
   icon?: string | undefined;
   color?: string | undefined;
 }
+
+// Backwards compatibility aliases (API still uses /me/projects endpoints)
+export type PersonalProject = PersonalEpic;
+export type ListPersonalProjectsParams = ListPersonalEpicsParams;
+export type ListPersonalProjectsResponse = ListPersonalEpicsResponse;
+export type CreatePersonalProjectData = CreatePersonalEpicData;
 
 export interface PersonalStatus {
   id: string;
@@ -269,7 +275,7 @@ export interface ListPersonalStatusesResponse {
 
 export interface SearchParams {
   query?: string | undefined;
-  project?: string | undefined;
+  epic?: string | undefined;
   status?: string | undefined;
   statusCategory?: string | undefined;
   assignee?: string | undefined;
@@ -290,7 +296,7 @@ export interface SearchResultItem {
   assigneeId: string | null;
   createdAt: string;
   updatedAt: string;
-  projectId?: string;
+  epicId?: string;
   featureId?: string;
 }
 
@@ -499,39 +505,48 @@ export class ApiClient {
   }
 
   // ---------------------------------------------------------------------------
-  // Project Methods
+  // Epic Methods
   // ---------------------------------------------------------------------------
 
-  async listProjects(params?: ListProjectsParams): Promise<ListProjectsResponse> {
+  async listEpics(params?: ListEpicsParams): Promise<ListEpicsResponse> {
     const query = this.buildQueryString({
       teamId: params?.team,
+      includeArchived: params?.includeArchived,
       limit: params?.limit,
       cursor: params?.cursor,
     });
-    return this.request<ListProjectsResponse>("GET", `/api/v1/projects${query}`);
+    return this.request<ListEpicsResponse>("GET", `/api/v1/epics${query}`);
   }
 
-  async getProject(idOrName: string): Promise<{ data: Project }> {
-    return this.request<{ data: Project }>("GET", `/api/v1/projects/${encodeURIComponent(idOrName)}`);
+  async getEpic(idOrName: string): Promise<{ data: Epic }> {
+    return this.request<{ data: Epic }>("GET", `/api/v1/epics/${encodeURIComponent(idOrName)}`);
   }
 
-  async createProject(data: CreateProjectData): Promise<{ data: Project }> {
-    return this.request<{ data: Project }>("POST", "/api/v1/projects", data);
+  async createEpic(data: CreateEpicData): Promise<{ data: Epic }> {
+    return this.request<{ data: Epic }>("POST", "/api/v1/epics", data);
   }
 
-  async updateProject(
+  async updateEpic(
     id: string,
-    data: Partial<Omit<CreateProjectData, "teamId">>
-  ): Promise<{ data: Project }> {
-    return this.request<{ data: Project }>("PUT", `/api/v1/projects/${encodeURIComponent(id)}`, data);
+    data: Partial<Omit<CreateEpicData, "teamId">>
+  ): Promise<{ data: Epic }> {
+    return this.request<{ data: Epic }>("PUT", `/api/v1/epics/${encodeURIComponent(id)}`, data);
   }
 
-  async reorderProject(id: string, params: ReorderParams): Promise<{ data: Project }> {
-    return this.request<{ data: Project }>(
+  async reorderEpic(id: string, params: ReorderParams): Promise<{ data: Epic }> {
+    return this.request<{ data: Epic }>(
       "PUT",
-      `/api/v1/projects/${encodeURIComponent(id)}/reorder`,
+      `/api/v1/epics/${encodeURIComponent(id)}/reorder`,
       params
     );
+  }
+
+  async archiveEpic(id: string): Promise<{ data: Epic }> {
+    return this.request<{ data: Epic }>("POST", `/api/v1/epics/${encodeURIComponent(id)}/archive`);
+  }
+
+  async unarchiveEpic(id: string): Promise<{ data: Epic }> {
+    return this.request<{ data: Epic }>("POST", `/api/v1/epics/${encodeURIComponent(id)}/unarchive`);
   }
 
   // ---------------------------------------------------------------------------
@@ -540,7 +555,7 @@ export class ApiClient {
 
   async listFeatures(params?: ListFeaturesParams): Promise<ListFeaturesResponse> {
     const query = this.buildQueryString({
-      projectId: params?.projectId ?? params?.project,
+      epicId: params?.epicId ?? params?.epic,
       statusId: params?.statusId,
       status: params?.status,
       statusCategory: params?.statusCategory,
@@ -589,7 +604,7 @@ export class ApiClient {
   async listTasks(params?: ListTasksParams): Promise<ListTasksResponse> {
     const query = this.buildQueryString({
       featureId: params?.featureId ?? params?.feature,
-      projectId: params?.projectId,
+      epicId: params?.epicId,
       statusId: params?.statusId,
       status: params?.status,
       statusCategory: params?.statusCategory,
@@ -714,21 +729,32 @@ export class ApiClient {
   }
 
   /**
-   * List projects in the current user's personal scope.
+   * List epics in the current user's personal scope.
+   * (API endpoint is still /me/projects for backwards compatibility)
    */
-  async listPersonalProjects(params?: ListPersonalProjectsParams): Promise<ListPersonalProjectsResponse> {
+  async listPersonalEpics(params?: ListPersonalEpicsParams): Promise<ListPersonalEpicsResponse> {
     const query = this.buildQueryString({
       limit: params?.limit,
       cursor: params?.cursor,
     });
-    return this.request<ListPersonalProjectsResponse>("GET", `/api/v1/me/projects${query}`);
+    return this.request<ListPersonalEpicsResponse>("GET", `/api/v1/me/projects${query}`);
   }
 
   /**
-   * Create a new project in the current user's personal scope.
+   * Create a new epic in the current user's personal scope.
+   * (API endpoint is still /me/projects for backwards compatibility)
    */
+  async createPersonalEpic(data: CreatePersonalEpicData): Promise<{ data: PersonalEpic }> {
+    return this.request<{ data: PersonalEpic }>("POST", "/api/v1/me/projects", data);
+  }
+
+  // Backwards compatibility aliases
+  async listPersonalProjects(params?: ListPersonalProjectsParams): Promise<ListPersonalProjectsResponse> {
+    return this.listPersonalEpics(params);
+  }
+
   async createPersonalProject(data: CreatePersonalProjectData): Promise<{ data: PersonalProject }> {
-    return this.request<{ data: PersonalProject }>("POST", "/api/v1/me/projects", data);
+    return this.createPersonalEpic(data);
   }
 
   /**
@@ -812,7 +838,7 @@ export class ApiClient {
       const featureParams: ListFeaturesParams = {
         limit,
       };
-      if (params.project) featureParams.project = params.project;
+      if (params.epic) featureParams.epic = params.epic;
       if (params.status) featureParams.status = params.status;
       if (params.statusCategory) featureParams.statusCategory = params.statusCategory;
       if (params.assignee) featureParams.assignee = params.assignee;
@@ -837,7 +863,7 @@ export class ApiClient {
           assigneeId: feature.assigneeId,
           createdAt: feature.createdAt,
           updatedAt: feature.updatedAt,
-          projectId: feature.projectId,
+          epicId: feature.epicId,
         });
       }
     }
@@ -847,7 +873,7 @@ export class ApiClient {
       const taskParams: ListTasksParams = {
         limit,
       };
-      if (params.project) taskParams.projectId = params.project;
+      if (params.epic) taskParams.epicId = params.epic;
       if (params.status) taskParams.status = params.status;
       if (params.statusCategory) taskParams.statusCategory = params.statusCategory;
       if (params.assignee) taskParams.assignee = params.assignee;

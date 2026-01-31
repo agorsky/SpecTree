@@ -98,7 +98,7 @@ export function IssueRow({ item, className, isLastTask, hideFeatureStatus }: Iss
       {/* Title - muted for tasks, strikethrough for completed */}
       <span
         className={cn(
-          "flex-1 truncate text-sm",
+          "truncate text-sm",
           isFeature ? "font-medium" : "font-normal text-muted-foreground",
           isDone && "line-through"
         )}
@@ -106,12 +106,15 @@ export function IssueRow({ item, className, isLastTask, hideFeatureStatus }: Iss
         {title}
       </span>
 
-      {/* Task count for features */}
+      {/* Task count for features - right after title */}
       {isFeature && taskCount && taskCount.total > 0 && (
         <span className="text-xs text-muted-foreground flex-shrink-0 tabular-nums">
           {taskCount.completed}/{taskCount.total}
         </span>
       )}
+
+      {/* Spacer to push assignee to the right */}
+      <span className="flex-1" />
 
       {/* Assignee avatar */}
       {assignee && (

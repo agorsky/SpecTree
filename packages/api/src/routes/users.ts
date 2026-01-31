@@ -38,10 +38,10 @@ interface UpdateUserBody {
  * Users routes plugin
  * Prefix: /api/v1/users
  */
-export default async function usersRoutes(
+export default function usersRoutes(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions
-): Promise<void> {
+): void {
   /**
    * GET /api/v1/users
    * List users with pagination

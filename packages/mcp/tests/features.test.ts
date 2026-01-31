@@ -15,7 +15,7 @@ const { mockApiClient } = vi.hoisted(() => {
     getFeature: vi.fn(),
     createFeature: vi.fn(),
     updateFeature: vi.fn(),
-    getProject: vi.fn(),
+    getEpic: vi.fn(),
     listTasks: vi.fn(),
   };
   return { mockApiClient };
@@ -75,17 +75,17 @@ describe("MCP Features Tools", () => {
       expect(data.features).toHaveLength(2);
     });
 
-    it("should filter by project", async () => {
+    it("should filter by epic", async () => {
       mockApiClient.listFeatures.mockResolvedValue({
         data: [],
         meta: { cursor: null, hasMore: false },
       });
 
       const handler = getHandler();
-      await handler!({ project: "Test Project" });
+      await handler!({ epic: "Test Epic" });
 
       expect(mockApiClient.listFeatures).toHaveBeenCalledWith(
-        expect.objectContaining({ project: "Test Project" })
+        expect.objectContaining({ epic: "Test Epic" })
       );
     });
 
@@ -94,7 +94,7 @@ describe("MCP Features Tools", () => {
       mockApiClient.listFeatures.mockRejectedValue(new ApiError("Not found", 404));
 
       const handler = getHandler();
-      const result = await handler!({ project: "Non-Existent" });
+      const result = await handler!({ epic: "Non-Existent" });
 
       expect(result.isError).toBe(true);
     });
@@ -131,14 +131,14 @@ describe("MCP Features Tools", () => {
     const getHandler = () => registeredTools.get("spectree__create_feature")?.handler;
 
     it("should create feature", async () => {
-      const mockProject = { id: "proj-1", name: "Test", teamId: "team-1" };
+      const mockEpic = { id: "epic-1", name: "Test", teamId: "team-1" };
       const mockFeature = { id: "feat-1", identifier: "ENG-1", title: "New Feature" };
 
-      mockApiClient.getProject.mockResolvedValue({ data: mockProject });
+      mockApiClient.getEpic.mockResolvedValue({ data: mockEpic });
       mockApiClient.createFeature.mockResolvedValue({ data: mockFeature });
 
       const handler = getHandler();
-      const result = await handler!({ title: "New Feature", project: "Test" });
+      const result = await handler!({ title: "New Feature", epic: "Test" });
 
       expect(result.isError).toBeUndefined();
       const data = JSON.parse(result.content[0]?.text || "{}");
@@ -147,10 +147,10 @@ describe("MCP Features Tools", () => {
 
     it("should handle API errors on create", async () => {
       const ApiError = (await import("../src/api-client.js")).ApiError;
-      mockApiClient.getProject.mockRejectedValue(new ApiError("Not found", 404));
+      mockApiClient.getEpic.mockRejectedValue(new ApiError("Not found", 404));
 
       const handler = getHandler();
-      const result = await handler!({ title: "New", project: "Non-Existent" });
+      const result = await handler!({ title: "New", epic: "Non-Existent" });
 
       expect(result.isError).toBe(true);
     });

@@ -102,7 +102,7 @@ export function registerTaskTools(server: McpServer): void {
         });
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
-          return createErrorResponse(new Error(`Feature '${input.feature}' not found`));
+          return createErrorResponse(new Error(`Feature '${input.feature ?? "unknown"}' not found`));
         }
         return createErrorResponse(error);
       }
@@ -202,8 +202,8 @@ export function registerTaskTools(server: McpServer): void {
         // Resolve status name to ID if provided
         let statusId = input.status;
         if (statusId) {
-          const { data: project } = await apiClient.getProject(feature.projectId);
-          statusId = await apiClient.resolveStatusId(statusId, project.teamId);
+          const { data: epic } = await apiClient.getEpic(feature.epicId);
+          statusId = await apiClient.resolveStatusId(statusId, epic.teamId);
         }
 
         const { data: task } = await apiClient.createTask({
@@ -283,8 +283,8 @@ export function registerTaskTools(server: McpServer): void {
           // Get task to find its team context
           const { data: task } = await apiClient.getTask(input.id);
           const { data: feature } = await apiClient.getFeature(task.featureId);
-          const { data: project } = await apiClient.getProject(feature.projectId);
-          statusId = await apiClient.resolveStatusId(statusId, project.teamId);
+          const { data: epic } = await apiClient.getEpic(feature.epicId);
+          statusId = await apiClient.resolveStatusId(statusId, epic.teamId);
         }
 
         const { data: task } = await apiClient.updateTask(input.id, {

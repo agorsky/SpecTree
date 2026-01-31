@@ -28,10 +28,10 @@ import { authenticate } from "../middleware/authenticate.js";
  * Auth routes plugin
  * Prefix: /api/v1/auth
  */
-export default async function authRoutes(
+export default function authRoutes(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions
-): Promise<void> {
+): void {
   /**
    * POST /api/v1/auth/login
    * Authenticate user with email and password

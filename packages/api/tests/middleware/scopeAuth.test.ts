@@ -10,7 +10,7 @@ vi.mock('../../src/lib/db.js', () => ({
     membership: {
       findFirst: vi.fn(),
     },
-    project: {
+    epic: {
       findUnique: vi.fn(),
     },
     feature: {
@@ -30,7 +30,7 @@ import {
   requireScopeAccess,
   hasPersonalScopeAccess,
   hasTeamScopeAccess,
-  getScopeFromProject,
+  getScopeFromEpic,
   getScopeFromFeature,
   getScopeFromTask,
   getScopeFromStatus,
@@ -122,15 +122,15 @@ describe('scopeAuth middleware', () => {
     });
   });
 
-  describe('getScopeFromProject', () => {
+  describe('getScopeFromEpic', () => {
     it('should return personal scope when project belongs to personal scope', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue({
         teamId: null,
         personalScopeId: 'scope-123',
         personalScope: { userId: 'user-123' },
       } as any);
 
-      const result = await getScopeFromProject('project-123');
+      const result = await getScopeFromEpic('project-123');
 
       expect(result).toEqual({
         type: 'personal',
@@ -140,13 +140,13 @@ describe('scopeAuth middleware', () => {
     });
 
     it('should return team scope when project belongs to team', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue({
         teamId: 'team-123',
         personalScopeId: null,
         personalScope: null,
       } as any);
 
-      const result = await getScopeFromProject('project-123');
+      const result = await getScopeFromEpic('project-123');
 
       expect(result).toEqual({
         type: 'team',
@@ -155,9 +155,9 @@ describe('scopeAuth middleware', () => {
     });
 
     it('should return null when project not found', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue(null);
 
-      const result = await getScopeFromProject('nonexistent');
+      const result = await getScopeFromEpic('nonexistent');
 
       expect(result).toBeNull();
     });
@@ -166,7 +166,7 @@ describe('scopeAuth middleware', () => {
   describe('getScopeFromFeature', () => {
     it('should return personal scope when feature is in personal project', async () => {
       vi.mocked(prisma.feature.findFirst).mockResolvedValue({
-        project: {
+        epic: {
           teamId: null,
           personalScopeId: 'scope-123',
           personalScope: { userId: 'user-123' },
@@ -184,7 +184,7 @@ describe('scopeAuth middleware', () => {
 
     it('should return team scope when feature is in team project', async () => {
       vi.mocked(prisma.feature.findFirst).mockResolvedValue({
-        project: {
+        epic: {
           teamId: 'team-123',
           personalScopeId: null,
           personalScope: null,
@@ -201,7 +201,7 @@ describe('scopeAuth middleware', () => {
 
     it('should lookup feature by identifier', async () => {
       vi.mocked(prisma.feature.findFirst).mockResolvedValue({
-        project: {
+        epic: {
           teamId: 'team-123',
           personalScopeId: null,
           personalScope: null,
@@ -229,7 +229,7 @@ describe('scopeAuth middleware', () => {
     it('should return personal scope when task is in personal project', async () => {
       vi.mocked(prisma.task.findFirst).mockResolvedValue({
         feature: {
-          project: {
+          epic: {
             teamId: null,
             personalScopeId: 'scope-123',
             personalScope: { userId: 'user-123' },
@@ -249,7 +249,7 @@ describe('scopeAuth middleware', () => {
     it('should return team scope when task is in team project', async () => {
       vi.mocked(prisma.task.findFirst).mockResolvedValue({
         feature: {
-          project: {
+          epic: {
             teamId: 'team-123',
             personalScopeId: null,
             personalScope: null,
@@ -268,7 +268,7 @@ describe('scopeAuth middleware', () => {
     it('should lookup task by identifier', async () => {
       vi.mocked(prisma.task.findFirst).mockResolvedValue({
         feature: {
-          project: {
+          epic: {
             teamId: 'team-123',
             personalScopeId: null,
             personalScope: null,
@@ -477,7 +477,7 @@ describe('scopeAuth middleware', () => {
     });
 
     it('should resolve scope from project and validate access', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue({
         teamId: 'team-123',
         personalScopeId: null,
         personalScope: null,
@@ -499,18 +499,18 @@ describe('scopeAuth middleware', () => {
     });
 
     it('should throw ForbiddenError when project not found', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue(null);
 
       const middleware = requireScopeAccess('projectId');
       const request = createMockRequest('user-123', { projectId: 'nonexistent' });
       const reply = createMockReply();
 
       await expect(middleware(request, reply)).rejects.toThrow(ForbiddenError);
-      await expect(middleware(request, reply)).rejects.toThrow('Project not found');
+      await expect(middleware(request, reply)).rejects.toThrow('Epic not found');
     });
 
     it('should support mapping syntax for param to resource type', async () => {
-      vi.mocked(prisma.project.findUnique).mockResolvedValue({
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue({
         teamId: null,
         personalScopeId: 'scope-123',
         personalScope: { userId: 'user-123' },
@@ -548,7 +548,7 @@ describe('scopeAuth middleware', () => {
 
     it('should handle feature-based scope resolution', async () => {
       vi.mocked(prisma.feature.findFirst).mockResolvedValue({
-        project: {
+        epic: {
           teamId: 'team-123',
           personalScopeId: null,
           personalScope: null,
@@ -584,7 +584,7 @@ describe('scopeAuth middleware', () => {
     it('should handle task-based scope resolution', async () => {
       vi.mocked(prisma.task.findFirst).mockResolvedValue({
         feature: {
-          project: {
+          epic: {
             teamId: null,
             personalScopeId: 'scope-123',
             personalScope: { userId: 'user-123' },

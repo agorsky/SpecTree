@@ -54,7 +54,7 @@ export interface AuthenticatedTeamMember extends AuthenticatedUser {
  * const headers = createAuthHeader(user.id);
  * const response = await app.inject({
  *   method: 'GET',
- *   url: '/api/projects',
+ *   url: '/api/epics',
  *   headers
  * });
  */
@@ -135,7 +135,7 @@ export async function createAuthenticatedUser(
  * const { user, team, headers } = await createAuthenticatedTeamMember();
  * const response = await app.inject({
  *   method: 'GET',
- *   url: `/api/teams/${team.id}/projects`,
+ *   url: `/api/teams/${team.id}/epics`,
  *   headers
  * });
  */

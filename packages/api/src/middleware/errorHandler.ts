@@ -27,10 +27,13 @@ function isProduction(): boolean {
 function formatValidationDetails(error: FastifyError): Record<string, unknown> | undefined {
   if (error.validation && error.validation.length > 0) {
     return {
-      validation: error.validation.map((v) => ({
-        field: v.instancePath || v.params?.missingProperty || "unknown",
-        message: v.message,
-      })),
+      validation: error.validation.map((v) => {
+        const params = v.params as Record<string, unknown> | undefined;
+        const missingProperty = params?.missingProperty;
+        // instancePath is always a string, use it first; fall back to missingProperty or "unknown"
+        const field = v.instancePath || (typeof missingProperty === "string" ? missingProperty : "unknown");
+        return { field, message: v.message };
+      }),
     };
   }
   return undefined;

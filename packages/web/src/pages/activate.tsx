@@ -11,7 +11,7 @@ import { Check, X } from "lucide-react";
 export function ActivatePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setTokens } = useAuthStore();
+  const { setTokens, checkAuth } = useAuthStore();
 
   const [formData, setFormData] = useState({
     email: searchParams.get("email") ?? "",
@@ -59,6 +59,9 @@ export function ActivatePage() {
 
         // Store tokens using auth store
         setTokens(response.tokens.accessToken, response.tokens.refreshToken);
+        
+        // Fetch user info to complete authentication
+        await checkAuth();
 
         // Navigate to home after successful activation
         void navigate("/");

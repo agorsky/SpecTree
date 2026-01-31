@@ -22,8 +22,8 @@ interface ListTasksQuery {
   cursor?: string;
   limit?: string;
   featureId?: string;
-  /** Filter by project ID (returns tasks across all features in the project) */
-  projectId?: string;
+  /** Filter by epic ID (returns tasks across all features in the epic) */
+  epicId?: string;
   statusId?: string;
   /** Status filter - can be ID or name (single or array via repeated param) */
   status?: string | string[];
@@ -73,10 +73,10 @@ interface BulkUpdateBody {
  * Tasks routes plugin
  * Prefix: /api/v1/tasks
  */
-export default async function tasksRoutes(
+export default function tasksRoutes(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions
-): Promise<void> {
+): void {
   /**
    * GET /api/v1/tasks
    * List tasks with cursor-based pagination
@@ -91,7 +91,7 @@ export default async function tasksRoutes(
         cursor?: string;
         limit?: number;
         featureId?: string;
-        projectId?: string;
+        epicId?: string;
         statusId?: string;
         status?: string | string[];
         statusCategory?: string;
@@ -114,8 +114,8 @@ export default async function tasksRoutes(
       if (request.query.featureId) {
         options.featureId = request.query.featureId;
       }
-      if (request.query.projectId) {
-        options.projectId = request.query.projectId;
+      if (request.query.epicId) {
+        options.epicId = request.query.epicId;
       }
       // Enhanced status filtering (supports name, ID, array, category)
       if (request.query.status) {
@@ -255,7 +255,7 @@ export default async function tasksRoutes(
       const { ids, statusId } = request.body;
 
       // Validate inputs
-      if (!ids || ids.length === 0) {
+      if (ids.length === 0) {
         throw new ValidationError("ids array is required and cannot be empty");
       }
       if (!statusId) {
@@ -271,14 +271,14 @@ export default async function tasksRoutes(
         throw new NotFoundError(`Status with id '${statusId}' not found`);
       }
 
-      // Verify all tasks exist and belong to features in projects in the status's team
+      // Verify all tasks exist and belong to features in epics in the status's team
       const tasks = await prisma.task.findMany({
         where: { id: { in: ids } },
         select: {
           id: true,
           feature: {
             select: {
-              project: {
+              epic: {
                 select: { teamId: true },
               },
             },
@@ -294,7 +294,7 @@ export default async function tasksRoutes(
 
       // Verify all tasks belong to the same team as the status
       const invalidTasks = tasks.filter(
-        (t) => t.feature.project.teamId !== status.teamId
+        (t) => t.feature.epic.teamId !== status.teamId
       );
       if (invalidTasks.length > 0) {
         throw new ValidationError(
@@ -415,10 +415,10 @@ export default async function tasksRoutes(
  * Prefix: /api/v1/features/:featureId/tasks
  * This plugin should be registered with the features prefix
  */
-export async function featureTasksRoutes(
+export function featureTasksRoutes(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions
-): Promise<void> {
+): void {
   /**
    * GET /api/v1/features/:featureId/tasks
    * List tasks for a specific feature with cursor-based pagination

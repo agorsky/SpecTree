@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyPluginOptions } from "fastify";
+import type { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import {
   listTeams,
   getTeamByIdOrNameOrKey,
@@ -25,6 +25,18 @@ import {
 } from "../schemas/index.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
+import { UnauthorizedError } from "../errors/index.js";
+
+/**
+ * Get the authenticated user ID from a request.
+ * Throws UnauthorizedError if not authenticated.
+ */
+function getAuthenticatedUserId(request: FastifyRequest): string {
+  if (!request.user) {
+    throw new UnauthorizedError("Authentication required");
+  }
+  return request.user.id;
+}
 
 /**
  * Flexible ID parameter type - can be UUID, name, or key
@@ -37,10 +49,10 @@ interface FlexibleIdParam {
  * Teams routes plugin
  * Prefix: /api/v1/teams
  */
-export default async function teamsRoutes(
+export default function teamsRoutes(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions
-): Promise<void> {
+): void {
   /**
    * GET /api/v1/teams
    * List teams with cursor-based pagination
@@ -115,7 +127,7 @@ export default async function teamsRoutes(
 
       // Add the creator as an admin member of the team
       await addMemberToTeam(team.id, {
-        userId: request.user!.id,
+        userId: getAuthenticatedUserId(request),
         role: "admin",
       });
 

@@ -5,7 +5,7 @@
  * These long-lived tokens are used by MCP and other programmatic clients.
  */
 
-import type { FastifyInstance, FastifyPluginOptions } from "fastify";
+import type { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import { authenticate } from "../middleware/authenticate.js";
 import {
   createToken,
@@ -13,7 +13,7 @@ import {
   getTokenById,
   revokeToken,
 } from "../services/tokenService.js";
-import { NotFoundError, ForbiddenError, BadRequestError } from "../errors/index.js";
+import { NotFoundError, ForbiddenError, BadRequestError, UnauthorizedError } from "../errors/index.js";
 
 // =============================================================================
 // Request/Response Types
@@ -29,6 +29,17 @@ interface TokenIdParams {
   id: string;
 }
 
+/**
+ * Get the authenticated user ID from a request.
+ * Throws UnauthorizedError if not authenticated (should never happen after authenticate middleware).
+ */
+function getAuthenticatedUserId(request: FastifyRequest): string {
+  if (!request.user) {
+    throw new UnauthorizedError("Authentication required");
+  }
+  return request.user.id;
+}
+
 // =============================================================================
 // Routes
 // =============================================================================
@@ -37,10 +48,10 @@ interface TokenIdParams {
  * Token routes plugin
  * Prefix: /api/v1/tokens
  */
-export default async function tokensRoutes(
+export default function tokensRoutes(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions
-): Promise<void> {
+): void {
   /**
    * POST /api/v1/tokens
    * Create a new API token
@@ -53,7 +64,7 @@ export default async function tokensRoutes(
     { preHandler: [authenticate] },
     async (request, reply) => {
       const { name, scopes, expiresAt } = request.body;
-      const userId = request.user!.id;
+      const userId = getAuthenticatedUserId(request);
 
       // Validate name is provided
       if (!name || name.trim().length === 0) {
@@ -101,7 +112,7 @@ export default async function tokensRoutes(
     "/",
     { preHandler: [authenticate] },
     async (request, reply) => {
-      const userId = request.user!.id;
+      const userId = getAuthenticatedUserId(request);
       const tokens = await listTokens(userId);
 
       return reply.send({ data: tokens });
@@ -118,7 +129,7 @@ export default async function tokensRoutes(
     { preHandler: [authenticate] },
     async (request, reply) => {
       const { id } = request.params;
-      const userId = request.user!.id;
+      const userId = getAuthenticatedUserId(request);
 
       const token = await getTokenById(id);
 
@@ -147,7 +158,7 @@ export default async function tokensRoutes(
     { preHandler: [authenticate] },
     async (request, reply) => {
       const { id } = request.params;
-      const userId = request.user!.id;
+      const userId = getAuthenticatedUserId(request);
 
       // Get the token first to check ownership
       const token = await getTokenById(id);

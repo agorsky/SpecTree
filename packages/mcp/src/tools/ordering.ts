@@ -1,7 +1,7 @@
 /**
  * MCP Tools for Ordering/Reordering operations
  *
- * Provides tools for reordering projects, features, and tasks in SpecTree.
+ * Provides tools for reordering epics, features, and tasks in SpecTree.
  * Enables AI agents to programmatically organize work items.
  * Uses HTTP API client for all operations.
  */
@@ -35,31 +35,31 @@ function createErrorResponse(error: unknown) {
  */
 export function registerOrderingTools(server: McpServer): void {
   // ==========================================================================
-  // spectree__reorder_project
+  // spectree__reorder_epic
   // ==========================================================================
   server.registerTool(
-    "spectree__reorder_project",
+    "spectree__reorder_epic",
     {
       description:
-        "Reorder a project within its team's project list. Use this to change the " +
-        "position of a project relative to other projects. Provide afterId to place " +
-        "the project after another one, or beforeId to place it before another one, " +
-        "or both to place it precisely between two projects. " +
-        "Projects must belong to the same team.",
+        "Reorder an epic within its team's epic list. Use this to change the " +
+        "position of an epic relative to other epics. Provide afterId to place " +
+        "the epic after another one, or beforeId to place it before another one, " +
+        "or both to place it precisely between two epics. " +
+        "Epics must belong to the same team.",
       inputSchema: {
         id: z
           .string()
           .uuid()
           .describe(
-            "The UUID of the project to reorder."
+            "The UUID of the epic to reorder."
           ),
         afterId: z
           .string()
           .uuid()
           .optional()
           .describe(
-            "The UUID of the project to place this project after. " +
-            "If not provided, the project will be placed at the start (when used with beforeId) " +
+            "The UUID of the epic to place this epic after. " +
+            "If not provided, the epic will be placed at the start (when used with beforeId) " +
             "or at the end (when neither is provided)."
           ),
         beforeId: z
@@ -67,8 +67,8 @@ export function registerOrderingTools(server: McpServer): void {
           .uuid()
           .optional()
           .describe(
-            "The UUID of the project to place this project before. " +
-            "If not provided, the project will be placed at the end (when used with afterId) " +
+            "The UUID of the epic to place this epic before. " +
+            "If not provided, the epic will be placed at the end (when used with afterId) " +
             "or at the start (when neither is provided)."
           ),
       },
@@ -82,22 +82,22 @@ export function registerOrderingTools(server: McpServer): void {
 
         const apiClient = getApiClient();
 
-        const { data: project } = await apiClient.reorderProject(input.id, {
+        const { data: epic } = await apiClient.reorderEpic(input.id, {
           afterId: input.afterId,
           beforeId: input.beforeId,
         });
 
         return createResponse({
-          id: project.id,
-          name: project.name,
-          sortOrder: project.sortOrder,
-          team: project.team,
-          updatedAt: project.updatedAt,
+          id: epic.id,
+          name: epic.name,
+          sortOrder: epic.sortOrder,
+          team: epic.team,
+          updatedAt: epic.updatedAt,
         });
       } catch (error) {
         if (error instanceof ApiError) {
           if (error.status === 404) {
-            return createErrorResponse(new Error(`Project with id '${input.id}' not found`));
+            return createErrorResponse(new Error(`Epic with id '${input.id}' not found`));
           }
           if (error.status === 400) {
             const body = error.body as { message?: string } | undefined;
@@ -116,11 +116,11 @@ export function registerOrderingTools(server: McpServer): void {
     "spectree__reorder_feature",
     {
       description:
-        "Reorder a feature within its project. Use this to change the position of " +
+        "Reorder a feature within its epic. Use this to change the position of " +
         "a feature relative to other features. Provide afterId to place the feature " +
         "after another one, or beforeId to place it before another one, or both to " +
         "place it precisely between two features. " +
-        "Features must belong to the same project.",
+        "Features must belong to the same epic.",
       inputSchema: {
         id: z
           .string()

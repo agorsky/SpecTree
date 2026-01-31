@@ -40,8 +40,10 @@ export function InvitationList() {
       queryClient.invalidateQueries({ queryKey: ["invitations"] }),
   });
 
-  const copyCode = async (code: string) => {
-    await navigator.clipboard.writeText(code);
+  const copyActivationUrl = async (email: string, code: string) => {
+    const baseUrl = window.location.origin;
+    const url = `${baseUrl}/activate?email=${encodeURIComponent(email)}&code=${code}`;
+    await navigator.clipboard.writeText(url);
   };
 
   if (isLoading) {
@@ -100,8 +102,8 @@ export function InvitationList() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => copyCode(inv.code)}
-                    title="Copy code"
+                    onClick={() => copyActivationUrl(inv.email, inv.code)}
+                    title="Copy activation link"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>

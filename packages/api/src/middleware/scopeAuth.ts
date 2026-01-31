@@ -84,15 +84,15 @@ async function hasTeamScopeAccess(
 }
 
 /**
- * Resolves the scope from a project ID.
- * A project can belong to either a personal scope or a team scope.
+ * Resolves the scope from an epic ID.
+ * An epic can belong to either a personal scope or a team scope.
  *
- * @param projectId - The project ID
- * @returns The resolved scope or null if project not found
+ * @param epicId - The epic ID
+ * @returns The resolved scope or null if epic not found
  */
-async function getScopeFromProject(projectId: string): Promise<ResolvedScope | null> {
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
+async function getScopeFromEpic(epicId: string): Promise<ResolvedScope | null> {
+  const epic = await prisma.epic.findUnique({
+    where: { id: epicId },
     select: {
       teamId: true,
       personalScopeId: true,
@@ -102,22 +102,22 @@ async function getScopeFromProject(projectId: string): Promise<ResolvedScope | n
     },
   });
 
-  if (!project) {
+  if (!epic) {
     return null;
   }
 
-  if (project.personalScopeId) {
+  if (epic.personalScopeId) {
     return {
       type: "personal",
-      id: project.personalScopeId,
-      ownerId: project.personalScope?.userId,
+      id: epic.personalScopeId,
+      ownerId: epic.personalScope?.userId,
     };
   }
 
-  if (project.teamId) {
+  if (epic.teamId) {
     return {
       type: "team",
-      id: project.teamId,
+      id: epic.teamId,
     };
   }
 
@@ -126,7 +126,7 @@ async function getScopeFromProject(projectId: string): Promise<ResolvedScope | n
 
 /**
  * Resolves the scope from a feature ID or identifier.
- * Traverses: feature → project → scope
+ * Traverses: feature → epic → scope
  *
  * @param featureIdOrIdentifier - The feature ID (UUID) or identifier (e.g., "ENG-4")
  * @returns The resolved scope or null if feature not found
@@ -140,7 +140,7 @@ async function getScopeFromFeature(
       ? { id: featureIdOrIdentifier }
       : { identifier: featureIdOrIdentifier },
     select: {
-      project: {
+      epic: {
         select: {
           teamId: true,
           personalScopeId: true,
@@ -152,22 +152,22 @@ async function getScopeFromFeature(
     },
   });
 
-  if (!feature?.project) {
+  if (!feature?.epic) {
     return null;
   }
 
-  if (feature.project.personalScopeId) {
+  if (feature.epic.personalScopeId) {
     return {
       type: "personal",
-      id: feature.project.personalScopeId,
-      ownerId: feature.project.personalScope?.userId,
+      id: feature.epic.personalScopeId,
+      ownerId: feature.epic.personalScope?.userId,
     };
   }
 
-  if (feature.project.teamId) {
+  if (feature.epic.teamId) {
     return {
       type: "team",
-      id: feature.project.teamId,
+      id: feature.epic.teamId,
     };
   }
 
@@ -176,7 +176,7 @@ async function getScopeFromFeature(
 
 /**
  * Resolves the scope from a task ID or identifier.
- * Traverses: task → feature → project → scope
+ * Traverses: task → feature → epic → scope
  *
  * @param taskIdOrIdentifier - The task ID (UUID) or identifier (e.g., "ENG-4-1")
  * @returns The resolved scope or null if task not found
@@ -192,7 +192,7 @@ async function getScopeFromTask(
     select: {
       feature: {
         select: {
-          project: {
+          epic: {
             select: {
               teamId: true,
               personalScopeId: true,
@@ -210,20 +210,20 @@ async function getScopeFromTask(
     return null;
   }
 
-  const project = task.feature.project;
+  const epic = task.feature.epic;
 
-  if (project.personalScopeId) {
+  if (epic.personalScopeId) {
     return {
       type: "personal",
-      id: project.personalScopeId,
-      ownerId: project.personalScope?.userId,
+      id: epic.personalScopeId,
+      ownerId: epic.personalScope?.userId,
     };
   }
 
-  if (project.teamId) {
+  if (epic.teamId) {
     return {
       type: "team",
-      id: project.teamId,
+      id: epic.teamId,
     };
   }
 
@@ -404,20 +404,20 @@ export function requireScopeAccess(
         type: "team",
         id: resourceId,
       };
-    } else if (typeLower === "projectid" || typeLower === "project_id") {
-      // Resolve scope via project
-      scope = await getScopeFromProject(resourceId);
+    } else if (typeLower === "projectid" || typeLower === "project_id" || typeLower === "epicid" || typeLower === "epic_id") {
+      // Resolve scope via epic
+      scope = await getScopeFromEpic(resourceId);
       if (!scope) {
-        throw new ForbiddenError("Project not found");
+        throw new ForbiddenError("Epic not found");
       }
     } else if (typeLower === "featureid" || typeLower === "feature_id") {
-      // Resolve scope via feature → project
+      // Resolve scope via feature → epic
       scope = await getScopeFromFeature(resourceId);
       if (!scope) {
         throw new ForbiddenError("Feature not found");
       }
     } else if (typeLower === "taskid" || typeLower === "task_id") {
-      // Resolve scope via task → feature → project
+      // Resolve scope via task → feature → epic
       scope = await getScopeFromTask(resourceId);
       if (!scope) {
         throw new ForbiddenError("Task not found");
@@ -456,7 +456,7 @@ export function requireScopeAccess(
 export {
   hasPersonalScopeAccess,
   hasTeamScopeAccess,
-  getScopeFromProject,
+  getScopeFromEpic,
   getScopeFromFeature,
   getScopeFromTask,
   getScopeFromStatus,

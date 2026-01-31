@@ -296,7 +296,7 @@ describe("User Invitation Flow (E2E)", () => {
       });
 
       expect(response.statusCode).toBe(400);
-      expect(response.json().message).toContain("expired");
+      expect(response.json().error.message).toContain("expired");
     });
 
     it("rejects already used codes", async () => {
@@ -315,7 +315,7 @@ describe("User Invitation Flow (E2E)", () => {
       });
 
       expect(response.statusCode).toBe(400);
-      expect(response.json().message).toContain("already been used");
+      expect(response.json().error.message).toContain("already been used");
     });
 
     it("rejects code with wrong email", async () => {
@@ -515,7 +515,7 @@ describe("User Invitation Flow (E2E)", () => {
       });
 
       expect(response.statusCode).toBe(400);
-      expect(response.json().message).toContain("Cannot revoke used invitation");
+      expect(response.json().error.message).toContain("Cannot revoke used invitation");
     });
 
     it("returns 404 for non-existent invitation", async () => {

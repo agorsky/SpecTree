@@ -11,7 +11,7 @@ import { initializeJwtSecret } from "./utils/jwt.js";
 import { getSecretsProvider } from "./lib/secrets/index.js";
 import usersRoutes from "./routes/users.js";
 import teamsRoutes from "./routes/teams.js";
-import projectsRoutes from "./routes/projects.js";
+import epicsRoutes from "./routes/epics.js";
 import statusesRoutes from "./routes/statuses.js";
 import { teamMembershipsRoutes, userTeamsRoutes } from "./routes/memberships.js";
 import featuresRoutes from "./routes/features.js";
@@ -20,6 +20,7 @@ import authRoutes from "./routes/auth.js";
 import tokensRoutes from "./routes/tokens.js";
 import meRoutes from "./routes/me.js";
 import invitationRoutes from "./routes/admin/invitations.js";
+import adminUsersRoutes from "./routes/admin/users.js";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const HOST = process.env.HOST ?? "0.0.0.0";
@@ -54,7 +55,7 @@ async function main(): Promise<void> {
   // Register route plugins
   await fastify.register(usersRoutes, { prefix: "/api/v1/users" });
   await fastify.register(teamsRoutes, { prefix: "/api/v1/teams" });
-  await fastify.register(projectsRoutes, { prefix: "/api/v1/projects" });
+  await fastify.register(epicsRoutes, { prefix: "/api/v1/epics" });
   await fastify.register(statusesRoutes, { prefix: "/api/v1/statuses" });
   await fastify.register(teamMembershipsRoutes, { prefix: "/api/v1/teams" });
   await fastify.register(userTeamsRoutes, { prefix: "/api/v1/users" });
@@ -65,6 +66,7 @@ async function main(): Promise<void> {
   await fastify.register(tokensRoutes, { prefix: "/api/v1/tokens" });
   await fastify.register(meRoutes, { prefix: "/api/v1/me" });
   await fastify.register(invitationRoutes, { prefix: "/api/v1/admin/invitations" });
+  await fastify.register(adminUsersRoutes, { prefix: "/api/v1/admin/users" });
 
   // Graceful shutdown - disconnect Prisma
   fastify.addHook("onClose", async () => {

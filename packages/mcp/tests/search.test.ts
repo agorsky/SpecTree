@@ -74,17 +74,17 @@ describe("MCP Search Tools", () => {
       expect(data.results).toHaveLength(2);
     });
 
-    it("should filter by project", async () => {
+    it("should filter by epic", async () => {
       mockApiClient.search.mockResolvedValue({
         results: [],
         meta: { total: 0, cursor: null, hasMore: false },
       });
 
       const handler = getHandler();
-      await handler!({ project: "Test Project" });
+      await handler!({ epic: "Test Epic" });
 
       expect(mockApiClient.search).toHaveBeenCalledWith(
-        expect.objectContaining({ project: "Test Project" })
+        expect.objectContaining({ epic: "Test Epic" })
       );
     });
 

@@ -299,11 +299,11 @@ export async function getStatusIdsByCategory(
 /**
  * Default status configurations for new teams
  */
-const DEFAULT_STATUSES: Array<{
+const DEFAULT_STATUSES: {
   name: string;
   category: StatusCategory;
   position: number;
-}> = [
+}[] = [
   { name: "Backlog", category: "backlog", position: 0 },
   { name: "Todo", category: "unstarted", position: 1 },
   { name: "In Progress", category: "started", position: 2 },
