@@ -83,42 +83,28 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 
 // ============================================================================
 // Diagnostic Settings
+// Note: Disabled until Log Analytics workspace is created and passed as parameter
 // ============================================================================
 
-resource keyVaultDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: 'diag-${keyVaultName}'
-  scope: keyVault
-  properties: {
-    logs: [
-      {
-        categoryGroup: 'allLogs'
-        enabled: true
-        retentionPolicy: {
-          enabled: true
-          days: 90
-        }
-      }
-      {
-        categoryGroup: 'audit'
-        enabled: true
-        retentionPolicy: {
-          enabled: true
-          days: 90
-        }
-      }
-    ]
-    metrics: [
-      {
-        category: 'AllMetrics'
-        enabled: true
-        retentionPolicy: {
-          enabled: true
-          days: 90
-        }
-      }
-    ]
-  }
-}
+// resource keyVaultDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+//   name: 'diag-${keyVaultName}'
+//   scope: keyVault
+//   properties: {
+//     workspaceId: '<LOG_ANALYTICS_WORKSPACE_ID>'  // Required: Log Analytics workspace
+//     logs: [
+//       {
+//         categoryGroup: 'allLogs'
+//         enabled: true
+//       }
+//     ]
+//     metrics: [
+//       {
+//         category: 'AllMetrics'
+//         enabled: true
+//       }
+//     ]
+//   }
+// }
 
 // ============================================================================
 // SQL Secrets
