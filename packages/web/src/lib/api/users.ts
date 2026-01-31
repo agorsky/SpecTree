@@ -8,6 +8,21 @@ interface UsersResponse {
   limit: number;
 }
 
+export interface CreateUserInput {
+  email: string;
+  name: string;
+  password: string;
+  avatarUrl?: string;
+}
+
+export interface UpdateUserInput {
+  email?: string;
+  name?: string;
+  password?: string;
+  avatarUrl?: string;
+  isActive?: boolean;
+}
+
 export const usersApi = {
   list: (params?: { page?: number; limit?: number }) => {
     const queryParams = new URLSearchParams();
@@ -20,4 +35,11 @@ export const usersApi = {
   get: (id: string) => api.get<{ data: User }>(`/users/${id}`),
 
   me: () => api.get<{ data: User }>('/users/me'),
+
+  create: (data: CreateUserInput) => api.post<{ data: User }>('/users', data),
+
+  update: (id: string, data: UpdateUserInput) =>
+    api.put<{ data: User }>(`/users/${id}`, data),
+
+  delete: (id: string) => api.delete<{ success: boolean }>(`/users/${id}`),
 };

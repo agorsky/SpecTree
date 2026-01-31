@@ -21,14 +21,16 @@ interface Props {
 export function InviteUserModal({ open, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
-  const [successCode, setSuccessCode] = useState<string | null>(null);
+  const [successData, setSuccessData] = useState<{ code: string; email: string } | null>(null);
   const queryClient = useQueryClient();
 
   const createInvitation = useMutation({
     mutationFn: () => adminApi.createInvitation({ email }),
-    onSuccess: (data) => {
+    onSuccess: (response: unknown) => {
       queryClient.invalidateQueries({ queryKey: ["invitations"] });
-      setSuccessCode(data.code);
+      // API returns { data: invitation }, so access response.data.code
+      const { data } = response as { data: { code: string } };
+      setSuccessData({ code: data.code, email });
       setEmail("");
       setError("");
     },
@@ -48,14 +50,18 @@ export function InviteUserModal({ open, onClose }: Props) {
   const handleClose = () => {
     setEmail("");
     setError("");
-    setSuccessCode(null);
+    setSuccessData(null);
     onClose();
   };
 
+  const getActivationUrl = () => {
+    if (!successData) return "";
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/activate?email=${encodeURIComponent(successData.email)}&code=${successData.code}`;
+  };
+
   const copyToClipboard = async () => {
-    if (successCode) {
-      await navigator.clipboard.writeText(successCode);
-    }
+    await navigator.clipboard.writeText(getActivationUrl());
   };
 
   return (
@@ -68,7 +74,7 @@ export function InviteUserModal({ open, onClose }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        {successCode ? (
+        {successData ? (
           <div className="space-y-4">
             <div className="rounded-md bg-green-50 p-4 dark:bg-green-900/20">
               <p className="text-sm text-green-800 dark:text-green-200">
@@ -76,15 +82,15 @@ export function InviteUserModal({ open, onClose }: Props) {
               </p>
             </div>
             <div className="space-y-2">
-              <Label>Invitation Code</Label>
+              <Label>Activation Link</Label>
               <div className="flex gap-2">
-                <Input value={successCode} readOnly className="font-mono" />
+                <Input value={getActivationUrl()} readOnly className="font-mono text-xs" />
                 <Button variant="outline" onClick={copyToClipboard}>
                   Copy
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Share this code with the user to complete registration.
+                Share this link with the user to complete registration.
               </p>
             </div>
             <DialogFooter>
