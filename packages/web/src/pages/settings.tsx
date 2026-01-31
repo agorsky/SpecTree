@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuthStore } from "@/stores/auth-store";
+import { useTheme } from "@/hooks/use-theme";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,9 +11,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function SettingsPage() {
   const { user, logout } = useAuthStore();
+  const { theme, setTheme } = useTheme();
   const [name, setName] = useState(user?.name ?? "");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -66,9 +75,16 @@ export function SettingsPage() {
                 Use dark theme
               </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Coming soon...
-            </div>
+            <Select value={theme} onValueChange={setTheme}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem value="system">System</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
