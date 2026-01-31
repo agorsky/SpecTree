@@ -78,7 +78,8 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
     administratorLoginPassword: adminPassword
     version: '12.0'
     minimalTlsVersion: '1.2'
-    publicNetworkAccess: 'Disabled'
+    // Enable public access for dev to allow Azure services; use private endpoints in prod
+    publicNetworkAccess: environment == 'prod' ? 'Disabled' : 'Enabled'
     restrictOutboundNetworkAccess: 'Disabled'
     administrators: {
       administratorType: 'ActiveDirectory'

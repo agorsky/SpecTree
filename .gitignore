@@ -62,3 +62,6 @@ packages/api/data/*.db
 packages/api/data/*.db-journal
 packages/api/prisma/data/*.db
 packages/api/prisma/data/*.db-journal
+
+# Azure credentials (DO NOT COMMIT)
+infra/.env.azure

@@ -28,7 +28,11 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "db:restore": "echo 'Usage: cp backups/<backup-file>.db prisma/data/spectree.db'"
+    "db:restore": "echo 'Usage: cp backups/<backup-file>.db prisma/data/spectree.db'",
+    "db:generate:sqlserver": "prisma generate --schema=prisma/schema.sqlserver.prisma",
+    "db:push:sqlserver": "prisma db push --schema=prisma/schema.sqlserver.prisma",
+    "db:migrate:deploy:sqlserver": "prisma migrate deploy --schema=prisma/schema.sqlserver.prisma",
+    "db:studio:sqlserver": "prisma studio --schema=prisma/schema.sqlserver.prisma"
   },
   "dependencies": {
     "@azure/identity": "^4.13.0",
