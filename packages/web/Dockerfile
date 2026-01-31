@@ -1,5 +1,5 @@
 FROM node:22-alpine AS base
-RUN corepack enable pnpm
+RUN apk add --no-cache bash && corepack enable pnpm
 
 # Build stage
 FROM base AS builder
@@ -7,6 +7,7 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY scripts ./scripts
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/web/package.json ./packages/web/
 
