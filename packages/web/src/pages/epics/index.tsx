@@ -3,9 +3,13 @@ import { useEpics } from "@/hooks/queries/use-epics";
 import { Button } from "@/components/ui/button";
 import { EpicForm } from "@/components/epics/epic-form";
 import { EpicCard } from "@/components/epics/epic-card";
-import { Plus, Archive } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Plus, Filter, Check } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function EpicsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -19,18 +23,25 @@ export function EpicsPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Epics</h1>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="show-archived"
-              checked={showArchived}
-              onCheckedChange={(checked) => setShowArchived(checked === true)}
-            />
-            <Label htmlFor="show-archived" className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
-              <Archive className="h-4 w-4" />
-              Show archived
-            </Label>
-          </div>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                {showArchived ? "All epics" : "Active"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowArchived(false)}>
+                <Check className={`h-4 w-4 mr-2 ${!showArchived ? "opacity-100" : "opacity-0"}`} />
+                Active only
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowArchived(true)}>
+                <Check className={`h-4 w-4 mr-2 ${showArchived ? "opacity-100" : "opacity-0"}`} />
+                Include archived
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button onClick={() => setIsFormOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Epic
