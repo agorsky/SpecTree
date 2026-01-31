@@ -62,5 +62,8 @@ export const adminApi = {
   reactivateUser: (id: string) =>
     api.patch<UserResponse>(`/admin/users/${id}`, { isActive: true }),
 
+  updateUserAdmin: (id: string, data: { isGlobalAdmin?: boolean; isActive?: boolean }) =>
+    api.patch<UserResponse>(`/admin/users/${id}`, data),
+
   deleteUser: (id: string) => api.delete(`/admin/users/${id}`),
 };

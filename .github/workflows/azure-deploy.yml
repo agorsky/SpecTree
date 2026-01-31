@@ -1,0 +1,112 @@
+name: Build and Deploy to Azure
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Required for OIDC authentication with Azure
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ACR_NAME: acrspectreedev
+  RESOURCE_GROUP: rg-spectree-dev
+  API_CONTAINER_APP: ca-spectree-api-dev
+  WEB_CONTAINER_APP: ca-spectree-web-dev
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Run tests
+        run: pnpm test
+
+  build-and-deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build and push API image
+        run: |
+          VERSION=${{ github.sha }}
+
+          docker build -f packages/api/Dockerfile \
+            -t ${{ env.ACR_NAME }}.azurecr.io/spectree-api:$VERSION \
+            -t ${{ env.ACR_NAME }}.azurecr.io/spectree-api:latest .
+
+          docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-api:$VERSION
+          docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-api:latest
+
+      - name: Build and push Web image
+        run: |
+          VERSION=${{ github.sha }}
+
+          docker build -f packages/web/Dockerfile \
+            -t ${{ env.ACR_NAME }}.azurecr.io/spectree-web:$VERSION \
+            -t ${{ env.ACR_NAME }}.azurecr.io/spectree-web:latest \
+            --build-arg VITE_API_URL=${{ secrets.API_URL }} .
+
+          docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-web:$VERSION
+          docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-web:latest
+
+      - name: Deploy API to Container Apps
+        run: |
+          az containerapp update \
+            --name ${{ env.API_CONTAINER_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/spectree-api:${{ github.sha }}
+
+      - name: Deploy Web to Container Apps
+        run: |
+          az containerapp update \
+            --name ${{ env.WEB_CONTAINER_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/spectree-web:${{ github.sha }}
+
+      - name: Verify API deployment
+        run: |
+          echo "Waiting for deployment to stabilize..."
+          sleep 30
+          API_URL=$(az containerapp show \
+            --name ${{ env.API_CONTAINER_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query properties.configuration.ingress.fqdn -o tsv)
+          echo "API deployed to: https://$API_URL"
+          curl -sf "https://$API_URL/health" || echo "Health check endpoint not available"

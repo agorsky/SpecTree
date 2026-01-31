@@ -279,6 +279,7 @@ export async function getUserByEmailWithPassword(email: string): Promise<{
   name: string;
   avatarUrl: string | null;
   isActive: boolean;
+  isGlobalAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
   passwordHash: string;
@@ -293,6 +294,7 @@ export async function getUserByEmailWithPassword(email: string): Promise<{
       name: true,
       avatarUrl: true,
       isActive: true,
+      isGlobalAdmin: true,
       createdAt: true,
       updatedAt: true,
       passwordHash: true,
@@ -315,6 +317,7 @@ export async function getUserByEmailWithPassword(email: string): Promise<{
     name: user.name,
     avatarUrl: user.avatarUrl,
     isActive: user.isActive,
+    isGlobalAdmin: user.isGlobalAdmin,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     passwordHash: user.passwordHash,

@@ -11,7 +11,7 @@ import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import { authenticate } from "../../middleware/authenticate.js";
 import { requireGlobalAdmin } from "../../middleware/globalAdmin.js";
 import { prisma } from "../../lib/db.js";
-import { updateUser, hardDeleteUser } from "../../services/userService.js";
+import { hardDeleteUser } from "../../services/userService.js";
 import { NotFoundError, ForbiddenError } from "../../errors/index.js";
 
 interface ListUsersQuery {
@@ -25,6 +25,7 @@ interface UserIdParams {
 
 interface UpdateUserBody {
   isActive?: boolean;
+  isGlobalAdmin?: boolean;
 }
 
 // Admin view includes isGlobalAdmin field
@@ -85,7 +86,7 @@ export default function adminUsersRoutes(
     "/:id",
     async (request, reply) => {
       const { id } = request.params;
-      const { isActive } = request.body;
+      const { isActive, isGlobalAdmin } = request.body;
 
       // Check if user exists
       const existingUser = await prisma.user.findUnique({
@@ -97,24 +98,44 @@ export default function adminUsersRoutes(
         throw new NotFoundError(`User with id '${id}' not found`);
       }
 
-      // Prevent deactivating yourself
-      if (request.user?.id === id && isActive === false) {
-        throw new ForbiddenError("Cannot deactivate your own account");
+      // Prevent modifying yourself
+      if (request.user?.id === id) {
+        if (isActive === false) {
+          throw new ForbiddenError("Cannot deactivate your own account");
+        }
+        if (isGlobalAdmin === false) {
+          throw new ForbiddenError("Cannot remove your own admin privileges");
+        }
       }
 
-      // Prevent deactivating other global admins (last admin protection)
+      // Prevent deactivating other global admins
       if (existingUser.isGlobalAdmin && isActive === false) {
         throw new ForbiddenError("Cannot deactivate a global admin");
       }
 
-      if (isActive === undefined) {
+      // Check if removing the last global admin
+      if (existingUser.isGlobalAdmin && isGlobalAdmin === false) {
+        const adminCount = await prisma.user.count({
+          where: { isGlobalAdmin: true, isActive: true },
+        });
+        if (adminCount <= 1) {
+          throw new ForbiddenError("Cannot remove the last global admin");
+        }
+      }
+
+      if (isActive === undefined && isGlobalAdmin === undefined) {
         return reply.send(existingUser);
       }
 
-      const user = await updateUser(id, { isActive });
-      if (!user) {
-        throw new NotFoundError(`User with id '${id}' not found`);
-      }
+      // Build update data
+      const updateData: { isActive?: boolean; isGlobalAdmin?: boolean } = {};
+      if (isActive !== undefined) updateData.isActive = isActive;
+      if (isGlobalAdmin !== undefined) updateData.isGlobalAdmin = isGlobalAdmin;
+
+      await prisma.user.update({
+        where: { id },
+        data: updateData,
+      });
 
       // Fetch again with admin fields
       const updatedUser = await prisma.user.findUnique({

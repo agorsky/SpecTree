@@ -4,6 +4,7 @@ import { useTeam, useDeleteTeam } from "@/hooks/queries/use-teams";
 import { useAuthStore } from "@/stores/auth-store";
 import { MemberList } from "@/components/teams/member-list";
 import { TeamForm } from "@/components/teams/team-form";
+import { AddMemberModal } from "@/components/teams/add-member-modal";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -24,6 +25,7 @@ export function TeamDetailPage() {
   const { user } = useAuthStore();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
 
   if (isLoading) {
     return (
@@ -74,9 +76,9 @@ export function TeamDetailPage() {
         <TabsContent value="members" className="mt-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium">Team Members</h2>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setShowAddMember(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
-              Invite Member
+              Add Member
             </Button>
           </div>
           <MemberList teamId={team.id} currentUserId={user?.id ?? ""} />
@@ -123,6 +125,13 @@ export function TeamDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add member modal */}
+      <AddMemberModal
+        teamId={team.id}
+        open={showAddMember}
+        onOpenChange={setShowAddMember}
+      />
     </div>
   );
 }

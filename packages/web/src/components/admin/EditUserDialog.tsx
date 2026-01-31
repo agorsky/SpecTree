@@ -11,7 +11,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { usersApi } from "@/lib/api/users";
+import { adminApi } from "@/lib/api/admin";
+import { useAuthStore } from "@/stores/auth-store";
 
 interface AdminUser {
   id: string;
@@ -31,29 +34,44 @@ interface EditUserDialogProps {
 
 export function EditUserDialog({ user, open, onClose }: EditUserDialogProps) {
   const [name, setName] = useState("");
+  const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuthStore();
+
+  const isCurrentUser = user?.id === currentUser?.id;
 
   useEffect(() => {
     if (open && user) {
       setName(user.name);
+      setIsGlobalAdmin(user.isGlobalAdmin);
       setError(null);
     }
   }, [open, user]);
 
-  const updateUser = useMutation({
+  const updateUserName = useMutation({
     mutationFn: ({ id, data }: { id: string; data: { name: string } }) =>
       usersApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      onClose();
     },
     onError: (err: Error) => {
       setError(err.message || "Failed to update user");
     },
   });
 
-  const handleSubmit = (e: FormEvent) => {
+  const updateUserAdmin = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { isGlobalAdmin: boolean } }) =>
+      adminApi.updateUserAdmin(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (err: Error) => {
+      setError(err.message || "Failed to update admin status");
+    },
+  });
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -64,13 +82,29 @@ export function EditUserDialog({ user, open, onClose }: EditUserDialogProps) {
 
     if (!user) return;
 
-    updateUser.mutate({ id: user.id, data: { name: name.trim() } });
+    try {
+      // Update name if changed
+      if (name.trim() !== user.name) {
+        await updateUserName.mutateAsync({ id: user.id, data: { name: name.trim() } });
+      }
+
+      // Update admin status if changed
+      if (isGlobalAdmin !== user.isGlobalAdmin) {
+        await updateUserAdmin.mutateAsync({ id: user.id, data: { isGlobalAdmin } });
+      }
+
+      onClose();
+    } catch {
+      // Error already handled by mutation onError
+    }
   };
 
   const handleClose = () => {
     setError(null);
     onClose();
   };
+
+  const isPending = updateUserName.isPending || updateUserAdmin.isPending;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -109,6 +143,23 @@ export function EditUserDialog({ user, open, onClose }: EditUserDialogProps) {
             />
           </div>
 
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="admin-toggle">Global Admin</Label>
+              <p className="text-xs text-muted-foreground">
+                {isCurrentUser
+                  ? "You cannot change your own admin status"
+                  : "Grant full administrative access"}
+              </p>
+            </div>
+            <Checkbox
+              id="admin-toggle"
+              checked={isGlobalAdmin}
+              onCheckedChange={(checked) => setIsGlobalAdmin(checked === true)}
+              disabled={isCurrentUser}
+            />
+          </div>
+
           {error && (
             <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
               {error}
@@ -120,12 +171,12 @@ export function EditUserDialog({ user, open, onClose }: EditUserDialogProps) {
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={updateUser.isPending}
+              disabled={isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={updateUser.isPending}>
-              {updateUser.isPending ? "Saving..." : "Save Changes"}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>

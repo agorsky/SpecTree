@@ -1,0 +1,237 @@
+// Prisma Schema for SpecTree API - SQL Server (Azure SQL) Production
+// This schema is used for Azure SQL deployments
+// For local development, use schema.prisma (SQLite)
+//
+// Usage:
+//   Generate client: npx prisma generate --schema=prisma/schema.sqlserver.prisma
+//   Deploy migrations: npx prisma migrate deploy --schema=prisma/schema.sqlserver.prisma
+//   Push schema: npx prisma db push --schema=prisma/schema.sqlserver.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("SQLSERVER_DATABASE_URL")
+}
+
+// =============================================================================
+// Note: SQL Server uses native types. String fields use nvarchar(max) by default.
+// Valid MembershipRole values: 'admin', 'member', 'guest'
+// Valid StatusCategory values: 'backlog', 'unstarted', 'started', 'completed', 'canceled'
+// =============================================================================
+
+model HealthCheck {
+  id        Int      @id @default(autoincrement())
+  name      String
+  status    String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("health_checks")
+}
+
+model Team {
+  id          String   @id @default(uuid())
+  name        String
+  key         String   @unique
+  description String?
+  icon        String?
+  color       String?
+  isArchived  Boolean  @default(false) @map("is_archived")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  memberships Membership[]
+  epics       Epic[]
+  statuses    Status[]
+
+  @@map("teams")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  avatarUrl    String?  @map("avatar_url")
+  isActive      Boolean  @default(true) @map("is_active")
+  isGlobalAdmin Boolean  @default(false) @map("is_global_admin")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  memberships      Membership[]
+  assignedFeatures Feature[]    @relation("AssignedFeatures")
+  assignedTasks    Task[]       @relation("AssignedTasks")
+  apiTokens        ApiToken[]
+  personalScope    PersonalScope?
+  invitationsCreated UserInvitation[] @relation("InvitationCreator")
+
+  @@index([email])
+  @@map("users")
+}
+
+model UserInvitation {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  code      String    @unique
+  createdBy String    @map("created_by")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  creator User @relation("InvitationCreator", fields: [createdBy], references: [id])
+
+  @@map("user_invitations")
+}
+
+model ApiToken {
+  id         String    @id @default(uuid())
+  name       String
+  tokenHash  String    @unique @map("token_hash")
+  userId     String    @map("user_id")
+  scopes     String?   // JSON array stored as string
+  expiresAt  DateTime? @map("expires_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("api_tokens")
+}
+
+model Membership {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  teamId    String   @map("team_id")
+  role      String   @default("member")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+  @@index([userId])
+  @@index([teamId])
+  @@map("memberships")
+}
+
+model Epic {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  icon            String?
+  color           String?
+  sortOrder       Float    @default(0) @map("sort_order")
+  isArchived      Boolean  @default(false) @map("is_archived")
+  scopeType       String   @default("team") @map("scope_type") // 'team' or 'personal'
+  teamId          String?  @map("team_id")
+  personalScopeId String?  @map("personal_scope_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  team          Team?          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  personalScope PersonalScope? @relation(fields: [personalScopeId], references: [id], onDelete: Cascade)
+  features      Feature[]
+
+  @@index([teamId])
+  @@index([teamId, sortOrder])
+  @@index([personalScopeId])
+  @@map("epics")
+}
+
+model Status {
+  id              String   @id @default(uuid())
+  teamId          String?  @map("team_id")
+  personalScopeId String?  @map("personal_scope_id")
+  name            String
+  category        String
+  color           String?
+  position        Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Note: Using NoAction to break cyclic cascade paths in SQL Server
+  // Application must handle status cleanup when team/personalScope is deleted
+  team          Team?          @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  personalScope PersonalScope? @relation(fields: [personalScopeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  features      Feature[]
+  tasks         Task[]
+
+  @@unique([teamId, name])
+  @@index([teamId])
+  @@index([teamId, position])
+  @@index([personalScopeId])
+  @@map("statuses")
+}
+
+model Feature {
+  id          String   @id @default(uuid())
+  epicId      String   @map("epic_id")
+  identifier  String   @unique
+  title       String
+  description String?
+  statusId    String?  @map("status_id")
+  assigneeId  String?  @map("assignee_id")
+  sortOrder   Float    @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Note: SQL Server doesn't allow multiple cascade paths, so we use NoAction
+  // to break the cyclic referential action paths. Application handles nullifying.
+  epic     Epic    @relation(fields: [epicId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  status   Status? @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignee User?   @relation("AssignedFeatures", fields: [assigneeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tasks    Task[]
+
+  @@index([epicId])
+  @@index([statusId])
+  @@index([assigneeId])
+  @@index([epicId, sortOrder])
+  @@index([epicId, statusId])
+  @@index([assigneeId, statusId])
+  @@map("features")
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  featureId   String   @map("feature_id")
+  identifier  String   @unique
+  title       String
+  description String?
+  statusId    String?  @map("status_id")
+  assigneeId  String?  @map("assignee_id")
+  sortOrder   Float    @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Note: SQL Server doesn't allow multiple cascade paths, so we use NoAction
+  feature  Feature @relation(fields: [featureId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  status   Status? @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignee User?   @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([featureId])
+  @@index([statusId])
+  @@index([assigneeId])
+  @@index([featureId, sortOrder])
+  @@index([assigneeId, statusId])
+  @@map("tasks")
+}
+
+model PersonalScope {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statuses Status[]
+  epics    Epic[]
+
+  @@map("personal_scopes")
+}
