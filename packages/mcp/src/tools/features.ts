@@ -8,26 +8,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getApiClient, ApiError } from "../api-client.js";
-
-/**
- * Create MCP-compliant response
- */
-function createResponse(data: unknown) {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-  };
-}
-
-/**
- * Create MCP error response
- */
-function createErrorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  return {
-    content: [{ type: "text" as const, text: `Error: ${message}` }],
-    isError: true,
-  };
-}
+import { createResponse, createErrorResponse } from "./utils.js";
 
 // Register all feature tools
 export function registerFeatureTools(server: McpServer): void {

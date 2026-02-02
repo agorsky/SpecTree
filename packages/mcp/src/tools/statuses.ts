@@ -8,6 +8,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getApiClient, ApiError } from "../api-client.js";
+import { createResponse, createErrorResponse } from "./utils.js";
 
 // Input schemas
 const listStatusesSchema = {
@@ -67,23 +68,14 @@ export function registerStatusTools(server: McpServer): void {
         // Resolve team ID
         const teamId = await resolveTeamId(input.team);
         if (!teamId) {
-          return {
-            content: [{ type: "text", text: JSON.stringify({ error: `Team '${input.team}' not found` }, null, 2) }],
-            isError: true,
-          };
+          return createErrorResponse(new Error(`Team '${input.team}' not found`));
         }
 
         const result = await apiClient.listStatuses(teamId);
 
-        return {
-          content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }],
-        };
+        return createResponse(result.data);
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return {
-          content: [{ type: "text", text: JSON.stringify({ error: message }, null, 2) }],
-          isError: true,
-        };
+        return createErrorResponse(error);
       }
     }
   );
@@ -106,23 +98,13 @@ export function registerStatusTools(server: McpServer): void {
         // First try to get by ID
         try {
           const { data: status } = await apiClient.getStatus(input.id);
-          return {
-            content: [{ type: "text", text: JSON.stringify(status, null, 2) }],
-          };
+          return createResponse(status);
         } catch (error) {
           // If not found by ID and team is provided, try by name within team
           if (error instanceof ApiError && error.status === 404 && input.team) {
             const teamId = await resolveTeamId(input.team);
             if (!teamId) {
-              return {
-                content: [
-                  {
-                    type: "text",
-                    text: JSON.stringify({ error: `Team '${input.team}' not found` }, null, 2),
-                  },
-                ],
-                isError: true,
-              };
+              return createErrorResponse(new Error(`Team '${input.team}' not found`));
             }
 
             // Get all statuses for the team and find by name
@@ -130,51 +112,23 @@ export function registerStatusTools(server: McpServer): void {
             const statusByName = statuses.find((s) => s.name === input.id);
 
             if (statusByName) {
-              return {
-                content: [{ type: "text", text: JSON.stringify(statusByName, null, 2) }],
-              };
+              return createResponse(statusByName);
             }
 
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify(
-                    { error: `Status '${input.id}' not found in team '${input.team}'` },
-                    null,
-                    2
-                  ),
-                },
-              ],
-              isError: true,
-            };
+            return createErrorResponse(new Error(`Status '${input.id}' not found in team '${input.team}'`));
           }
 
           // No team provided and not found by ID
           if (error instanceof ApiError && error.status === 404) {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify(
-                    { error: `Status with ID '${input.id}' not found. Provide a team parameter to search by name.` },
-                    null,
-                    2
-                  ),
-                },
-              ],
-              isError: true,
-            };
+            return createErrorResponse(
+              new Error(`Status with ID '${input.id}' not found. Provide a team parameter to search by name.`)
+            );
           }
 
           throw error;
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return {
-          content: [{ type: "text", text: JSON.stringify({ error: message }, null, 2) }],
-          isError: true,
-        };
+        return createErrorResponse(error);
       }
     }
   );
