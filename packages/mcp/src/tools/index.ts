@@ -15,12 +15,15 @@ import { registerStatusTools } from "./statuses.js";
 import { registerOrderingTools } from "./ordering.js";
 import { registerSearchTools } from "./search.js";
 import { registerPersonalTools } from "./personal.js";
+import { registerExecutionTools } from "./execution.js";
+import { registerHelpTools } from "./help.js";
 
 // Tool registration function type
 export type ToolRegistrar = (server: McpServer) => void;
 
 // Registry of all tool registration functions
 const toolRegistrars: ToolRegistrar[] = [
+  registerHelpTools,  // Register first so it's discovered early
   registerEpicTools,
   registerFeatureTools,
   registerTaskTools,
@@ -28,6 +31,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerOrderingTools,
   registerSearchTools,
   registerPersonalTools,
+  registerExecutionTools,
 ];
 
 /**

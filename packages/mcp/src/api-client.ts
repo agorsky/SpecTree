@@ -83,6 +83,9 @@ export interface CreateEpicData {
 // Feature Types
 // -----------------------------------------------------------------------------
 
+/** Valid values for estimated complexity */
+export type EstimatedComplexity = "trivial" | "simple" | "moderate" | "complex";
+
 export interface Feature {
   id: string;
   epicId: string;
@@ -94,6 +97,12 @@ export interface Feature {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  // Execution metadata
+  executionOrder: number | null;
+  canParallelize: boolean;
+  parallelGroup: string | null;
+  dependencies: string | null; // JSON array of feature IDs
+  estimatedComplexity: EstimatedComplexity | null;
   tasks?: Task[];
   _count?: { tasks: number };
 }
@@ -124,6 +133,12 @@ export interface CreateFeatureData {
   description?: string | undefined;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
+  // Execution metadata
+  executionOrder?: number | undefined;
+  canParallelize?: boolean | undefined;
+  parallelGroup?: string | undefined;
+  dependencies?: string[] | undefined;
+  estimatedComplexity?: EstimatedComplexity | undefined;
 }
 
 export interface UpdateFeatureData {
@@ -131,6 +146,12 @@ export interface UpdateFeatureData {
   description?: string | undefined;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
+  // Execution metadata
+  executionOrder?: number | undefined;
+  canParallelize?: boolean | undefined;
+  parallelGroup?: string | undefined;
+  dependencies?: string[] | undefined;
+  estimatedComplexity?: EstimatedComplexity | undefined;
 }
 
 // -----------------------------------------------------------------------------
@@ -148,6 +169,12 @@ export interface Task {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  // Execution metadata
+  executionOrder: number | null;
+  canParallelize: boolean;
+  parallelGroup: string | null;
+  dependencies: string | null; // JSON array of task IDs
+  estimatedComplexity: EstimatedComplexity | null;
 }
 
 export interface ListTasksParams {
@@ -177,6 +204,12 @@ export interface CreateTaskData {
   description?: string | undefined;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
+  // Execution metadata
+  executionOrder?: number | undefined;
+  canParallelize?: boolean | undefined;
+  parallelGroup?: string | undefined;
+  dependencies?: string[] | undefined;
+  estimatedComplexity?: EstimatedComplexity | undefined;
 }
 
 export interface UpdateTaskData {
@@ -184,6 +217,12 @@ export interface UpdateTaskData {
   description?: string | undefined;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
+  // Execution metadata
+  executionOrder?: number | undefined;
+  canParallelize?: boolean | undefined;
+  parallelGroup?: string | undefined;
+  dependencies?: string[] | undefined;
+  estimatedComplexity?: EstimatedComplexity | undefined;
 }
 
 // -----------------------------------------------------------------------------
@@ -307,6 +346,40 @@ export interface SearchResponse {
     cursor: string | null;
     hasMore: boolean;
   };
+}
+
+// -----------------------------------------------------------------------------
+// Execution Plan Types
+// -----------------------------------------------------------------------------
+
+/** Item with parsed execution metadata */
+export interface ExecutionItem {
+  type: "feature" | "task";
+  id: string;
+  identifier: string;
+  title: string;
+  description: string | null;
+  statusId: string | null;
+  executionOrder: number | null;
+  canParallelize: boolean;
+  parallelGroup: string | null;
+  dependencies: string[];
+  estimatedComplexity: EstimatedComplexity | null;
+}
+
+/** A phase in the execution plan */
+export interface ExecutionPhase {
+  order: number;
+  items: ExecutionItem[];
+  canRunInParallel: boolean;
+  estimatedComplexity: EstimatedComplexity | null;
+}
+
+/** Execution plan response */
+export interface ExecutionPlanResponse {
+  epicId: string;
+  phases: ExecutionPhase[];
+  totalItems: number;
 }
 
 // -----------------------------------------------------------------------------
@@ -942,5 +1015,121 @@ export class ApiClient {
         hasMore,
       },
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Execution Plan Method
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get an execution plan for an epic.
+   * Analyzes features and their tasks to produce an ordered execution plan
+   * with phases that respect dependencies and parallel groups.
+   */
+  async getExecutionPlan(epicId: string): Promise<ExecutionPlanResponse> {
+    // Fetch all features for the epic
+    const featuresResult = await this.listFeatures({ epicId, limit: 100 });
+    const features = featuresResult.data;
+
+    // Parse dependencies and build execution items
+    const items: ExecutionItem[] = features.map((f) => ({
+      type: "feature" as const,
+      id: f.id,
+      identifier: f.identifier,
+      title: f.title,
+      description: f.description,
+      statusId: f.statusId,
+      executionOrder: f.executionOrder,
+      canParallelize: f.canParallelize,
+      parallelGroup: f.parallelGroup,
+      dependencies: f.dependencies ? JSON.parse(f.dependencies) as string[] : [],
+      estimatedComplexity: f.estimatedComplexity,
+    }));
+
+    // Build dependency graph and perform topological sort
+    const phases = this.buildExecutionPhases(items);
+
+    return {
+      epicId,
+      phases,
+      totalItems: items.length,
+    };
+  }
+
+  /**
+   * Build execution phases from items using topological sort.
+   * Items with no dependencies or whose dependencies are satisfied go into earlier phases.
+   */
+  private buildExecutionPhases(items: ExecutionItem[]): ExecutionPhase[] {
+    // Create a map for quick lookup
+    const itemMap = new Map(items.map((item) => [item.id, item]));
+    const completed = new Set<string>();
+    const phases: ExecutionPhase[] = [];
+
+    // Sort items by executionOrder first (nulls at end)
+    const sortedItems = [...items].sort((a, b) => {
+      if (a.executionOrder === null && b.executionOrder === null) return 0;
+      if (a.executionOrder === null) return 1;
+      if (b.executionOrder === null) return -1;
+      return a.executionOrder - b.executionOrder;
+    });
+
+    let phaseOrder = 1;
+    let remaining = sortedItems.filter((item) => !completed.has(item.id));
+
+    while (remaining.length > 0) {
+      // Find items whose dependencies are all completed
+      const ready = remaining.filter((item) =>
+        item.dependencies.every((depId) => completed.has(depId) || !itemMap.has(depId))
+      );
+
+      if (ready.length === 0) {
+        // Circular dependency or missing dependency - add remaining items
+        ready.push(...remaining);
+      }
+
+      // Group ready items by parallelGroup
+      const parallelGroups = new Map<string | null, ExecutionItem[]>();
+      for (const item of ready) {
+        const group = item.canParallelize ? (item.parallelGroup ?? "__parallel__") : null;
+        if (!parallelGroups.has(group)) {
+          parallelGroups.set(group, []);
+        }
+        parallelGroups.get(group)!.push(item);
+      }
+
+      // Create phases for each group
+      for (const [groupKey, groupItems] of parallelGroups) {
+        const canRunInParallel = groupKey !== null && groupItems.length > 1;
+        
+        // Determine overall complexity (use highest complexity in group)
+        const complexityOrder = ["trivial", "simple", "moderate", "complex"];
+        let maxComplexity: EstimatedComplexity | null = null;
+        for (const item of groupItems) {
+          if (item.estimatedComplexity) {
+            if (!maxComplexity || 
+                complexityOrder.indexOf(item.estimatedComplexity) > complexityOrder.indexOf(maxComplexity)) {
+              maxComplexity = item.estimatedComplexity;
+            }
+          }
+        }
+
+        phases.push({
+          order: phaseOrder++,
+          items: groupItems,
+          canRunInParallel,
+          estimatedComplexity: maxComplexity,
+        });
+
+        // Mark items as completed
+        for (const item of groupItems) {
+          completed.add(item.id);
+        }
+      }
+
+      remaining = sortedItems.filter((item) => !completed.has(item.id));
+    }
+
+    return phases;
   }
 }

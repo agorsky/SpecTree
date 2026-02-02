@@ -171,6 +171,40 @@ export function registerTaskTools(server: McpServer): void {
           .describe(
             "User ID (UUID) to assign this task to. If not provided, the task is unassigned."
           ),
+        // Execution metadata
+        executionOrder: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            "Suggested execution order (1, 2, 3...). Lower numbers are worked on first."
+          ),
+        canParallelize: z
+          .boolean()
+          .optional()
+          .describe(
+            "Whether this task can run alongside other tasks in parallel."
+          ),
+        parallelGroup: z
+          .string()
+          .max(100)
+          .optional()
+          .describe(
+            "Group identifier for tasks that can run together in parallel."
+          ),
+        dependencies: z
+          .array(z.string().uuid())
+          .optional()
+          .describe(
+            "Array of task UUIDs that must be completed before this task."
+          ),
+        estimatedComplexity: z
+          .enum(["trivial", "simple", "moderate", "complex"])
+          .optional()
+          .describe(
+            "Estimated complexity: 'trivial', 'simple', 'moderate', or 'complex'."
+          ),
       },
     },
     async (input) => {
@@ -193,6 +227,11 @@ export function registerTaskTools(server: McpServer): void {
           description: input.description,
           statusId,
           assigneeId: input.assignee,
+          executionOrder: input.executionOrder,
+          canParallelize: input.canParallelize,
+          parallelGroup: input.parallelGroup,
+          dependencies: input.dependencies,
+          estimatedComplexity: input.estimatedComplexity,
         });
 
         return createResponse(task);
@@ -252,6 +291,40 @@ export function registerTaskTools(server: McpServer): void {
           .describe(
             "New assignee user ID (UUID) for the task."
           ),
+        // Execution metadata
+        executionOrder: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            "Suggested execution order (1, 2, 3...). Lower numbers are worked on first."
+          ),
+        canParallelize: z
+          .boolean()
+          .optional()
+          .describe(
+            "Whether this task can run alongside other tasks in parallel."
+          ),
+        parallelGroup: z
+          .string()
+          .max(100)
+          .optional()
+          .describe(
+            "Group identifier for tasks that can run together in parallel."
+          ),
+        dependencies: z
+          .array(z.string().uuid())
+          .optional()
+          .describe(
+            "Array of task UUIDs that must be completed before this task."
+          ),
+        estimatedComplexity: z
+          .enum(["trivial", "simple", "moderate", "complex"])
+          .optional()
+          .describe(
+            "Estimated complexity: 'trivial', 'simple', 'moderate', or 'complex'."
+          ),
       },
     },
     async (input) => {
@@ -273,6 +346,11 @@ export function registerTaskTools(server: McpServer): void {
           description: input.description,
           statusId,
           assigneeId: input.assignee,
+          executionOrder: input.executionOrder,
+          canParallelize: input.canParallelize,
+          parallelGroup: input.parallelGroup,
+          dependencies: input.dependencies,
+          estimatedComplexity: input.estimatedComplexity,
         });
 
         return createResponse(task);

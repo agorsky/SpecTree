@@ -304,16 +304,20 @@ After successful migration:
    rm ~/.config/github-copilot/mcp.json.backup
    ```
 
-2. **Explore the new features** – The API provides consistent, authenticated access to all SpecTree operations
+2. **Learn about all capabilities** – Ask the AI to call `spectree__get_instructions` or read the [Tools Reference](./tools-reference.md)
 
-3. **Set up additional tokens** – Create separate tokens for different devices or use cases
+3. **Explore the new features** – The API provides consistent, authenticated access to all SpecTree operations
 
-4. **Review security architecture** – Read the [Security Architecture](./security-architecture.md) document to understand the full security model
+4. **Set up additional tokens** – Create separate tokens for different devices or use cases
+
+5. **Review security architecture** – Read the [Security Architecture](./security-architecture.md) document to understand the full security model
 
 ---
 
 ## Related Documentation
 
+- [MCP Tools Reference](./tools-reference.md) – Complete reference for all MCP tools
 - [MCP README](../../packages/mcp/README.md) – Full MCP server documentation
 - [API Token Authentication](./api-token-authentication.md) – Token system details
 - [Security Architecture](./security-architecture.md) – Security design and threat model
+- [Execution Metadata](./execution-metadata.md) – Execution planning for AI agents

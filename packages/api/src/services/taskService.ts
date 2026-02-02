@@ -24,6 +24,12 @@ export interface CreateTaskInput {
   statusId?: string | undefined;
   assigneeId?: string | undefined;
   sortOrder?: number | undefined;
+  // Execution metadata
+  executionOrder?: number | undefined;
+  canParallelize?: boolean | undefined;
+  parallelGroup?: string | undefined;
+  dependencies?: string[] | undefined;
+  estimatedComplexity?: string | undefined;
 }
 
 export interface UpdateTaskInput {
@@ -32,6 +38,12 @@ export interface UpdateTaskInput {
   statusId?: string | undefined;
   assigneeId?: string | undefined;
   sortOrder?: number | undefined;
+  // Execution metadata
+  executionOrder?: number | undefined;
+  canParallelize?: boolean | undefined;
+  parallelGroup?: string | undefined;
+  dependencies?: string[] | undefined;
+  estimatedComplexity?: string | undefined;
 }
 
 export type TaskOrderBy = 'sortOrder' | 'createdAt' | 'updatedAt';
@@ -412,6 +424,11 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
         description?: string;
         statusId?: string;
         assigneeId?: string;
+        executionOrder?: number;
+        canParallelize?: boolean;
+        parallelGroup?: string;
+        dependencies?: string;
+        estimatedComplexity?: string;
       } = {
         title: input.title.trim(),
         featureId: input.featureId,
@@ -427,6 +444,22 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
       }
       if (input.assigneeId !== undefined) {
         data.assigneeId = input.assigneeId;
+      }
+      // Execution metadata
+      if (input.executionOrder !== undefined) {
+        data.executionOrder = input.executionOrder;
+      }
+      if (input.canParallelize !== undefined) {
+        data.canParallelize = input.canParallelize;
+      }
+      if (input.parallelGroup !== undefined) {
+        data.parallelGroup = input.parallelGroup;
+      }
+      if (input.dependencies !== undefined) {
+        data.dependencies = JSON.stringify(input.dependencies);
+      }
+      if (input.estimatedComplexity !== undefined) {
+        data.estimatedComplexity = input.estimatedComplexity;
       }
 
       return await prisma.task.create({ data });
@@ -518,6 +551,11 @@ export async function updateTask(
     statusId?: string;
     assigneeId?: string;
     sortOrder?: number;
+    executionOrder?: number;
+    canParallelize?: boolean;
+    parallelGroup?: string;
+    dependencies?: string;
+    estimatedComplexity?: string;
   } = {};
 
   if (input.title !== undefined) {
@@ -534,6 +572,22 @@ export async function updateTask(
   }
   if (input.sortOrder !== undefined) {
     data.sortOrder = input.sortOrder;
+  }
+  // Execution metadata
+  if (input.executionOrder !== undefined) {
+    data.executionOrder = input.executionOrder;
+  }
+  if (input.canParallelize !== undefined) {
+    data.canParallelize = input.canParallelize;
+  }
+  if (input.parallelGroup !== undefined) {
+    data.parallelGroup = input.parallelGroup;
+  }
+  if (input.dependencies !== undefined) {
+    data.dependencies = JSON.stringify(input.dependencies);
+  }
+  if (input.estimatedComplexity !== undefined) {
+    data.estimatedComplexity = input.estimatedComplexity;
   }
 
   // Track old status for event emission

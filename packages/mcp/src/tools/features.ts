@@ -189,6 +189,40 @@ export function registerFeatureTools(server: McpServer): void {
             "User to assign this feature to. Accepts user ID (UUID) or the special value 'me' " +
             "to assign to the current authenticated user. If not provided, the feature is unassigned."
           ),
+        // Execution metadata
+        executionOrder: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            "Suggested execution order (1, 2, 3...). Lower numbers are worked on first."
+          ),
+        canParallelize: z
+          .boolean()
+          .optional()
+          .describe(
+            "Whether this feature can run alongside other features in parallel."
+          ),
+        parallelGroup: z
+          .string()
+          .max(100)
+          .optional()
+          .describe(
+            "Group identifier for features that can run together in parallel."
+          ),
+        dependencies: z
+          .array(z.string().uuid())
+          .optional()
+          .describe(
+            "Array of feature UUIDs that must be completed before this feature."
+          ),
+        estimatedComplexity: z
+          .enum(["trivial", "simple", "moderate", "complex"])
+          .optional()
+          .describe(
+            "Estimated complexity: 'trivial', 'simple', 'moderate', or 'complex'."
+          ),
       },
     },
     async (input) => {
@@ -210,6 +244,11 @@ export function registerFeatureTools(server: McpServer): void {
           description: input.description,
           statusId,
           assigneeId: input.assignee,
+          executionOrder: input.executionOrder,
+          canParallelize: input.canParallelize,
+          parallelGroup: input.parallelGroup,
+          dependencies: input.dependencies,
+          estimatedComplexity: input.estimatedComplexity,
         });
 
         return createResponse(feature);
@@ -270,6 +309,40 @@ export function registerFeatureTools(server: McpServer): void {
             "New assignee for the feature. Accepts user ID (UUID) or the special value 'me' " +
             "to assign to the current authenticated user."
           ),
+        // Execution metadata
+        executionOrder: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            "Suggested execution order (1, 2, 3...). Lower numbers are worked on first."
+          ),
+        canParallelize: z
+          .boolean()
+          .optional()
+          .describe(
+            "Whether this feature can run alongside other features in parallel."
+          ),
+        parallelGroup: z
+          .string()
+          .max(100)
+          .optional()
+          .describe(
+            "Group identifier for features that can run together in parallel."
+          ),
+        dependencies: z
+          .array(z.string().uuid())
+          .optional()
+          .describe(
+            "Array of feature UUIDs that must be completed before this feature."
+          ),
+        estimatedComplexity: z
+          .enum(["trivial", "simple", "moderate", "complex"])
+          .optional()
+          .describe(
+            "Estimated complexity: 'trivial', 'simple', 'moderate', or 'complex'."
+          ),
       },
     },
     async (input) => {
@@ -290,6 +363,11 @@ export function registerFeatureTools(server: McpServer): void {
           description: input.description,
           statusId,
           assigneeId: input.assignee,
+          executionOrder: input.executionOrder,
+          canParallelize: input.canParallelize,
+          parallelGroup: input.parallelGroup,
+          dependencies: input.dependencies,
+          estimatedComplexity: input.estimatedComplexity,
         });
 
         return createResponse(feature);

@@ -24,6 +24,23 @@ export const listFeaturesQuerySchema = paginationQuerySchema
   });
 
 /**
+ * Valid values for estimated complexity
+ */
+export const estimatedComplexityValues = ["trivial", "simple", "moderate", "complex"] as const;
+export type EstimatedComplexity = typeof estimatedComplexityValues[number];
+
+/**
+ * Schema for execution metadata fields
+ */
+export const executionMetadataSchema = z.object({
+  executionOrder: z.number().int().positive().optional(),
+  canParallelize: z.boolean().optional(),
+  parallelGroup: z.string().max(100).optional(),
+  dependencies: z.array(z.string().uuid()).optional(),
+  estimatedComplexity: z.enum(estimatedComplexityValues).optional(),
+});
+
+/**
  * Schema for creating a new feature
  */
 export const createFeatureSchema = z.object({
@@ -33,6 +50,12 @@ export const createFeatureSchema = z.object({
   statusId: z.string().uuid().nullable().optional(),
   assigneeId: z.string().uuid().nullable().optional(),
   sortOrder: z.number().optional(),
+  // Execution metadata
+  executionOrder: z.number().int().positive().optional(),
+  canParallelize: z.boolean().optional(),
+  parallelGroup: z.string().max(100).optional(),
+  dependencies: z.array(z.string().uuid()).optional(),
+  estimatedComplexity: z.enum(estimatedComplexityValues).optional(),
 });
 
 /**
@@ -59,3 +82,4 @@ export type ListFeaturesQuery = z.infer<typeof listFeaturesQuerySchema>;
 export type CreateFeatureInput = z.infer<typeof createFeatureSchema>;
 export type UpdateFeatureInput = z.infer<typeof updateFeatureSchema>;
 export type ReorderFeatureInput = z.infer<typeof reorderFeatureSchema>;
+export type ExecutionMetadataInput = z.infer<typeof executionMetadataSchema>;

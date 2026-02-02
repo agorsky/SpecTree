@@ -24,6 +24,12 @@ export interface CreateFeatureInput {
   statusId?: string | undefined;
   assigneeId?: string | undefined;
   sortOrder?: number | undefined;
+  // Execution metadata
+  executionOrder?: number | undefined;
+  canParallelize?: boolean | undefined;
+  parallelGroup?: string | undefined;
+  dependencies?: string[] | undefined;
+  estimatedComplexity?: string | undefined;
 }
 
 export interface UpdateFeatureInput {
@@ -32,6 +38,12 @@ export interface UpdateFeatureInput {
   statusId?: string | undefined;
   assigneeId?: string | undefined;
   sortOrder?: number | undefined;
+  // Execution metadata
+  executionOrder?: number | undefined;
+  canParallelize?: boolean | undefined;
+  parallelGroup?: string | undefined;
+  dependencies?: string[] | undefined;
+  estimatedComplexity?: string | undefined;
 }
 
 export type FeatureOrderBy = 'sortOrder' | 'createdAt' | 'updatedAt';
@@ -427,6 +439,11 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
     description?: string;
     statusId?: string;
     assigneeId?: string;
+    executionOrder?: number;
+    canParallelize?: boolean;
+    parallelGroup?: string;
+    dependencies?: string;
+    estimatedComplexity?: string;
   } = {
     title: input.title.trim(),
     epicId: input.epicId,
@@ -442,6 +459,22 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
   }
   if (input.assigneeId !== undefined) {
     data.assigneeId = input.assigneeId;
+  }
+  // Execution metadata
+  if (input.executionOrder !== undefined) {
+    data.executionOrder = input.executionOrder;
+  }
+  if (input.canParallelize !== undefined) {
+    data.canParallelize = input.canParallelize;
+  }
+  if (input.parallelGroup !== undefined) {
+    data.parallelGroup = input.parallelGroup;
+  }
+  if (input.dependencies !== undefined) {
+    data.dependencies = JSON.stringify(input.dependencies);
+  }
+  if (input.estimatedComplexity !== undefined) {
+    data.estimatedComplexity = input.estimatedComplexity;
   }
 
   return prisma.feature.create({ data });
@@ -521,6 +554,11 @@ export async function updateFeature(
     statusId?: string;
     assigneeId?: string;
     sortOrder?: number;
+    executionOrder?: number;
+    canParallelize?: boolean;
+    parallelGroup?: string;
+    dependencies?: string;
+    estimatedComplexity?: string;
   } = {};
 
   if (input.title !== undefined) {
@@ -537,6 +575,22 @@ export async function updateFeature(
   }
   if (input.sortOrder !== undefined) {
     data.sortOrder = input.sortOrder;
+  }
+  // Execution metadata
+  if (input.executionOrder !== undefined) {
+    data.executionOrder = input.executionOrder;
+  }
+  if (input.canParallelize !== undefined) {
+    data.canParallelize = input.canParallelize;
+  }
+  if (input.parallelGroup !== undefined) {
+    data.parallelGroup = input.parallelGroup;
+  }
+  if (input.dependencies !== undefined) {
+    data.dependencies = JSON.stringify(input.dependencies);
+  }
+  if (input.estimatedComplexity !== undefined) {
+    data.estimatedComplexity = input.estimatedComplexity;
   }
 
   // Track old status for event emission

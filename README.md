@@ -404,6 +404,8 @@ Personal scope features and tasks use the same `/api/v1/features` and `/api/v1/t
 The SpecTree MCP server enables AI assistants like Claude to interact with the project management platform through secure API token authentication.
 
 > **📚 Detailed Documentation**: See [`docs/MCP/`](./docs/MCP/) for comprehensive guides on:
+> - [Tools Reference](./docs/MCP/tools-reference.md) — Complete MCP tools documentation
+> - [Execution Metadata](./docs/MCP/execution-metadata.md) — Execution planning for AI agents
 > - [API Token Authentication](./docs/MCP/api-token-authentication.md) — Token system details
 > - [Security Architecture](./docs/MCP/security-architecture.md) — Security model
 > - [Migration Guide](./docs/MCP/migration-guide.md) — Migrating from older configurations
@@ -514,6 +516,36 @@ pnpm --filter @spectree/mcp start
 | `spectree__list_personal_projects` | List epics in personal scope |
 | `spectree__create_personal_project` | Create an epic in personal scope |
 | `spectree__list_personal_statuses` | List workflow statuses in personal scope |
+| **Execution Planning** | |
+| `spectree__get_execution_plan` | Get ordered execution plan for an epic |
+| `spectree__set_execution_metadata` | Set execution order, parallelization, dependencies |
+| `spectree__mark_blocked` | Mark feature/task as blocked by another |
+| `spectree__mark_unblocked` | Remove a blocker from feature/task |
+| **Help** | |
+| `spectree__get_instructions` | Get usage instructions and best practices |
+
+### Getting Started (AI Agents)
+
+AI agents can call `spectree__get_instructions` to learn about SpecTree capabilities and recommended workflows. This tool returns comprehensive guidance on:
+
+- Available tools and their usage
+- Execution metadata for planning work
+- Search and filtering capabilities
+- Recommended workflow patterns
+
+> **Example**: `spectree__get_instructions({ topic: "execution" })` returns guidance on planning dependencies and parallel work.
+
+### Execution Metadata
+
+Features and Tasks support execution metadata to help AI agents plan work:
+
+- **executionOrder** — Suggested order (1, 2, 3...)
+- **canParallelize** — Whether item can run alongside others
+- **parallelGroup** — Group ID for items that can run together
+- **dependencies** — IDs of items that must complete first
+- **estimatedComplexity** — `trivial`, `simple`, `moderate`, or `complex`
+
+> **📚 Full Documentation**: See [`docs/MCP/execution-metadata.md`](./docs/MCP/execution-metadata.md)
 
 ### Search Tool (`spectree__search`)
 
@@ -705,6 +737,8 @@ Additional documentation is available in the `docs/` directory:
 |----------|-------------|
 | [Database Safety Guide](./docs/database-safety-guide.md) | Critical safety rules for database operations |
 | [Identity & Collaboration Reference](./docs/identity-collaboration-vnext-implementation-reference.md) | Implementation details for personal scopes and team membership |
+| [MCP Tools Reference](./docs/MCP/tools-reference.md) | Complete reference for all MCP tools |
+| [MCP Execution Metadata](./docs/MCP/execution-metadata.md) | Execution planning and dependencies for AI agents |
 | [MCP Documentation](./docs/MCP/) | MCP server setup, authentication, and security |
 | [Azure Deployment Guide](./docs/azure-deployment-guide.md) | Production deployment to Azure |
 | [Design References](./docs/DESIGN-REFERENCES/) | Architectural decisions and Linear API patterns |
