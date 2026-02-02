@@ -419,6 +419,80 @@ export interface SetAiContextInput {
 }
 
 // -----------------------------------------------------------------------------
+// Progress Tracking Types
+// -----------------------------------------------------------------------------
+
+/** Entity type for progress operations */
+export type ProgressEntityType = "feature" | "task";
+
+/** Input for starting work on an item */
+export interface StartWorkInput {
+  sessionId?: string | undefined;
+}
+
+/** Input for completing work on an item */
+export interface CompleteWorkInput {
+  summary?: string | undefined;
+  sessionId?: string | undefined;
+}
+
+/** Input for logging progress on an item */
+export interface LogProgressInput {
+  message: string;
+  percentComplete?: number | undefined;
+  sessionId?: string | undefined;
+}
+
+/** Input for reporting a blocker */
+export interface ReportBlockerInput {
+  reason: string;
+  blockedById?: string | undefined;
+  sessionId?: string | undefined;
+}
+
+/** Response from start work operation */
+export interface StartWorkResponse {
+  id: string;
+  identifier: string;
+  title: string;
+  statusId: string | null;
+  startedAt: string;
+  message: string;
+}
+
+/** Response from complete work operation */
+export interface CompleteWorkResponse {
+  id: string;
+  identifier: string;
+  title: string;
+  statusId: string | null;
+  startedAt: string | null;
+  completedAt: string;
+  durationMinutes: number | null;
+  message: string;
+}
+
+/** Response from log progress operation */
+export interface LogProgressResponse {
+  id: string;
+  identifier: string;
+  title: string;
+  percentComplete: number | null;
+  message: string;
+}
+
+/** Response from report blocker operation */
+export interface ReportBlockerResponse {
+  id: string;
+  identifier: string;
+  title: string;
+  statusId: string | null;
+  blockerReason: string;
+  blockedById: string | null;
+  message: string;
+}
+
+// -----------------------------------------------------------------------------
 // Reorder Types
 // -----------------------------------------------------------------------------
 
@@ -816,6 +890,98 @@ export class ApiClient {
     return this.request<{ data: AiContextResponse }>(
       "POST",
       `/api/v1/tasks/${encodeURIComponent(taskId)}/ai-note`,
+      input
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Progress Tracking Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Start work on a feature - sets status to "In Progress" and records start time
+   */
+  async startFeatureWork(featureId: string, input?: StartWorkInput): Promise<{ data: StartWorkResponse }> {
+    return this.request<{ data: StartWorkResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/progress/start`,
+      input ?? {}
+    );
+  }
+
+  /**
+   * Complete work on a feature - sets status to "Done" and records completion time
+   */
+  async completeFeatureWork(featureId: string, input?: CompleteWorkInput): Promise<{ data: CompleteWorkResponse }> {
+    return this.request<{ data: CompleteWorkResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/progress/complete`,
+      input ?? {}
+    );
+  }
+
+  /**
+   * Log progress on a feature without changing status
+   */
+  async logFeatureProgress(featureId: string, input: LogProgressInput): Promise<{ data: LogProgressResponse }> {
+    return this.request<{ data: LogProgressResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/progress/log`,
+      input
+    );
+  }
+
+  /**
+   * Report a blocker on a feature
+   */
+  async reportFeatureBlocker(featureId: string, input: ReportBlockerInput): Promise<{ data: ReportBlockerResponse }> {
+    return this.request<{ data: ReportBlockerResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/progress/blocker`,
+      input
+    );
+  }
+
+  /**
+   * Start work on a task - sets status to "In Progress" and records start time
+   */
+  async startTaskWork(taskId: string, input?: StartWorkInput): Promise<{ data: StartWorkResponse }> {
+    return this.request<{ data: StartWorkResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/progress/start`,
+      input ?? {}
+    );
+  }
+
+  /**
+   * Complete work on a task - sets status to "Done" and records completion time
+   */
+  async completeTaskWork(taskId: string, input?: CompleteWorkInput): Promise<{ data: CompleteWorkResponse }> {
+    return this.request<{ data: CompleteWorkResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/progress/complete`,
+      input ?? {}
+    );
+  }
+
+  /**
+   * Log progress on a task without changing status
+   */
+  async logTaskProgress(taskId: string, input: LogProgressInput): Promise<{ data: LogProgressResponse }> {
+    return this.request<{ data: LogProgressResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/progress/log`,
+      input
+    );
+  }
+
+  /**
+   * Report a blocker on a task
+   */
+  async reportTaskBlocker(taskId: string, input: ReportBlockerInput): Promise<{ data: ReportBlockerResponse }> {
+    return this.request<{ data: ReportBlockerResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/progress/blocker`,
       input
     );
   }

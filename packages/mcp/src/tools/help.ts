@@ -122,14 +122,19 @@ spectree__search({ epic: "Q1 Features", assignee: "none", type: "task" })
    - Review dependencies in execution plan
    - Ensure required items are complete
 
-3. **Update status as you work**
+3. **Start work (use progress tools!)**
    \`\`\`
-   spectree__update_feature({ id: "COM-123", status: "In Progress" })
+   spectree__start_work({ id: "COM-123", type: "feature" })
    \`\`\`
 
-4. **Mark completion**
+4. **Log progress for long tasks**
    \`\`\`
-   spectree__update_feature({ id: "COM-123", status: "Done" })
+   spectree__log_progress({ id: "COM-123", type: "feature", message: "50% complete", percentComplete: 50 })
+   \`\`\`
+
+5. **Mark completion**
+   \`\`\`
+   spectree__complete_work({ id: "COM-123", type: "feature", summary: "Implemented feature X" })
    \`\`\`
 
 ## Creating Structured Work
@@ -159,10 +164,67 @@ spectree__create_feature({
 ## Best Practices
 
 1. **Always check existing work first** - Use search before creating
-2. **Use meaningful identifiers** - Epic and feature names should be clear
+2. **Use progress tools** - \`start_work\`, \`complete_work\` instead of manual status updates
 3. **Set complexity estimates** - Helps with planning
-4. **Update statuses promptly** - Keep the system accurate
+4. **Log progress on long tasks** - Helps future sessions understand state
 5. **Use tasks for sub-work** - Break features into smaller pieces`,
+
+  progress: `# Progress Tracking Tools
+
+SpecTree provides purpose-built tools for automatic progress tracking that make status updates natural.
+
+## Tools
+
+| Tool | Purpose |
+|------|---------|
+| \`spectree__start_work\` | Begin work - sets "In Progress", records start time |
+| \`spectree__complete_work\` | Finish work - sets "Done", calculates duration |
+| \`spectree__log_progress\` | Log incremental progress without status change |
+| \`spectree__report_blocker\` | Report blockers with reason |
+
+## Recommended Workflow
+
+\`\`\`
+// 1. When starting a task
+spectree__start_work({ id: "COM-123", type: "feature" })
+
+// 2. For long-running work, log progress
+spectree__log_progress({ 
+  id: "COM-123", 
+  type: "feature", 
+  message: "Database schema complete, starting API endpoints",
+  percentComplete: 50 
+})
+
+// 3. If blocked
+spectree__report_blocker({ 
+  id: "COM-123", 
+  type: "feature", 
+  reason: "Waiting for API credentials" 
+})
+
+// 4. When done
+spectree__complete_work({ 
+  id: "COM-123", 
+  type: "feature", 
+  summary: "Implemented full authentication flow" 
+})
+\`\`\`
+
+## Benefits
+
+- **Automatic timestamps**: Start/end times recorded automatically
+- **Duration tracking**: Work duration calculated in minutes
+- **AI notes integration**: Progress events logged to AI notes for cross-session context
+- **Status management**: Status changes handled automatically
+
+## Best Practice
+
+**Always use progress tools instead of manual status updates:**
+- Use \`spectree__start_work\` instead of \`spectree__update_feature({ status: "In Progress" })\`
+- Use \`spectree__complete_work\` instead of \`spectree__update_feature({ status: "Done" })\`
+
+This ensures timing data is captured and progress is logged for future sessions.`,
 
   personal: `# Personal Scope
 
@@ -202,6 +264,10 @@ ${helpTopics.execution}
 
 ---
 
+${helpTopics.progress}
+
+---
+
 ${helpTopics.search}
 
 ---
@@ -225,12 +291,16 @@ ${helpTopics.personal}
 | Update feature | \`spectree__update_feature\` |
 | Create task | \`spectree__create_task\` |
 | Update task | \`spectree__update_task\` |
+| **Start work** | \`spectree__start_work\` |
+| **Complete work** | \`spectree__complete_work\` |
+| **Log progress** | \`spectree__log_progress\` |
+| **Report blocker** | \`spectree__report_blocker\` |
 | Set execution metadata | \`spectree__set_execution_metadata\` |
 | Mark blocked | \`spectree__mark_blocked\` |
 `;
 
 // Available topics for the schema
-const topicValues = ["all", "overview", "execution", "search", "workflow", "personal"] as const;
+const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal"] as const;
 
 export function registerHelpTools(server: McpServer): void {
   server.registerTool(
@@ -240,8 +310,8 @@ export function registerHelpTools(server: McpServer): void {
         "Get instructions and guidance for using SpecTree effectively. " +
         "Call this tool at the start of a session to understand available capabilities, " +
         "best practices, and recommended workflows. Topics include: overview, execution " +
-        "(planning & dependencies), search (filtering), workflow (recommended patterns), " +
-        "and personal (private workspace).",
+        "(planning & dependencies), progress (tracking tools), search (filtering), " +
+        "workflow (recommended patterns), and personal (private workspace).",
       inputSchema: {
         topic: z
           .enum(topicValues)
@@ -249,7 +319,8 @@ export function registerHelpTools(server: McpServer): void {
           .describe(
             "Which topic to get help on. Use 'all' for complete instructions, or choose " +
             "a specific topic: 'overview' (concepts), 'execution' (planning & dependencies), " +
-            "'search' (filtering), 'workflow' (recommended patterns), 'personal' (private workspace)."
+            "'progress' (tracking tools), 'search' (filtering), 'workflow' (recommended patterns), " +
+            "'personal' (private workspace)."
           ),
       },
     },

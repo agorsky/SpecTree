@@ -11,6 +11,12 @@ import {
   setFeatureAiContext,
   appendFeatureAiNote,
 } from "../services/aiContextService.js";
+import {
+  startWork,
+  completeWork,
+  logProgress,
+  reportBlocker,
+} from "../services/progressService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { validateBody } from "../middleware/validate.js";
 import { reorderFeatureSchema, type ReorderFeatureInput } from "../schemas/feature.js";
@@ -20,6 +26,16 @@ import {
   type AppendAiNoteInput,
   type SetAiContextInput,
 } from "../schemas/aiContext.js";
+import {
+  startWorkSchema,
+  completeWorkSchema,
+  logProgressSchema,
+  reportBlockerSchema,
+  type StartWorkInput,
+  type CompleteWorkInput,
+  type LogProgressInput,
+  type ReportBlockerInput,
+} from "../schemas/progress.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
 import { prisma } from "../lib/db.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
@@ -461,6 +477,89 @@ export default function featuresRoutes(
       const { type, content, sessionId } = request.body;
       const result = await appendFeatureAiNote(id, { type, content, sessionId });
       return reply.status(201).send({ data: result });
+    }
+  );
+
+  // ===========================================================================
+  // Progress Tracking Routes
+  // ===========================================================================
+
+  /**
+   * POST /api/v1/features/:id/progress/start
+   * Start work on a feature - sets status to "In Progress" and records start time
+   */
+  fastify.post<{ Params: FeatureIdParams; Body: StartWorkInput }>(
+    "/:id/progress/start",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(startWorkSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await startWork("feature", id, request.body);
+      return reply.send({
+        data: {
+          ...result,
+          startedAt: result.startedAt.toISOString(),
+        },
+      });
+    }
+  );
+
+  /**
+   * POST /api/v1/features/:id/progress/complete
+   * Complete work on a feature - sets status to "Done" and records completion time
+   */
+  fastify.post<{ Params: FeatureIdParams; Body: CompleteWorkInput }>(
+    "/:id/progress/complete",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(completeWorkSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await completeWork("feature", id, request.body);
+      return reply.send({
+        data: {
+          ...result,
+          startedAt: result.startedAt?.toISOString() ?? null,
+          completedAt: result.completedAt.toISOString(),
+        },
+      });
+    }
+  );
+
+  /**
+   * POST /api/v1/features/:id/progress/log
+   * Log progress on a feature without changing status
+   */
+  fastify.post<{ Params: FeatureIdParams; Body: LogProgressInput }>(
+    "/:id/progress/log",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(logProgressSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await logProgress("feature", id, request.body);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/features/:id/progress/blocker
+   * Report a blocker on a feature
+   */
+  fastify.post<{ Params: FeatureIdParams; Body: ReportBlockerInput }>(
+    "/:id/progress/blocker",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(reportBlockerSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await reportBlocker("feature", id, request.body);
+      return reply.send({ data: result });
     }
   );
 }

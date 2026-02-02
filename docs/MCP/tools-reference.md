@@ -28,6 +28,7 @@ This returns comprehensive guidance on:
 | [Epics](#epics) | 4 | Epic/project management |
 | [Features](#features) | 4 | Feature management |
 | [Tasks](#tasks) | 4 | Task management |
+| [Progress](#progress-tracking) | 4 | Auto-progress tracking |
 | [Search](#search) | 1 | Unified search |
 | [Statuses](#statuses) | 2 | Workflow status queries |
 | [Execution](#execution-planning) | 4 | Execution planning and dependencies |
@@ -222,6 +223,65 @@ Update an existing task.
 | `parallelGroup` | string | No | Parallel group identifier |
 | `dependencies` | string[] | No | Array of dependency UUIDs |
 | `estimatedComplexity` | enum | No | Complexity estimate |
+
+---
+
+## Progress Tracking
+
+These tools make status updates natural and automatic for AI workflows. They track timing, log context, and integrate with the AI notes system.
+
+**Full documentation:** [Progress Tracking](./progress-tracking.md)
+
+### spectree__start_work
+
+Begin working on a feature or task. Sets status to "In Progress" and records start time.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `sessionId` | string | No | AI session identifier |
+
+### spectree__complete_work
+
+Mark a feature or task as complete. Sets status to "Done", calculates duration, and logs summary.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `summary` | string | No | Summary of work completed |
+| `sessionId` | string | No | AI session identifier |
+
+### spectree__log_progress
+
+Log incremental progress without changing status. Use for long-running work items.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `message` | string | Yes | Progress message |
+| `percentComplete` | number | No | 0-100 progress indicator |
+| `sessionId` | string | No | AI session identifier |
+
+### spectree__report_blocker
+
+Report that work is blocked. Records reason and optionally links to blocking item.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `reason` | string | Yes | Description of what's blocking |
+| `blockedById` | string | No | UUID of blocking item |
+| `sessionId` | string | No | AI session identifier |
+
+**Recommended workflow:**
+1. Call `spectree__start_work` when beginning work
+2. Use `spectree__log_progress` for significant milestones  
+3. Call `spectree__report_blocker` if blocked
+4. Call `spectree__complete_work` when done
 
 ---
 
@@ -533,6 +593,7 @@ Common errors:
 
 ## Related Documentation
 
+- [Progress Tracking](./progress-tracking.md) - Auto-progress tracking tools guide
 - [Execution Metadata](./execution-metadata.md) - Detailed execution planning guide
 - [AI Session Context](./ai-session-context.md) - Cross-session context transfer guide
 - [API Token Authentication](./api-token-authentication.md) - Token system details

@@ -11,6 +11,12 @@ import {
   setTaskAiContext,
   appendTaskAiNote,
 } from "../services/aiContextService.js";
+import {
+  startWork,
+  completeWork,
+  logProgress,
+  reportBlocker,
+} from "../services/progressService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
 import { validateBody } from "../middleware/validate.js";
@@ -24,6 +30,16 @@ import {
   type AppendAiNoteInput,
   type SetAiContextInput,
 } from "../schemas/aiContext.js";
+import {
+  startWorkSchema,
+  completeWorkSchema,
+  logProgressSchema,
+  reportBlockerSchema,
+  type StartWorkInput,
+  type CompleteWorkInput,
+  type LogProgressInput,
+  type ReportBlockerInput,
+} from "../schemas/progress.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
 import { prisma } from "../lib/db.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
@@ -474,6 +490,89 @@ export default function tasksRoutes(
       const { type, content, sessionId } = request.body;
       const result = await appendTaskAiNote(id, { type, content, sessionId });
       return reply.status(201).send({ data: result });
+    }
+  );
+
+  // ===========================================================================
+  // Progress Tracking Routes
+  // ===========================================================================
+
+  /**
+   * POST /api/v1/tasks/:id/progress/start
+   * Start work on a task - sets status to "In Progress" and records start time
+   */
+  fastify.post<{ Params: TaskIdParams; Body: StartWorkInput }>(
+    "/:id/progress/start",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(startWorkSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await startWork("task", id, request.body);
+      return reply.send({
+        data: {
+          ...result,
+          startedAt: result.startedAt.toISOString(),
+        },
+      });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/progress/complete
+   * Complete work on a task - sets status to "Done" and records completion time
+   */
+  fastify.post<{ Params: TaskIdParams; Body: CompleteWorkInput }>(
+    "/:id/progress/complete",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(completeWorkSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await completeWork("task", id, request.body);
+      return reply.send({
+        data: {
+          ...result,
+          startedAt: result.startedAt?.toISOString() ?? null,
+          completedAt: result.completedAt.toISOString(),
+        },
+      });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/progress/log
+   * Log progress on a task without changing status
+   */
+  fastify.post<{ Params: TaskIdParams; Body: LogProgressInput }>(
+    "/:id/progress/log",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(logProgressSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await logProgress("task", id, request.body);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/progress/blocker
+   * Report a blocker on a task
+   */
+  fastify.post<{ Params: TaskIdParams; Body: ReportBlockerInput }>(
+    "/:id/progress/blocker",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(reportBlockerSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await reportBlocker("task", id, request.body);
+      return reply.send({ data: result });
     }
   );
 }

@@ -270,7 +270,11 @@ export function registerFeatureTools(server: McpServer): void {
       description:
         "Update an existing feature. Only the fields you provide will be updated; " +
         "omitted fields retain their current values. Returns the updated feature with " +
-        "all current field values. Use this to change status, reassign, or modify content.",
+        "all current field values. Use this to change status, reassign, or modify content.\n\n" +
+        "TIP: After completing significant work on a feature, consider using:\n" +
+        "- spectree__complete_work to mark it done (auto-calculates duration)\n" +
+        "- spectree__log_progress to note partial progress\n" +
+        "- spectree__start_work to begin work (sets status and timestamps)",
       inputSchema: {
         id: z
           .string()

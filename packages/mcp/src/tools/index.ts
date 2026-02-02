@@ -18,6 +18,7 @@ import { registerPersonalTools } from "./personal.js";
 import { registerExecutionTools } from "./execution.js";
 import { registerHelpTools } from "./help.js";
 import { registerAiContextTools } from "./ai-context.js";
+import { registerProgressTools } from "./progress.js";
 
 // Tool registration function type
 export type ToolRegistrar = (server: McpServer) => void;
@@ -34,6 +35,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerPersonalTools,
   registerExecutionTools,
   registerAiContextTools,
+  registerProgressTools,
 ];
 
 /**
