@@ -127,3 +127,23 @@ export {
   type AddExternalLinkInput,
   type StructuredDescriptionSection,
 } from "./structuredDescription.js";
+
+// Code Context schemas
+export {
+  linkCodeFileSchema,
+  unlinkCodeFileSchema,
+  linkFunctionSchema,
+  linkBranchSchema,
+  linkCommitSchema,
+  linkPrSchema,
+  codeContextSchema,
+  codeContextResponseSchema,
+  type LinkCodeFileInput,
+  type UnlinkCodeFileInput,
+  type LinkFunctionInput,
+  type LinkBranchInput,
+  type LinkCommitInput,
+  type LinkPrInput,
+  type CodeContext,
+  type CodeContextResponse,
+} from "./codeContext.js";

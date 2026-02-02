@@ -104,6 +104,24 @@ Features and Tasks support rich, structured descriptions with AI-friendly sectio
 
 See `docs/MCP/structured-descriptions.md` for full documentation.
 
+### Code Context (Codebase Integration)
+
+Link features and tasks directly to code artifacts for instant code context:
+
+- `spectree__link_code_file` - Link a source file
+- `spectree__unlink_code_file` - Remove a file link
+- `spectree__link_function` - Link a function (format: `filePath:functionName`)
+- `spectree__link_branch` - Set git branch
+- `spectree__link_commit` - Add commit SHA
+- `spectree__link_pr` - Link pull request
+- `spectree__get_code_context` - Get all code context
+
+**Difference from Structured Descriptions:**
+- Structured descriptions (`filesInvolved`) = files you *plan* to modify
+- Code context (`relatedFiles`) = files you *actually* modified
+
+See `docs/MCP/code-context.md` for full documentation.
+
 ---
 
 ## Build, Test, and Lint

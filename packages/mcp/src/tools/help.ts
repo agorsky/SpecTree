@@ -10,7 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createResponse } from "./utils.js";
 
 // Available topics for the schema
-const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal", "templates", "sessions", "structured"] as const;
+const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal", "templates", "sessions", "structured", "codeContext"] as const;
 type TopicKey = Exclude<typeof topicValues[number], "all">;
 
 // Topic-specific help content
@@ -517,6 +517,110 @@ spectree__link_file({
 3. **Link files as you discover them**: Call \`link_file\` when you find relevant files during exploration
 4. **Set risk level appropriately**: Helps future AI agents understand required caution
 5. **Include AI instructions**: Provide specific guidance for agents working on this item`,
+
+  codeContext: `# Code Context (Codebase Integration)
+
+Code Context links features and tasks directly to code artifacts, enabling AI agents to instantly understand the code context for any work item without needing to explore the codebase.
+
+## Why Use Code Context?
+
+When you start working on a feature/task, you can immediately see:
+- Which files were previously modified
+- Which functions were touched
+- What git branch is being used
+- What commits have been made
+- What PR is associated
+
+This eliminates the need to search/explore to understand what code is involved.
+
+## Difference from Structured Descriptions
+
+| Structured Descriptions | Code Context |
+|------------------------|--------------|
+| \`filesInvolved\` - Files you *plan* to modify | \`relatedFiles\` - Files you *actually* modified |
+| \`functionsToModify\` - Functions you *plan* to change | \`relatedFunctions\` - Functions *actually* changed |
+| Planning/specification focused | Implementation/tracking focused |
+| Set **before** work begins | Updated **during/after** work |
+
+Both can be used together - structured descriptions for planning, code context for tracking.
+
+## Tools
+
+| Tool | Purpose |
+|------|---------|
+| \`spectree__link_code_file\` | Link a source file |
+| \`spectree__unlink_code_file\` | Remove a file link |
+| \`spectree__link_function\` | Link a function (stored as "filePath:functionName") |
+| \`spectree__link_branch\` | Set git branch (one per item) |
+| \`spectree__link_commit\` | Add commit SHA (accumulates) |
+| \`spectree__link_pr\` | Link pull request (one per item) |
+| \`spectree__get_code_context\` | Get all code context |
+
+## Recommended Workflow
+
+### Starting Work
+
+\`\`\`
+// 1. Get existing context to see what was previously tracked
+const context = spectree__get_code_context({ 
+  id: "COM-123", 
+  type: "feature" 
+})
+
+// 2. Link your branch when you create it
+spectree__link_branch({ 
+  id: "COM-123", 
+  type: "feature",
+  branch: "feature/COM-123-user-auth" 
+})
+\`\`\`
+
+### During Development
+
+\`\`\`
+// 3. Link files as you modify them
+spectree__link_code_file({
+  id: "COM-123",
+  type: "feature",
+  filePath: "src/services/userService.ts"
+})
+
+// 4. Link functions for significant changes
+spectree__link_function({
+  id: "COM-123",
+  type: "feature",
+  filePath: "src/services/userService.ts",
+  functionName: "createUser"
+})
+
+// 5. Record commits after committing
+spectree__link_commit({
+  id: "COM-123",
+  type: "feature",
+  commitSha: "abc123def456"
+})
+\`\`\`
+
+### Completing Work
+
+\`\`\`
+// 6. Link the PR when opened
+spectree__link_pr({
+  id: "COM-123",
+  type: "feature",
+  prNumber: 42,
+  prUrl: "https://github.com/org/repo/pull/42"
+})
+\`\`\`
+
+## Best Practices
+
+1. **Link your branch early**: Set the branch when you start work
+2. **Link files as you touch them**: Don't try to remember at the end
+3. **Link key functions**: Focus on the important ones, not every helper
+4. **Record commits**: Especially for significant changes
+5. **Get context first**: When resuming work, call \`get_code_context\` to understand previous state
+6. **Duplicates are safe**: The tools handle deduplication automatically`,
 };
 
 // Full instructions combining all topics
@@ -539,6 +643,10 @@ ${helpTopics.progress}
 ---
 
 ${helpTopics.structured}
+
+---
+
+${helpTopics.codeContext}
 
 ---
 
@@ -580,6 +688,11 @@ ${helpTopics.personal}
 | **Get structured description** | \`spectree__get_structured_description\` |
 | **Update section** | \`spectree__update_section\` |
 | **Link file** | \`spectree__link_file\` |
+| **Get code context** | \`spectree__get_code_context\` |
+| **Link code file** | \`spectree__link_code_file\` |
+| **Link branch** | \`spectree__link_branch\` |
+| **Link commit** | \`spectree__link_commit\` |
+| **Link PR** | \`spectree__link_pr\` |
 | **List templates** | \`spectree__list_templates\` |
 | **Create from template** | \`spectree__create_from_template\` |
 `;
@@ -593,8 +706,9 @@ export function registerHelpTools(server: McpServer): void {
         "Call this tool at the start of a session to understand available capabilities, " +
         "best practices, and recommended workflows. Topics include: overview, sessions " +
         "(handoff between AI sessions), execution (planning & dependencies), progress " +
-        "(tracking tools), structured (rich descriptions), search (filtering), workflow " +
-        "(recommended patterns), personal (private workspace), and templates (implementation plan templates).",
+        "(tracking tools), structured (rich descriptions), codeContext (link code artifacts), " +
+        "search (filtering), workflow (recommended patterns), personal (private workspace), " +
+        "and templates (implementation plan templates).",
       inputSchema: {
         topic: z
           .enum(topicValues)
@@ -603,8 +717,9 @@ export function registerHelpTools(server: McpServer): void {
             "Which topic to get help on. Use 'all' for complete instructions, or choose " +
             "a specific topic: 'overview' (concepts), 'sessions' (AI session handoff), " +
             "'execution' (planning & dependencies), 'progress' (tracking tools), 'structured' " +
-            "(rich descriptions), 'search' (filtering), 'workflow' (recommended patterns), " +
-            "'personal' (private workspace), 'templates' (implementation plan templates)."
+            "(rich descriptions), 'codeContext' (link code artifacts), 'search' (filtering), " +
+            "'workflow' (recommended patterns), 'personal' (private workspace), " +
+            "'templates' (implementation plan templates)."
           ),
       },
     },

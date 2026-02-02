@@ -751,6 +751,31 @@ export interface LogSessionWorkInput {
 }
 
 // -----------------------------------------------------------------------------
+// Code Context Types
+// -----------------------------------------------------------------------------
+
+/** Code context for a feature or task */
+export interface CodeContext {
+  files: string[];
+  functions: string[];
+  branch: string | null;
+  commits: string[];
+  pr: {
+    number: number;
+    url: string;
+  } | null;
+}
+
+/** Code context response from API */
+export interface CodeContextResponse {
+  entityType: "feature" | "task";
+  entityId: string;
+  identifier: string;
+  codeContext: CodeContext;
+  updatedAt: string;
+}
+
+// -----------------------------------------------------------------------------
 // Reorder Types
 // -----------------------------------------------------------------------------
 
@@ -1995,6 +2020,202 @@ export class ApiClient {
     return this.request<{ data: SessionResponse }>(
       "POST",
       `/api/v1/sessions/by-id/${encodeURIComponent(sessionId)}/abandon`
+    );
+  }
+
+  // ===========================================================================
+  // Code Context Methods
+  // ===========================================================================
+
+  /**
+   * Get code context for a feature
+   */
+  async getFeatureCodeContext(featureId: string): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "GET",
+      `/api/v1/features/${encodeURIComponent(featureId)}/code-context`
+    );
+  }
+
+  /**
+   * Link a file to a feature
+   */
+  async linkFeatureCodeFile(
+    featureId: string,
+    filePath: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/code-context/files`,
+      { filePath }
+    );
+  }
+
+  /**
+   * Unlink a file from a feature
+   */
+  async unlinkFeatureCodeFile(
+    featureId: string,
+    filePath: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "DELETE",
+      `/api/v1/features/${encodeURIComponent(featureId)}/code-context/files`,
+      { filePath }
+    );
+  }
+
+  /**
+   * Link a function to a feature
+   */
+  async linkFeatureFunction(
+    featureId: string,
+    filePath: string,
+    functionName: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/code-context/functions`,
+      { filePath, functionName }
+    );
+  }
+
+  /**
+   * Link a git branch to a feature
+   */
+  async linkFeatureBranch(
+    featureId: string,
+    branchName: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/code-context/branch`,
+      { branchName }
+    );
+  }
+
+  /**
+   * Link a commit to a feature
+   */
+  async linkFeatureCommit(
+    featureId: string,
+    commitSha: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/code-context/commits`,
+      { commitSha }
+    );
+  }
+
+  /**
+   * Link a pull request to a feature
+   */
+  async linkFeaturePr(
+    featureId: string,
+    prNumber: number,
+    prUrl: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/code-context/pr`,
+      { prNumber, prUrl }
+    );
+  }
+
+  /**
+   * Get code context for a task
+   */
+  async getTaskCodeContext(taskId: string): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "GET",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/code-context`
+    );
+  }
+
+  /**
+   * Link a file to a task
+   */
+  async linkTaskCodeFile(
+    taskId: string,
+    filePath: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/code-context/files`,
+      { filePath }
+    );
+  }
+
+  /**
+   * Unlink a file from a task
+   */
+  async unlinkTaskCodeFile(
+    taskId: string,
+    filePath: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "DELETE",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/code-context/files`,
+      { filePath }
+    );
+  }
+
+  /**
+   * Link a function to a task
+   */
+  async linkTaskFunction(
+    taskId: string,
+    filePath: string,
+    functionName: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/code-context/functions`,
+      { filePath, functionName }
+    );
+  }
+
+  /**
+   * Link a git branch to a task
+   */
+  async linkTaskBranch(
+    taskId: string,
+    branchName: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/code-context/branch`,
+      { branchName }
+    );
+  }
+
+  /**
+   * Link a commit to a task
+   */
+  async linkTaskCommit(
+    taskId: string,
+    commitSha: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/code-context/commits`,
+      { commitSha }
+    );
+  }
+
+  /**
+   * Link a pull request to a task
+   */
+  async linkTaskPr(
+    taskId: string,
+    prNumber: number,
+    prUrl: string
+  ): Promise<{ data: CodeContextResponse }> {
+    return this.request<{ data: CodeContextResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/code-context/pr`,
+      { prNumber, prUrl }
     );
   }
 }

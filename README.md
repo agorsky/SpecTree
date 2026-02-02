@@ -26,6 +26,7 @@ SpecTree is a Linear-inspired project management tool with support for:
 - **Hierarchical work items** — Projects contain features, which contain tasks
 - **Customizable workflows** — Each team (and personal scope) has its own workflow statuses
 - **Structured descriptions** — Rich, AI-friendly descriptions with extractable sections
+- **Code context** — Link features/tasks to files, functions, git branches, commits, and PRs
 - **Implementation plan templates** — Reusable templates for creating standardized work structures
 - **AI integration** — Full MCP server support for AI assistants like Claude
 
@@ -541,6 +542,14 @@ pnpm --filter @spectree/mcp start
 | `spectree__add_acceptance_criterion` | Append acceptance criterion to list |
 | `spectree__link_file` | Add file path to filesInvolved |
 | `spectree__add_external_link` | Add external URL reference |
+| **Code Context** | |
+| `spectree__link_code_file` | Link a source file to feature/task |
+| `spectree__unlink_code_file` | Remove a file link |
+| `spectree__link_function` | Link a function (filePath:functionName) |
+| `spectree__link_branch` | Set git branch for feature/task |
+| `spectree__link_commit` | Add commit SHA to feature/task |
+| `spectree__link_pr` | Link pull request to feature/task |
+| `spectree__get_code_context` | Get all code context for feature/task |
 | **Help** | |
 | `spectree__get_instructions` | Get usage instructions and best practices |
 
@@ -762,6 +771,7 @@ Additional documentation is available in the `docs/` directory:
 | [MCP Execution Metadata](./docs/MCP/execution-metadata.md) | Execution planning and dependencies for AI agents |
 | [MCP Templates Guide](./docs/MCP/templates.md) | Implementation plan templates for AI agents |
 | [MCP Structured Descriptions](./docs/MCP/structured-descriptions.md) | Rich structured descriptions for AI-friendly data extraction |
+| [MCP Code Context](./docs/MCP/code-context.md) | Codebase integration - link code artifacts to features/tasks |
 | [MCP Documentation](./docs/MCP/) | MCP server setup, authentication, and security |
 | [Azure Deployment Guide](./docs/azure-deployment-guide.md) | Production deployment to Azure |
 | [Design References](./docs/DESIGN-REFERENCES/) | Architectural decisions and Linear API patterns |

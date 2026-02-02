@@ -35,6 +35,7 @@ This returns comprehensive guidance on:
 | [AI Context](#ai-context) | 3 | Cross-session context transfer |
 | [Session Handoff](#session-handoff) | 6 | Session lifecycle and handoff |
 | [Structured Descriptions](#structured-descriptions) | 6 | Rich structured descriptions |
+| [Code Context](#code-context) | 7 | Codebase integration (files, git, PRs) |
 | [Personal](#personal-scope) | 4 | Personal workspace |
 | [Templates](#templates) | 5 | Implementation plan templates |
 | [Ordering](#ordering) | 3 | Reorder items |
@@ -632,6 +633,99 @@ Add an external URL reference.
 | `url` | string | Yes | URL to add |
 | `title` | string | No | Link title |
 | `description` | string | No | Link description |
+
+---
+
+## Code Context
+
+Code Context tools link features and tasks directly to code artifacts (files, functions, git branches, commits, PRs). This enables AI agents to instantly understand the code context for any work item. See [Code Context](./code-context.md) for full documentation.
+
+**Difference from Structured Descriptions:**
+- Structured descriptions (`filesInvolved`) = files you *plan* to modify
+- Code context (`relatedFiles`) = files you *actually* modified
+
+### spectree__link_code_file
+
+Add a source file to a feature or task's related files list. Duplicates are silently ignored.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `filePath` | string | Yes | File path to link |
+
+### spectree__unlink_code_file
+
+Remove a source file from the related files list.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `filePath` | string | Yes | File path to unlink |
+
+### spectree__link_function
+
+Add a function reference. Functions are stored as `"filePath:functionName"`.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `filePath` | string | Yes | File containing the function |
+| `functionName` | string | Yes | Function/method name |
+
+### spectree__link_branch
+
+Set the git branch for a feature or task. Only one branch per item (replaces previous).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `branch` | string | Yes | Git branch name |
+
+### spectree__link_commit
+
+Add a commit SHA to the commits list. Duplicates are ignored; commits accumulate.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `commitSha` | string | Yes | Git commit SHA |
+
+### spectree__link_pr
+
+Link a pull request. Only one PR per item (replaces previous).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `prNumber` | number | Yes | Pull request number |
+| `prUrl` | string | No | Pull request URL |
+
+### spectree__get_code_context
+
+Get all code context for a feature or task.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+
+**Returns:**
+```json
+{
+  "relatedFiles": ["src/services/userService.ts"],
+  "relatedFunctions": ["src/services/userService.ts:createUser"],
+  "gitBranch": "feature/COM-123-user-auth",
+  "gitCommits": ["abc123def456"],
+  "gitPrNumber": 42,
+  "gitPrUrl": "https://github.com/org/repo/pull/42"
+}
+```
 
 ---
 

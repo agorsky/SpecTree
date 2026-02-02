@@ -20,6 +20,15 @@ import {
   addExternalLink,
 } from "../services/structuredDescriptionService.js";
 import {
+  getTaskCodeContext,
+  linkTaskFile as linkTaskCodeFile,
+  unlinkTaskFile as unlinkTaskCodeFile,
+  linkTaskFunction,
+  linkTaskBranch,
+  linkTaskCommit,
+  linkTaskPr,
+} from "../services/codeContextService.js";
+import {
   startWork,
   completeWork,
   logProgress,
@@ -50,6 +59,20 @@ import {
   type LinkFileInput,
   type AddExternalLinkInput,
 } from "../schemas/structuredDescription.js";
+import {
+  linkCodeFileSchema,
+  unlinkCodeFileSchema,
+  linkFunctionSchema,
+  linkBranchSchema,
+  linkCommitSchema,
+  linkPrSchema,
+  type LinkCodeFileInput,
+  type UnlinkCodeFileInput,
+  type LinkFunctionInput,
+  type LinkBranchInput,
+  type LinkCommitInput,
+  type LinkPrInput,
+} from "../schemas/codeContext.js";
 import {
   startWorkSchema,
   completeWorkSchema,
@@ -705,6 +728,141 @@ export default function tasksRoutes(
       const { id } = request.params;
       const { url, title } = request.body;
       const result = await addExternalLink("task", id, { url, title });
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  // ===========================================================================
+  // Code Context Routes
+  // ===========================================================================
+
+  /**
+   * GET /api/v1/tasks/:id/code-context
+   * Get code context (files, functions, git info) for a task
+   * Requires authentication and team membership
+   */
+  fastify.get<{ Params: TaskIdParams }>(
+    "/:id/code-context",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId")],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await getTaskCodeContext(id);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/code-context/files
+   * Link a file to a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams; Body: LinkCodeFileInput }>(
+    "/:id/code-context/files",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(linkCodeFileSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { filePath } = request.body;
+      const result = await linkTaskCodeFile(id, filePath);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  /**
+   * DELETE /api/v1/tasks/:id/code-context/files
+   * Unlink a file from a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.delete<{ Params: TaskIdParams; Body: UnlinkCodeFileInput }>(
+    "/:id/code-context/files",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(unlinkCodeFileSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { filePath } = request.body;
+      const result = await unlinkTaskCodeFile(id, filePath);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/code-context/functions
+   * Link a function to a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams; Body: LinkFunctionInput }>(
+    "/:id/code-context/functions",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(linkFunctionSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { filePath, functionName } = request.body;
+      const result = await linkTaskFunction(id, filePath, functionName);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/code-context/branch
+   * Link a git branch to a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams; Body: LinkBranchInput }>(
+    "/:id/code-context/branch",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(linkBranchSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { branchName } = request.body;
+      const result = await linkTaskBranch(id, branchName);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/code-context/commits
+   * Link a commit to a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams; Body: LinkCommitInput }>(
+    "/:id/code-context/commits",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(linkCommitSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { commitSha } = request.body;
+      const result = await linkTaskCommit(id, commitSha);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/code-context/pr
+   * Link a pull request to a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams; Body: LinkPrInput }>(
+    "/:id/code-context/pr",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(linkPrSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { prNumber, prUrl } = request.body;
+      const result = await linkTaskPr(id, prNumber, prUrl);
       return reply.status(201).send({ data: result });
     }
   );
