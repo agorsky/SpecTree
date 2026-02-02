@@ -83,6 +83,23 @@ import {
   type LogProgressInput,
   type ReportBlockerInput,
 } from "../schemas/progress.js";
+import {
+  addValidationCheckSchema,
+  runAllValidationsSchema,
+  type AddValidationCheckInput,
+  type RunAllValidationsInput,
+} from "../schemas/validation.js";
+import {
+  addValidationCheck,
+  listValidationChecks,
+  removeValidationCheck,
+  markManualValidated,
+  resetValidationChecks,
+} from "../services/validationService.js";
+import {
+  runValidation,
+  runAllValidations,
+} from "../services/validationExecutor.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
 import { prisma } from "../lib/db.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
@@ -864,6 +881,130 @@ export default function tasksRoutes(
       const { prNumber, prUrl } = request.body;
       const result = await linkTaskPr(id, prNumber, prUrl);
       return reply.status(201).send({ data: result });
+    }
+  );
+
+  // ===========================================================================
+  // Validation Checklist Routes
+  // ===========================================================================
+
+  /**
+   * GET /api/v1/tasks/:id/validations
+   * List all validation checks for a task
+   * Requires authentication and team membership (guest+)
+   */
+  fastify.get<{ Params: TaskIdParams }>(
+    "/:id/validations",
+    { preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("guest")] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await listValidationChecks(id);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/validations
+   * Add a validation check to a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams; Body: AddValidationCheckInput }>(
+    "/:id/validations",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(addValidationCheckSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await addValidationCheck(id, request.body);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  /**
+   * DELETE /api/v1/tasks/:id/validations/:checkId
+   * Remove a validation check from a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.delete<{ Params: TaskIdParams & { checkId: string } }>(
+    "/:id/validations/:checkId",
+    { preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")] },
+    async (request, reply) => {
+      const { id, checkId } = request.params;
+      await removeValidationCheck(id, checkId);
+      return reply.status(204).send();
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/validations/:checkId/run
+   * Run a single validation check
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams & { checkId: string }; Body: { workingDirectory?: string } }>(
+    "/:id/validations/:checkId/run",
+    { preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")] },
+    async (request, reply) => {
+      const { id, checkId } = request.params;
+      const { workingDirectory } = request.body || {};
+      const result = await runValidation(id, checkId, workingDirectory);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/validations/run-all
+   * Run all validation checks for a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams; Body: RunAllValidationsInput }>(
+    "/:id/validations/run-all",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(runAllValidationsSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const options: { stopOnFailure?: boolean; workingDirectory?: string } = {};
+      if (request.body.stopOnFailure !== undefined) {
+        options.stopOnFailure = request.body.stopOnFailure;
+      }
+      if (request.body.workingDirectory !== undefined) {
+        options.workingDirectory = request.body.workingDirectory;
+      }
+      const result = await runAllValidations(id, options);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/validations/:checkId/manual-validate
+   * Mark a manual validation check as validated
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams & { checkId: string }; Body: { notes?: string } }>(
+    "/:id/validations/:checkId/manual-validate",
+    { preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")] },
+    async (request, reply) => {
+      const { id, checkId } = request.params;
+      const { notes } = request.body || {};
+      const result = await markManualValidated(id, checkId, notes);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/validations/reset
+   * Reset all validation checks to pending status
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams }>(
+    "/:id/validations/reset",
+    { preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await resetValidationChecks(id);
+      return reply.send({ data: result });
     }
   );
 }

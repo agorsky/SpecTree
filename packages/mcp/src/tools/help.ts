@@ -10,7 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createResponse } from "./utils.js";
 
 // Available topics for the schema
-const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal", "templates", "sessions", "structured", "codeContext"] as const;
+const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal", "templates", "sessions", "structured", "codeContext", "validations"] as const;
 type TopicKey = Exclude<typeof topicValues[number], "all">;
 
 // Topic-specific help content
@@ -621,6 +621,127 @@ spectree__link_pr({
 4. **Record commits**: Especially for significant changes
 5. **Get context first**: When resuming work, call \`get_code_context\` to understand previous state
 6. **Duplicates are safe**: The tools handle deduplication automatically`,
+
+  validations: `# Validation Checklists
+
+Validation checklists define executable acceptance criteria that verify work is truly "done". AI agents can add checks to tasks and run them to verify their work before marking complete.
+
+## Why Use Validation Checklists?
+
+Instead of manually checking if work is complete, you can:
+- Define acceptance criteria as executable checks
+- Run automated validations to verify code/files
+- Track which validations pass/fail
+- Ensure nothing is missed before completion
+
+## Validation Check Types
+
+| Type | Description | Required Fields |
+|------|-------------|-----------------|
+| \`command\` | Run shell command, check exit code | \`command\` |
+| \`file_exists\` | Verify file exists | \`filePath\` |
+| \`file_contains\` | Search file content with regex | \`filePath\`, \`searchPattern\` |
+| \`test_passes\` | Run test command (2 min default) | \`testCommand\` |
+| \`manual\` | Requires human verification | none |
+
+## Tools
+
+| Tool | Purpose |
+|------|---------|
+| \`spectree__add_validation\` | Add a validation check to a task |
+| \`spectree__list_validations\` | List checks with status summary |
+| \`spectree__run_validation\` | Run a single check |
+| \`spectree__run_all_validations\` | Run all automated checks |
+| \`spectree__mark_manual_validated\` | Mark manual check as passed |
+| \`spectree__remove_validation\` | Remove a check |
+| \`spectree__reset_validations\` | Reset all to pending |
+
+## Recommended Workflow
+
+### Setting Up Validations (when starting work)
+
+\`\`\`
+// After starting work, define what "done" looks like
+spectree__start_work({ id: "COM-123-1", type: "task" })
+
+// Add validation checks
+spectree__add_validation({
+  taskId: "COM-123-1",
+  type: "test_passes",
+  description: "Unit tests pass",
+  testCommand: "pnpm test --filter myFeature"
+})
+
+spectree__add_validation({
+  taskId: "COM-123-1",
+  type: "command",
+  description: "Build succeeds",
+  command: "pnpm build"
+})
+
+spectree__add_validation({
+  taskId: "COM-123-1",
+  type: "file_exists",
+  description: "Service file created",
+  filePath: "src/services/newService.ts"
+})
+\`\`\`
+
+### Verifying Work (before completion)
+
+\`\`\`
+// Run all validations to check if work is done
+const result = spectree__run_all_validations({
+  taskId: "COM-123-1",
+  workingDirectory: "/path/to/project"
+})
+
+// Check results
+if (result.allPassed) {
+  spectree__complete_work({ 
+    id: "COM-123-1", 
+    type: "task",
+    summary: "All validations passed" 
+  })
+} else {
+  // Fix issues and re-run
+  spectree__reset_validations({ taskId: "COM-123-1" })
+}
+\`\`\`
+
+### Manual Verification
+
+\`\`\`
+// For checks that require human verification
+spectree__add_validation({
+  taskId: "COM-123-1",
+  type: "manual",
+  description: "UI looks correct on mobile"
+})
+
+// Later, mark as verified
+spectree__mark_manual_validated({
+  taskId: "COM-123-1",
+  checkId: "<uuid>",
+  notes: "Tested on iPhone and Android"
+})
+\`\`\`
+
+## Security
+
+Commands are sandboxed with these restrictions:
+- **Blocked patterns**: rm -rf /, mkfs, dd, chmod 777, curl|sh, eval, fork bombs
+- **Timeout limits**: 30 seconds default, 5 minutes max (2 min for test commands)
+- **Working directory**: All paths relative to specified workingDirectory
+
+## Best Practices
+
+1. **Define validations early**: Add checks when you start work, not at the end
+2. **Include build/test checks**: Always verify code compiles and tests pass
+3. **Use file checks**: Ensure expected files are created
+4. **Reset before re-running**: Call \`reset_validations\` after making changes
+5. **Run all before completing**: Always call \`run_all_validations\` before \`complete_work\`
+6. **Use manual checks sparingly**: Reserve for things that truly cannot be automated`,
 };
 
 // Full instructions combining all topics
@@ -647,6 +768,10 @@ ${helpTopics.structured}
 ---
 
 ${helpTopics.codeContext}
+
+---
+
+${helpTopics.validations}
 
 ---
 
@@ -693,6 +818,8 @@ ${helpTopics.personal}
 | **Link branch** | \`spectree__link_branch\` |
 | **Link commit** | \`spectree__link_commit\` |
 | **Link PR** | \`spectree__link_pr\` |
+| **Add validation** | \`spectree__add_validation\` |
+| **Run all validations** | \`spectree__run_all_validations\` |
 | **List templates** | \`spectree__list_templates\` |
 | **Create from template** | \`spectree__create_from_template\` |
 `;
@@ -707,8 +834,8 @@ export function registerHelpTools(server: McpServer): void {
         "best practices, and recommended workflows. Topics include: overview, sessions " +
         "(handoff between AI sessions), execution (planning & dependencies), progress " +
         "(tracking tools), structured (rich descriptions), codeContext (link code artifacts), " +
-        "search (filtering), workflow (recommended patterns), personal (private workspace), " +
-        "and templates (implementation plan templates).",
+        "validations (executable acceptance criteria), search (filtering), workflow (recommended patterns), " +
+        "personal (private workspace), and templates (implementation plan templates).",
       inputSchema: {
         topic: z
           .enum(topicValues)
@@ -717,9 +844,9 @@ export function registerHelpTools(server: McpServer): void {
             "Which topic to get help on. Use 'all' for complete instructions, or choose " +
             "a specific topic: 'overview' (concepts), 'sessions' (AI session handoff), " +
             "'execution' (planning & dependencies), 'progress' (tracking tools), 'structured' " +
-            "(rich descriptions), 'codeContext' (link code artifacts), 'search' (filtering), " +
-            "'workflow' (recommended patterns), 'personal' (private workspace), " +
-            "'templates' (implementation plan templates)."
+            "(rich descriptions), 'codeContext' (link code artifacts), 'validations' " +
+            "(executable acceptance criteria), 'search' (filtering), 'workflow' (recommended patterns), " +
+            "'personal' (private workspace), 'templates' (implementation plan templates)."
           ),
       },
     },

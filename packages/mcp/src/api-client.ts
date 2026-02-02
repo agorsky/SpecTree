@@ -666,6 +666,93 @@ export type StructuredDescriptionSection =
   | "estimatedEffort";
 
 // -----------------------------------------------------------------------------
+// Validation Checklist Types
+// -----------------------------------------------------------------------------
+
+/** Validation check types */
+export type ValidationCheckType = 
+  | "command" 
+  | "file_exists" 
+  | "file_contains" 
+  | "test_passes" 
+  | "manual";
+
+/** Validation check status */
+export type ValidationCheckStatus = "pending" | "passed" | "failed";
+
+/** A single validation check */
+export interface ValidationCheck {
+  id: string;
+  type: ValidationCheckType;
+  description: string;
+  command?: string;
+  expectedExitCode?: number;
+  timeoutMs?: number;
+  filePath?: string;
+  searchPattern?: string;
+  testCommand?: string;
+  status: ValidationCheckStatus;
+  lastCheckedAt?: string;
+  lastError?: string;
+  lastOutput?: string;
+}
+
+/** Input for adding a validation check */
+export interface AddValidationCheckInput {
+  type: ValidationCheckType;
+  description: string;
+  command?: string;
+  expectedExitCode?: number;
+  timeoutMs?: number;
+  filePath?: string;
+  searchPattern?: string;
+  testCommand?: string;
+}
+
+/** Input for running all validations */
+export interface RunAllValidationsInput {
+  stopOnFailure?: boolean;
+  workingDirectory?: string;
+}
+
+/** Result of running a single validation check */
+export interface ValidationCheckResult {
+  id: string;
+  description: string;
+  type: ValidationCheckType;
+  status: ValidationCheckStatus;
+  passed: boolean;
+  error?: string;
+  output?: string;
+  durationMs?: number;
+}
+
+/** Response from listing validations */
+export interface ListValidationsResponse {
+  taskId: string;
+  identifier: string;
+  checks: ValidationCheck[];
+  summary: {
+    total: number;
+    passed: number;
+    failed: number;
+    pending: number;
+  };
+}
+
+/** Response from running all validations */
+export interface RunAllValidationsResponse {
+  taskId: string;
+  identifier: string;
+  totalChecks: number;
+  passed: number;
+  failed: number;
+  pending: number;
+  allPassed: boolean;
+  results: ValidationCheckResult[];
+}
+
+// -----------------------------------------------------------------------------
 // Session Types
 // -----------------------------------------------------------------------------
 
@@ -2216,6 +2303,98 @@ export class ApiClient {
       "POST",
       `/api/v1/tasks/${encodeURIComponent(taskId)}/code-context/pr`,
       { prNumber, prUrl }
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Validation Checklist Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List all validation checks for a task
+   */
+  async listValidations(taskId: string): Promise<{ data: ListValidationsResponse }> {
+    return this.request<{ data: ListValidationsResponse }>(
+      "GET",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/validations`
+    );
+  }
+
+  /**
+   * Add a validation check to a task
+   */
+  async addValidation(
+    taskId: string,
+    input: AddValidationCheckInput
+  ): Promise<{ data: ValidationCheck }> {
+    return this.request<{ data: ValidationCheck }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/validations`,
+      input
+    );
+  }
+
+  /**
+   * Remove a validation check from a task
+   */
+  async removeValidation(taskId: string, checkId: string): Promise<void> {
+    await this.request<void>(
+      "DELETE",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/validations/${encodeURIComponent(checkId)}`
+    );
+  }
+
+  /**
+   * Run a single validation check
+   */
+  async runValidation(
+    taskId: string,
+    checkId: string,
+    workingDirectory?: string
+  ): Promise<{ data: ValidationCheckResult }> {
+    return this.request<{ data: ValidationCheckResult }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/validations/${encodeURIComponent(checkId)}/run`,
+      workingDirectory ? { workingDirectory } : {}
+    );
+  }
+
+  /**
+   * Run all validation checks for a task
+   */
+  async runAllValidations(
+    taskId: string,
+    input?: RunAllValidationsInput
+  ): Promise<{ data: RunAllValidationsResponse }> {
+    return this.request<{ data: RunAllValidationsResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/validations/run-all`,
+      input ?? {}
+    );
+  }
+
+  /**
+   * Mark a manual validation check as validated
+   */
+  async markManualValidated(
+    taskId: string,
+    checkId: string,
+    notes?: string
+  ): Promise<{ data: ValidationCheck }> {
+    return this.request<{ data: ValidationCheck }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/validations/${encodeURIComponent(checkId)}/manual-validate`,
+      notes ? { notes } : {}
+    );
+  }
+
+  /**
+   * Reset all validation checks to pending
+   */
+  async resetValidations(taskId: string): Promise<{ data: ListValidationsResponse }> {
+    return this.request<{ data: ListValidationsResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/validations/reset`
     );
   }
 }

@@ -16,6 +16,8 @@ export * as progressService from "./progressService.js";
 export * as templateService from "./templateService.js";
 export * as sessionService from "./sessionService.js";
 export * as codeContextService from "./codeContextService.js";
+export * as validationService from "./validationService.js";
+export * as validationExecutor from "./validationExecutor.js";
 
 // Re-export the database client
 export { prisma } from "../lib/db.js";

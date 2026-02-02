@@ -122,6 +122,20 @@ Link features and tasks directly to code artifacts for instant code context:
 
 See `docs/MCP/code-context.md` for full documentation.
 
+### Validation Checklists
+
+Tasks can have executable validation checks that define "done" in a verifiable way:
+
+- `spectree__add_validation` - Add a validation check (command, file_exists, file_contains, test_passes, manual)
+- `spectree__list_validations` - List checks with status summary
+- `spectree__run_validation` - Run a single check
+- `spectree__run_all_validations` - Run all checks
+- `spectree__mark_manual_validated` - Mark manual check as passed
+- `spectree__remove_validation` - Remove a check
+- `spectree__reset_validations` - Reset all to pending
+
+See `docs/MCP/validation-checklists.md` for full documentation.
+
 ---
 
 ## Build, Test, and Lint

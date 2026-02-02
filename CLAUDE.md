@@ -150,6 +150,27 @@ Link features and tasks directly to code artifacts for instant code context:
 
 See `docs/MCP/code-context.md` for full documentation.
 
+## Validation Checklists
+
+Tasks can have executable validation checks that define "done" in a verifiable way. Types:
+
+- `command` - Run shell command, check exit code
+- `file_exists` - Verify file exists
+- `file_contains` - Search file content with regex
+- `test_passes` - Run test command
+- `manual` - Requires human verification
+
+**Key MCP tools:**
+- `spectree__add_validation` - Add a validation check
+- `spectree__list_validations` - List checks with status
+- `spectree__run_validation` - Run a single check
+- `spectree__run_all_validations` - Run all checks
+- `spectree__mark_manual_validated` - Mark manual check as passed
+- `spectree__remove_validation` - Remove a check
+- `spectree__reset_validations` - Reset all to pending
+
+See `docs/MCP/validation-checklists.md` for full documentation.
+
 ## Before Making Changes
 
 1. **Database changes**: Read `docs/database-safety-guide.md`

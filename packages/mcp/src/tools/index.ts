@@ -23,6 +23,7 @@ import { registerTemplateTools } from "./templates.js";
 import { registerSessionTools } from "./sessions.js";
 import { registerStructuredDescTools } from "./structured-desc.js";
 import { registerCodeContextTools } from "./code-context.js";
+import { registerValidationTools } from "./validations.js";
 
 // Tool registration function type
 export type ToolRegistrar = (server: McpServer) => void;
@@ -44,6 +45,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerSessionTools,
   registerStructuredDescTools,
   registerCodeContextTools,
+  registerValidationTools,
 ];
 
 /**

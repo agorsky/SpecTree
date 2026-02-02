@@ -27,6 +27,7 @@ SpecTree is a Linear-inspired project management tool with support for:
 - **Customizable workflows** — Each team (and personal scope) has its own workflow statuses
 - **Structured descriptions** — Rich, AI-friendly descriptions with extractable sections
 - **Code context** — Link features/tasks to files, functions, git branches, commits, and PRs
+- **Validation checklists** — Executable acceptance criteria that verify work is truly "done"
 - **Implementation plan templates** — Reusable templates for creating standardized work structures
 - **AI integration** — Full MCP server support for AI assistants like Claude
 
@@ -402,6 +403,52 @@ POST /api/v1/me/statuses
 
 Personal scope features and tasks use the same `/api/v1/features` and `/api/v1/tasks` endpoints—they're automatically scoped by the project they belong to.
 
+### Validation Checklists
+
+Tasks support executable validation checks that define "done" in a verifiable way:
+
+```bash
+# List validations for a task
+GET /api/v1/tasks/:id/validations
+
+# Add a validation check
+POST /api/v1/tasks/:id/validations
+{
+  "type": "command",
+  "description": "Tests pass",
+  "command": "pnpm test"
+}
+
+# Run a single validation
+POST /api/v1/tasks/:id/validations/:checkId/run
+
+# Run all validations
+POST /api/v1/tasks/:id/validations/run-all
+{
+  "stopOnFailure": false,
+  "workingDirectory": "/path/to/project"
+}
+
+# Mark manual validation as passed
+POST /api/v1/tasks/:id/validations/:checkId/manual-validate
+{
+  "notes": "Verified by team lead"
+}
+
+# Reset all validations to pending
+POST /api/v1/tasks/:id/validations/reset
+
+# Remove a validation check
+DELETE /api/v1/tasks/:id/validations/:checkId
+```
+
+**Validation Types**:
+- `command` — Run shell command, check exit code
+- `file_exists` — Verify file exists
+- `file_contains` — Search file content with regex
+- `test_passes` — Run test command (2 min default timeout)
+- `manual` — Requires human verification
+
 ## MCP Server with Claude Code
 
 The SpecTree MCP server enables AI assistants like Claude to interact with the project management platform through secure API token authentication.
@@ -410,6 +457,7 @@ The SpecTree MCP server enables AI assistants like Claude to interact with the p
 > - [Tools Reference](./docs/MCP/tools-reference.md) — Complete MCP tools documentation
 > - [AI Session Context](./docs/MCP/ai-session-context.md) — Cross-session context transfer for AI agents
 > - [Execution Metadata](./docs/MCP/execution-metadata.md) — Execution planning for AI agents
+> - [Validation Checklists](./docs/MCP/validation-checklists.md) — Executable acceptance criteria for tasks
 > - [API Token Authentication](./docs/MCP/api-token-authentication.md) — Token system details
 > - [Security Architecture](./docs/MCP/security-architecture.md) — Security model
 > - [Migration Guide](./docs/MCP/migration-guide.md) — Migrating from older configurations

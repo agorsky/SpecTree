@@ -36,6 +36,7 @@ This returns comprehensive guidance on:
 | [Session Handoff](#session-handoff) | 6 | Session lifecycle and handoff |
 | [Structured Descriptions](#structured-descriptions) | 6 | Rich structured descriptions |
 | [Code Context](#code-context) | 7 | Codebase integration (files, git, PRs) |
+| [Validation Checklists](#validation-checklists) | 7 | Executable acceptance criteria |
 | [Personal](#personal-scope) | 4 | Personal workspace |
 | [Templates](#templates) | 5 | Implementation plan templates |
 | [Ordering](#ordering) | 3 | Reorder items |
@@ -726,6 +727,113 @@ Get all code context for a feature or task.
   "gitPrUrl": "https://github.com/org/repo/pull/42"
 }
 ```
+
+---
+
+## Validation Checklists
+
+Validation checklists allow tasks to have executable acceptance criteria that verify work is truly "done". See [Validation Checklists](./validation-checklists.md) for full documentation.
+
+### spectree__add_validation
+
+Add a validation check to a task.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `taskId` | string | Yes | Task identifier (UUID or "COM-123-1") |
+| `type` | enum | Yes | Check type: command, file_exists, file_contains, test_passes, manual |
+| `description` | string | Yes | Human-readable description |
+| `command` | string | For command | Shell command to run |
+| `expectedExitCode` | number | No | Expected exit code (default: 0) |
+| `timeoutMs` | number | No | Timeout in ms (default: 30000, max: 300000) |
+| `filePath` | string | For file_exists/contains | File path to check |
+| `searchPattern` | string | For file_contains | Regex pattern to search |
+| `testCommand` | string | For test_passes | Test command to run |
+
+**Example:**
+```json
+{
+  "taskId": "COM-123-1",
+  "type": "command",
+  "description": "Tests pass",
+  "command": "pnpm test"
+}
+```
+
+### spectree__list_validations
+
+List all validation checks for a task with status summary.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `taskId` | string | Yes | Task identifier |
+
+**Returns:**
+```json
+{
+  "checks": [...],
+  "summary": { "total": 3, "passed": 2, "failed": 0, "pending": 1 }
+}
+```
+
+### spectree__run_validation
+
+Run a single validation check.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `taskId` | string | Yes | Task identifier |
+| `checkId` | string (UUID) | Yes | Validation check ID |
+| `workingDirectory` | string | No | Working directory for execution |
+
+### spectree__run_all_validations
+
+Run all automated validation checks for a task.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `taskId` | string | Yes | Task identifier |
+| `stopOnFailure` | boolean | No | Stop after first failure (default: false) |
+| `workingDirectory` | string | No | Working directory for execution |
+
+**Returns:**
+```json
+{
+  "totalChecks": 4,
+  "passed": 3,
+  "failed": 1,
+  "pending": 0,
+  "allPassed": false,
+  "results": [...]
+}
+```
+
+### spectree__mark_manual_validated
+
+Mark a manual validation check as passed.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `taskId` | string | Yes | Task identifier |
+| `checkId` | string (UUID) | Yes | Manual validation check ID |
+| `notes` | string | No | Notes about verification |
+
+### spectree__remove_validation
+
+Remove a validation check from a task.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `taskId` | string | Yes | Task identifier |
+| `checkId` | string (UUID) | Yes | Validation check ID |
+
+### spectree__reset_validations
+
+Reset all validation checks to pending status.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `taskId` | string | Yes | Task identifier |
 
 ---
 
