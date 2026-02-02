@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTheme } from "@/hooks/use-theme";
+import { useTokens, useRevokeToken } from "@/hooks/queries/use-tokens";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,12 +20,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ApiKeyList } from "@/components/settings/api-key-list";
+import { CreateApiKeyDialog } from "@/components/settings/create-api-key-dialog";
 
 export function SettingsPage() {
   const { user, logout } = useAuthStore();
   const { theme, setTheme } = useTheme();
   const [name, setName] = useState(user?.name ?? "");
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreateKeyDialogOpen, setIsCreateKeyDialogOpen] = useState(false);
+
+  // API Keys
+  const { data: tokens, isLoading: isLoadingTokens } = useTokens();
+  const revokeToken = useRevokeToken();
 
   const handleSaveProfile = () => {
     setIsSaving(true);
@@ -88,6 +97,53 @@ export function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Personal API Keys Section */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Personal API keys</CardTitle>
+              <CardDescription>
+                Use SpecTree's API to build your own integrations
+              </CardDescription>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => { setIsCreateKeyDialogOpen(true); }}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New API key
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoadingTokens ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground">
+              Loading API keys...
+            </div>
+          ) : (
+            <>
+              {tokens && tokens.length > 0 && (
+                <div className="text-sm text-muted-foreground mb-4">
+                  {tokens.length} API {tokens.length === 1 ? "key" : "keys"}
+                </div>
+              )}
+              <ApiKeyList
+                tokens={tokens ?? []}
+                onRevoke={(id) => { revokeToken.mutate(id); }}
+                isRevoking={revokeToken.isPending}
+              />
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create API Key Dialog */}
+      <CreateApiKeyDialog
+        open={isCreateKeyDialogOpen}
+        onOpenChange={setIsCreateKeyDialogOpen}
+      />
 
       {/* Danger Zone */}
       <Card className="border-destructive">
