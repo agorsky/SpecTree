@@ -62,6 +62,24 @@ SpecTree provides dedicated AI context fields on Features and Tasks for cross-se
 
 See `docs/MCP/ai-session-context.md` for full documentation.
 
+### Progress Summary (Dashboard)
+
+Get comprehensive progress summaries at session start to quickly understand project status:
+
+- `spectree__get_progress_summary` - Epic summary with counts, blockers, and next actions
+- `spectree__get_my_work` - Your assigned items across all epics  
+- `spectree__get_blocked_summary` - All blocked items grouped by epic
+
+**Recommended at session start:**
+```typescript
+const summary = await spectree__get_progress_summary({ epicId: "My Epic" });
+// summary.blockedItems - Items needing attention
+// summary.nextActionable - What to work on next
+// summary.lastSession - Previous session context
+```
+
+See `docs/MCP/progress-summary.md` for full documentation.
+
 ### Session Handoff (Epics)
 
 For epic-level workflow continuity, use the Session Handoff System:

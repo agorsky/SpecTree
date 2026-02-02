@@ -10,6 +10,7 @@ import {
   type CreatePersonalStatusInput,
 } from "../schemas/me.js";
 import { getPersonalScope, createPersonalScope } from "../services/personalScopeService.js";
+import { getMyWork, getBlockedSummary } from "../services/summaryService.js";
 
 // Request type definitions
 interface ListPersonalProjectsQuery {
@@ -314,6 +315,44 @@ export default async function meRoutes(
 
       const status = await prisma.status.create({ data });
       return reply.status(201).send({ data: status });
+    }
+  );
+
+  // =========================================================================
+  // GET /me/work - Get user's assigned work items
+  // =========================================================================
+  /**
+   * GET /api/v1/me/work
+   * Get all features and tasks assigned to the current user.
+   * Prioritized by status (in-progress first) and execution order.
+   * Requires authentication.
+   */
+  fastify.get(
+    "/work",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const userId = request.user!.id;
+      const result = await getMyWork(userId);
+      return reply.send({ data: result });
+    }
+  );
+
+  // =========================================================================
+  // GET /me/blocked - Get blocked items summary
+  // =========================================================================
+  /**
+   * GET /api/v1/me/blocked
+   * Get all blocked features and tasks across accessible epics.
+   * Grouped by epic for easy navigation.
+   * Requires authentication.
+   */
+  fastify.get(
+    "/blocked",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const userId = request.user!.id;
+      const result = await getBlockedSummary(userId);
+      return reply.send({ data: result });
     }
   );
 }

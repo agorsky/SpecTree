@@ -10,7 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createResponse } from "./utils.js";
 
 // Available topics for the schema
-const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal", "templates", "sessions", "structured", "codeContext", "validations"] as const;
+const topicValues = ["all", "overview", "execution", "progress", "summary", "search", "workflow", "personal", "templates", "sessions", "structured", "codeContext", "validations"] as const;
 type TopicKey = Exclude<typeof topicValues[number], "all">;
 
 // Topic-specific help content
@@ -327,6 +327,114 @@ spectree__complete_work({
 - Use \`spectree__complete_work\` instead of \`spectree__update_feature({ status: "Done" })\`
 
 This ensures timing data is captured and progress is logged for future sessions.`,
+
+  summary: `# Progress Summary (Dashboard)
+
+Progress Summary tools provide comprehensive project status at a glance. **Recommended at the start of every AI session** to quickly understand what needs attention.
+
+## Why Use Progress Summary?
+
+When starting a new session, you need to quickly understand:
+- What's the current state of the project?
+- What's blocked and needs attention?
+- What should I work on next?
+- What was done recently?
+
+The Progress Summary tools answer these questions with a single API call.
+
+## Tools
+
+| Tool | Purpose |
+|------|---------|
+| \`spectree__get_progress_summary\` | Epic summary with counts, blockers, next actions |
+| \`spectree__get_my_work\` | Your assigned items across all epics |
+| \`spectree__get_blocked_summary\` | All blocked items grouped by epic |
+
+## spectree__get_progress_summary
+
+Get comprehensive status for a specific epic.
+
+\`\`\`
+spectree__get_progress_summary({ epicId: "My Epic" })
+\`\`\`
+
+**Returns:**
+- \`epic\`: { id, name, description }
+- \`featureCounts\`: { total, completed, inProgress, blocked }
+- \`taskCounts\`: { total, completed, inProgress, blocked }
+- \`metrics\`: { overallProgress (0-100%), estimatedRemaining }
+- \`blockedItems\`: Items with blockers needing attention
+- \`nextActionable\`: Unblocked items ready to work on
+- \`recentlyCompleted\`: Recently finished items
+- \`lastSession\`: Previous session summary (if available)
+
+## spectree__get_my_work
+
+Get all work assigned to you across all accessible epics.
+
+\`\`\`
+spectree__get_my_work()
+\`\`\`
+
+**Returns:**
+- \`items\`: Array of features/tasks assigned to you
+- \`counts\`: { inProgress, blocked, todo, total }
+
+Each item includes: id, type, identifier, title, status, epicId, epicName, blockerReason
+
+## spectree__get_blocked_summary
+
+Get all blocked items across all accessible epics, grouped by epic.
+
+\`\`\`
+spectree__get_blocked_summary()
+\`\`\`
+
+**Returns:**
+- \`items\`: All blocked features and tasks
+- \`byEpic\`: Count of blocked items per epic
+- \`total\`: Total blocked items
+
+## Recommended Session Start Workflow
+
+\`\`\`
+// 1. Get progress summary for the epic you're working on
+const summary = spectree__get_progress_summary({ epicId: "My Epic" })
+
+// 2. Check blockers needing attention
+if (summary.blockedItems.length > 0) {
+  console.log("⚠️ Blocked items need attention")
+  // Review each blocker
+}
+
+// 3. Review what was done recently
+console.log("Recently completed:", summary.recentlyCompleted)
+
+// 4. Check previous session context
+if (summary.lastSession) {
+  console.log("Previous session:", summary.lastSession.summary)
+  console.log("Next steps:", summary.lastSession.nextSteps)
+}
+
+// 5. Pick next actionable item
+if (summary.nextActionable.length > 0) {
+  const next = summary.nextActionable[0]
+  spectree__start_work({ id: next.id, type: next.type })
+}
+\`\`\`
+
+## Integration with Other Tools
+
+- **Session Handoff**: \`lastSession\` includes previous session's summary and nextSteps
+- **Execution Plan**: Use \`spectree__get_execution_plan\` for detailed ordering
+- **AI Context**: Use \`spectree__get_ai_context\` for item-specific context
+
+## Best Practices
+
+1. **Call at session start**: Always get progress summary before starting work
+2. **Address blockers first**: Review \`blockedItems\` before starting new work
+3. **Follow previous session**: Check \`lastSession.nextSteps\` for continuity
+4. **Use with execution plan**: Combine for optimal work ordering`,
 
   personal: `# Personal Scope
 
@@ -755,6 +863,10 @@ ${helpTopics.sessions}
 
 ---
 
+${helpTopics.summary}
+
+---
+
 ${helpTopics.execution}
 
 ---
@@ -797,6 +909,9 @@ ${helpTopics.personal}
 |--------|------|
 | **Start session** | \`spectree__start_session\` |
 | **End session** | \`spectree__end_session\` |
+| **Get progress summary** | \`spectree__get_progress_summary\` |
+| **Get my work** | \`spectree__get_my_work\` |
+| **Get blocked summary** | \`spectree__get_blocked_summary\` |
 | List all epics | \`spectree__list_epics\` |
 | Get execution plan | \`spectree__get_execution_plan\` |
 | Search work items | \`spectree__search\` |
@@ -832,7 +947,7 @@ export function registerHelpTools(server: McpServer): void {
         "Get instructions and guidance for using SpecTree effectively. " +
         "Call this tool at the start of a session to understand available capabilities, " +
         "best practices, and recommended workflows. Topics include: overview, sessions " +
-        "(handoff between AI sessions), execution (planning & dependencies), progress " +
+        "(handoff between AI sessions), summary (progress dashboard), execution (planning & dependencies), progress " +
         "(tracking tools), structured (rich descriptions), codeContext (link code artifacts), " +
         "validations (executable acceptance criteria), search (filtering), workflow (recommended patterns), " +
         "personal (private workspace), and templates (implementation plan templates).",
@@ -843,7 +958,7 @@ export function registerHelpTools(server: McpServer): void {
           .describe(
             "Which topic to get help on. Use 'all' for complete instructions, or choose " +
             "a specific topic: 'overview' (concepts), 'sessions' (AI session handoff), " +
-            "'execution' (planning & dependencies), 'progress' (tracking tools), 'structured' " +
+            "'summary' (progress dashboard), 'execution' (planning & dependencies), 'progress' (tracking tools), 'structured' " +
             "(rich descriptions), 'codeContext' (link code artifacts), 'validations' " +
             "(executable acceptance criteria), 'search' (filtering), 'workflow' (recommended patterns), " +
             "'personal' (private workspace), 'templates' (implementation plan templates)."

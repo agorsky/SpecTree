@@ -162,6 +162,18 @@ Progress tracking is also available via REST API:
 
 All endpoints require authentication and team membership (member role or higher).
 
+## Related Tools
+
+### Progress Summary
+
+For dashboard views and session start context, see [Progress Summary](./progress-summary.md):
+
+- `spectree__get_progress_summary` - Get comprehensive epic status
+- `spectree__get_my_work` - Get your work across all epics
+- `spectree__get_blocked_summary` - Get all blocked items
+
+These complement the progress tracking tools by providing high-level visibility into overall project status.
+
 ## Benefits
 
 1. **Clear, purpose-built tools** - Each tool has a specific purpose

@@ -871,6 +871,105 @@ export interface ReorderParams {
   beforeId?: string | undefined;
 }
 
+// -----------------------------------------------------------------------------
+// Summary Types
+// -----------------------------------------------------------------------------
+
+export interface BlockedItem {
+  id: string;
+  type: "feature" | "task";
+  identifier: string;
+  title: string;
+  blockerReason: string;
+}
+
+export interface ActionableItem {
+  id: string;
+  type: "feature" | "task";
+  identifier: string;
+  title: string;
+  executionOrder: number | null;
+  complexity: "trivial" | "simple" | "moderate" | "complex" | null;
+}
+
+export interface RecentlyCompletedItem {
+  id: string;
+  type: "feature" | "task";
+  identifier: string;
+  title: string;
+  completedAt: string;
+}
+
+export interface LastSessionSummary {
+  endedAt: string;
+  summary: string;
+  nextSteps: string[];
+}
+
+export interface ProgressSummary {
+  epic: {
+    id: string;
+    name: string;
+    description: string | null;
+  };
+  totalFeatures: number;
+  completedFeatures: number;
+  inProgressFeatures: number;
+  blockedFeatures: number;
+  totalTasks: number;
+  completedTasks: number;
+  inProgressTasks: number;
+  blockedTasks: number;
+  overallProgress: number;
+  estimatedRemaining: string;
+  blockedItems: BlockedItem[];
+  nextActionable: ActionableItem[];
+  recentlyCompleted: RecentlyCompletedItem[];
+  lastSession: LastSessionSummary | null;
+}
+
+export interface MyWorkItem {
+  id: string;
+  type: "feature" | "task";
+  identifier: string;
+  title: string;
+  epicId: string;
+  epicName: string;
+  status: string | null;
+  statusCategory: string | null;
+  executionOrder: number | null;
+  complexity: "trivial" | "simple" | "moderate" | "complex" | null;
+  percentComplete: number | null;
+}
+
+export interface MyWorkResponse {
+  items: MyWorkItem[];
+  inProgress: number;
+  blocked: number;
+  total: number;
+}
+
+export interface BlockedSummaryItem {
+  id: string;
+  type: "feature" | "task";
+  identifier: string;
+  title: string;
+  epicId: string;
+  epicName: string;
+  blockerReason: string;
+  blockedSince: string | null;
+}
+
+export interface BlockedSummaryResponse {
+  items: BlockedSummaryItem[];
+  totalBlocked: number;
+  byEpic: Array<{
+    epicId: string;
+    epicName: string;
+    count: number;
+  }>;
+}
+
 // =============================================================================
 // API Client Configuration
 // =============================================================================
@@ -2395,6 +2494,40 @@ export class ApiClient {
     return this.request<{ data: ListValidationsResponse }>(
       "POST",
       `/api/v1/tasks/${encodeURIComponent(taskId)}/validations/reset`
+    );
+  }
+
+  // ===========================================================================
+  // Summary Methods
+  // ===========================================================================
+
+  /**
+   * Get comprehensive progress summary for an epic.
+   */
+  async getProgressSummary(epicId: string): Promise<{ data: ProgressSummary }> {
+    return this.request<{ data: ProgressSummary }>(
+      "GET",
+      `/api/v1/epics/${encodeURIComponent(epicId)}/progress-summary`
+    );
+  }
+
+  /**
+   * Get work items assigned to the current user.
+   */
+  async getMyWork(): Promise<{ data: MyWorkResponse }> {
+    return this.request<{ data: MyWorkResponse }>(
+      "GET",
+      `/api/v1/me/work`
+    );
+  }
+
+  /**
+   * Get all blocked items across accessible epics.
+   */
+  async getBlockedSummary(): Promise<{ data: BlockedSummaryResponse }> {
+    return this.request<{ data: BlockedSummaryResponse }>(
+      "GET",
+      `/api/v1/me/blocked`
     );
   }
 }

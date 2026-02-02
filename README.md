@@ -449,12 +449,37 @@ DELETE /api/v1/tasks/:id/validations/:checkId
 - `test_passes` — Run test command (2 min default timeout)
 - `manual` — Requires human verification
 
+### Progress Summary (Dashboard)
+
+Progress summary endpoints provide comprehensive project status for dashboards and AI session starts:
+
+```bash
+# Get progress summary for an epic (counts, blockers, actionable items)
+GET /api/v1/epics/:id/progress-summary
+
+# Get current user's work across all epics
+GET /api/v1/me/work
+
+# Get all blocked items across all accessible epics
+GET /api/v1/me/blocked
+```
+
+**Progress Summary Response** includes:
+- Epic info (id, name, description)
+- Feature/task counts (total, completed, inProgress, blocked)
+- Overall progress percentage and estimated remaining work
+- Blocked items needing attention
+- Next actionable items (unblocked, ready to work)
+- Recently completed items
+- Last session context (if available)
+
 ## MCP Server with Claude Code
 
 The SpecTree MCP server enables AI assistants like Claude to interact with the project management platform through secure API token authentication.
 
 > **📚 Detailed Documentation**: See [`docs/MCP/`](./docs/MCP/) for comprehensive guides on:
 > - [Tools Reference](./docs/MCP/tools-reference.md) — Complete MCP tools documentation
+> - [Progress Summary](./docs/MCP/progress-summary.md) — Dashboard and status summaries for AI sessions
 > - [AI Session Context](./docs/MCP/ai-session-context.md) — Cross-session context transfer for AI agents
 > - [Execution Metadata](./docs/MCP/execution-metadata.md) — Execution planning for AI agents
 > - [Validation Checklists](./docs/MCP/validation-checklists.md) — Executable acceptance criteria for tasks

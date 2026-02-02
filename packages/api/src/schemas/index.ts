@@ -169,3 +169,25 @@ export {
   type RunAllValidationsResult,
   type ListValidationsResult,
 } from "./validation.js";
+
+// Summary schemas
+export {
+  blockedItemSchema,
+  actionableItemSchema,
+  recentlyCompletedItemSchema,
+  lastSessionSummarySchema,
+  progressSummarySchema,
+  myWorkItemSchema,
+  myWorkResponseSchema,
+  blockedSummaryItemSchema,
+  blockedSummaryResponseSchema,
+  type BlockedItem,
+  type ActionableItem,
+  type RecentlyCompletedItem,
+  type LastSessionSummary,
+  type ProgressSummary,
+  type MyWorkItem,
+  type MyWorkResponse,
+  type BlockedSummaryItem,
+  type BlockedSummaryResponse,
+} from "./summary.js";

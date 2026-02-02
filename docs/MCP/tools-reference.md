@@ -29,6 +29,7 @@ This returns comprehensive guidance on:
 | [Features](#features) | 4 | Feature management |
 | [Tasks](#tasks) | 4 | Task management |
 | [Progress](#progress-tracking) | 4 | Auto-progress tracking |
+| [Progress Summary](#progress-summary) | 3 | Dashboard and status summaries |
 | [Search](#search) | 1 | Unified search |
 | [Statuses](#statuses) | 2 | Workflow status queries |
 | [Execution](#execution-planning) | 4 | Execution planning and dependencies |
@@ -287,6 +288,77 @@ Report that work is blocked. Records reason and optionally links to blocking ite
 2. Use `spectree__log_progress` for significant milestones  
 3. Call `spectree__report_blocker` if blocked
 4. Call `spectree__complete_work` when done
+
+---
+
+## Progress Summary
+
+These tools provide comprehensive progress summaries and dashboards for understanding project status. **Recommended at the start of an AI session** to quickly understand what needs attention.
+
+**Full documentation:** [Progress Summary](./progress-summary.md)
+
+### spectree__get_progress_summary
+
+Get a comprehensive progress summary for an epic. Includes feature/task counts, completion metrics, blocked items, actionable work, and recent completions.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `epicId` | string | Yes | Epic ID (UUID) or exact name |
+
+**Returns:**
+- Epic info (id, name, description)
+- Feature counts (total, completed, inProgress, blocked)
+- Task counts (total, completed, inProgress, blocked)
+- Metrics (overallProgress %, estimatedRemaining)
+- blockedItems (features/tasks blocking progress)
+- nextActionable (unblocked items ready to work on)
+- recentlyCompleted (recently finished items)
+- lastSession (previous session summary if available)
+
+**Example:**
+```json
+{
+  "epic": { "id": "...", "name": "Q1 Features" },
+  "featureCounts": { "total": 10, "completed": 4, "inProgress": 2, "blocked": 1 },
+  "taskCounts": { "total": 30, "completed": 15, "inProgress": 5, "blocked": 2 },
+  "metrics": { "overallProgress": 50, "estimatedRemaining": "3-5 features" },
+  "blockedItems": [...],
+  "nextActionable": [...],
+  "recentlyCompleted": [...]
+}
+```
+
+### spectree__get_my_work
+
+Get all work items assigned to the current user across all accessible epics. Useful for personal dashboards.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| (none) | - | - | Uses authenticated user context |
+
+**Returns:**
+- Features and tasks assigned to current user
+- Grouped by status (inProgress, blocked, todo)
+- Epic context for each item
+
+### spectree__get_blocked_summary
+
+Get all blocked items across all accessible epics, grouped by epic. Useful for identifying blockers across projects.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| (none) | - | - | Uses authenticated user context |
+
+**Returns:**
+- All blocked features and tasks
+- Blocker reasons and timestamps
+- Counts grouped by epic
+
+**Recommended session start workflow:**
+1. Call `spectree__get_progress_summary` for the epic you're working on
+2. Review `blockedItems` for issues needing attention
+3. Check `nextActionable` for what to work on next
+4. Use `lastSession` context to continue from where previous session left off
 
 ---
 

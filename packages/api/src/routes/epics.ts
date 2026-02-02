@@ -8,6 +8,7 @@ import {
   archiveEpic,
   unarchiveEpic,
 } from "../services/epicService.js";
+import { getProgressSummary } from "../services/summaryService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
@@ -297,6 +298,20 @@ export default function epicsRoutes(
       const updatedEpic = await updateEpic(id, { sortOrder: newSortOrder });
 
       return reply.send({ data: updatedEpic });
+    }
+  );
+
+  /**
+   * GET /api/v1/epics/:id/progress-summary
+   * Get comprehensive progress summary for an epic
+   * Requires authentication and team membership (guest+)
+   */
+  fastify.get<{ Params: EpicIdParams }>(
+    "/:id/progress-summary",
+    { preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("guest")] },
+    async (request, reply) => {
+      const summary = await getProgressSummary(request.params.id);
+      return reply.send({ data: summary });
     }
   );
 }
