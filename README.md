@@ -25,6 +25,7 @@ SpecTree is a Linear-inspired project management tool with support for:
 - **Personal scopes** — Private workspace for personal projects and tasks not shared with any team
 - **Hierarchical work items** — Projects contain features, which contain tasks
 - **Customizable workflows** — Each team (and personal scope) has its own workflow statuses
+- **Structured descriptions** — Rich, AI-friendly descriptions with extractable sections
 - **Implementation plan templates** — Reusable templates for creating standardized work structures
 - **AI integration** — Full MCP server support for AI assistants like Claude
 
@@ -533,6 +534,13 @@ pnpm --filter @spectree/mcp start
 | `spectree__preview_template` | Preview what will be created from template |
 | `spectree__create_from_template` | Create epic/features/tasks from template |
 | `spectree__save_as_template` | Save existing epic structure as template |
+| **Structured Descriptions** | |
+| `spectree__get_structured_description` | Get parsed structured description |
+| `spectree__set_structured_description` | Replace entire structured description |
+| `spectree__update_section` | Update single section of structured description |
+| `spectree__add_acceptance_criterion` | Append acceptance criterion to list |
+| `spectree__link_file` | Add file path to filesInvolved |
+| `spectree__add_external_link` | Add external URL reference |
 | **Help** | |
 | `spectree__get_instructions` | Get usage instructions and best practices |
 
@@ -753,6 +761,7 @@ Additional documentation is available in the `docs/` directory:
 | [MCP AI Session Context](./docs/MCP/ai-session-context.md) | Cross-session context transfer for AI agents |
 | [MCP Execution Metadata](./docs/MCP/execution-metadata.md) | Execution planning and dependencies for AI agents |
 | [MCP Templates Guide](./docs/MCP/templates.md) | Implementation plan templates for AI agents |
+| [MCP Structured Descriptions](./docs/MCP/structured-descriptions.md) | Rich structured descriptions for AI-friendly data extraction |
 | [MCP Documentation](./docs/MCP/) | MCP server setup, authentication, and security |
 | [Azure Deployment Guide](./docs/azure-deployment-guide.md) | Production deployment to Azure |
 | [Design References](./docs/DESIGN-REFERENCES/) | Architectural decisions and Linear API patterns |

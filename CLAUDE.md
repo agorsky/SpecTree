@@ -103,6 +103,34 @@ SpecTree supports reusable templates for creating standardized epic/feature/task
 
 See `docs/MCP/templates.md` for full documentation.
 
+## Structured Descriptions
+
+Features and Tasks support rich, structured descriptions with AI-friendly sections for easier data extraction. Instead of parsing unstructured text, AI agents can directly access specific sections.
+
+**Available sections:**
+- `summary` (required) - Brief overview
+- `aiInstructions` - Specific guidance for AI agents
+- `acceptanceCriteria` - List of completion conditions
+- `filesInvolved` - Relevant file paths
+- `functionsToModify` - Functions/methods to change
+- `testingStrategy` - How to test the implementation
+- `testFiles` - Test file paths
+- `relatedItemIds` - Links to related items
+- `externalLinks` - URLs to docs/specs
+- `technicalNotes` - Implementation constraints
+- `riskLevel` - "low", "medium", "high"
+- `estimatedEffort` - "trivial", "small", "medium", "large", "xl"
+
+**Key MCP tools:**
+- `spectree__get_structured_description` - Get parsed structured description
+- `spectree__set_structured_description` - Replace entire structured description
+- `spectree__update_section` - Update single section (recommended)
+- `spectree__add_acceptance_criterion` - Append acceptance criterion
+- `spectree__link_file` - Add file to filesInvolved
+- `spectree__add_external_link` - Add external URL reference
+
+See `docs/MCP/structured-descriptions.md` for full documentation.
+
 ## Before Making Changes
 
 1. **Database changes**: Read `docs/database-safety-guide.md`

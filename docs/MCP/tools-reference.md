@@ -34,6 +34,7 @@ This returns comprehensive guidance on:
 | [Execution](#execution-planning) | 4 | Execution planning and dependencies |
 | [AI Context](#ai-context) | 3 | Cross-session context transfer |
 | [Session Handoff](#session-handoff) | 6 | Session lifecycle and handoff |
+| [Structured Descriptions](#structured-descriptions) | 6 | Rich structured descriptions |
 | [Personal](#personal-scope) | 4 | Personal workspace |
 | [Templates](#templates) | 5 | Implementation plan templates |
 | [Ordering](#ordering) | 3 | Reorder items |
@@ -562,6 +563,78 @@ Manually log work on an item to the active session. Usually called automatically
 
 ---
 
+## Structured Descriptions
+
+These tools enable AI agents to work with structured, AI-friendly descriptions that break down work items into extractable sections. See [Structured Descriptions](./structured-descriptions.md) for full documentation.
+
+### spectree__get_structured_description
+
+Get the parsed structured description from a feature or task.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+
+**Returns:** Full `StructuredDescription` object or `null` if not set.
+
+### spectree__set_structured_description
+
+Replace the entire structured description.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `structuredDescription` | object | Yes | Full StructuredDescription object |
+
+### spectree__update_section
+
+Update a single section without affecting others (recommended approach).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `section` | enum | Yes | Section name (see below) |
+| `value` | any | Yes | New value for the section |
+
+**Sections:** `summary`, `aiInstructions`, `acceptanceCriteria`, `filesInvolved`, `functionsToModify`, `testingStrategy`, `testFiles`, `relatedItemIds`, `externalLinks`, `technicalNotes`, `riskLevel`, `estimatedEffort`
+
+### spectree__add_acceptance_criterion
+
+Append an acceptance criterion to the list.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `criterion` | string | Yes | Criterion to add |
+
+### spectree__link_file
+
+Add a file path to filesInvolved.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `filePath` | string | Yes | File path to link |
+
+### spectree__add_external_link
+
+Add an external URL reference.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `url` | string | Yes | URL to add |
+| `title` | string | No | Link title |
+| `description` | string | No | Link description |
+
+---
+
 ## Personal Scope
 
 Each user has a private personal scope for work not shared with any team.
@@ -775,5 +848,6 @@ Common errors:
 - [Execution Metadata](./execution-metadata.md) - Detailed execution planning guide
 - [AI Session Context](./ai-session-context.md) - Cross-session context transfer guide
 - [Session Handoff](./session-handoff.md) - Epic-level session lifecycle and handoff
+- [Structured Descriptions](./structured-descriptions.md) - Rich structured descriptions guide
 - [API Token Authentication](./api-token-authentication.md) - Token system details
 - [Security Architecture](./security-architecture.md) - Security model

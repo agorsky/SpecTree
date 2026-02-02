@@ -89,6 +89,21 @@ await spectree__end_session({
 
 See `docs/MCP/session-handoff.md` for full documentation.
 
+### Structured Descriptions
+
+Features and Tasks support rich, structured descriptions with AI-friendly sections:
+
+- `spectree__get_structured_description` - Get parsed structured description
+- `spectree__set_structured_description` - Replace entire structured description
+- `spectree__update_section` - Update single section (recommended approach)
+- `spectree__add_acceptance_criterion` - Append acceptance criterion
+- `spectree__link_file` - Add file to filesInvolved list
+- `spectree__add_external_link` - Add external URL reference
+
+**Available sections:** `summary` (required), `aiInstructions`, `acceptanceCriteria`, `filesInvolved`, `functionsToModify`, `testingStrategy`, `testFiles`, `relatedItemIds`, `externalLinks`, `technicalNotes`, `riskLevel`, `estimatedEffort`
+
+See `docs/MCP/structured-descriptions.md` for full documentation.
+
 ---
 
 ## Build, Test, and Lint

@@ -12,6 +12,14 @@ import {
   appendFeatureAiNote,
 } from "../services/aiContextService.js";
 import {
+  getFeatureStructuredDesc,
+  setFeatureStructuredDesc,
+  updateFeatureSection,
+  addAcceptanceCriterion,
+  linkFile,
+  addExternalLink,
+} from "../services/structuredDescriptionService.js";
+import {
   startWork,
   completeWork,
   logProgress,
@@ -26,6 +34,18 @@ import {
   type AppendAiNoteInput,
   type SetAiContextInput,
 } from "../schemas/aiContext.js";
+import {
+  structuredDescriptionSchema,
+  updateSectionSchema,
+  addAcceptanceCriterionSchema,
+  linkFileSchema,
+  addExternalLinkSchema,
+  type StructuredDescription,
+  type UpdateSectionInput,
+  type AddAcceptanceCriterionInput,
+  type LinkFileInput,
+  type AddExternalLinkInput,
+} from "../schemas/structuredDescription.js";
 import {
   startWorkSchema,
   completeWorkSchema,
@@ -560,6 +580,119 @@ export default function featuresRoutes(
       const { id } = request.params;
       const result = await reportBlocker("feature", id, request.body);
       return reply.send({ data: result });
+    }
+  );
+
+  // ===========================================================================
+  // Structured Description Routes
+  // ===========================================================================
+
+  /**
+   * GET /api/v1/features/:id/structured-desc
+   * Get structured description for a feature
+   * Requires authentication and team membership (guest+)
+   */
+  fastify.get<{ Params: FeatureIdParams }>(
+    "/:id/structured-desc",
+    { preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("guest")] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await getFeatureStructuredDesc(id);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * PUT /api/v1/features/:id/structured-desc
+   * Set structured description for a feature (replaces entire object)
+   * Requires authentication and team membership (member+)
+   */
+  fastify.put<{ Params: FeatureIdParams; Body: StructuredDescription }>(
+    "/:id/structured-desc",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(structuredDescriptionSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await setFeatureStructuredDesc(id, request.body);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * PATCH /api/v1/features/:id/structured-desc/section
+   * Update a specific section of the structured description
+   * Requires authentication and team membership (member+)
+   */
+  fastify.patch<{ Params: FeatureIdParams; Body: UpdateSectionInput }>(
+    "/:id/structured-desc/section",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(updateSectionSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { section, value } = request.body;
+      const result = await updateFeatureSection(id, section, value);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/features/:id/structured-desc/acceptance-criteria
+   * Add an acceptance criterion to a feature
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: FeatureIdParams; Body: AddAcceptanceCriterionInput }>(
+    "/:id/structured-desc/acceptance-criteria",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(addAcceptanceCriterionSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { criterion } = request.body;
+      const result = await addAcceptanceCriterion("feature", id, criterion);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/features/:id/structured-desc/files
+   * Link a file to a feature
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: FeatureIdParams; Body: LinkFileInput }>(
+    "/:id/structured-desc/files",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(linkFileSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { filePath } = request.body;
+      const result = await linkFile("feature", id, filePath);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/features/:id/structured-desc/links
+   * Add an external link to a feature
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: FeatureIdParams; Body: AddExternalLinkInput }>(
+    "/:id/structured-desc/links",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(addExternalLinkSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { url, title } = request.body;
+      const result = await addExternalLink("feature", id, { url, title });
+      return reply.status(201).send({ data: result });
     }
   );
 }

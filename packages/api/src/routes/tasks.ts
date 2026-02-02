@@ -12,6 +12,14 @@ import {
   appendTaskAiNote,
 } from "../services/aiContextService.js";
 import {
+  getTaskStructuredDesc,
+  setTaskStructuredDesc,
+  updateTaskSection,
+  addAcceptanceCriterion,
+  linkFile,
+  addExternalLink,
+} from "../services/structuredDescriptionService.js";
+import {
   startWork,
   completeWork,
   logProgress,
@@ -30,6 +38,18 @@ import {
   type AppendAiNoteInput,
   type SetAiContextInput,
 } from "../schemas/aiContext.js";
+import {
+  structuredDescriptionSchema,
+  updateSectionSchema,
+  addAcceptanceCriterionSchema,
+  linkFileSchema,
+  addExternalLinkSchema,
+  type StructuredDescription,
+  type UpdateSectionInput,
+  type AddAcceptanceCriterionInput,
+  type LinkFileInput,
+  type AddExternalLinkInput,
+} from "../schemas/structuredDescription.js";
 import {
   startWorkSchema,
   completeWorkSchema,
@@ -573,6 +593,119 @@ export default function tasksRoutes(
       const { id } = request.params;
       const result = await reportBlocker("task", id, request.body);
       return reply.send({ data: result });
+    }
+  );
+
+  // ===========================================================================
+  // Structured Description Routes
+  // ===========================================================================
+
+  /**
+   * GET /api/v1/tasks/:id/structured-desc
+   * Get structured description for a task
+   * Requires authentication and team membership (guest+)
+   */
+  fastify.get<{ Params: TaskIdParams }>(
+    "/:id/structured-desc",
+    { preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("guest")] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await getTaskStructuredDesc(id);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * PUT /api/v1/tasks/:id/structured-desc
+   * Set structured description for a task (replaces entire object)
+   * Requires authentication and team membership (member+)
+   */
+  fastify.put<{ Params: TaskIdParams; Body: StructuredDescription }>(
+    "/:id/structured-desc",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(structuredDescriptionSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await setTaskStructuredDesc(id, request.body);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * PATCH /api/v1/tasks/:id/structured-desc/section
+   * Update a specific section of the structured description
+   * Requires authentication and team membership (member+)
+   */
+  fastify.patch<{ Params: TaskIdParams; Body: UpdateSectionInput }>(
+    "/:id/structured-desc/section",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(updateSectionSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { section, value } = request.body;
+      const result = await updateTaskSection(id, section, value);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/structured-desc/acceptance-criteria
+   * Add an acceptance criterion to a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams; Body: AddAcceptanceCriterionInput }>(
+    "/:id/structured-desc/acceptance-criteria",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(addAcceptanceCriterionSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { criterion } = request.body;
+      const result = await addAcceptanceCriterion("task", id, criterion);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/structured-desc/files
+   * Link a file to a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams; Body: LinkFileInput }>(
+    "/:id/structured-desc/files",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(linkFileSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { filePath } = request.body;
+      const result = await linkFile("task", id, filePath);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/structured-desc/links
+   * Add an external link to a task
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams; Body: AddExternalLinkInput }>(
+    "/:id/structured-desc/links",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(addExternalLinkSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { url, title } = request.body;
+      const result = await addExternalLink("task", id, { url, title });
+      return reply.status(201).send({ data: result });
     }
   );
 }

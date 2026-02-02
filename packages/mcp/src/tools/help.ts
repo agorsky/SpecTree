@@ -10,7 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createResponse } from "./utils.js";
 
 // Available topics for the schema
-const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal", "templates", "sessions"] as const;
+const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal", "templates", "sessions", "structured"] as const;
 type TopicKey = Exclude<typeof topicValues[number], "all">;
 
 // Topic-specific help content
@@ -428,6 +428,95 @@ spectree__save_as_template({
 2. **Provide all variables**: Missing variables appear as \`{{variableName}}\` in output
 3. **Save successful patterns**: When a workflow works well, save it as a template
 4. **Use for consistency**: Templates ensure teams follow standard processes`,
+
+  structured: `# Structured Descriptions
+
+Features and Tasks support rich, structured descriptions with AI-friendly sections that enable direct data extraction without parsing unstructured text.
+
+## Why Use Structured Descriptions?
+
+Instead of parsing freeform text to find requirements or file references, AI agents can:
+- Directly access specific sections (e.g., \`acceptanceCriteria\`, \`filesInvolved\`)
+- Update individual sections without overwriting others
+- Get typed data (arrays, enums) instead of text parsing
+
+## Available Sections
+
+| Section | Type | Description |
+|---------|------|-------------|
+| \`summary\` | string | **Required.** Brief overview of the work item |
+| \`aiInstructions\` | string | Specific guidance for AI agents |
+| \`acceptanceCriteria\` | string[] | List of completion conditions |
+| \`filesInvolved\` | string[] | Relevant file paths |
+| \`functionsToModify\` | string[] | Functions/methods to change |
+| \`testingStrategy\` | string | How to test the implementation |
+| \`testFiles\` | string[] | Test file paths |
+| \`relatedItemIds\` | string[] | Links to related features/tasks |
+| \`externalLinks\` | object[] | URLs with title/description |
+| \`technicalNotes\` | string | Implementation constraints/gotchas |
+| \`riskLevel\` | enum | "low", "medium", "high" |
+| \`estimatedEffort\` | enum | "trivial", "small", "medium", "large", "xl" |
+
+## Tools
+
+| Tool | Purpose |
+|------|---------|
+| \`spectree__get_structured_description\` | Get parsed structured description |
+| \`spectree__set_structured_description\` | Replace entire structured description |
+| \`spectree__update_section\` | Update single section (recommended) |
+| \`spectree__add_acceptance_criterion\` | Append to acceptanceCriteria |
+| \`spectree__link_file\` | Add to filesInvolved |
+| \`spectree__add_external_link\` | Add to externalLinks |
+
+## Recommended Workflow
+
+### Reading Structured Data
+
+\`\`\`
+// Get the full structured description
+const desc = spectree__get_structured_description({ 
+  id: "COM-123", 
+  type: "feature" 
+})
+
+// Access specific fields directly
+console.log(desc.acceptanceCriteria)  // Array of criteria
+console.log(desc.filesInvolved)       // Array of file paths
+console.log(desc.riskLevel)           // "low", "medium", or "high"
+\`\`\`
+
+### Updating Sections
+
+\`\`\`
+// Update a single section (preserves others)
+spectree__update_section({
+  id: "COM-123",
+  type: "feature",
+  section: "aiInstructions",
+  value: "Use existing auth service pattern in src/auth/"
+})
+
+// Add to lists with convenience tools (handles duplicates)
+spectree__add_acceptance_criterion({
+  id: "COM-123",
+  type: "feature",
+  criterion: "User receives confirmation email"
+})
+
+spectree__link_file({
+  id: "COM-123",
+  type: "feature",
+  filePath: "src/services/userService.ts"
+})
+\`\`\`
+
+## Best Practices
+
+1. **Use convenience tools for lists**: \`add_acceptance_criterion\`, \`link_file\`, \`add_external_link\` handle duplicates automatically
+2. **Use \`update_section\` over \`set_structured_description\`**: Avoids accidentally overwriting other sections
+3. **Link files as you discover them**: Call \`link_file\` when you find relevant files during exploration
+4. **Set risk level appropriately**: Helps future AI agents understand required caution
+5. **Include AI instructions**: Provide specific guidance for agents working on this item`,
 };
 
 // Full instructions combining all topics
@@ -446,6 +535,10 @@ ${helpTopics.execution}
 ---
 
 ${helpTopics.progress}
+
+---
+
+${helpTopics.structured}
 
 ---
 
@@ -484,6 +577,9 @@ ${helpTopics.personal}
 | **Report blocker** | \`spectree__report_blocker\` |
 | Set execution metadata | \`spectree__set_execution_metadata\` |
 | Mark blocked | \`spectree__mark_blocked\` |
+| **Get structured description** | \`spectree__get_structured_description\` |
+| **Update section** | \`spectree__update_section\` |
+| **Link file** | \`spectree__link_file\` |
 | **List templates** | \`spectree__list_templates\` |
 | **Create from template** | \`spectree__create_from_template\` |
 `;
@@ -497,8 +593,8 @@ export function registerHelpTools(server: McpServer): void {
         "Call this tool at the start of a session to understand available capabilities, " +
         "best practices, and recommended workflows. Topics include: overview, sessions " +
         "(handoff between AI sessions), execution (planning & dependencies), progress " +
-        "(tracking tools), search (filtering), workflow (recommended patterns), personal " +
-        "(private workspace), and templates (implementation plan templates).",
+        "(tracking tools), structured (rich descriptions), search (filtering), workflow " +
+        "(recommended patterns), personal (private workspace), and templates (implementation plan templates).",
       inputSchema: {
         topic: z
           .enum(topicValues)
@@ -506,9 +602,9 @@ export function registerHelpTools(server: McpServer): void {
           .describe(
             "Which topic to get help on. Use 'all' for complete instructions, or choose " +
             "a specific topic: 'overview' (concepts), 'sessions' (AI session handoff), " +
-            "'execution' (planning & dependencies), 'progress' (tracking tools), 'search' " +
-            "(filtering), 'workflow' (recommended patterns), 'personal' (private workspace), " +
-            "'templates' (implementation plan templates)."
+            "'execution' (planning & dependencies), 'progress' (tracking tools), 'structured' " +
+            "(rich descriptions), 'search' (filtering), 'workflow' (recommended patterns), " +
+            "'personal' (private workspace), 'templates' (implementation plan templates)."
           ),
       },
     },

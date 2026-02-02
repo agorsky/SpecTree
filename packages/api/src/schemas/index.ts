@@ -103,3 +103,27 @@ export {
   type SetAiContextInput,
   type AiContextResponse,
 } from "./aiContext.js";
+
+// Structured Description schemas
+export {
+  riskLevelValues,
+  estimatedEffortValues,
+  externalLinkSchema,
+  structuredDescriptionSchema,
+  structuredDescriptionPartialSchema,
+  updateSectionSchema,
+  addAcceptanceCriterionSchema,
+  linkFileSchema,
+  addExternalLinkSchema,
+  structuredDescriptionSectionNames,
+  type RiskLevel,
+  type EstimatedEffort,
+  type ExternalLink,
+  type StructuredDescription,
+  type StructuredDescriptionPartial,
+  type UpdateSectionInput,
+  type AddAcceptanceCriterionInput,
+  type LinkFileInput,
+  type AddExternalLinkInput,
+  type StructuredDescriptionSection,
+} from "./structuredDescription.js";

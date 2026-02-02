@@ -613,6 +613,59 @@ export interface ReportBlockerResponse {
 }
 
 // -----------------------------------------------------------------------------
+// Structured Description Types
+// -----------------------------------------------------------------------------
+
+/** Risk level values */
+export type RiskLevel = "low" | "medium" | "high";
+
+/** Estimated effort values */
+export type EstimatedEffort = "trivial" | "small" | "medium" | "large" | "xl";
+
+/** External link structure */
+export interface ExternalLink {
+  url: string;
+  title: string;
+}
+
+/** Full structured description object */
+export interface StructuredDescription {
+  summary: string;
+  aiInstructions?: string | undefined;
+  acceptanceCriteria?: string[] | undefined;
+  filesInvolved?: string[] | undefined;
+  functionsToModify?: string[] | undefined;
+  testingStrategy?: string | undefined;
+  testFiles?: string[] | undefined;
+  relatedItemIds?: string[] | undefined;
+  externalLinks?: ExternalLink[] | undefined;
+  technicalNotes?: string | undefined;
+  riskLevel?: RiskLevel | undefined;
+  estimatedEffort?: EstimatedEffort | undefined;
+}
+
+/** Structured description response from API */
+export interface StructuredDescriptionResponse {
+  structuredDesc: StructuredDescription | null;
+  updatedAt: string;
+}
+
+/** Valid section names */
+export type StructuredDescriptionSection =
+  | "summary"
+  | "aiInstructions"
+  | "acceptanceCriteria"
+  | "filesInvolved"
+  | "functionsToModify"
+  | "testingStrategy"
+  | "testFiles"
+  | "relatedItemIds"
+  | "externalLinks"
+  | "technicalNotes"
+  | "riskLevel"
+  | "estimatedEffort";
+
+// -----------------------------------------------------------------------------
 // Session Types
 // -----------------------------------------------------------------------------
 
@@ -1188,6 +1241,172 @@ export class ApiClient {
       "POST",
       `/api/v1/tasks/${encodeURIComponent(taskId)}/progress/blocker`,
       input
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Structured Description Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get structured description for a feature
+   */
+  async getFeatureStructuredDesc(featureId: string): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "GET",
+      `/api/v1/features/${encodeURIComponent(featureId)}/structured-desc`
+    );
+  }
+
+  /**
+   * Set structured description for a feature (replaces entire object)
+   */
+  async setFeatureStructuredDesc(
+    featureId: string,
+    structuredDesc: StructuredDescription
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "PUT",
+      `/api/v1/features/${encodeURIComponent(featureId)}/structured-desc`,
+      structuredDesc
+    );
+  }
+
+  /**
+   * Update a specific section of a feature's structured description
+   */
+  async updateFeatureSection(
+    featureId: string,
+    section: StructuredDescriptionSection,
+    value: unknown
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "PATCH",
+      `/api/v1/features/${encodeURIComponent(featureId)}/structured-desc/section`,
+      { section, value }
+    );
+  }
+
+  /**
+   * Add an acceptance criterion to a feature
+   */
+  async addFeatureAcceptanceCriterion(
+    featureId: string,
+    criterion: string
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/structured-desc/acceptance-criteria`,
+      { criterion }
+    );
+  }
+
+  /**
+   * Link a file to a feature
+   */
+  async linkFeatureFile(
+    featureId: string,
+    filePath: string
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/structured-desc/files`,
+      { filePath }
+    );
+  }
+
+  /**
+   * Add an external link to a feature
+   */
+  async addFeatureExternalLink(
+    featureId: string,
+    link: ExternalLink
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/structured-desc/links`,
+      link
+    );
+  }
+
+  /**
+   * Get structured description for a task
+   */
+  async getTaskStructuredDesc(taskId: string): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "GET",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/structured-desc`
+    );
+  }
+
+  /**
+   * Set structured description for a task (replaces entire object)
+   */
+  async setTaskStructuredDesc(
+    taskId: string,
+    structuredDesc: StructuredDescription
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "PUT",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/structured-desc`,
+      structuredDesc
+    );
+  }
+
+  /**
+   * Update a specific section of a task's structured description
+   */
+  async updateTaskSection(
+    taskId: string,
+    section: StructuredDescriptionSection,
+    value: unknown
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "PATCH",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/structured-desc/section`,
+      { section, value }
+    );
+  }
+
+  /**
+   * Add an acceptance criterion to a task
+   */
+  async addTaskAcceptanceCriterion(
+    taskId: string,
+    criterion: string
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/structured-desc/acceptance-criteria`,
+      { criterion }
+    );
+  }
+
+  /**
+   * Link a file to a task
+   */
+  async linkTaskFile(
+    taskId: string,
+    filePath: string
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/structured-desc/files`,
+      { filePath }
+    );
+  }
+
+  /**
+   * Add an external link to a task
+   */
+  async addTaskExternalLink(
+    taskId: string,
+    link: ExternalLink
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/structured-desc/links`,
+      link
     );
   }
 
