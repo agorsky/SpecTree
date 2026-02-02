@@ -6,6 +6,11 @@ import {
   updateTask,
   deleteTask,
 } from "../services/taskService.js";
+import {
+  getTaskAiContext,
+  setTaskAiContext,
+  appendTaskAiNote,
+} from "../services/aiContextService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
 import { validateBody } from "../middleware/validate.js";
@@ -13,6 +18,12 @@ import {
   reorderTaskSchema,
   type ReorderTaskInput,
 } from "../schemas/index.js";
+import {
+  appendAiNoteSchema,
+  setAiContextSchema,
+  type AppendAiNoteInput,
+  type SetAiContextInput,
+} from "../schemas/aiContext.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
 import { prisma } from "../lib/db.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
@@ -406,6 +417,63 @@ export default function tasksRoutes(
       const updatedTask = await updateTask(id, { sortOrder: newSortOrder });
 
       return reply.send({ data: updatedTask });
+    }
+  );
+
+  // ===========================================================================
+  // AI Context Endpoints
+  // ===========================================================================
+
+  /**
+   * GET /api/v1/tasks/:id/ai-context
+   * Get AI context for a task
+   * Requires authentication and team membership (guest+)
+   */
+  fastify.get<{ Params: TaskIdParams }>(
+    "/:id/ai-context",
+    { preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("guest")] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const context = await getTaskAiContext(id);
+      return reply.send({ data: context });
+    }
+  );
+
+  /**
+   * PUT /api/v1/tasks/:id/ai-context
+   * Set AI context for a task (replaces entire context)
+   * Requires authentication and team membership (member+)
+   */
+  fastify.put<{ Params: TaskIdParams; Body: SetAiContextInput }>(
+    "/:id/ai-context",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(setAiContextSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { context, sessionId } = request.body;
+      const result = await setTaskAiContext(id, { context, sessionId });
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/tasks/:id/ai-note
+   * Append an AI note to a task (non-destructive)
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: TaskIdParams; Body: AppendAiNoteInput }>(
+    "/:id/ai-note",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")],
+      preValidation: [validateBody(appendAiNoteSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { type, content, sessionId } = request.body;
+      const result = await appendTaskAiNote(id, { type, content, sessionId });
+      return reply.status(201).send({ data: result });
     }
   );
 }

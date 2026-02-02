@@ -6,9 +6,20 @@ import {
   updateFeature,
   deleteFeature,
 } from "../services/featureService.js";
+import {
+  getFeatureAiContext,
+  setFeatureAiContext,
+  appendFeatureAiNote,
+} from "../services/aiContextService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { validateBody } from "../middleware/validate.js";
 import { reorderFeatureSchema, type ReorderFeatureInput } from "../schemas/feature.js";
+import {
+  appendAiNoteSchema,
+  setAiContextSchema,
+  type AppendAiNoteInput,
+  type SetAiContextInput,
+} from "../schemas/aiContext.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
 import { prisma } from "../lib/db.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
@@ -393,6 +404,63 @@ export default function featuresRoutes(
 
       await deleteFeature(id);
       return reply.status(204).send();
+    }
+  );
+
+  // ===========================================================================
+  // AI Context Endpoints
+  // ===========================================================================
+
+  /**
+   * GET /api/v1/features/:id/ai-context
+   * Get AI context for a feature
+   * Requires authentication and team membership (guest+)
+   */
+  fastify.get<{ Params: FeatureIdParams }>(
+    "/:id/ai-context",
+    { preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("guest")] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const context = await getFeatureAiContext(id);
+      return reply.send({ data: context });
+    }
+  );
+
+  /**
+   * PUT /api/v1/features/:id/ai-context
+   * Set AI context for a feature (replaces entire context)
+   * Requires authentication and team membership (member+)
+   */
+  fastify.put<{ Params: FeatureIdParams; Body: SetAiContextInput }>(
+    "/:id/ai-context",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(setAiContextSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { context, sessionId } = request.body;
+      const result = await setFeatureAiContext(id, { context, sessionId });
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/features/:id/ai-note
+   * Append an AI note to a feature (non-destructive)
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: FeatureIdParams; Body: AppendAiNoteInput }>(
+    "/:id/ai-note",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")],
+      preValidation: [validateBody(appendAiNoteSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { type, content, sessionId } = request.body;
+      const result = await appendFeatureAiNote(id, { type, content, sessionId });
+      return reply.status(201).send({ data: result });
     }
   );
 }

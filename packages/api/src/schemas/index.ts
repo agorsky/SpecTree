@@ -87,3 +87,19 @@ export {
   type AddMemberInput,
   type UpdateMemberRoleInput,
 } from "./membership.js";
+
+// AI Context schemas
+export {
+  aiNoteTypeValues,
+  aiNoteSchema,
+  entityTypeValues,
+  appendAiNoteSchema,
+  setAiContextSchema,
+  aiContextResponseSchema,
+  type AiNoteType,
+  type AiNote,
+  type EntityType,
+  type AppendAiNoteInput,
+  type SetAiContextInput,
+  type AiContextResponse,
+} from "./aiContext.js";

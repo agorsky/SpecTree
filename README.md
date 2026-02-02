@@ -405,6 +405,7 @@ The SpecTree MCP server enables AI assistants like Claude to interact with the p
 
 > **📚 Detailed Documentation**: See [`docs/MCP/`](./docs/MCP/) for comprehensive guides on:
 > - [Tools Reference](./docs/MCP/tools-reference.md) — Complete MCP tools documentation
+> - [AI Session Context](./docs/MCP/ai-session-context.md) — Cross-session context transfer for AI agents
 > - [Execution Metadata](./docs/MCP/execution-metadata.md) — Execution planning for AI agents
 > - [API Token Authentication](./docs/MCP/api-token-authentication.md) — Token system details
 > - [Security Architecture](./docs/MCP/security-architecture.md) — Security model
@@ -521,6 +522,10 @@ pnpm --filter @spectree/mcp start
 | `spectree__set_execution_metadata` | Set execution order, parallelization, dependencies |
 | `spectree__mark_blocked` | Mark feature/task as blocked by another |
 | `spectree__mark_unblocked` | Remove a blocker from feature/task |
+| **AI Context** | |
+| `spectree__get_ai_context` | Get AI context for cross-session continuity |
+| `spectree__set_ai_context` | Set structured context for successor sessions |
+| `spectree__append_ai_note` | Append observation/decision/blocker notes |
 | **Help** | |
 | `spectree__get_instructions` | Get usage instructions and best practices |
 
@@ -738,6 +743,7 @@ Additional documentation is available in the `docs/` directory:
 | [Database Safety Guide](./docs/database-safety-guide.md) | Critical safety rules for database operations |
 | [Identity & Collaboration Reference](./docs/identity-collaboration-vnext-implementation-reference.md) | Implementation details for personal scopes and team membership |
 | [MCP Tools Reference](./docs/MCP/tools-reference.md) | Complete reference for all MCP tools |
+| [MCP AI Session Context](./docs/MCP/ai-session-context.md) | Cross-session context transfer for AI agents |
 | [MCP Execution Metadata](./docs/MCP/execution-metadata.md) | Execution planning and dependencies for AI agents |
 | [MCP Documentation](./docs/MCP/) | MCP server setup, authentication, and security |
 | [Azure Deployment Guide](./docs/azure-deployment-guide.md) | Production deployment to Azure |

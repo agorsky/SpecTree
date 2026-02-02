@@ -50,6 +50,18 @@ SpecTree is a project management tool similar to Linear, with:
 - Web frontend (React + Vite)
 - MCP server for AI integration
 
+## AI Session Context
+
+SpecTree provides dedicated AI context fields on Features and Tasks for cross-session continuity. **Use these tools to leave context for successor sessions:**
+
+- `spectree__get_ai_context` - Read context from previous sessions
+- `spectree__set_ai_context` - Set structured summary context  
+- `spectree__append_ai_note` - Log observations, decisions, blockers, next-steps
+
+**Best practice:** At session start, call `spectree__get_ai_context` to read previous context. During work, use `spectree__append_ai_note` to log significant findings. At session end, use `spectree__set_ai_context` to summarize state.
+
+See `docs/MCP/ai-session-context.md` for full documentation.
+
 ## Before Making Changes
 
 1. **Database changes**: Read `docs/database-safety-guide.md`

@@ -31,6 +31,7 @@ This returns comprehensive guidance on:
 | [Search](#search) | 1 | Unified search |
 | [Statuses](#statuses) | 2 | Workflow status queries |
 | [Execution](#execution-planning) | 4 | Execution planning and dependencies |
+| [AI Context](#ai-context) | 3 | Cross-session context transfer |
 | [Personal](#personal-scope) | 4 | Personal workspace |
 | [Ordering](#ordering) | 3 | Reorder items |
 
@@ -344,6 +345,94 @@ Remove a blocker from a feature or task.
 
 ---
 
+## AI Context
+
+These tools enable AI sessions to store and retrieve context, enabling cross-session continuity and knowledge transfer. When an AI session works on a task, it can leave notes and context for the next session.
+
+### spectree__get_ai_context
+
+Retrieve AI context for a feature or task. Returns structured context and notes from previous sessions.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier (e.g., "COM-123") |
+| `type` | enum | Yes | "feature" or "task" |
+
+**Response structure:**
+```json
+{
+  "entityType": "feature",
+  "entityId": "uuid",
+  "identifier": "COM-123",
+  "aiContext": "Structured context from last session...",
+  "aiNotes": [
+    {
+      "timestamp": "2024-01-15T10:30:00Z",
+      "sessionId": "session-abc",
+      "type": "decision",
+      "content": "Chose to use React Query for data fetching..."
+    }
+  ],
+  "lastAiSessionId": "session-abc",
+  "lastAiUpdateAt": "2024-01-15T10:30:00Z"
+}
+```
+
+### spectree__set_ai_context
+
+Set structured context for a feature or task. This replaces the entire AI context field.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `context` | string | Yes | Structured context (max 50,000 chars) |
+| `sessionId` | string | No | Identifier for this AI session |
+
+**Use this to store:** Summary of current state, structured data (JSON), key decisions, technical notes.
+
+### spectree__append_ai_note
+
+Append a note to a feature or task's AI notes array. Notes are never overwritten, only appended.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+| `noteType` | enum | Yes | Type of note (see below) |
+| `content` | string | Yes | Note content (max 10,000 chars) |
+| `sessionId` | string | No | Identifier for this AI session |
+
+**Note types:**
+| Type | When to use |
+|------|-------------|
+| `observation` | What you noticed or discovered |
+| `decision` | A choice made and why |
+| `blocker` | What's preventing progress |
+| `next-step` | What should happen next |
+| `context` | General background information |
+
+**Example workflow:**
+```json
+// At start of session, read context
+{ "id": "COM-123", "type": "feature" }
+
+// During work, log observations
+{ "id": "COM-123", "type": "feature", "noteType": "observation", 
+  "content": "Found existing auth implementation in src/auth/" }
+
+// Log a decision
+{ "id": "COM-123", "type": "feature", "noteType": "decision",
+  "content": "Decided to extend existing auth rather than replace it" }
+
+// At end of session, set summary context
+{ "id": "COM-123", "type": "feature",
+  "context": "## Status\nPartially implemented...",
+  "sessionId": "session-xyz" }
+```
+
+---
+
 ## Personal Scope
 
 Each user has a private personal scope for work not shared with any team.
@@ -445,5 +534,6 @@ Common errors:
 ## Related Documentation
 
 - [Execution Metadata](./execution-metadata.md) - Detailed execution planning guide
+- [AI Session Context](./ai-session-context.md) - Cross-session context transfer guide
 - [API Token Authentication](./api-token-authentication.md) - Token system details
 - [Security Architecture](./security-architecture.md) - Security model

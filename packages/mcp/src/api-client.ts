@@ -383,6 +383,42 @@ export interface ExecutionPlanResponse {
 }
 
 // -----------------------------------------------------------------------------
+// AI Context Types
+// -----------------------------------------------------------------------------
+
+/** Valid AI note types */
+export type AiNoteType = "observation" | "decision" | "blocker" | "next-step" | "context";
+
+/** A single AI note */
+export interface AiNote {
+  timestamp: string;
+  sessionId?: string;
+  type: AiNoteType;
+  content: string;
+}
+
+/** AI context response */
+export interface AiContextResponse {
+  aiContext: string | null;
+  aiNotes: AiNote[];
+  lastAiSessionId: string | null;
+  lastAiUpdateAt: string | null;
+}
+
+/** Input for appending an AI note */
+export interface AppendAiNoteInput {
+  type: AiNoteType;
+  content: string;
+  sessionId?: string | undefined;
+}
+
+/** Input for setting AI context */
+export interface SetAiContextInput {
+  context: string;
+  sessionId?: string | undefined;
+}
+
+// -----------------------------------------------------------------------------
 // Reorder Types
 // -----------------------------------------------------------------------------
 
@@ -713,6 +749,74 @@ export class ApiClient {
       "PUT",
       `/api/v1/tasks/${encodeURIComponent(id)}/reorder`,
       params
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // AI Context Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get AI context for a feature.
+   */
+  async getFeatureAiContext(featureId: string): Promise<{ data: AiContextResponse }> {
+    return this.request<{ data: AiContextResponse }>(
+      "GET",
+      `/api/v1/features/${encodeURIComponent(featureId)}/ai-context`
+    );
+  }
+
+  /**
+   * Set AI context for a feature (replaces entire context).
+   */
+  async setFeatureAiContext(featureId: string, input: SetAiContextInput): Promise<{ data: AiContextResponse }> {
+    return this.request<{ data: AiContextResponse }>(
+      "PUT",
+      `/api/v1/features/${encodeURIComponent(featureId)}/ai-context`,
+      input
+    );
+  }
+
+  /**
+   * Append an AI note to a feature (non-destructive).
+   */
+  async appendFeatureAiNote(featureId: string, input: AppendAiNoteInput): Promise<{ data: AiContextResponse }> {
+    return this.request<{ data: AiContextResponse }>(
+      "POST",
+      `/api/v1/features/${encodeURIComponent(featureId)}/ai-note`,
+      input
+    );
+  }
+
+  /**
+   * Get AI context for a task.
+   */
+  async getTaskAiContext(taskId: string): Promise<{ data: AiContextResponse }> {
+    return this.request<{ data: AiContextResponse }>(
+      "GET",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/ai-context`
+    );
+  }
+
+  /**
+   * Set AI context for a task (replaces entire context).
+   */
+  async setTaskAiContext(taskId: string, input: SetAiContextInput): Promise<{ data: AiContextResponse }> {
+    return this.request<{ data: AiContextResponse }>(
+      "PUT",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/ai-context`,
+      input
+    );
+  }
+
+  /**
+   * Append an AI note to a task (non-destructive).
+   */
+  async appendTaskAiNote(taskId: string, input: AppendAiNoteInput): Promise<{ data: AiContextResponse }> {
+    return this.request<{ data: AiContextResponse }>(
+      "POST",
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/ai-note`,
+      input
     );
   }
 
