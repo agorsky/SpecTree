@@ -483,6 +483,7 @@ The SpecTree MCP server enables AI assistants like Claude to interact with the p
 > - [AI Session Context](./docs/MCP/ai-session-context.md) — Cross-session context transfer for AI agents
 > - [Execution Metadata](./docs/MCP/execution-metadata.md) — Execution planning for AI agents
 > - [Validation Checklists](./docs/MCP/validation-checklists.md) — Executable acceptance criteria for tasks
+> - [Decision Log](./docs/MCP/decision-log.md) — Append-only decision records for preserving rationale
 > - [API Token Authentication](./docs/MCP/api-token-authentication.md) — Token system details
 > - [Security Architecture](./docs/MCP/security-architecture.md) — Security model
 > - [Migration Guide](./docs/MCP/migration-guide.md) — Migrating from older configurations
@@ -623,6 +624,11 @@ pnpm --filter @spectree/mcp start
 | `spectree__link_commit` | Add commit SHA to feature/task |
 | `spectree__link_pr` | Link pull request to feature/task |
 | `spectree__get_code_context` | Get all code context for feature/task |
+| **Decision Log** | |
+| `spectree__log_decision` | Record a decision with rationale |
+| `spectree__list_decisions` | List decisions with filters |
+| `spectree__search_decisions` | Search decisions by text |
+| `spectree__get_decision_context` | Get decisions for task/feature context |
 | **Help** | |
 | `spectree__get_instructions` | Get usage instructions and best practices |
 
@@ -845,6 +851,7 @@ Additional documentation is available in the `docs/` directory:
 | [MCP Templates Guide](./docs/MCP/templates.md) | Implementation plan templates for AI agents |
 | [MCP Structured Descriptions](./docs/MCP/structured-descriptions.md) | Rich structured descriptions for AI-friendly data extraction |
 | [MCP Code Context](./docs/MCP/code-context.md) | Codebase integration - link code artifacts to features/tasks |
+| [MCP Decision Log](./docs/MCP/decision-log.md) | Append-only decision records for preserving rationale |
 | [MCP Documentation](./docs/MCP/) | MCP server setup, authentication, and security |
 | [Azure Deployment Guide](./docs/azure-deployment-guide.md) | Production deployment to Azure |
 | [Design References](./docs/DESIGN-REFERENCES/) | Architectural decisions and Linear API patterns |

@@ -189,6 +189,24 @@ Tasks can have executable validation checks that define "done" in a verifiable w
 
 See `docs/MCP/validation-checklists.md` for full documentation.
 
+## Decision Log
+
+Record implementation decisions with their rationale using the Decision Log. Creates an append-only audit trail for understanding past choices.
+
+**Key MCP tools:**
+- `spectree__log_decision` - Record a new decision
+- `spectree__list_decisions` - List decisions with filters
+- `spectree__search_decisions` - Search decision text
+- `spectree__get_decision_context` - Get decisions for task/feature context
+
+**When to log decisions:**
+- Choosing between libraries/approaches
+- Deciding to skip or defer something
+- Making assumptions about requirements
+- Changing direction from original plan
+
+See `docs/MCP/decision-log.md` for full documentation.
+
 ## Before Making Changes
 
 1. **Database changes**: Read `docs/database-safety-guide.md`

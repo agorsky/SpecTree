@@ -38,6 +38,7 @@ This returns comprehensive guidance on:
 | [Structured Descriptions](#structured-descriptions) | 6 | Rich structured descriptions |
 | [Code Context](#code-context) | 7 | Codebase integration (files, git, PRs) |
 | [Validation Checklists](#validation-checklists) | 7 | Executable acceptance criteria |
+| [Decision Log](#decision-log) | 4 | Append-only decision records |
 | [Personal](#personal-scope) | 4 | Personal workspace |
 | [Templates](#templates) | 5 | Implementation plan templates |
 | [Ordering](#ordering) | 3 | Reorder items |
@@ -909,6 +910,67 @@ Reset all validation checks to pending status.
 
 ---
 
+## Decision Log
+
+Record implementation decisions with their rationale. Creates an append-only audit trail.
+
+> **📚 Full Documentation**: See [Decision Log Guide](./decision-log.md) for complete details and best practices.
+
+### spectree__log_decision
+
+Record a new decision with its rationale.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `epicId` | UUID | Yes | Epic this decision relates to |
+| `featureId` | UUID | No | Feature this decision relates to |
+| `taskId` | UUID | No | Task this decision relates to |
+| `question` | string | Yes | What was being decided |
+| `decision` | string | Yes | The choice that was made |
+| `rationale` | string | Yes | Why this choice was made |
+| `alternatives` | string[] | No | Other options considered |
+| `madeBy` | string | No | Who made the decision (default: "AI") |
+| `category` | enum | No | Category: architecture, library, approach, scope, design, tradeoff, deferral |
+| `impact` | enum | No | Impact level: low, medium, high |
+
+### spectree__list_decisions
+
+List decisions with optional filters.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `epicId` | UUID | No | Filter by epic |
+| `featureId` | UUID | No | Filter by feature |
+| `taskId` | UUID | No | Filter by task |
+| `category` | enum | No | Filter by category |
+| `impact` | enum | No | Filter by impact level |
+| `limit` | number | No | Max results (default: 20, max: 100) |
+| `cursor` | string | No | Pagination cursor |
+
+### spectree__search_decisions
+
+Search decisions by text in question, decision, and rationale.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | Yes | Search query |
+| `epicId` | UUID | No | Limit to specific epic |
+| `limit` | number | No | Max results (default: 20) |
+| `cursor` | string | No | Pagination cursor |
+
+### spectree__get_decision_context
+
+Get all decisions related to current work (task or feature level).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `taskId` | string | No | Task identifier (returns task + feature + epic decisions) |
+| `featureId` | string | No | Feature identifier (returns feature + epic decisions) |
+
+One of `taskId` or `featureId` is required.
+
+---
+
 ## Personal Scope
 
 Each user has a private personal scope for work not shared with any team.
@@ -1123,5 +1185,6 @@ Common errors:
 - [AI Session Context](./ai-session-context.md) - Cross-session context transfer guide
 - [Session Handoff](./session-handoff.md) - Epic-level session lifecycle and handoff
 - [Structured Descriptions](./structured-descriptions.md) - Rich structured descriptions guide
+- [Decision Log](./decision-log.md) - Append-only decision records guide
 - [API Token Authentication](./api-token-authentication.md) - Token system details
 - [Security Architecture](./security-architecture.md) - Security model

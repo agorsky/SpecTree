@@ -10,7 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createResponse } from "./utils.js";
 
 // Available topics for the schema
-const topicValues = ["all", "overview", "execution", "progress", "summary", "search", "workflow", "personal", "templates", "sessions", "structured", "codeContext", "validations"] as const;
+const topicValues = ["all", "overview", "execution", "progress", "summary", "search", "workflow", "personal", "templates", "sessions", "structured", "codeContext", "validations", "decisions"] as const;
 type TopicKey = Exclude<typeof topicValues[number], "all">;
 
 // Topic-specific help content
@@ -850,6 +850,144 @@ Commands are sandboxed with these restrictions:
 4. **Reset before re-running**: Call \`reset_validations\` after making changes
 5. **Run all before completing**: Always call \`run_all_validations\` before \`complete_work\`
 6. **Use manual checks sparingly**: Reserve for things that truly cannot be automated`,
+
+  decisions: `# Decision Log
+
+Record implementation decisions with their rationale. Creates an append-only audit trail that preserves the reasoning behind choices made during development.
+
+## Why Log Decisions?
+
+- **Context Preservation**: Future sessions can understand past reasoning
+- **Avoid Re-debate**: Prevents revisiting already-decided issues
+- **Accountability**: Clear record of who decided what and when
+- **Learning**: Accumulate institutional knowledge over time
+
+## When to Log Decisions
+
+Log a decision when:
+- Choosing between multiple libraries or approaches
+- Deciding to skip or defer something
+- Making assumptions about requirements
+- Changing direction from the original plan
+- Acknowledging explicit tradeoffs
+
+## Core Tools
+
+### spectree__log_decision
+
+Record a new decision with its rationale.
+
+\`\`\`
+spectree__log_decision({
+  epicId: "epic-uuid",           // Required
+  featureId: "feature-uuid",     // Optional - for feature-specific decisions
+  taskId: "task-uuid",           // Optional - for task-specific decisions
+  question: "Which state management library to use?",
+  decision: "Use Zustand instead of Redux",
+  rationale: "Zustand has simpler API, smaller bundle size, and sufficient features for our use case.",
+  alternatives: ["Redux", "MobX", "Jotai"],  // Optional
+  category: "library",           // Optional: architecture, library, approach, scope, design, tradeoff, deferral
+  impact: "medium"               // Optional: low, medium, high
+})
+\`\`\`
+
+### spectree__list_decisions
+
+Get decisions filtered by context.
+
+\`\`\`
+// Get all architecture decisions for an epic
+spectree__list_decisions({
+  epicId: "epic-uuid",
+  category: "architecture"
+})
+
+// Get decisions for a specific feature
+spectree__list_decisions({
+  featureId: "feature-uuid"
+})
+\`\`\`
+
+### spectree__search_decisions
+
+Find decisions by searching question, decision, and rationale text.
+
+\`\`\`
+// Find all decisions about authentication
+spectree__search_decisions({
+  query: "authentication"
+})
+\`\`\`
+
+### spectree__get_decision_context
+
+Get all decisions related to current work, organized by scope.
+
+\`\`\`
+// Get decisions for a task (includes task, feature, and epic decisions)
+spectree__get_decision_context({
+  taskId: "COM-123-1"
+})
+
+// Get decisions for a feature (includes feature and epic decisions)
+spectree__get_decision_context({
+  featureId: "COM-123"
+})
+\`\`\`
+
+## Categories
+
+| Category | Use For |
+|----------|---------|
+| \`architecture\` | System design decisions |
+| \`library\` | Package/dependency choices |
+| \`approach\` | Implementation strategy |
+| \`scope\` | Feature inclusion/exclusion |
+| \`design\` | UI/UX decisions |
+| \`tradeoff\` | Explicit tradeoff acknowledgment |
+| \`deferral\` | Postponed decisions |
+
+## Impact Levels
+
+| Level | Description |
+|-------|-------------|
+| \`low\` | Minor impact, easily reversible |
+| \`medium\` | Moderate impact, some effort to change |
+| \`high\` | Major impact, significant effort to reverse |
+
+## Best Practices
+
+1. **Log decisions as you make them**: Don't wait until the end
+2. **Be specific about the question**: Clearly state what was being decided
+3. **Document alternatives**: List what else was considered
+4. **Include context**: Explain constraints that influenced the decision
+5. **Use appropriate categories**: Helps with filtering and understanding
+6. **Link to the right scope**: Associate with the most specific level (task > feature > epic)
+
+## Session Workflow
+
+At the **start** of a session, review past decisions:
+\`\`\`
+const context = spectree__get_decision_context({
+  taskId: "COM-123-1"  // or featureId
+})
+// Review taskDecisions, featureDecisions, epicDecisions
+\`\`\`
+
+**During** work, log decisions as you make them:
+\`\`\`
+spectree__log_decision({
+  epicId: "...",
+  taskId: "...",
+  question: "How to handle edge case X?",
+  decision: "Return empty array instead of throwing",
+  rationale: "Consistent with other methods and less disruptive to callers",
+  category: "approach",
+  impact: "low"
+})
+\`\`\`
+
+Decisions are **append-only** - once logged, they cannot be modified. This ensures a complete audit trail.`,
 };
 
 // Full instructions combining all topics
@@ -884,6 +1022,10 @@ ${helpTopics.codeContext}
 ---
 
 ${helpTopics.validations}
+
+---
+
+${helpTopics.decisions}
 
 ---
 
@@ -935,6 +1077,8 @@ ${helpTopics.personal}
 | **Link PR** | \`spectree__link_pr\` |
 | **Add validation** | \`spectree__add_validation\` |
 | **Run all validations** | \`spectree__run_all_validations\` |
+| **Log decision** | \`spectree__log_decision\` |
+| **Get decision context** | \`spectree__get_decision_context\` |
 | **List templates** | \`spectree__list_templates\` |
 | **Create from template** | \`spectree__create_from_template\` |
 `;
@@ -949,7 +1093,8 @@ export function registerHelpTools(server: McpServer): void {
         "best practices, and recommended workflows. Topics include: overview, sessions " +
         "(handoff between AI sessions), summary (progress dashboard), execution (planning & dependencies), progress " +
         "(tracking tools), structured (rich descriptions), codeContext (link code artifacts), " +
-        "validations (executable acceptance criteria), search (filtering), workflow (recommended patterns), " +
+        "validations (executable acceptance criteria), decisions (append-only decision log), " +
+        "search (filtering), workflow (recommended patterns), " +
         "personal (private workspace), and templates (implementation plan templates).",
       inputSchema: {
         topic: z
@@ -960,7 +1105,8 @@ export function registerHelpTools(server: McpServer): void {
             "a specific topic: 'overview' (concepts), 'sessions' (AI session handoff), " +
             "'summary' (progress dashboard), 'execution' (planning & dependencies), 'progress' (tracking tools), 'structured' " +
             "(rich descriptions), 'codeContext' (link code artifacts), 'validations' " +
-            "(executable acceptance criteria), 'search' (filtering), 'workflow' (recommended patterns), " +
+            "(executable acceptance criteria), 'decisions' (append-only decision log), " +
+            "'search' (filtering), 'workflow' (recommended patterns), " +
             "'personal' (private workspace), 'templates' (implementation plan templates)."
           ),
       },

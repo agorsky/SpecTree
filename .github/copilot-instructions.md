@@ -154,6 +154,37 @@ Tasks can have executable validation checks that define "done" in a verifiable w
 
 See `docs/MCP/validation-checklists.md` for full documentation.
 
+### Decision Log
+
+Record implementation decisions with their rationale using the Decision Log. Creates an append-only audit trail for understanding past choices.
+
+- `spectree__log_decision` - Record a new decision with rationale
+- `spectree__list_decisions` - List decisions with filters (epic, feature, task, category, impact)
+- `spectree__search_decisions` - Search decision text
+- `spectree__get_decision_context` - Get all decisions for a task or feature context
+
+**When to log decisions:**
+- Choosing between libraries/approaches
+- Deciding to skip or defer something
+- Making assumptions about requirements
+- Changing direction from original plan
+
+**Example:**
+```typescript
+await spectree__log_decision({
+  epicId: "epic-uuid",
+  featureId: "feature-uuid",  // optional
+  question: "Which state management library to use?",
+  decision: "Use Zustand instead of Redux",
+  rationale: "Simpler API, smaller bundle, sufficient for our needs",
+  alternatives: ["Redux", "MobX"],
+  category: "library",  // architecture, library, approach, scope, design, tradeoff, deferral
+  impact: "medium"      // low, medium, high
+});
+```
+
+See `docs/MCP/decision-log.md` for full documentation.
+
 ---
 
 ## Build, Test, and Lint

@@ -970,6 +970,109 @@ export interface BlockedSummaryResponse {
   }>;
 }
 
+// -----------------------------------------------------------------------------
+// Decision Types
+// -----------------------------------------------------------------------------
+
+/** Valid decision categories */
+export type DecisionCategory =
+  | "architecture"
+  | "library"
+  | "approach"
+  | "scope"
+  | "design"
+  | "tradeoff"
+  | "deferral";
+
+/** Valid impact levels */
+export type ImpactLevel = "low" | "medium" | "high";
+
+/** Decision record */
+export interface Decision {
+  id: string;
+  epicId: string;
+  featureId: string | null;
+  taskId: string | null;
+  question: string;
+  decision: string;
+  rationale: string;
+  alternatives: string | null; // JSON array
+  madeBy: string;
+  madeAt: string;
+  category: string | null;
+  impact: string | null;
+  createdAt: string;
+  updatedAt: string;
+  epic?: {
+    id: string;
+    name: string;
+  };
+  feature?: {
+    id: string;
+    identifier: string;
+    title: string;
+  } | null;
+  task?: {
+    id: string;
+    identifier: string;
+    title: string;
+  } | null;
+}
+
+/** Input for creating a decision */
+export interface CreateDecisionInput {
+  epicId: string;
+  featureId?: string | undefined;
+  taskId?: string | undefined;
+  question: string;
+  decision: string;
+  rationale: string;
+  alternatives?: string[] | undefined;
+  madeBy?: string | undefined;
+  category?: DecisionCategory | undefined;
+  impact?: ImpactLevel | undefined;
+}
+
+/** Parameters for listing decisions */
+export interface ListDecisionsParams {
+  cursor?: string | undefined;
+  limit?: number | undefined;
+  epicId?: string | undefined;
+  featureId?: string | undefined;
+  taskId?: string | undefined;
+  category?: DecisionCategory | undefined;
+  impact?: ImpactLevel | undefined;
+  createdAt?: string | undefined;
+  createdBefore?: string | undefined;
+}
+
+/** Parameters for searching decisions */
+export interface SearchDecisionsParams {
+  query: string;
+  epicId?: string | undefined;
+  cursor?: string | undefined;
+  limit?: number | undefined;
+}
+
+/** Response for listing decisions */
+export interface ListDecisionsResponse {
+  data: Decision[];
+  meta: PaginationMeta;
+}
+
+/** Decision context for a task */
+export interface TaskDecisionContextResponse {
+  taskDecisions: Decision[];
+  featureDecisions: Decision[];
+  epicDecisions: Decision[];
+}
+
+/** Decision context for a feature */
+export interface FeatureDecisionContextResponse {
+  featureDecisions: Decision[];
+  epicDecisions: Decision[];
+}
+
 // =============================================================================
 // API Client Configuration
 // =============================================================================
@@ -2528,6 +2631,80 @@ export class ApiClient {
     return this.request<{ data: BlockedSummaryResponse }>(
       "GET",
       `/api/v1/me/blocked`
+    );
+  }
+
+  // ===========================================================================
+  // Decision Methods
+  // ===========================================================================
+
+  /**
+   * Create a new decision record.
+   */
+  async createDecision(input: CreateDecisionInput): Promise<{ data: Decision }> {
+    return this.request<{ data: Decision }>("POST", "/api/v1/decisions", input);
+  }
+
+  /**
+   * Get a decision by ID.
+   */
+  async getDecision(id: string): Promise<{ data: Decision }> {
+    return this.request<{ data: Decision }>(
+      "GET",
+      `/api/v1/decisions/${encodeURIComponent(id)}`
+    );
+  }
+
+  /**
+   * List decisions with optional filters.
+   */
+  async listDecisions(params?: ListDecisionsParams): Promise<ListDecisionsResponse> {
+    const query = this.buildQueryString({
+      cursor: params?.cursor,
+      limit: params?.limit,
+      epicId: params?.epicId,
+      featureId: params?.featureId,
+      taskId: params?.taskId,
+      category: params?.category,
+      impact: params?.impact,
+      createdAt: params?.createdAt,
+      createdBefore: params?.createdBefore,
+    });
+    return this.request<ListDecisionsResponse>("GET", `/api/v1/decisions${query}`);
+  }
+
+  /**
+   * Search decisions by query string.
+   */
+  async searchDecisions(params: SearchDecisionsParams): Promise<ListDecisionsResponse> {
+    const query = this.buildQueryString({
+      query: params.query,
+      epicId: params.epicId,
+      cursor: params.cursor,
+      limit: params.limit,
+    });
+    return this.request<ListDecisionsResponse>("GET", `/api/v1/decisions/search${query}`);
+  }
+
+  /**
+   * Get decision context for a task.
+   * Returns decisions for the task, its parent feature, and the epic.
+   */
+  async getTaskDecisionContext(taskId: string): Promise<{ data: TaskDecisionContextResponse }> {
+    return this.request<{ data: TaskDecisionContextResponse }>(
+      "GET",
+      `/api/v1/decisions/context/task/${encodeURIComponent(taskId)}`
+    );
+  }
+
+  /**
+   * Get decision context for a feature.
+   * Returns decisions for the feature and the epic.
+   */
+  async getFeatureDecisionContext(featureId: string): Promise<{ data: FeatureDecisionContextResponse }> {
+    return this.request<{ data: FeatureDecisionContextResponse }>(
+      "GET",
+      `/api/v1/decisions/context/feature/${encodeURIComponent(featureId)}`
     );
   }
 }

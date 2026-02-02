@@ -19,6 +19,7 @@ export * as codeContextService from "./codeContextService.js";
 export * as validationService from "./validationService.js";
 export * as validationExecutor from "./validationExecutor.js";
 export * as summaryService from "./summaryService.js";
+export * as decisionService from "./decisionService.js";
 
 // Re-export the database client
 export { prisma } from "../lib/db.js";

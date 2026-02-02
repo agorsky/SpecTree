@@ -25,6 +25,7 @@ import { registerStructuredDescTools } from "./structured-desc.js";
 import { registerCodeContextTools } from "./code-context.js";
 import { registerValidationTools } from "./validations.js";
 import { registerSummaryTools } from "./summary.js";
+import { registerDecisionTools } from "./decisions.js";
 
 // Tool registration function type
 export type ToolRegistrar = (server: McpServer) => void;
@@ -48,6 +49,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerCodeContextTools,
   registerValidationTools,
   registerSummaryTools,
+  registerDecisionTools,
 ];
 
 /**
