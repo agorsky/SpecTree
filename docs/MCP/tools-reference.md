@@ -33,6 +33,7 @@ This returns comprehensive guidance on:
 | [Statuses](#statuses) | 2 | Workflow status queries |
 | [Execution](#execution-planning) | 4 | Execution planning and dependencies |
 | [AI Context](#ai-context) | 3 | Cross-session context transfer |
+| [Session Handoff](#session-handoff) | 6 | Session lifecycle and handoff |
 | [Personal](#personal-scope) | 4 | Personal workspace |
 | [Templates](#templates) | 5 | Implementation plan templates |
 | [Ordering](#ordering) | 3 | Reorder items |
@@ -494,6 +495,73 @@ Append a note to a feature or task's AI notes array. Notes are never overwritten
 
 ---
 
+## Session Handoff
+
+The Session Handoff System enables AI sessions to preserve context for successor sessions at the epic level. See [Session Handoff](./session-handoff.md) for full documentation.
+
+### spectree__start_session
+
+Start a new AI session for an epic. Abandons any existing active sessions and returns handoff from previous session.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `epicId` | string | Yes | Epic ID (UUID) or exact name |
+| `externalId` | string | No | External session identifier |
+
+**Returns:** Session details, previous session handoff (summary, nextSteps, blockers, decisions), and epic progress summary.
+
+### spectree__end_session
+
+End the current session with handoff data for successors.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `epicId` | string | Yes | Epic ID (UUID) or exact name |
+| `summary` | string | Yes | Summary of work completed (max 10,000 chars) |
+| `nextSteps` | string[] | No | Recommended next actions (max 20 items) |
+| `blockers` | string[] | No | Blockers encountered (max 20 items) |
+| `decisions` | object[] | No | Array of {decision, rationale} (max 20 items) |
+| `contextBlob` | string | No | Serialized context (max 50,000 chars) |
+
+### spectree__get_last_session
+
+Get the last completed session without starting a new one.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `epicId` | string | Yes | Epic ID (UUID) or exact name |
+
+### spectree__get_session_history
+
+Get history of all sessions for an epic.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `epicId` | string | Yes | Epic ID (UUID) or exact name |
+| `limit` | number | No | Max results (default: 10, max: 100) |
+
+### spectree__get_active_session
+
+Check if there's an active session for an epic.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `epicId` | string | Yes | Epic ID (UUID) or exact name |
+
+### spectree__log_session_work
+
+Manually log work on an item to the active session. Usually called automatically by `spectree__start_work` and `spectree__complete_work`.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `epicId` | string | Yes | Epic ID (UUID) or exact name |
+| `itemId` | string | Yes | UUID of feature or task |
+| `itemType` | enum | Yes | "feature" or "task" |
+| `identifier` | string | Yes | Human-readable identifier (e.g., "COM-123") |
+| `action` | string | Yes | Action performed (e.g., "started", "completed") |
+
+---
+
 ## Personal Scope
 
 Each user has a private personal scope for work not shared with any team.
@@ -706,5 +774,6 @@ Common errors:
 - [Progress Tracking](./progress-tracking.md) - Auto-progress tracking tools guide
 - [Execution Metadata](./execution-metadata.md) - Detailed execution planning guide
 - [AI Session Context](./ai-session-context.md) - Cross-session context transfer guide
+- [Session Handoff](./session-handoff.md) - Epic-level session lifecycle and handoff
 - [API Token Authentication](./api-token-authentication.md) - Token system details
 - [Security Architecture](./security-architecture.md) - Security model

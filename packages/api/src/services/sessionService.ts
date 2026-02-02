@@ -1,0 +1,465 @@
+/**
+ * Session Service
+ *
+ * Provides business logic for AI session lifecycle management.
+ * Enables explicit handoff between AI sessions with context preservation.
+ */
+
+import { prisma } from "../lib/db.js";
+import { NotFoundError, ValidationError } from "../errors/index.js";
+import type {
+  StartSessionInput,
+  EndSessionInput,
+  LogSessionWorkInput,
+  SessionResponse,
+  StartSessionResponse,
+  SessionHistoryResponse,
+  SessionWorkItem,
+} from "../schemas/session.js";
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+/**
+ * Parse JSON string to array, returning empty array on failure
+ */
+function parseJsonArray<T>(json: string | null): T[] {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Parse JSON string to object, returning null on failure
+ */
+function parseJsonObject<T>(json: string | null): T | null {
+  if (!json) return null;
+  try {
+    return JSON.parse(json) as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Transform database session to response format
+ */
+function transformSession(session: {
+  id: string;
+  epicId: string;
+  externalId: string | null;
+  startedAt: Date;
+  endedAt: Date | null;
+  status: string;
+  itemsWorkedOn: string | null;
+  summary: string | null;
+  nextSteps: string | null;
+  blockers: string | null;
+  decisions: string | null;
+  contextBlob: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}): SessionResponse {
+  return {
+    id: session.id,
+    epicId: session.epicId,
+    externalId: session.externalId,
+    startedAt: session.startedAt.toISOString(),
+    endedAt: session.endedAt?.toISOString() ?? null,
+    status: session.status as "active" | "completed" | "abandoned",
+    itemsWorkedOn: parseJsonArray<SessionWorkItem>(session.itemsWorkedOn),
+    summary: session.summary,
+    nextSteps: parseJsonArray<string>(session.nextSteps),
+    blockers: parseJsonArray<string>(session.blockers),
+    decisions: parseJsonObject<{ decision: string; rationale?: string }[]>(session.decisions),
+    contextBlob: session.contextBlob,
+    createdAt: session.createdAt.toISOString(),
+    updatedAt: session.updatedAt.toISOString(),
+  };
+}
+
+// =============================================================================
+// Session Lifecycle Operations
+// =============================================================================
+
+/**
+ * Start a new AI session for an epic.
+ * Returns the new session along with previous session handoff data and epic progress.
+ */
+export async function startSession(
+  input: StartSessionInput
+): Promise<StartSessionResponse> {
+  // Resolve epic ID (could be name or UUID)
+  const epic = await prisma.epic.findFirst({
+    where: {
+      OR: [
+        { id: input.epicId },
+        { name: input.epicId },
+      ],
+    },
+    include: {
+      features: {
+        include: {
+          status: true,
+          tasks: {
+            include: {
+              status: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!epic) {
+    throw new NotFoundError(`Epic '${input.epicId}' not found`);
+  }
+
+  // Abandon any existing active sessions for this epic
+  await prisma.aiSession.updateMany({
+    where: {
+      epicId: epic.id,
+      status: "active",
+    },
+    data: {
+      status: "abandoned",
+      endedAt: new Date(),
+    },
+  });
+
+  // Get the most recent completed session for handoff
+  const previousSession = await prisma.aiSession.findFirst({
+    where: {
+      epicId: epic.id,
+      status: { in: ["completed", "abandoned"] },
+    },
+    orderBy: { endedAt: "desc" },
+  });
+
+  // Create new session
+  const newSession = await prisma.aiSession.create({
+    data: {
+      epicId: epic.id,
+      externalId: input.externalId ?? null,
+      status: "active",
+    },
+  });
+
+  // Calculate epic progress
+  let completedFeatures = 0;
+  let inProgressFeatures = 0;
+  let completedTasks = 0;
+  let totalTasks = 0;
+
+  for (const feature of epic.features) {
+    if (feature.status?.category === "completed") {
+      completedFeatures++;
+    } else if (feature.status?.category === "started") {
+      inProgressFeatures++;
+    }
+
+    for (const task of feature.tasks) {
+      totalTasks++;
+      if (task.status?.category === "completed") {
+        completedTasks++;
+      }
+    }
+  }
+
+  return {
+    session: transformSession(newSession),
+    previousSession: previousSession ? transformSession(previousSession) : null,
+    epicProgress: {
+      totalFeatures: epic.features.length,
+      completedFeatures,
+      inProgressFeatures,
+      totalTasks,
+      completedTasks,
+    },
+  };
+}
+
+/**
+ * End the current active session for an epic.
+ * Records summary, next steps, blockers, and decisions for handoff.
+ */
+export async function endSession(
+  epicId: string,
+  input: EndSessionInput
+): Promise<SessionResponse> {
+  // Resolve epic ID
+  const epic = await prisma.epic.findFirst({
+    where: {
+      OR: [
+        { id: epicId },
+        { name: epicId },
+      ],
+    },
+  });
+
+  if (!epic) {
+    throw new NotFoundError(`Epic '${epicId}' not found`);
+  }
+
+  // Find the active session
+  const activeSession = await prisma.aiSession.findFirst({
+    where: {
+      epicId: epic.id,
+      status: "active",
+    },
+    orderBy: { startedAt: "desc" },
+  });
+
+  if (!activeSession) {
+    throw new ValidationError("No active session found for this epic");
+  }
+
+  // Update the session with handoff data
+  const updatedSession = await prisma.aiSession.update({
+    where: { id: activeSession.id },
+    data: {
+      status: "completed",
+      endedAt: new Date(),
+      summary: input.summary,
+      nextSteps: input.nextSteps ? JSON.stringify(input.nextSteps) : null,
+      blockers: input.blockers ? JSON.stringify(input.blockers) : null,
+      decisions: input.decisions ? JSON.stringify(input.decisions) : null,
+      contextBlob: input.contextBlob ?? null,
+    },
+  });
+
+  return transformSession(updatedSession);
+}
+
+/**
+ * Get the active session for an epic, if any
+ */
+export async function getActiveSession(
+  epicId: string
+): Promise<SessionResponse | null> {
+  const epic = await prisma.epic.findFirst({
+    where: {
+      OR: [
+        { id: epicId },
+        { name: epicId },
+      ],
+    },
+  });
+
+  if (!epic) {
+    throw new NotFoundError(`Epic '${epicId}' not found`);
+  }
+
+  const activeSession = await prisma.aiSession.findFirst({
+    where: {
+      epicId: epic.id,
+      status: "active",
+    },
+    orderBy: { startedAt: "desc" },
+  });
+
+  return activeSession ? transformSession(activeSession) : null;
+}
+
+/**
+ * Get the last completed session for an epic
+ */
+export async function getLastSession(
+  epicId: string
+): Promise<SessionResponse | null> {
+  const epic = await prisma.epic.findFirst({
+    where: {
+      OR: [
+        { id: epicId },
+        { name: epicId },
+      ],
+    },
+  });
+
+  if (!epic) {
+    throw new NotFoundError(`Epic '${epicId}' not found`);
+  }
+
+  const lastSession = await prisma.aiSession.findFirst({
+    where: {
+      epicId: epic.id,
+      status: { in: ["completed", "abandoned"] },
+    },
+    orderBy: { endedAt: "desc" },
+  });
+
+  return lastSession ? transformSession(lastSession) : null;
+}
+
+/**
+ * Get session history for an epic
+ */
+export async function getSessionHistory(
+  epicId: string,
+  limit: number = 10
+): Promise<SessionHistoryResponse> {
+  const epic = await prisma.epic.findFirst({
+    where: {
+      OR: [
+        { id: epicId },
+        { name: epicId },
+      ],
+    },
+  });
+
+  if (!epic) {
+    throw new NotFoundError(`Epic '${epicId}' not found`);
+  }
+
+  const [sessions, total] = await Promise.all([
+    prisma.aiSession.findMany({
+      where: { epicId: epic.id },
+      orderBy: { startedAt: "desc" },
+      take: limit,
+    }),
+    prisma.aiSession.count({
+      where: { epicId: epic.id },
+    }),
+  ]);
+
+  return {
+    sessions: sessions.map(transformSession),
+    total,
+  };
+}
+
+/**
+ * Get a specific session by ID
+ */
+export async function getSession(sessionId: string): Promise<SessionResponse> {
+  const session = await prisma.aiSession.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session) {
+    throw new NotFoundError(`Session '${sessionId}' not found`);
+  }
+
+  return transformSession(session);
+}
+
+// =============================================================================
+// Work Tracking Operations
+// =============================================================================
+
+/**
+ * Log work done during a session.
+ * Called automatically when features/tasks are updated.
+ */
+export async function logSessionWork(
+  epicId: string,
+  input: LogSessionWorkInput
+): Promise<SessionResponse | null> {
+  // Find the epic
+  const epic = await prisma.epic.findFirst({
+    where: {
+      OR: [
+        { id: epicId },
+        { name: epicId },
+      ],
+    },
+  });
+
+  if (!epic) {
+    return null; // Silent fail - don't disrupt the main operation
+  }
+
+  // Find active session for this epic
+  const activeSession = await prisma.aiSession.findFirst({
+    where: {
+      epicId: epic.id,
+      status: "active",
+    },
+  });
+
+  if (!activeSession) {
+    return null; // No active session, nothing to log
+  }
+
+  // Parse existing work items
+  const existingItems = parseJsonArray<SessionWorkItem>(activeSession.itemsWorkedOn);
+
+  // Add new work item
+  const newItem: SessionWorkItem = {
+    type: input.itemType,
+    id: input.itemId,
+    identifier: input.identifier,
+    action: input.action,
+    timestamp: new Date().toISOString(),
+  };
+
+  existingItems.push(newItem);
+
+  // Update session
+  const updatedSession = await prisma.aiSession.update({
+    where: { id: activeSession.id },
+    data: {
+      itemsWorkedOn: JSON.stringify(existingItems),
+    },
+  });
+
+  return transformSession(updatedSession);
+}
+
+/**
+ * Find the epic ID for a feature or task (for session tracking)
+ */
+export async function findEpicIdForItem(
+  itemId: string,
+  itemType: "feature" | "task"
+): Promise<string | null> {
+  if (itemType === "feature") {
+    const feature = await prisma.feature.findUnique({
+      where: { id: itemId },
+      select: { epicId: true },
+    });
+    return feature?.epicId ?? null;
+  } else {
+    const task = await prisma.task.findUnique({
+      where: { id: itemId },
+      include: {
+        feature: {
+          select: { epicId: true },
+        },
+      },
+    });
+    return task?.feature?.epicId ?? null;
+  }
+}
+
+/**
+ * Abandon a session (mark as abandoned without handoff data)
+ */
+export async function abandonSession(sessionId: string): Promise<SessionResponse> {
+  const session = await prisma.aiSession.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session) {
+    throw new NotFoundError(`Session '${sessionId}' not found`);
+  }
+
+  if (session.status !== "active") {
+    throw new ValidationError("Only active sessions can be abandoned");
+  }
+
+  const updatedSession = await prisma.aiSession.update({
+    where: { id: sessionId },
+    data: {
+      status: "abandoned",
+      endedAt: new Date(),
+    },
+  });
+
+  return transformSession(updatedSession);
+}

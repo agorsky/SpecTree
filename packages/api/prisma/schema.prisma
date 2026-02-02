@@ -134,6 +134,7 @@ model Epic {
   team          Team?          @relation(fields: [teamId], references: [id], onDelete: Cascade)
   personalScope PersonalScope? @relation(fields: [personalScopeId], references: [id], onDelete: Cascade)
   features      Feature[]
+  aiSessions    AiSession[]
 
   @@index([teamId])
   @@index([teamId, sortOrder])
@@ -282,4 +283,38 @@ model PlanTemplate {
   @@index([name])
   @@index([isBuiltIn])
   @@map("plan_templates")
+}
+
+// =============================================================================
+// AI Session Model
+// Tracks AI work sessions for handoff between sessions
+// =============================================================================
+
+model AiSession {
+  id             String    @id @default(uuid())
+  epicId         String    @map("epic_id")
+  externalId     String?   @map("external_id") // Optional external session ID (e.g., from Copilot)
+  startedAt      DateTime  @default(now()) @map("started_at")
+  endedAt        DateTime? @map("ended_at")
+  status         String    @default("active") // active | completed | abandoned
+  
+  // Work tracking
+  itemsWorkedOn  String?   @map("items_worked_on") // JSON array of {type, id, identifier, action}
+  summary        String?   // AI-generated summary of session work
+  
+  // Handoff info for successor sessions
+  nextSteps      String?   @map("next_steps")    // JSON array of recommended next actions
+  blockers       String?   // JSON array of blockers encountered
+  decisions      String?   // JSON array of decisions made with rationale
+  contextBlob    String?   @map("context_blob") // Serialized context for next session
+  
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  epic Epic @relation(fields: [epicId], references: [id], onDelete: Cascade)
+
+  @@index([epicId])
+  @@index([epicId, status])
+  @@index([startedAt])
+  @@map("ai_sessions")
 }

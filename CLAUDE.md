@@ -52,15 +52,42 @@ SpecTree is a project management tool similar to Linear, with:
 
 ## AI Session Context
 
-SpecTree provides dedicated AI context fields on Features and Tasks for cross-session continuity. **Use these tools to leave context for successor sessions:**
+### Per-Item Context (Features/Tasks)
+
+SpecTree provides dedicated AI context fields on Features and Tasks for cross-session continuity:
 
 - `spectree__get_ai_context` - Read context from previous sessions
 - `spectree__set_ai_context` - Set structured summary context  
 - `spectree__append_ai_note` - Log observations, decisions, blockers, next-steps
 
-**Best practice:** At session start, call `spectree__get_ai_context` to read previous context. During work, use `spectree__append_ai_note` to log significant findings. At session end, use `spectree__set_ai_context` to summarize state.
-
 See `docs/MCP/ai-session-context.md` for full documentation.
+
+### Session Handoff (Epics)
+
+For epic-level workflow continuity, use the Session Handoff System:
+
+**At session start:**
+```typescript
+const { previousSession, epicProgress } = await spectree__start_session({
+  epicId: "Epic Name or ID"
+});
+// Review previousSession.summary, nextSteps, blockers, decisions
+```
+
+**During work:** Work is automatically tracked when using `spectree__start_work` and `spectree__complete_work`.
+
+**At session end:**
+```typescript
+await spectree__end_session({
+  epicId: "Epic Name or ID",
+  summary: "What was accomplished",
+  nextSteps: ["Recommended next actions"],
+  blockers: ["Any blockers encountered"],
+  decisions: [{ decision: "Choice made", rationale: "Why" }]
+});
+```
+
+See `docs/MCP/session-handoff.md` for full documentation.
 
 ## Implementation Plan Templates
 

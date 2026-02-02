@@ -22,6 +22,7 @@ import meRoutes from "./routes/me.js";
 import invitationRoutes from "./routes/admin/invitations.js";
 import adminUsersRoutes from "./routes/admin/users.js";
 import templatesRoutes from "./routes/templates.js";
+import sessionsRoutes from "./routes/sessions.js";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const HOST = process.env.HOST ?? "0.0.0.0";
@@ -69,6 +70,7 @@ async function main(): Promise<void> {
   await fastify.register(invitationRoutes, { prefix: "/api/v1/admin/invitations" });
   await fastify.register(adminUsersRoutes, { prefix: "/api/v1/admin/users" });
   await fastify.register(templatesRoutes, { prefix: "/api/v1/templates" });
+  await fastify.register(sessionsRoutes, { prefix: "/api/v1/sessions" });
 
   // Graceful shutdown - disconnect Prisma
   fastify.addHook("onClose", async () => {

@@ -10,6 +10,7 @@ import type { Feature, Task } from "../generated/prisma/index.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
 import { appendFeatureAiNote, appendTaskAiNote } from "./aiContextService.js";
 import { emitStatusChanged } from "../events/index.js";
+import { logSessionWork } from "./sessionService.js";
 
 // Entity type for progress operations
 export type EntityType = "feature" | "task";
@@ -174,7 +175,7 @@ async function getFeature(idOrIdentifier: string): Promise<Feature & { epic: { t
 /**
  * Get task by ID or identifier
  */
-async function getTask(idOrIdentifier: string): Promise<Task & { feature: { epic: { teamId: string | null; personalScopeId: string | null } } }> {
+async function getTask(idOrIdentifier: string): Promise<Task & { feature: { epicId: string; epic: { teamId: string | null; personalScopeId: string | null } } }> {
   const isUuid = UUID_REGEX.test(idOrIdentifier);
   const isIdentifier = TASK_IDENTIFIER_REGEX.test(idOrIdentifier);
 
@@ -188,7 +189,8 @@ async function getTask(idOrIdentifier: string): Promise<Task & { feature: { epic
     where: whereClause,
     include: {
       feature: {
-        include: {
+        select: {
+          epicId: true,
           epic: {
             select: { teamId: true, personalScopeId: true },
           },
@@ -255,6 +257,14 @@ export async function startWork(
       sessionId: input.sessionId,
     });
 
+    // Log to active session (if any)
+    await logSessionWork(feature.epicId, {
+      itemId: feature.id,
+      itemType: "feature",
+      identifier: feature.identifier,
+      action: "started",
+    });
+
     return {
       id: updated.id,
       identifier: updated.identifier,
@@ -295,6 +305,14 @@ export async function startWork(
       type: "context",
       content: `Work started on this task.`,
       sessionId: input.sessionId,
+    });
+
+    // Log to active session (if any)
+    await logSessionWork(task.feature.epicId, {
+      itemId: task.id,
+      itemType: "task",
+      identifier: task.identifier,
+      action: "started",
     });
 
     return {
@@ -358,6 +376,14 @@ export async function completeWork(
       sessionId: input.sessionId,
     });
 
+    // Log to active session (if any)
+    await logSessionWork(feature.epicId, {
+      itemId: feature.id,
+      itemType: "feature",
+      identifier: feature.identifier,
+      action: "completed",
+    });
+
     return {
       id: updated.id,
       identifier: updated.identifier,
@@ -408,6 +434,14 @@ export async function completeWork(
       type: "context",
       content: noteContent,
       sessionId: input.sessionId,
+    });
+
+    // Log to active session (if any)
+    await logSessionWork(task.feature.epicId, {
+      itemId: task.id,
+      itemType: "task",
+      identifier: task.identifier,
+      action: "completed",
     });
 
     return {

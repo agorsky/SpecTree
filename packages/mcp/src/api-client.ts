@@ -613,6 +613,91 @@ export interface ReportBlockerResponse {
 }
 
 // -----------------------------------------------------------------------------
+// Session Types
+// -----------------------------------------------------------------------------
+
+/** Valid session status values */
+export type SessionStatus = "active" | "completed" | "abandoned";
+
+/** Item worked on during a session */
+export interface SessionWorkItem {
+  type: "feature" | "task";
+  id: string;
+  identifier: string;
+  action: string;
+  timestamp: string;
+}
+
+/** Decision made during a session */
+export interface SessionDecision {
+  decision: string;
+  rationale?: string | undefined;
+}
+
+/** Session response from API */
+export interface SessionResponse {
+  id: string;
+  epicId: string;
+  externalId: string | null;
+  startedAt: string;
+  endedAt: string | null;
+  status: SessionStatus;
+  itemsWorkedOn: SessionWorkItem[];
+  summary: string | null;
+  nextSteps: string[] | null;
+  blockers: string[] | null;
+  decisions: SessionDecision[] | null;
+  contextBlob: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Epic progress summary */
+export interface EpicProgress {
+  totalFeatures: number;
+  completedFeatures: number;
+  inProgressFeatures: number;
+  totalTasks: number;
+  completedTasks: number;
+}
+
+/** Response from starting a session */
+export interface StartSessionResponse {
+  session: SessionResponse;
+  previousSession: SessionResponse | null;
+  epicProgress: EpicProgress;
+}
+
+/** Response from getting session history */
+export interface SessionHistoryResponse {
+  sessions: SessionResponse[];
+  total: number;
+}
+
+/** Input for starting a session */
+export interface StartSessionInput {
+  epicId: string;
+  externalId?: string | undefined;
+}
+
+/** Input for ending a session */
+export interface EndSessionInput {
+  summary: string;
+  nextSteps?: string[] | undefined;
+  blockers?: string[] | undefined;
+  decisions?: SessionDecision[] | undefined;
+  contextBlob?: string | undefined;
+}
+
+/** Input for logging work during a session */
+export interface LogSessionWorkInput {
+  itemId: string;
+  itemType: "feature" | "task";
+  identifier: string;
+  action: string;
+}
+
+// -----------------------------------------------------------------------------
 // Reorder Types
 // -----------------------------------------------------------------------------
 
@@ -1581,6 +1666,116 @@ export class ApiClient {
       "POST",
       "/api/v1/templates/save-from-epic",
       input
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Session Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Start a new AI session for an epic.
+   * Returns the new session, previous session handoff, and epic progress.
+   */
+  async startSession(input: StartSessionInput): Promise<{ data: StartSessionResponse }> {
+    return this.request<{ data: StartSessionResponse }>(
+      "POST",
+      "/api/v1/sessions/start",
+      input
+    );
+  }
+
+  /**
+   * End the active session for an epic with handoff data.
+   */
+  async endSession(epicId: string, input: EndSessionInput): Promise<{ data: SessionResponse }> {
+    return this.request<{ data: SessionResponse }>(
+      "POST",
+      `/api/v1/sessions/${encodeURIComponent(epicId)}/end`,
+      input
+    );
+  }
+
+  /**
+   * Get the active session for an epic, if any.
+   */
+  async getActiveSession(epicId: string): Promise<{ data: SessionResponse } | null> {
+    try {
+      return await this.request<{ data: SessionResponse }>(
+        "GET",
+        `/api/v1/sessions/${encodeURIComponent(epicId)}/active`
+      );
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get the last completed session for an epic.
+   */
+  async getLastSession(epicId: string): Promise<{ data: SessionResponse } | null> {
+    try {
+      return await this.request<{ data: SessionResponse }>(
+        "GET",
+        `/api/v1/sessions/${encodeURIComponent(epicId)}/last`
+      );
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get session history for an epic.
+   */
+  async getSessionHistory(epicId: string, limit?: number): Promise<{ data: SessionHistoryResponse }> {
+    const query = limit ? `?limit=${limit}` : "";
+    return this.request<{ data: SessionHistoryResponse }>(
+      "GET",
+      `/api/v1/sessions/${encodeURIComponent(epicId)}/history${query}`
+    );
+  }
+
+  /**
+   * Get a specific session by ID.
+   */
+  async getSession(sessionId: string): Promise<{ data: SessionResponse }> {
+    return this.request<{ data: SessionResponse }>(
+      "GET",
+      `/api/v1/sessions/by-id/${encodeURIComponent(sessionId)}`
+    );
+  }
+
+  /**
+   * Log work done during a session.
+   */
+  async logSessionWork(epicId: string, input: LogSessionWorkInput): Promise<{ data: SessionResponse } | null> {
+    try {
+      return await this.request<{ data: SessionResponse }>(
+        "POST",
+        `/api/v1/sessions/${encodeURIComponent(epicId)}/log-work`,
+        input
+      );
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Abandon a session without providing handoff data.
+   */
+  async abandonSession(sessionId: string): Promise<{ data: SessionResponse }> {
+    return this.request<{ data: SessionResponse }>(
+      "POST",
+      `/api/v1/sessions/by-id/${encodeURIComponent(sessionId)}/abandon`
     );
   }
 }

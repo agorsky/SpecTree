@@ -10,7 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createResponse } from "./utils.js";
 
 // Available topics for the schema
-const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal", "templates"] as const;
+const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal", "templates", "sessions"] as const;
 type TopicKey = Exclude<typeof topicValues[number], "all">;
 
 // Topic-specific help content
@@ -171,7 +171,105 @@ spectree__create_feature({
 2. **Use progress tools** - \`start_work\`, \`complete_work\` instead of manual status updates
 3. **Set complexity estimates** - Helps with planning
 4. **Log progress on long tasks** - Helps future sessions understand state
-5. **Use tasks for sub-work** - Break features into smaller pieces`,
+5. **Use tasks for sub-work** - Break features into smaller pieces
+6. **Use session handoff** - Start/end sessions to preserve context for successor AI sessions`,
+
+  sessions: `# Session Handoff System
+
+The Session Handoff System enables AI sessions to preserve context for successor sessions at the epic level. This solves the problem of context loss between AI conversations.
+
+## Why Use Sessions?
+
+When an AI session ends, valuable context is typically lost:
+- What was accomplished
+- What was tried but didn't work
+- What should be done next
+- Decisions made and their rationale
+
+Session Handoff preserves this information for the next session.
+
+## Tools
+
+| Tool | Purpose |
+|------|---------|
+| \`spectree__start_session\` | Start session, get previous handoff |
+| \`spectree__end_session\` | End session with handoff data |
+| \`spectree__get_last_session\` | Read previous session without starting new |
+| \`spectree__get_session_history\` | View all sessions for an epic |
+| \`spectree__get_active_session\` | Check if session is active |
+| \`spectree__log_session_work\` | Manually log work (usually automatic) |
+
+## Recommended Workflow
+
+### At Session Start
+
+\`\`\`
+// Always start a session when beginning work on an epic
+const result = spectree__start_session({ 
+  epicId: "Epic Name or UUID" 
+})
+
+// Review previous session context
+if (result.previousSession) {
+  // Read: summary, nextSteps, blockers, decisions
+  console.log(result.previousSession.summary)
+  console.log(result.previousSession.nextSteps)
+}
+
+// Check epic progress
+console.log(result.epicProgress)  // totalFeatures, completedFeatures, etc.
+\`\`\`
+
+### During Work
+
+Work is **automatically tracked** when you use progress tools:
+- \`spectree__start_work\` → logs "started" action to session
+- \`spectree__complete_work\` → logs "completed" action to session
+
+No manual logging needed for normal work!
+
+### At Session End
+
+\`\`\`
+// Always end your session with handoff data
+spectree__end_session({
+  epicId: "Epic Name",
+  summary: "Completed login feature, started on profile page",
+  nextSteps: [
+    "Finish profile page header",
+    "Add error handling for API calls"
+  ],
+  blockers: [
+    "API endpoint for profile update not deployed"
+  ],
+  decisions: [
+    {
+      decision: "Use React Query for data fetching",
+      rationale: "Better caching and automatic refetch"
+    }
+  ]
+})
+\`\`\`
+
+## Handoff Data Guidelines
+
+**Summary:** Be specific about what was done, mention code changes, note current state.
+
+**Next Steps:** Be actionable, prioritize important items, include dependencies.
+
+**Blockers:** Document what's preventing progress and what's needed to unblock.
+
+**Decisions:** Record significant choices with rationale for future context.
+
+## Best Practice
+
+**Always start and end sessions** when working on SpecTree epics:
+1. Call \`spectree__start_session\` at the start of your work
+2. Review the previous session's handoff data
+3. Do your work (automatically tracked)
+4. Call \`spectree__end_session\` before finishing with good handoff data
+
+This ensures every AI session benefits from the work of previous sessions.`,
 
   progress: `# Progress Tracking Tools
 
@@ -339,6 +437,10 @@ ${helpTopics.overview}
 
 ---
 
+${helpTopics.sessions}
+
+---
+
 ${helpTopics.execution}
 
 ---
@@ -367,6 +469,8 @@ ${helpTopics.personal}
 
 | Action | Tool |
 |--------|------|
+| **Start session** | \`spectree__start_session\` |
+| **End session** | \`spectree__end_session\` |
 | List all epics | \`spectree__list_epics\` |
 | Get execution plan | \`spectree__get_execution_plan\` |
 | Search work items | \`spectree__search\` |
@@ -391,19 +495,20 @@ export function registerHelpTools(server: McpServer): void {
       description:
         "Get instructions and guidance for using SpecTree effectively. " +
         "Call this tool at the start of a session to understand available capabilities, " +
-        "best practices, and recommended workflows. Topics include: overview, execution " +
-        "(planning & dependencies), progress (tracking tools), search (filtering), " +
-        "workflow (recommended patterns), personal (private workspace), and templates " +
-        "(implementation plan templates).",
+        "best practices, and recommended workflows. Topics include: overview, sessions " +
+        "(handoff between AI sessions), execution (planning & dependencies), progress " +
+        "(tracking tools), search (filtering), workflow (recommended patterns), personal " +
+        "(private workspace), and templates (implementation plan templates).",
       inputSchema: {
         topic: z
           .enum(topicValues)
           .default("all")
           .describe(
             "Which topic to get help on. Use 'all' for complete instructions, or choose " +
-            "a specific topic: 'overview' (concepts), 'execution' (planning & dependencies), " +
-            "'progress' (tracking tools), 'search' (filtering), 'workflow' (recommended patterns), " +
-            "'personal' (private workspace), 'templates' (implementation plan templates)."
+            "a specific topic: 'overview' (concepts), 'sessions' (AI session handoff), " +
+            "'execution' (planning & dependencies), 'progress' (tracking tools), 'search' " +
+            "(filtering), 'workflow' (recommended patterns), 'personal' (private workspace), " +
+            "'templates' (implementation plan templates)."
           ),
       },
     },
