@@ -62,6 +62,20 @@ SpecTree provides dedicated AI context fields on Features and Tasks for cross-se
 
 See `docs/MCP/ai-session-context.md` for full documentation.
 
+## Implementation Plan Templates
+
+SpecTree supports reusable templates for creating standardized epic/feature/task structures. Templates use `{{variable}}` placeholders for customization.
+
+**Key MCP tools:**
+- `spectree__list_templates` - List available templates
+- `spectree__preview_template` - Preview what will be created
+- `spectree__create_from_template` - Create full hierarchy from template
+- `spectree__save_as_template` - Save existing epic as template
+
+**Built-in templates:** Code Feature, Bug Fix, Refactoring, API Endpoint
+
+See `docs/MCP/templates.md` for full documentation.
+
 ## Before Making Changes
 
 1. **Database changes**: Read `docs/database-safety-guide.md`

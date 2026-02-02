@@ -63,6 +63,7 @@ model User {
   apiTokens        ApiToken[]
   personalScope    PersonalScope?
   invitationsCreated UserInvitation[] @relation("InvitationCreator")
+  createdTemplates PlanTemplate[]
 
   @@index([email])
   @@map("users")
@@ -264,4 +265,21 @@ model PersonalScope {
   epics    Epic[]
 
   @@map("personal_scopes")
+}
+
+model PlanTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isBuiltIn   Boolean  @default(false) @map("is_built_in")
+  structure   String   // JSON: Template definition (TemplateStructure)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdById String?  @map("created_by_id")
+
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([name])
+  @@index([isBuiltIn])
+  @@map("plan_templates")
 }

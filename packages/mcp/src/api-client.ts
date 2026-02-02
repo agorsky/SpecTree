@@ -349,6 +349,126 @@ export interface SearchResponse {
 }
 
 // -----------------------------------------------------------------------------
+// Template Types
+// -----------------------------------------------------------------------------
+
+/** Task template within a feature */
+export interface TemplateTask {
+  titleTemplate: string;
+  descriptionPrompt?: string;
+  executionOrder: number;
+}
+
+/** Feature template within an epic */
+export interface TemplateFeature {
+  titleTemplate: string;
+  descriptionPrompt?: string;
+  executionOrder: number;
+  canParallelize?: boolean;
+  tasks?: TemplateTask[];
+}
+
+/** Epic defaults for a template */
+export interface TemplateEpicDefaults {
+  icon?: string;
+  color?: string;
+  descriptionPrompt?: string;
+}
+
+/** Complete template structure */
+export interface TemplateStructure {
+  epicDefaults?: TemplateEpicDefaults;
+  features: TemplateFeature[];
+}
+
+/** Summary of a template for listing */
+export interface TemplateSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  isBuiltIn: boolean;
+  featureCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Full template with parsed structure */
+export interface Template {
+  id: string;
+  name: string;
+  description: string | null;
+  isBuiltIn: boolean;
+  structure: TemplateStructure;
+  availableVariables: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Preview result from applying variables to a template */
+export interface TemplatePreviewResult {
+  epicName: string;
+  epicDescription?: string;
+  epicIcon?: string;
+  epicColor?: string;
+  features: Array<{
+    title: string;
+    description?: string;
+    executionOrder: number;
+    canParallelize: boolean;
+    tasks: Array<{
+      title: string;
+      description?: string;
+      executionOrder: number;
+    }>;
+  }>;
+}
+
+/** Result from creating epic/features/tasks from a template */
+export interface CreateFromTemplateResult {
+  epic: {
+    id: string;
+    name: string;
+    description: string | null;
+    icon: string | null;
+    color: string | null;
+  };
+  features: Array<{
+    id: string;
+    identifier: string;
+    title: string;
+    description: string | null;
+    executionOrder: number | null;
+    canParallelize: boolean;
+    tasks: Array<{
+      id: string;
+      identifier: string;
+      title: string;
+      description: string | null;
+      executionOrder: number | null;
+    }>;
+  }>;
+}
+
+export interface ListTemplatesResponse {
+  data: TemplateSummary[];
+}
+
+export interface CreateFromTemplateInput {
+  epicName: string;
+  teamId: string;
+  variables?: Record<string, string>;
+  epicDescription?: string;
+  epicIcon?: string;
+  epicColor?: string;
+}
+
+export interface SaveAsTemplateInput {
+  epicId: string;
+  templateName: string;
+  description?: string;
+}
+
+// -----------------------------------------------------------------------------
 // Execution Plan Types
 // -----------------------------------------------------------------------------
 
@@ -1401,5 +1521,66 @@ export class ApiClient {
     }
 
     return phases;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Template Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List all available templates
+   */
+  async listTemplates(): Promise<ListTemplatesResponse> {
+    return this.request<ListTemplatesResponse>("GET", "/api/v1/templates");
+  }
+
+  /**
+   * Get a template by ID or name
+   */
+  async getTemplate(idOrName: string): Promise<{ data: Template }> {
+    return this.request<{ data: Template }>(
+      "GET",
+      `/api/v1/templates/${encodeURIComponent(idOrName)}`
+    );
+  }
+
+  /**
+   * Preview what will be created from a template with variable substitution
+   */
+  async previewTemplate(
+    idOrName: string,
+    epicName: string,
+    variables?: Record<string, string>
+  ): Promise<{ data: TemplatePreviewResult }> {
+    return this.request<{ data: TemplatePreviewResult }>(
+      "POST",
+      `/api/v1/templates/${encodeURIComponent(idOrName)}/preview`,
+      { epicName, variables }
+    );
+  }
+
+  /**
+   * Create full epic/feature/task structure from a template
+   */
+  async createFromTemplate(
+    idOrName: string,
+    input: CreateFromTemplateInput
+  ): Promise<{ data: CreateFromTemplateResult }> {
+    return this.request<{ data: CreateFromTemplateResult }>(
+      "POST",
+      `/api/v1/templates/${encodeURIComponent(idOrName)}/create`,
+      input
+    );
+  }
+
+  /**
+   * Save an existing epic as a new template
+   */
+  async saveAsTemplate(input: SaveAsTemplateInput): Promise<{ data: Template }> {
+    return this.request<{ data: Template }>(
+      "POST",
+      "/api/v1/templates/save-from-epic",
+      input
+    );
   }
 }

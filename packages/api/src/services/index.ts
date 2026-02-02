@@ -13,6 +13,7 @@ export * as personalScopeService from "./personalScopeService.js";
 export * as invitationService from "./invitationService.js";
 export * as aiContextService from "./aiContextService.js";
 export * as progressService from "./progressService.js";
+export * as templateService from "./templateService.js";
 
 // Re-export the database client
 export { prisma } from "../lib/db.js";

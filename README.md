@@ -25,6 +25,7 @@ SpecTree is a Linear-inspired project management tool with support for:
 - **Personal scopes** — Private workspace for personal projects and tasks not shared with any team
 - **Hierarchical work items** — Projects contain features, which contain tasks
 - **Customizable workflows** — Each team (and personal scope) has its own workflow statuses
+- **Implementation plan templates** — Reusable templates for creating standardized work structures
 - **AI integration** — Full MCP server support for AI assistants like Claude
 
 ### Identity & Collaboration Model
@@ -526,6 +527,12 @@ pnpm --filter @spectree/mcp start
 | `spectree__get_ai_context` | Get AI context for cross-session continuity |
 | `spectree__set_ai_context` | Set structured context for successor sessions |
 | `spectree__append_ai_note` | Append observation/decision/blocker notes |
+| **Templates** | |
+| `spectree__list_templates` | List available implementation plan templates |
+| `spectree__get_template` | Get template details and variables |
+| `spectree__preview_template` | Preview what will be created from template |
+| `spectree__create_from_template` | Create epic/features/tasks from template |
+| `spectree__save_as_template` | Save existing epic structure as template |
 | **Help** | |
 | `spectree__get_instructions` | Get usage instructions and best practices |
 
@@ -745,6 +752,7 @@ Additional documentation is available in the `docs/` directory:
 | [MCP Tools Reference](./docs/MCP/tools-reference.md) | Complete reference for all MCP tools |
 | [MCP AI Session Context](./docs/MCP/ai-session-context.md) | Cross-session context transfer for AI agents |
 | [MCP Execution Metadata](./docs/MCP/execution-metadata.md) | Execution planning and dependencies for AI agents |
+| [MCP Templates Guide](./docs/MCP/templates.md) | Implementation plan templates for AI agents |
 | [MCP Documentation](./docs/MCP/) | MCP server setup, authentication, and security |
 | [Azure Deployment Guide](./docs/azure-deployment-guide.md) | Production deployment to Azure |
 | [Design References](./docs/DESIGN-REFERENCES/) | Architectural decisions and Linear API patterns |

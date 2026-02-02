@@ -17,6 +17,255 @@ const ADMIN_EMAIL = "admin@spectree.dev";
 const ADMIN_NAME = "Admin";
 const DEFAULT_PASSWORD = "Password123!";
 
+// =============================================================================
+// Built-in Plan Templates
+// =============================================================================
+
+const BUILT_IN_TEMPLATES = [
+  {
+    name: "Code Feature",
+    description: "Standard software feature implementation workflow: Research → Design → Implementation → Testing → Documentation",
+    structure: JSON.stringify({
+      epicDefaults: {
+        icon: "🚀",
+        color: "#3b82f6",
+        descriptionPrompt: "Implementation of {{topic}}",
+      },
+      features: [
+        {
+          titleTemplate: "Research: {{topic}}",
+          descriptionPrompt: "Research existing solutions, patterns, and best practices for {{topic}}",
+          executionOrder: 1,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Review existing codebase for similar patterns", executionOrder: 1 },
+            { titleTemplate: "Research industry best practices", executionOrder: 2 },
+            { titleTemplate: "Document findings and recommendations", executionOrder: 3 },
+          ],
+        },
+        {
+          titleTemplate: "Design: {{topic}}",
+          descriptionPrompt: "Design the architecture and approach for {{topic}}",
+          executionOrder: 2,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Create technical design document", executionOrder: 1 },
+            { titleTemplate: "Define interfaces and data models", executionOrder: 2 },
+            { titleTemplate: "Review design with team", executionOrder: 3 },
+          ],
+        },
+        {
+          titleTemplate: "Implement: {{topic}}",
+          descriptionPrompt: "Build the core functionality for {{topic}}",
+          executionOrder: 3,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Set up project structure", executionOrder: 1 },
+            { titleTemplate: "Implement core logic", executionOrder: 2 },
+            { titleTemplate: "Add error handling", executionOrder: 3 },
+            { titleTemplate: "Code review and refactoring", executionOrder: 4 },
+          ],
+        },
+        {
+          titleTemplate: "Test: {{topic}}",
+          descriptionPrompt: "Comprehensive testing for {{topic}}",
+          executionOrder: 4,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Write unit tests", executionOrder: 1 },
+            { titleTemplate: "Write integration tests", executionOrder: 2 },
+            { titleTemplate: "Manual testing and edge cases", executionOrder: 3 },
+          ],
+        },
+        {
+          titleTemplate: "Document: {{topic}}",
+          descriptionPrompt: "Documentation for {{topic}}",
+          executionOrder: 5,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Update API documentation", executionOrder: 1 },
+            { titleTemplate: "Add code comments", executionOrder: 2 },
+            { titleTemplate: "Update README if needed", executionOrder: 3 },
+          ],
+        },
+      ],
+    }),
+  },
+  {
+    name: "Bug Fix",
+    description: "Bug investigation and fix workflow: Reproduce → Investigate → Fix → Verify",
+    structure: JSON.stringify({
+      epicDefaults: {
+        icon: "🐛",
+        color: "#ef4444",
+        descriptionPrompt: "Fix bug: {{topic}}",
+      },
+      features: [
+        {
+          titleTemplate: "Reproduce: {{topic}}",
+          descriptionPrompt: "Reliably reproduce the bug to understand the issue",
+          executionOrder: 1,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Create minimal reproduction case", executionOrder: 1 },
+            { titleTemplate: "Document reproduction steps", executionOrder: 2 },
+            { titleTemplate: "Identify affected versions/environments", executionOrder: 3 },
+          ],
+        },
+        {
+          titleTemplate: "Investigate: {{topic}}",
+          descriptionPrompt: "Root cause analysis for the bug",
+          executionOrder: 2,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Analyze logs and error messages", executionOrder: 1 },
+            { titleTemplate: "Debug and trace execution", executionOrder: 2 },
+            { titleTemplate: "Identify root cause", executionOrder: 3 },
+          ],
+        },
+        {
+          titleTemplate: "Fix: {{topic}}",
+          descriptionPrompt: "Implement the fix and ensure quality",
+          executionOrder: 3,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Implement fix", executionOrder: 1 },
+            { titleTemplate: "Add regression test", executionOrder: 2 },
+            { titleTemplate: "Code review", executionOrder: 3 },
+          ],
+        },
+        {
+          titleTemplate: "Verify: {{topic}}",
+          descriptionPrompt: "Verify the fix works and doesn't introduce regressions",
+          executionOrder: 4,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Verify fix resolves original issue", executionOrder: 1 },
+            { titleTemplate: "Run full test suite", executionOrder: 2 },
+            { titleTemplate: "Test related functionality", executionOrder: 3 },
+          ],
+        },
+      ],
+    }),
+  },
+  {
+    name: "Refactoring",
+    description: "Code refactoring project: Analyze → Plan → Execute → Validate",
+    structure: JSON.stringify({
+      epicDefaults: {
+        icon: "🔧",
+        color: "#8b5cf6",
+        descriptionPrompt: "Refactoring: {{topic}}",
+      },
+      features: [
+        {
+          titleTemplate: "Analyze: {{topic}}",
+          descriptionPrompt: "Analyze current code structure and identify improvements",
+          executionOrder: 1,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Map current code structure", executionOrder: 1 },
+            { titleTemplate: "Identify code smells and issues", executionOrder: 2 },
+            { titleTemplate: "Document technical debt", executionOrder: 3 },
+          ],
+        },
+        {
+          titleTemplate: "Plan: {{topic}}",
+          descriptionPrompt: "Plan the refactoring approach",
+          executionOrder: 2,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Define target architecture", executionOrder: 1 },
+            { titleTemplate: "Create migration strategy", executionOrder: 2 },
+            { titleTemplate: "Identify risks and mitigation", executionOrder: 3 },
+          ],
+        },
+        {
+          titleTemplate: "Execute: {{topic}}",
+          descriptionPrompt: "Execute the refactoring in safe increments",
+          executionOrder: 3,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Ensure test coverage before changes", executionOrder: 1 },
+            { titleTemplate: "Apply refactoring in small commits", executionOrder: 2 },
+            { titleTemplate: "Run tests after each change", executionOrder: 3 },
+            { titleTemplate: "Code review", executionOrder: 4 },
+          ],
+        },
+        {
+          titleTemplate: "Validate: {{topic}}",
+          descriptionPrompt: "Validate refactoring success",
+          executionOrder: 4,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Run full test suite", executionOrder: 1 },
+            { titleTemplate: "Performance testing", executionOrder: 2 },
+            { titleTemplate: "Document improvements", executionOrder: 3 },
+          ],
+        },
+      ],
+    }),
+  },
+  {
+    name: "API Endpoint",
+    description: "New API endpoint development: Design → Implement → Test → Document",
+    structure: JSON.stringify({
+      epicDefaults: {
+        icon: "🔌",
+        color: "#10b981",
+        descriptionPrompt: "API Endpoint: {{topic}}",
+      },
+      features: [
+        {
+          titleTemplate: "Design API: {{topic}}",
+          descriptionPrompt: "Design the API contract and data models",
+          executionOrder: 1,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Define request/response schemas", executionOrder: 1 },
+            { titleTemplate: "Design error responses", executionOrder: 2 },
+            { titleTemplate: "Review with API consumers", executionOrder: 3 },
+          ],
+        },
+        {
+          titleTemplate: "Implement Route: {{topic}}",
+          descriptionPrompt: "Implement the API route and business logic",
+          executionOrder: 2,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Create route handler", executionOrder: 1 },
+            { titleTemplate: "Implement validation", executionOrder: 2 },
+            { titleTemplate: "Implement business logic", executionOrder: 3 },
+            { titleTemplate: "Add authentication/authorization", executionOrder: 4 },
+          ],
+        },
+        {
+          titleTemplate: "Test API: {{topic}}",
+          descriptionPrompt: "Comprehensive API testing",
+          executionOrder: 3,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Write integration tests", executionOrder: 1 },
+            { titleTemplate: "Test error scenarios", executionOrder: 2 },
+            { titleTemplate: "Test edge cases and limits", executionOrder: 3 },
+          ],
+        },
+        {
+          titleTemplate: "Document API: {{topic}}",
+          descriptionPrompt: "API documentation",
+          executionOrder: 4,
+          canParallelize: false,
+          tasks: [
+            { titleTemplate: "Add OpenAPI/Swagger documentation", executionOrder: 1 },
+            { titleTemplate: "Create usage examples", executionOrder: 2 },
+            { titleTemplate: "Update API changelog", executionOrder: 3 },
+          ],
+        },
+      ],
+    }),
+  },
+];
+
 async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
 }
@@ -157,6 +406,27 @@ async function main() {
     });
   }
   console.log(`✓ Default statuses created for ${engineeringTeam.name}`);
+
+  // =============================================================================
+  // Built-in Plan Templates (COM-4)
+  // Templates for common development workflows
+  // =============================================================================
+  for (const templateDef of BUILT_IN_TEMPLATES) {
+    await prisma.planTemplate.upsert({
+      where: { name: templateDef.name },
+      update: {
+        description: templateDef.description,
+        structure: templateDef.structure,
+      },
+      create: {
+        name: templateDef.name,
+        description: templateDef.description,
+        structure: templateDef.structure,
+        isBuiltIn: true,
+      },
+    });
+  }
+  console.log(`✓ Built-in templates created: ${BUILT_IN_TEMPLATES.map(t => t.name).join(", ")}`);
 
   // =============================================================================
   // Sample Personal Projects (COM-313)

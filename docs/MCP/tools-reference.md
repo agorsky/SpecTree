@@ -34,6 +34,7 @@ This returns comprehensive guidance on:
 | [Execution](#execution-planning) | 4 | Execution planning and dependencies |
 | [AI Context](#ai-context) | 3 | Cross-session context transfer |
 | [Personal](#personal-scope) | 4 | Personal workspace |
+| [Templates](#templates) | 5 | Implementation plan templates |
 | [Ordering](#ordering) | 3 | Reorder items |
 
 ---
@@ -528,6 +529,115 @@ Create an epic in the personal scope.
 List workflow statuses in the personal scope.
 
 *No parameters required.*
+
+---
+
+## Templates
+
+Implementation plan templates enable creating standardized epic/feature/task structures from reusable definitions. Templates use `{{variable}}` placeholders that are substituted when creating work items.
+
+### spectree__list_templates
+
+List available templates with optional filtering by built-in status.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `builtInOnly` | boolean | No | Filter to only built-in templates |
+
+**Example:**
+```json
+{ "builtInOnly": true }
+```
+
+### spectree__get_template
+
+Get detailed information about a specific template including its structure and variables.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | Yes | Template name or ID |
+
+**Returns:** Template structure, required variables, and preview of what will be created.
+
+### spectree__preview_template
+
+Preview what will be created from a template without actually creating anything.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `templateName` | string | Yes | Template name to preview |
+| `epicName` | string | Yes | Name for the resulting epic |
+| `variables` | object | No | Variable substitutions |
+
+**Example:**
+```json
+{
+  "templateName": "Code Feature",
+  "epicName": "User Authentication",
+  "variables": {
+    "featureName": "OAuth Login",
+    "moduleName": "auth"
+  }
+}
+```
+
+### spectree__create_from_template
+
+Create a full epic/feature/task structure from a template.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `templateName` | string | Yes | Template name to use |
+| `epicName` | string | Yes | Name for the resulting epic |
+| `team` | string | Yes | Team name, key, or ID |
+| `variables` | object | No | Variable substitutions |
+
+**Example:**
+```json
+{
+  "templateName": "Code Feature",
+  "epicName": "User Authentication",
+  "team": "Backend",
+  "variables": {
+    "featureName": "OAuth Login",
+    "moduleName": "auth"
+  }
+}
+```
+
+**Returns:** Created epic, features, and tasks with identifiers.
+
+### spectree__save_as_template
+
+Save an existing epic's structure as a new template for reuse.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `epicId` | string | Yes | Epic ID (UUID) to save as template |
+| `templateName` | string | Yes | Name for the new template |
+| `description` | string | No | Template description |
+
+**Example:**
+```json
+{
+  "epicId": "550e8400-e29b-41d4-a716-446655440000",
+  "templateName": "My Custom Workflow",
+  "description": "Standard workflow for API endpoints"
+}
+```
+
+### Built-in Templates
+
+The system includes these built-in templates:
+
+| Template | Description | Features |
+|----------|-------------|----------|
+| **Code Feature** | Standard feature implementation | Design, Implement, Test, Document |
+| **Bug Fix** | Bug investigation and fix workflow | Investigate, Reproduce, Fix, Verify |
+| **Refactoring** | Code refactoring workflow | Analysis, Implementation, Testing |
+| **API Endpoint** | New API endpoint development | Design, Implementation, Testing, Documentation |
+
+Built-in templates cannot be modified or deleted.
 
 ---
 

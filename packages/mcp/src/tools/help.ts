@@ -9,8 +9,12 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createResponse } from "./utils.js";
 
+// Available topics for the schema
+const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal", "templates"] as const;
+type TopicKey = Exclude<typeof topicValues[number], "all">;
+
 // Topic-specific help content
-const helpTopics: Record<string, string> = {
+const helpTopics: Record<TopicKey, string> = {
   overview: `# SpecTree Overview
 
 SpecTree is a project management tool similar to Linear. It organizes work into:
@@ -251,6 +255,81 @@ spectree__create_personal_project({
 // List personal projects
 spectree__list_personal_projects()
 \`\`\``,
+
+  templates: `# Implementation Plan Templates
+
+Templates provide reusable structures for creating standardized epic/feature/task hierarchies. Use templates to quickly scaffold common workflows.
+
+## Built-in Templates
+
+| Template | Use Case | Variables |
+|----------|----------|-----------|
+| **Code Feature** | Standard feature development | \`{{featureName}}\` |
+| **Bug Fix** | Bug investigation and resolution | \`{{bugTitle}}\`, \`{{component}}\` |
+| **Refactoring** | Code refactoring workflow | \`{{refactoringTarget}}\` |
+| **API Endpoint** | New API endpoint development | \`{{endpointName}}\`, \`{{resource}}\` |
+
+## Tools
+
+| Tool | Purpose |
+|------|---------|
+| \`spectree__list_templates\` | List all available templates |
+| \`spectree__get_template\` | Get template details and required variables |
+| \`spectree__preview_template\` | Preview what will be created (without creating) |
+| \`spectree__create_from_template\` | Create full epic/features/tasks from template |
+| \`spectree__save_as_template\` | Save existing epic structure as reusable template |
+
+## Variable Substitution
+
+Templates use \`{{variableName}}\` placeholders:
+
+\`\`\`
+Template title: "Implement {{featureName}} for {{moduleName}}"
+Variables: { featureName: "OAuth", moduleName: "auth" }
+Result: "Implement OAuth for auth"
+\`\`\`
+
+## Recommended Workflow
+
+### Using an Existing Template
+
+\`\`\`
+// 1. List available templates
+spectree__list_templates()
+
+// 2. Preview what will be created
+spectree__preview_template({
+  templateName: "Code Feature",
+  epicName: "User Authentication",
+  variables: { featureName: "OAuth Login" }
+})
+
+// 3. Create the work items
+spectree__create_from_template({
+  templateName: "Code Feature",
+  epicName: "User Authentication",
+  team: "Backend",
+  variables: { featureName: "OAuth Login" }
+})
+\`\`\`
+
+### Saving a Successful Pattern
+
+\`\`\`
+// Save an epic's structure as a template for future use
+spectree__save_as_template({
+  epicId: "epic-uuid",
+  templateName: "My Team's Workflow",
+  description: "Standard workflow we use for API features"
+})
+\`\`\`
+
+## Best Practices
+
+1. **Preview first**: Always preview before creating to verify variable substitution
+2. **Provide all variables**: Missing variables appear as \`{{variableName}}\` in output
+3. **Save successful patterns**: When a workflow works well, save it as a template
+4. **Use for consistency**: Templates ensure teams follow standard processes`,
 };
 
 // Full instructions combining all topics
@@ -265,6 +344,10 @@ ${helpTopics.execution}
 ---
 
 ${helpTopics.progress}
+
+---
+
+${helpTopics.templates}
 
 ---
 
@@ -297,10 +380,9 @@ ${helpTopics.personal}
 | **Report blocker** | \`spectree__report_blocker\` |
 | Set execution metadata | \`spectree__set_execution_metadata\` |
 | Mark blocked | \`spectree__mark_blocked\` |
+| **List templates** | \`spectree__list_templates\` |
+| **Create from template** | \`spectree__create_from_template\` |
 `;
-
-// Available topics for the schema
-const topicValues = ["all", "overview", "execution", "progress", "search", "workflow", "personal"] as const;
 
 export function registerHelpTools(server: McpServer): void {
   server.registerTool(
@@ -311,7 +393,8 @@ export function registerHelpTools(server: McpServer): void {
         "Call this tool at the start of a session to understand available capabilities, " +
         "best practices, and recommended workflows. Topics include: overview, execution " +
         "(planning & dependencies), progress (tracking tools), search (filtering), " +
-        "workflow (recommended patterns), and personal (private workspace).",
+        "workflow (recommended patterns), personal (private workspace), and templates " +
+        "(implementation plan templates).",
       inputSchema: {
         topic: z
           .enum(topicValues)
@@ -320,25 +403,18 @@ export function registerHelpTools(server: McpServer): void {
             "Which topic to get help on. Use 'all' for complete instructions, or choose " +
             "a specific topic: 'overview' (concepts), 'execution' (planning & dependencies), " +
             "'progress' (tracking tools), 'search' (filtering), 'workflow' (recommended patterns), " +
-            "'personal' (private workspace)."
+            "'personal' (private workspace), 'templates' (implementation plan templates)."
           ),
       },
     },
-    async (input) => {
-      const topic = input.topic || "all";
+    (input) => {
+      const topic = input.topic;
 
       if (topic === "all") {
         return createResponse({ instructions: fullInstructions });
       }
 
       const content = helpTopics[topic];
-      if (!content) {
-        return createResponse({
-          error: `Unknown topic: ${topic}`,
-          availableTopics: Object.keys(helpTopics),
-        });
-      }
-
       return createResponse({ topic, instructions: content });
     }
   );
