@@ -126,13 +126,51 @@ export function registerExecutionTools(server: McpServer): void {
           estimatedComplexity: input.estimatedComplexity,
         };
 
+        let result;
         if (input.type === "feature") {
           const { data: feature } = await apiClient.updateFeature(input.id, updateData);
-          return createResponse(feature);
+          result = feature;
         } else {
           const { data: task } = await apiClient.updateTask(input.id, updateData);
-          return createResponse(task);
+          result = task;
         }
+
+        // Validate that the response matches what we sent
+        const validationErrors: string[] = [];
+        if (input.executionOrder !== undefined && result.executionOrder !== input.executionOrder) {
+          validationErrors.push(`executionOrder: expected ${input.executionOrder}, got ${result.executionOrder}`);
+        }
+        if (input.canParallelize !== undefined && result.canParallelize !== input.canParallelize) {
+          validationErrors.push(`canParallelize: expected ${input.canParallelize}, got ${result.canParallelize}`);
+        }
+        if (input.parallelGroup !== undefined && result.parallelGroup !== input.parallelGroup) {
+          validationErrors.push(`parallelGroup: expected ${input.parallelGroup}, got ${result.parallelGroup}`);
+        }
+        if (input.estimatedComplexity !== undefined && result.estimatedComplexity !== input.estimatedComplexity) {
+          validationErrors.push(`estimatedComplexity: expected ${input.estimatedComplexity}, got ${result.estimatedComplexity}`);
+        }
+        // For dependencies, compare arrays
+        if (input.dependencies !== undefined) {
+          const expectedDeps = new Set(input.dependencies);
+          // Handle dependencies which may be stored as JSON string or array
+          const resultDeps = typeof result.dependencies === 'string' 
+            ? JSON.parse(result.dependencies) 
+            : (result.dependencies || []);
+          const actualDeps = new Set(resultDeps as string[]);
+          if (expectedDeps.size !== actualDeps.size || 
+              ![...expectedDeps].every(d => actualDeps.has(d))) {
+            validationErrors.push(`dependencies: expected [${input.dependencies.join(', ')}], got [${resultDeps.join(', ')}]`);
+          }
+        }
+
+        if (validationErrors.length > 0) {
+          return createErrorResponse(new Error(
+            `Execution metadata was not persisted correctly. Validation errors:\n${validationErrors.join('\n')}\n\n` +
+            `This may indicate a bug in the API. The response was:\n${JSON.stringify(result, null, 2)}`
+          ));
+        }
+
+        return createResponse(result);
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           return createErrorResponse(new Error(`${input.type} '${input.id}' not found`));

@@ -6,6 +6,7 @@ import type {
   TemplateFeature,
   TemplateTask,
   CreateFromTemplateInput,
+  StructuredDescTemplate,
 } from "../schemas/template.js";
 import { templateStructureSchema } from "../schemas/template.js";
 
@@ -46,10 +47,14 @@ export interface PreviewResult {
     description?: string;
     executionOrder: number;
     canParallelize: boolean;
+    estimatedComplexity?: "trivial" | "simple" | "moderate" | "complex";
+    structuredDesc?: StructuredDescTemplate;
     tasks: {
       title: string;
       description?: string;
       executionOrder: number;
+      estimatedComplexity?: "trivial" | "simple" | "moderate" | "complex";
+      structuredDesc?: StructuredDescTemplate;
     }[];
   }[];
 }
@@ -69,12 +74,16 @@ export interface CreateFromTemplateResult {
     description: string | null;
     executionOrder: number | null;
     canParallelize: boolean;
+    estimatedComplexity: string | null;
+    structuredDesc: string | null;
     tasks: {
       id: string;
       identifier: string;
       title: string;
       description: string | null;
       executionOrder: number | null;
+      estimatedComplexity: string | null;
+      structuredDesc: string | null;
     }[];
   }[];
 }
@@ -96,6 +105,37 @@ export function substituteVariables(
   return template.replace(/\{\{(\w+)\}\}/g, (match, varName: string) => {
     return variables[varName] ?? match;
   });
+}
+
+/**
+ * Substitute {{variable}} placeholders in a nested object/array structure.
+ * Recursively processes strings, arrays of strings, and nested objects.
+ * @param obj - Object containing {{variable}} placeholders in string values
+ * @param variables - Key-value pairs for substitution
+ * @returns New object with placeholders replaced by values
+ */
+export function substituteVariablesInObject<T extends Record<string, unknown>>(
+  obj: T,
+  variables: Record<string, string> = {}
+): T {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === "string") {
+      result[key] = substituteVariables(value, variables);
+    } else if (Array.isArray(value)) {
+      result[key] = value.map((item) =>
+        typeof item === "string" ? substituteVariables(item, variables) : item
+      );
+    } else if (value !== null && typeof value === "object") {
+      result[key] = substituteVariablesInObject(
+        value as Record<string, unknown>,
+        variables
+      );
+    } else {
+      result[key] = value;
+    }
+  }
+  return result as T;
 }
 
 /**
@@ -342,6 +382,14 @@ export async function previewTemplate(
     if (featureTemplate.descriptionPrompt) {
       feature.description = substituteVariables(featureTemplate.descriptionPrompt, variables);
     }
+    
+    if (featureTemplate.estimatedComplexity) {
+      feature.estimatedComplexity = featureTemplate.estimatedComplexity;
+    }
+    
+    if (featureTemplate.structuredDescTemplate) {
+      feature.structuredDesc = substituteVariablesInObject(featureTemplate.structuredDescTemplate, variables);
+    }
 
     // Process tasks
     if (featureTemplate.tasks) {
@@ -353,6 +401,14 @@ export async function previewTemplate(
         
         if (taskTemplate.descriptionPrompt) {
           task.description = substituteVariables(taskTemplate.descriptionPrompt, variables);
+        }
+        
+        if (taskTemplate.estimatedComplexity) {
+          task.estimatedComplexity = taskTemplate.estimatedComplexity;
+        }
+        
+        if (taskTemplate.structuredDescTemplate) {
+          task.structuredDesc = substituteVariablesInObject(taskTemplate.structuredDescTemplate, variables);
         }
         
         feature.tasks.push(task);
@@ -437,6 +493,10 @@ export async function createFromTemplate(
         executionOrder: featureTemplate.executionOrder,
         canParallelize: featureTemplate.canParallelize,
         sortOrder: featureTemplate.executionOrder,
+        estimatedComplexity: featureTemplate.estimatedComplexity ?? null,
+        structuredDesc: featureTemplate.structuredDescTemplate
+          ? JSON.stringify(substituteVariablesInObject(featureTemplate.structuredDescTemplate, variables))
+          : null,
       };
 
       const feature = await tx.feature.create({ data: featureData });
@@ -459,6 +519,10 @@ export async function createFromTemplate(
             featureId: feature.id,
             executionOrder: taskTemplate.executionOrder,
             sortOrder: taskTemplate.executionOrder,
+            estimatedComplexity: taskTemplate.estimatedComplexity ?? null,
+            structuredDesc: taskTemplate.structuredDescTemplate
+              ? JSON.stringify(substituteVariablesInObject(taskTemplate.structuredDescTemplate, variables))
+              : null,
           };
 
           const task = await tx.task.create({ data: taskData });
@@ -468,6 +532,8 @@ export async function createFromTemplate(
             title: task.title,
             description: task.description,
             executionOrder: task.executionOrder,
+            estimatedComplexity: task.estimatedComplexity,
+            structuredDesc: task.structuredDesc,
           });
         }
       }
@@ -479,6 +545,8 @@ export async function createFromTemplate(
         description: feature.description,
         executionOrder: feature.executionOrder,
         canParallelize: feature.canParallelize,
+        estimatedComplexity: feature.estimatedComplexity,
+        structuredDesc: feature.structuredDesc,
         tasks,
       });
     }

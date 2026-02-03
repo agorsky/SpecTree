@@ -90,10 +90,10 @@ export interface PaginatedResult<T> {
  * Generate a unique identifier for a task based on parent feature identifier
  * Format: FEATURE_IDENTIFIER-NUMBER (e.g., "COM-123-1", "COM-123-2")
  * 
- * Uses MAX(identifier suffix) + 1 to avoid race conditions when multiple
+ * Uses MAX(identifier suffix) + 1 with retry to avoid race conditions when multiple
  * tasks are created concurrently for the same feature.
  */
-async function generateIdentifier(featureId: string): Promise<string> {
+async function generateIdentifier(featureId: string, maxRetries = 5): Promise<string> {
   const feature = await prisma.feature.findUnique({
     where: { id: featureId },
     select: { identifier: true },
@@ -104,11 +104,9 @@ async function generateIdentifier(featureId: string): Promise<string> {
   }
 
   // Find the highest existing task number for this feature
-  // Using MAX on identifier suffix to get the true highest number
   const existingTasks = await prisma.task.findMany({
     where: { featureId },
     select: { identifier: true },
-    orderBy: { createdAt: 'desc' },
   });
 
   let maxNumber = 0;
@@ -124,7 +122,24 @@ async function generateIdentifier(featureId: string): Promise<string> {
     }
   }
 
-  return `${feature.identifier}-${String(maxNumber + 1)}`;
+  // Try to generate a unique identifier, retrying on collision
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const identifier = `${feature.identifier}-${String(maxNumber + 1 + attempt)}`;
+
+    // Check if this identifier already exists
+    const existing = await prisma.task.findUnique({
+      where: { identifier },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return identifier;
+    }
+  }
+
+  // Fallback: use timestamp-based suffix to guarantee uniqueness
+  const timestamp = Date.now();
+  return `${feature.identifier}-${String(maxNumber + 1 + maxRetries)}-${timestamp}`;
 }
 
 /**

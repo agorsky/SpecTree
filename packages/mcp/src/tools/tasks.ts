@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getApiClient, ApiError } from "../api-client.js";
 import { createResponse, createErrorResponse } from "./utils.js";
+import { addRemindersToResponse } from "./reminders.js";
 
 // Register all task tools
 export function registerTaskTools(server: McpServer): void {
@@ -234,7 +235,17 @@ export function registerTaskTools(server: McpServer): void {
           estimatedComplexity: input.estimatedComplexity,
         });
 
-        return createResponse(task);
+        // Add contextual reminders to guide next steps
+        const responseWithReminders = addRemindersToResponse(
+          task as unknown as Record<string, unknown>,
+          "create_task",
+          {
+            id: task.id,
+            identifier: task.identifier,
+          }
+        );
+
+        return createResponse(responseWithReminders);
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           return createErrorResponse(new Error(`Feature '${input.feature_id}' not found`));

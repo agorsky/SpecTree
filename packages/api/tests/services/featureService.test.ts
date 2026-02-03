@@ -392,9 +392,16 @@ describe('featureService', () => {
         isArchived: false,
         teamId: 'team-123',
         team: { key: 'TEST' },
+        personalScopeId: null,
+        personalScope: null,
       } as any);
-      vi.mocked(prisma.feature.count).mockResolvedValue(5);
-      vi.mocked(prisma.feature.findFirst).mockResolvedValue(null);
+      // Mock findMany to return existing features (numeric MAX is TEST-5)
+      vi.mocked(prisma.feature.findMany).mockResolvedValue([
+        { identifier: 'TEST-5' },
+        { identifier: 'TEST-3' },
+      ] as any);
+      // Mock findUnique to return null (identifier not taken)
+      vi.mocked(prisma.feature.findUnique).mockResolvedValue(null);
     });
 
     it('should create feature with auto-generated identifier', async () => {
@@ -534,6 +541,66 @@ describe('featureService', () => {
         assigneeId: 'nonexistent',
       })).rejects.toThrow(NotFoundError);
     });
+
+    it('should create feature on personal epic with PERS- prefix', async () => {
+      // Mock personal epic - called twice: first in createFeature check, then in generateIdentifier
+      const personalEpicMock = {
+        id: 'personal-epic-123',
+        isArchived: false,
+        teamId: null,
+        team: null,
+        personalScopeId: 'ps-123',
+        personalScope: { id: 'ps-123' },
+      };
+      vi.mocked(prisma.epic.findUnique)
+        .mockResolvedValueOnce(personalEpicMock as any)  // createFeature check
+        .mockResolvedValueOnce(personalEpicMock as any); // generateIdentifier
+      // Mock existing personal features
+      vi.mocked(prisma.feature.findMany).mockResolvedValueOnce([
+        { identifier: 'PERS-2' },
+        { identifier: 'PERS-1' },
+      ] as any);
+
+      const mockFeature = {
+        id: 'feat-personal',
+        title: 'Personal Feature',
+        identifier: 'PERS-3',
+        sortOrder: 1.0,
+        statusId: 'backlog-status-id',
+      };
+      vi.mocked(prisma.feature.create).mockResolvedValue(mockFeature as any);
+
+      const result = await createFeature({
+        title: 'Personal Feature',
+        epicId: 'personal-epic-123',
+      });
+
+      expect(result.identifier).toBe('PERS-3');
+      expect(prisma.feature.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          title: 'Personal Feature',
+          epicId: 'personal-epic-123',
+          identifier: 'PERS-3',
+        }),
+      });
+    });
+
+    it('should throw error when epic has neither team nor personal scope', async () => {
+      vi.mocked(prisma.epic.findUnique).mockReset();
+      vi.mocked(prisma.epic.findUnique).mockResolvedValue({
+        id: 'orphan-epic',
+        isArchived: false,
+        teamId: null,
+        team: null,
+        personalScopeId: null,
+        personalScope: null,
+      } as any);
+
+      await expect(createFeature({
+        title: 'Test',
+        epicId: 'orphan-epic',
+      })).rejects.toThrow('has no associated team or personal scope');
+    });
   });
 
   describe('updateFeature', () => {
@@ -668,15 +735,21 @@ describe('featureService', () => {
   });
 
   describe('identifier generation', () => {
-    it('should generate identifier based on team key and feature count', async () => {
+    it('should generate identifier based on team key and highest existing identifier', async () => {
       vi.mocked(prisma.epic.findUnique).mockResolvedValue({
         id: 'proj-123',
         isArchived: false,
         teamId: 'team-123',
         team: { key: 'COM' },
       } as any);
-      vi.mocked(prisma.feature.count).mockResolvedValue(42);
-      vi.mocked(prisma.feature.findFirst).mockResolvedValue(null);
+      // Mock findMany to return existing features (numeric MAX is found)
+      vi.mocked(prisma.feature.findMany).mockResolvedValue([
+        { identifier: 'COM-42' },
+        { identifier: 'COM-10' },
+        { identifier: 'COM-5' },
+      ] as any);
+      // Mock findUnique to return null (identifier not taken)
+      vi.mocked(prisma.feature.findUnique).mockResolvedValue(null);
       vi.mocked(prisma.feature.create).mockResolvedValue({
         id: 'feat-123',
         identifier: 'COM-43',
@@ -694,15 +767,17 @@ describe('featureService', () => {
       });
     });
 
-    it('should count features across all epics in the team', async () => {
+    it('should find max feature number within the team', async () => {
       vi.mocked(prisma.epic.findUnique).mockResolvedValue({
         id: 'proj-123',
         isArchived: false,
         teamId: 'team-123',
         team: { key: 'DEV' },
       } as any);
-      vi.mocked(prisma.feature.count).mockResolvedValue(0);
-      vi.mocked(prisma.feature.findFirst).mockResolvedValue(null);
+      // Mock findMany to return empty array (no existing features)
+      vi.mocked(prisma.feature.findMany).mockResolvedValue([]);
+      // Mock findUnique to return null (identifier not taken)
+      vi.mocked(prisma.feature.findUnique).mockResolvedValue(null);
       vi.mocked(prisma.feature.create).mockResolvedValue({ id: 'feat-123' } as any);
 
       await createFeature({
@@ -710,10 +785,11 @@ describe('featureService', () => {
         epicId: 'proj-123',
       });
 
-      expect(prisma.feature.count).toHaveBeenCalledWith({
+      expect(prisma.feature.findMany).toHaveBeenCalledWith({
         where: {
           epic: { teamId: 'team-123' },
         },
+        select: { identifier: true },
       });
       expect(prisma.feature.create).toHaveBeenCalledWith({
         data: expect.objectContaining({

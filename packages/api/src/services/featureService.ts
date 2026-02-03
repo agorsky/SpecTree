@@ -102,30 +102,76 @@ export interface PaginatedResult<T> {
  * Generate a unique identifier for a feature based on team key
  * Format: TEAM_KEY-NUMBER (e.g., "COM-123")
  */
-async function generateIdentifier(epicId: string): Promise<string> {
+async function generateIdentifier(epicId: string, maxRetries = 5): Promise<string> {
   const epic = await prisma.epic.findUnique({
     where: { id: epicId },
-    include: { team: true },
+    include: { team: true, personalScope: true },
   });
 
   if (!epic) {
     throw new NotFoundError(`Epic with id '${epicId}' not found`);
   }
 
-  if (!epic.team) {
-    throw new Error(`Epic with id '${epicId}' has no associated team`);
+  // Determine the prefix based on team or personal scope
+  let prefix: string;
+  let scopeFilter: { epic: { teamId?: string; personalScopeId?: string } };
+
+  if (epic.team) {
+    // Team epic - use team key
+    prefix = epic.team.key;
+    scopeFilter = { epic: { teamId: epic.teamId! } };
+  } else if (epic.personalScope) {
+    // Personal epic - use PERS prefix
+    prefix = "PERS";
+    scopeFilter = { epic: { personalScopeId: epic.personalScopeId! } };
+  } else {
+    throw new Error(`Epic with id '${epicId}' has no associated team or personal scope`);
   }
 
-  const teamKey = epic.team.key;
-
-  // Count existing features in epics belonging to this team
-  const count = await prisma.feature.count({
-    where: {
-      epic: { teamId: epic.teamId },
-    },
+  // Find the highest existing identifier number for this scope
+  // Query all features and find numeric MAX (string sorting doesn't work for numbers)
+  const existingFeatures = await prisma.feature.findMany({
+    where: scopeFilter,
+    select: { identifier: true },
   });
 
-  return `${teamKey}-${String(count + 1)}`;
+  let maxNumber = 0;
+  const fullPrefix = `${prefix}-`;
+
+  for (const feature of existingFeatures) {
+    if (feature.identifier.startsWith(fullPrefix)) {
+      // Extract number after prefix, handling both "ENG-14" and "ENG-14-timestamp" formats
+      const suffix = feature.identifier.slice(fullPrefix.length);
+      const match = suffix.match(/^(\d+)/);
+      if (match && match[1]) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNumber) {
+          maxNumber = num;
+        }
+      }
+    }
+  }
+
+  const nextNumber = maxNumber + 1;
+
+  // Try to generate a unique identifier, retrying on collision
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const identifier = `${prefix}-${String(nextNumber + attempt)}`;
+
+    // Check if this identifier already exists
+    const existing = await prisma.feature.findUnique({
+      where: { identifier },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return identifier;
+    }
+  }
+
+  // Fallback: use timestamp-based suffix to guarantee uniqueness
+  const timestamp = Date.now();
+  return `${prefix}-${String(nextNumber + maxRetries)}-${timestamp}`;
 }
 
 /**

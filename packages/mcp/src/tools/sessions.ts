@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getApiClient, ApiError } from "../api-client.js";
 import { createResponse, createErrorResponse } from "./utils.js";
+import { addRemindersToResponse } from "./reminders.js";
 
 // Register all session tools
 export function registerSessionTools(server: McpServer): void {
@@ -69,7 +70,16 @@ export function registerSessionTools(server: McpServer): void {
           };
         }
 
-        return createResponse(response);
+        // Add contextual reminders for starting a session
+        const responseWithReminders = addRemindersToResponse(
+          response,
+          "start_session",
+          {
+            id: data.session.epicId,
+          }
+        );
+
+        return createResponse(responseWithReminders);
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           return createErrorResponse(new Error(`Epic '${input.epicId}' not found`));

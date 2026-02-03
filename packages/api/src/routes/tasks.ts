@@ -37,6 +37,7 @@ import {
 import { authenticate } from "../middleware/authenticate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
 import { validateBody } from "../middleware/validate.js";
+import { validateMcpTaskCreation } from "../middleware/mcpValidation.js";
 import {
   reorderTaskSchema,
   type ReorderTaskInput,
@@ -149,6 +150,12 @@ interface UpdateTaskBody {
   statusId?: string;
   assigneeId?: string;
   sortOrder?: number;
+  // Execution metadata
+  executionOrder?: number;
+  canParallelize?: boolean;
+  parallelGroup?: string;
+  dependencies?: string[];
+  estimatedComplexity?: string;
 }
 
 interface BulkUpdateBody {
@@ -268,10 +275,11 @@ export default function tasksRoutes(
    * POST /api/v1/tasks
    * Create a new task (auto-generates identifier based on parent feature)
    * Requires authentication, team membership (via featureId), and member+ role
+   * MCP requests require executionOrder
    */
   fastify.post<{ Body: CreateTaskBody }>(
     "/",
-    { preHandler: [authenticate, requireTeamAccess("featureId"), requireRole("member")] },
+    { preHandler: [authenticate, requireTeamAccess("featureId"), requireRole("member"), validateMcpTaskCreation] },
     async (request, reply) => {
       const { title, featureId, description, statusId, assigneeId, sortOrder } =
         request.body;
@@ -308,8 +316,18 @@ export default function tasksRoutes(
     { preHandler: [authenticate, requireTeamAccess("id:taskId"), requireRole("member")] },
     async (request, reply) => {
       const { id } = request.params;
-      const { title, description, statusId, assigneeId, sortOrder } =
-        request.body;
+      const {
+        title,
+        description,
+        statusId,
+        assigneeId,
+        sortOrder,
+        executionOrder,
+        canParallelize,
+        parallelGroup,
+        dependencies,
+        estimatedComplexity,
+      } = request.body;
 
       const input: {
         title?: string;
@@ -317,6 +335,11 @@ export default function tasksRoutes(
         statusId?: string;
         assigneeId?: string;
         sortOrder?: number;
+        executionOrder?: number;
+        canParallelize?: boolean;
+        parallelGroup?: string;
+        dependencies?: string[];
+        estimatedComplexity?: string;
       } = {};
 
       if (title !== undefined) input.title = title;
@@ -324,6 +347,12 @@ export default function tasksRoutes(
       if (statusId !== undefined) input.statusId = statusId;
       if (assigneeId !== undefined) input.assigneeId = assigneeId;
       if (sortOrder !== undefined) input.sortOrder = sortOrder;
+      // Execution metadata
+      if (executionOrder !== undefined) input.executionOrder = executionOrder;
+      if (canParallelize !== undefined) input.canParallelize = canParallelize;
+      if (parallelGroup !== undefined) input.parallelGroup = parallelGroup;
+      if (dependencies !== undefined) input.dependencies = dependencies;
+      if (estimatedComplexity !== undefined) input.estimatedComplexity = estimatedComplexity;
 
       const task = await updateTask(id, input);
       return reply.send({ data: task });

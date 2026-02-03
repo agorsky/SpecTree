@@ -287,8 +287,9 @@ export async function updateEpic(
 }
 
 /**
- * Soft delete an epic (set isArchived = true).
- * If already archived, this is a no-op (idempotent).
+ * Delete an epic.
+ * - If not archived: soft delete (set isArchived = true)
+ * - If already archived: hard delete (permanent removal)
  * Supports both UUID and exact epic name lookups.
  */
 export async function deleteEpic(idOrName: string): Promise<void> {
@@ -304,11 +305,15 @@ export async function deleteEpic(idOrName: string): Promise<void> {
     throw new NotFoundError(`Epic with id '${idOrName}' not found`);
   }
 
-  // If already archived, no-op (idempotent)
+  // If already archived, perform hard delete (permanent)
   if (existing.isArchived) {
+    await prisma.epic.delete({
+      where: { id: existing.id },
+    });
     return;
   }
 
+  // Otherwise, soft delete (archive)
   await prisma.epic.update({
     where: { id: existing.id },
     data: { isArchived: true },
@@ -367,4 +372,314 @@ export async function unarchiveEpic(idOrName: string): Promise<Epic> {
     where: { id: existing.id },
     data: { isArchived: false },
   });
+}
+
+// =============================================================================
+// Composite Epic Creation
+// =============================================================================
+
+import type {
+  CreateEpicCompleteInput,
+  CreateEpicCompleteResponse,
+  CompositeFeatureResponse,
+  CompositeTaskResponse,
+} from "../schemas/compositeEpic.js";
+import { createEpicCompleteInputSchema } from "../schemas/compositeEpic.js";
+import { structuredDescriptionSchema } from "../schemas/structuredDescription.js";
+
+/**
+ * Create a complete epic with all features, tasks, and structured descriptions
+ * in a single transactional operation.
+ *
+ * This is an all-or-nothing operation - if any step fails, the entire
+ * transaction is rolled back.
+ */
+export async function createEpicComplete(
+  input: CreateEpicCompleteInput
+): Promise<CreateEpicCompleteResponse> {
+  // Validate input against schema
+  const validationResult = createEpicCompleteInputSchema.safeParse(input);
+  if (!validationResult.success) {
+    throw new ValidationError(
+      `Invalid input: ${validationResult.error.errors.map((e) => e.message).join(", ")}`
+    );
+  }
+  const validatedInput = validationResult.data;
+
+  // Resolve team ID
+  const team = await prisma.team.findFirst({
+    where: {
+      OR: [
+        { id: validatedInput.team },
+        { name: validatedInput.team },
+        { key: validatedInput.team },
+      ],
+      isArchived: false,
+    },
+    select: { id: true, key: true },
+  });
+
+  if (!team) {
+    throw new NotFoundError(`Team '${validatedInput.team}' not found`);
+  }
+
+  // Get default backlog status for the team
+  const backlogStatus = await prisma.status.findFirst({
+    where: {
+      teamId: team.id,
+      category: "backlog",
+    },
+    select: { id: true },
+  });
+
+  // Use a transaction to ensure atomicity
+  const result = await prisma.$transaction(async (tx) => {
+    // 1. Create the epic
+    const lastEpic = await tx.epic.findFirst({
+      where: { teamId: team.id, isArchived: false },
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
+    const epicSortOrder = generateSortOrderBetween(lastEpic?.sortOrder ?? null, null);
+
+    // Build epic data with proper null handling for Prisma
+    const epicData: {
+      name: string;
+      teamId: string;
+      sortOrder: number;
+      description?: string | null;
+      icon?: string | null;
+      color?: string | null;
+    } = {
+      name: validatedInput.name.trim(),
+      teamId: team.id,
+      sortOrder: epicSortOrder,
+    };
+    if (validatedInput.description !== undefined) {
+      epicData.description = validatedInput.description.trim();
+    }
+    if (validatedInput.icon !== undefined) {
+      epicData.icon = validatedInput.icon;
+    }
+    if (validatedInput.color !== undefined) {
+      epicData.color = validatedInput.color;
+    }
+
+    const epic = await tx.epic.create({ data: epicData });
+
+    // Track feature ID mapping for dependency resolution
+    const featureIdMap: Map<number, string> = new Map();
+    const createdFeatures: CompositeFeatureResponse[] = [];
+    let totalTasks = 0;
+
+    // 2. Create features with their tasks
+    for (let featureIndex = 0; featureIndex < validatedInput.features.length; featureIndex++) {
+      const featureInput = validatedInput.features[featureIndex]!;
+
+      // Generate feature identifier
+      const existingFeatures = await tx.feature.findMany({
+        where: { epic: { teamId: team.id } },
+        select: { identifier: true },
+      });
+
+      let maxNumber = 0;
+      const fullPrefix = `${team.key}-`;
+      for (const f of existingFeatures) {
+        if (f.identifier.startsWith(fullPrefix)) {
+          const suffix = f.identifier.slice(fullPrefix.length);
+          const match = suffix.match(/^(\d+)/);
+          if (match && match[1]) {
+            const num = parseInt(match[1], 10);
+            if (!isNaN(num) && num > maxNumber) {
+              maxNumber = num;
+            }
+          }
+        }
+      }
+      const featureIdentifier = `${team.key}-${maxNumber + 1}`;
+
+      // Calculate feature sortOrder
+      const lastFeature = await tx.feature.findFirst({
+        where: { epicId: epic.id },
+        orderBy: { sortOrder: "desc" },
+        select: { sortOrder: true },
+      });
+      const featureSortOrder = generateSortOrderBetween(lastFeature?.sortOrder ?? null, null);
+
+      // Resolve dependencies (convert indices to UUIDs)
+      let dependencies: string | null = null;
+      if (featureInput.dependencies && featureInput.dependencies.length > 0) {
+        const depIds: string[] = [];
+        for (const depIndex of featureInput.dependencies) {
+          const depId = featureIdMap.get(depIndex);
+          if (!depId) {
+            throw new ValidationError(
+              `Feature at index ${featureIndex} has dependency on index ${depIndex} which hasn't been created yet. Dependencies must reference earlier features.`
+            );
+          }
+          depIds.push(depId);
+        }
+        dependencies = JSON.stringify(depIds);
+      }
+
+      // Stringify structured description if provided
+      let featureStructuredDesc: string | null = null;
+      if (featureInput.structuredDesc) {
+        const structValidation = structuredDescriptionSchema.safeParse(featureInput.structuredDesc);
+        if (!structValidation.success) {
+          throw new ValidationError(
+            `Invalid structuredDesc for feature '${featureInput.title}': ${structValidation.error.message}`
+          );
+        }
+        featureStructuredDesc = JSON.stringify(structValidation.data);
+      }
+
+      // Build feature data with proper null handling
+      const featureData: {
+        title: string;
+        epicId: string;
+        identifier: string;
+        sortOrder: number;
+        statusId?: string | null;
+        executionOrder?: number | null;
+        estimatedComplexity?: string | null;
+        canParallelize: boolean;
+        parallelGroup?: string | null;
+        dependencies?: string | null;
+        structuredDesc?: string | null;
+      } = {
+        title: featureInput.title.trim(),
+        epicId: epic.id,
+        identifier: featureIdentifier,
+        sortOrder: featureSortOrder,
+        canParallelize: featureInput.canParallelize ?? false,
+      };
+      if (backlogStatus?.id !== undefined) {
+        featureData.statusId = backlogStatus.id;
+      }
+      if (featureInput.executionOrder !== undefined) {
+        featureData.executionOrder = featureInput.executionOrder;
+      }
+      if (featureInput.estimatedComplexity !== undefined) {
+        featureData.estimatedComplexity = featureInput.estimatedComplexity;
+      }
+      if (featureInput.parallelGroup !== undefined) {
+        featureData.parallelGroup = featureInput.parallelGroup;
+      }
+      if (dependencies !== null) {
+        featureData.dependencies = dependencies;
+      }
+      if (featureStructuredDesc !== null) {
+        featureData.structuredDesc = featureStructuredDesc;
+      }
+
+      // Create the feature
+      const feature = await tx.feature.create({ data: featureData });
+
+      // Store the feature ID for dependency resolution
+      featureIdMap.set(featureIndex, feature.id);
+
+      // 3. Create tasks for this feature
+      const createdTasks: CompositeTaskResponse[] = [];
+
+      for (let taskIndex = 0; taskIndex < featureInput.tasks.length; taskIndex++) {
+        const taskInput = featureInput.tasks[taskIndex]!;
+
+        // Generate task identifier
+        const taskIdentifier = `${featureIdentifier}-${taskIndex + 1}`;
+
+        // Calculate task sortOrder
+        const lastTask = await tx.task.findFirst({
+          where: { featureId: feature.id },
+          orderBy: { sortOrder: "desc" },
+          select: { sortOrder: true },
+        });
+        const taskSortOrder = generateSortOrderBetween(lastTask?.sortOrder ?? null, null);
+
+        // Stringify structured description if provided
+        let taskStructuredDesc: string | null = null;
+        if (taskInput.structuredDesc) {
+          const structValidation = structuredDescriptionSchema.safeParse(taskInput.structuredDesc);
+          if (!structValidation.success) {
+            throw new ValidationError(
+              `Invalid structuredDesc for task '${taskInput.title}': ${structValidation.error.message}`
+            );
+          }
+          taskStructuredDesc = JSON.stringify(structValidation.data);
+        }
+
+        // Build task data with proper null handling
+        const taskData: {
+          title: string;
+          featureId: string;
+          identifier: string;
+          sortOrder: number;
+          statusId?: string | null;
+          executionOrder?: number | null;
+          estimatedComplexity?: string | null;
+          structuredDesc?: string | null;
+        } = {
+          title: taskInput.title.trim(),
+          featureId: feature.id,
+          identifier: taskIdentifier,
+          sortOrder: taskSortOrder,
+        };
+        if (backlogStatus?.id !== undefined) {
+          taskData.statusId = backlogStatus.id;
+        }
+        if (taskInput.executionOrder !== undefined) {
+          taskData.executionOrder = taskInput.executionOrder;
+        }
+        if (taskInput.estimatedComplexity !== undefined) {
+          taskData.estimatedComplexity = taskInput.estimatedComplexity;
+        }
+        if (taskStructuredDesc !== null) {
+          taskData.structuredDesc = taskStructuredDesc;
+        }
+
+        // Create the task
+        const task = await tx.task.create({ data: taskData });
+
+        createdTasks.push({
+          id: task.id,
+          identifier: task.identifier,
+          title: task.title,
+          executionOrder: task.executionOrder,
+          estimatedComplexity: task.estimatedComplexity,
+          statusId: task.statusId,
+        });
+
+        totalTasks++;
+      }
+
+      createdFeatures.push({
+        id: feature.id,
+        identifier: feature.identifier,
+        title: feature.title,
+        executionOrder: feature.executionOrder,
+        estimatedComplexity: feature.estimatedComplexity,
+        canParallelize: feature.canParallelize,
+        parallelGroup: feature.parallelGroup,
+        dependencies: feature.dependencies,
+        statusId: feature.statusId,
+        tasks: createdTasks,
+      });
+    }
+
+    return {
+      epic: {
+        id: epic.id,
+        name: epic.name,
+        description: epic.description,
+        teamId: team.id, // Use resolved team.id since we know it exists
+      },
+      features: createdFeatures,
+      summary: {
+        totalFeatures: createdFeatures.length,
+        totalTasks,
+      },
+    };
+  });
+
+  return result;
 }

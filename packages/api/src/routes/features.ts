@@ -36,6 +36,7 @@ import {
 } from "../services/progressService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { validateBody } from "../middleware/validate.js";
+import { validateMcpFeatureCreation } from "../middleware/mcpValidation.js";
 import { reorderFeatureSchema, type ReorderFeatureInput } from "../schemas/feature.js";
 import {
   appendAiNoteSchema,
@@ -123,6 +124,12 @@ interface UpdateFeatureBody {
   statusId?: string;
   assigneeId?: string;
   sortOrder?: number;
+  // Execution metadata
+  executionOrder?: number;
+  canParallelize?: boolean;
+  parallelGroup?: string;
+  dependencies?: string[];
+  estimatedComplexity?: string;
 }
 
 interface BulkUpdateBody {
@@ -239,10 +246,11 @@ export default function featuresRoutes(
    * POST /api/v1/features
    * Create a new feature (auto-generates identifier in format TEAM_KEY-NUMBER)
    * Requires authentication, team membership (via epicId), and member+ role
+   * MCP requests require executionOrder and estimatedComplexity
    */
   fastify.post<{ Body: CreateFeatureBody }>(
     "/",
-    { preHandler: [authenticate, requireTeamAccess("epicId"), requireRole("member")] },
+    { preHandler: [authenticate, requireTeamAccess("epicId"), requireRole("member"), validateMcpFeatureCreation] },
     async (request, reply) => {
       const { title, epicId, description, statusId, assigneeId, sortOrder } =
         request.body;
@@ -279,8 +287,18 @@ export default function featuresRoutes(
     { preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("member")] },
     async (request, reply) => {
       const { id } = request.params;
-      const { title, description, statusId, assigneeId, sortOrder } =
-        request.body;
+      const {
+        title,
+        description,
+        statusId,
+        assigneeId,
+        sortOrder,
+        executionOrder,
+        canParallelize,
+        parallelGroup,
+        dependencies,
+        estimatedComplexity,
+      } = request.body;
 
       const input: {
         title?: string;
@@ -288,6 +306,11 @@ export default function featuresRoutes(
         statusId?: string;
         assigneeId?: string;
         sortOrder?: number;
+        executionOrder?: number;
+        canParallelize?: boolean;
+        parallelGroup?: string;
+        dependencies?: string[];
+        estimatedComplexity?: string;
       } = {};
 
       if (title !== undefined) input.title = title;
@@ -295,6 +318,12 @@ export default function featuresRoutes(
       if (statusId !== undefined) input.statusId = statusId;
       if (assigneeId !== undefined) input.assigneeId = assigneeId;
       if (sortOrder !== undefined) input.sortOrder = sortOrder;
+      // Execution metadata
+      if (executionOrder !== undefined) input.executionOrder = executionOrder;
+      if (canParallelize !== undefined) input.canParallelize = canParallelize;
+      if (parallelGroup !== undefined) input.parallelGroup = parallelGroup;
+      if (dependencies !== undefined) input.dependencies = dependencies;
+      if (estimatedComplexity !== undefined) input.estimatedComplexity = estimatedComplexity;
 
       const feature = await updateFeature(id, input);
       return reply.send({ data: feature });

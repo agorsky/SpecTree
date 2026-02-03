@@ -136,8 +136,8 @@ describe("Teams API", () => {
         headers,
       });
 
-      // Will return 403 first because user is not a member of the non-existent team
-      expect(response.statusCode).toBe(403);
+      // Should return 404 for non-existent team (not 403 "access denied")
+      expect(response.statusCode).toBe(404);
     });
   });
 

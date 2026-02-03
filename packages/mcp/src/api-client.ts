@@ -80,6 +80,95 @@ export interface CreateEpicData {
 }
 
 // -----------------------------------------------------------------------------
+// Composite Epic Types (for create_epic_complete)
+// -----------------------------------------------------------------------------
+
+/** Structured description for features and tasks */
+export interface StructuredDescription {
+  summary: string;
+  aiInstructions?: string;
+  acceptanceCriteria?: string[];
+  filesInvolved?: string[];
+  functionsToModify?: string[];
+  testingStrategy?: string;
+  testFiles?: string[];
+  relatedItemIds?: string[];
+  externalLinks?: { url: string; title: string }[];
+  technicalNotes?: string;
+  riskLevel?: "low" | "medium" | "high";
+  estimatedEffort?: "trivial" | "small" | "medium" | "large" | "xl";
+}
+
+/** Task input for composite epic creation */
+export interface CompositeTaskInput {
+  title: string;
+  executionOrder?: number;
+  estimatedComplexity?: EstimatedComplexity;
+  structuredDesc?: StructuredDescription;
+}
+
+/** Feature input for composite epic creation */
+export interface CompositeFeatureInput {
+  title: string;
+  executionOrder: number;
+  estimatedComplexity: EstimatedComplexity;
+  canParallelize?: boolean;
+  parallelGroup?: string;
+  dependencies?: number[]; // Indices of features this depends on
+  structuredDesc?: StructuredDescription;
+  tasks: CompositeTaskInput[];
+}
+
+/** Input for createEpicComplete */
+export interface CreateEpicCompleteInput {
+  name: string;
+  team: string; // Team ID, name, or key
+  description?: string;
+  icon?: string;
+  color?: string;
+  features: CompositeFeatureInput[];
+}
+
+/** Task in composite epic response */
+export interface CompositeTaskResponse {
+  id: string;
+  identifier: string;
+  title: string;
+  executionOrder: number | null;
+  estimatedComplexity: string | null;
+  statusId: string | null;
+}
+
+/** Feature in composite epic response */
+export interface CompositeFeatureResponse {
+  id: string;
+  identifier: string;
+  title: string;
+  executionOrder: number | null;
+  estimatedComplexity: string | null;
+  canParallelize: boolean;
+  parallelGroup: string | null;
+  dependencies: string | null;
+  statusId: string | null;
+  tasks: CompositeTaskResponse[];
+}
+
+/** Response from createEpicComplete */
+export interface CreateEpicCompleteResponse {
+  epic: {
+    id: string;
+    name: string;
+    description: string | null;
+    teamId: string;
+  };
+  features: CompositeFeatureResponse[];
+  summary: {
+    totalFeatures: number;
+    totalTasks: number;
+  };
+}
+
+// -----------------------------------------------------------------------------
 // Feature Types
 // -----------------------------------------------------------------------------
 
@@ -1168,6 +1257,7 @@ export class ApiClient {
             Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json",
             "User-Agent": "SpecTree-MCP/1.0",
+            "X-MCP-Request": "true",
           },
         };
 
@@ -1302,6 +1392,14 @@ export class ApiClient {
 
   async unarchiveEpic(id: string): Promise<{ data: Epic }> {
     return this.request<{ data: Epic }>("POST", `/api/v1/epics/${encodeURIComponent(id)}/unarchive`);
+  }
+
+  /**
+   * Create an epic with all features, tasks, and structured descriptions atomically.
+   * This is a composite operation that reduces many tool calls to a single call.
+   */
+  async createEpicComplete(input: CreateEpicCompleteInput): Promise<{ data: CreateEpicCompleteResponse }> {
+    return this.request<{ data: CreateEpicCompleteResponse }>("POST", "/api/v1/epics/complete", input);
   }
 
   // ---------------------------------------------------------------------------
@@ -1782,6 +1880,26 @@ export class ApiClient {
   // ---------------------------------------------------------------------------
   // Team Methods (for resolution helpers)
   // ---------------------------------------------------------------------------
+
+  /**
+   * List teams the authenticated user has access to.
+   */
+  async listTeams(options?: {
+    cursor?: string;
+    limit?: number;
+  }): Promise<{ data: Team[]; meta: { cursor: string | null; hasMore: boolean } }> {
+    const params = new URLSearchParams();
+    if (options?.cursor) params.append("cursor", options.cursor);
+    if (options?.limit) params.append("limit", String(options.limit));
+
+    const query = params.toString();
+    const url = query ? `/api/v1/teams?${query}` : "/api/v1/teams";
+
+    return this.request<{ data: Team[]; meta: { cursor: string | null; hasMore: boolean } }>(
+      "GET",
+      url
+    );
+  }
 
   async getTeam(idOrNameOrKey: string): Promise<{ data: Team } | null> {
     try {

@@ -9,6 +9,7 @@ vi.mock('../../src/lib/db.js', () => ({
       findFirst: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(),
     },
     team: {
       findUnique: vi.fn(),
@@ -445,16 +446,22 @@ describe('epicService', () => {
         .rejects.toThrow(NotFoundError);
     });
 
-    it('should be idempotent when epic is already archived', async () => {
+    it('should hard delete when epic is already archived', async () => {
       vi.mocked(prisma.epic.findFirst).mockResolvedValue({
         id: 'proj-123',
         isArchived: true,
       } as any);
+      vi.mocked(prisma.epic.delete).mockResolvedValue({
+        id: 'proj-123',
+      } as any);
 
-      // Should not throw, should be a no-op
       await deleteEpic('proj-123');
 
-      // Should not call update since it's already archived
+      // Should call delete (hard delete) since it's already archived
+      expect(prisma.epic.delete).toHaveBeenCalledWith({
+        where: { id: 'proj-123' },
+      });
+      // Should not call update
       expect(prisma.epic.update).not.toHaveBeenCalled();
     });
   });

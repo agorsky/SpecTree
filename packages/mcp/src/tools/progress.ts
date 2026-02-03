@@ -10,6 +10,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getApiClient, ApiError } from "../api-client.js";
 import { createResponse, createErrorResponse } from "./utils.js";
+import { addRemindersToResponse } from "./reminders.js";
 
 // Register all progress tracking tools
 export function registerProgressTools(server: McpServer): void {
@@ -129,7 +130,19 @@ export function registerProgressTools(server: McpServer): void {
             summary: input.summary,
             sessionId: input.sessionId,
           });
-          return createResponse(result);
+
+          // Add contextual reminders
+          const responseWithReminders = addRemindersToResponse(
+            result as unknown as Record<string, unknown>,
+            "complete_work",
+            {
+              id: feature.id,
+              identifier: feature.identifier,
+              type: "feature",
+              hasActiveSession: true,
+            }
+          );
+          return createResponse(responseWithReminders);
         } else {
           // Resolve task identifier to UUID if needed
           const { data: task } = await apiClient.getTask(input.id);
@@ -137,7 +150,19 @@ export function registerProgressTools(server: McpServer): void {
             summary: input.summary,
             sessionId: input.sessionId,
           });
-          return createResponse(result);
+
+          // Add contextual reminders
+          const responseWithReminders = addRemindersToResponse(
+            result as unknown as Record<string, unknown>,
+            "complete_work",
+            {
+              id: task.id,
+              identifier: task.identifier,
+              type: "task",
+              hasActiveSession: true,
+            }
+          );
+          return createResponse(responseWithReminders);
         }
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {

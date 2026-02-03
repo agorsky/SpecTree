@@ -191,3 +191,18 @@ export {
   type BlockedSummaryItem,
   type BlockedSummaryResponse,
 } from "./summary.js";
+
+// Composite Epic schemas
+export {
+  estimatedComplexityValues,
+  compositeTaskInputSchema,
+  compositeFeatureInputSchema,
+  createEpicCompleteInputSchema,
+  type EstimatedComplexity,
+  type CompositeTaskInput,
+  type CompositeFeatureInput,
+  type CreateEpicCompleteInput,
+  type CompositeTaskResponse,
+  type CompositeFeatureResponse,
+  type CreateEpicCompleteResponse,
+} from "./compositeEpic.js";

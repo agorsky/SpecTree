@@ -10,6 +10,22 @@ import { z } from "zod";
 // =============================================================================
 
 /**
+ * Structured description template for features and tasks.
+ * Supports {{variable}} placeholders in string fields.
+ */
+export const structuredDescTemplateSchema = z.object({
+  summary: z.string().optional().describe("Brief human-readable summary"),
+  acceptanceCriteria: z.array(z.string()).optional().describe("List of acceptance criteria"),
+  aiInstructions: z.string().optional().describe("Instructions for AI agents"),
+  filesInvolved: z.array(z.string()).optional().describe("File paths involved"),
+  functionsToModify: z.array(z.string()).optional().describe("Functions to modify (file:function format)"),
+  testFiles: z.array(z.string()).optional().describe("Test file paths"),
+  technicalNotes: z.string().optional().describe("Technical implementation notes"),
+  riskLevel: z.enum(["low", "medium", "high"]).optional().describe("Risk assessment"),
+  estimatedEffort: z.enum(["trivial", "small", "medium", "large", "xl"]).optional().describe("Effort estimate"),
+});
+
+/**
  * Task within a feature template
  */
 export const templateTaskSchema = z.object({
@@ -22,6 +38,13 @@ export const templateTaskSchema = z.object({
     .optional()
     .describe("Hint for what to put in description"),
   executionOrder: z.number().int().min(1).describe("Order within the feature"),
+  estimatedComplexity: z
+    .enum(["trivial", "simple", "moderate", "complex"])
+    .optional()
+    .describe("Complexity estimate for the task"),
+  structuredDescTemplate: structuredDescTemplateSchema
+    .optional()
+    .describe("Structured description with {{variable}} placeholders"),
 });
 
 /**
@@ -39,6 +62,13 @@ export const templateFeatureSchema = z.object({
   executionOrder: z.number().int().min(1).describe("Order within the epic"),
   canParallelize: z.boolean().optional().default(false),
   tasks: z.array(templateTaskSchema).optional(),
+  estimatedComplexity: z
+    .enum(["trivial", "simple", "moderate", "complex"])
+    .optional()
+    .describe("Complexity estimate for the feature"),
+  structuredDescTemplate: structuredDescTemplateSchema
+    .optional()
+    .describe("Structured description with {{variable}} placeholders"),
 });
 
 /**
@@ -114,6 +144,7 @@ export const saveAsTemplateSchema = z.object({
 // Type Exports
 // =============================================================================
 
+export type StructuredDescTemplate = z.infer<typeof structuredDescTemplateSchema>;
 export type TemplateTask = z.infer<typeof templateTaskSchema>;
 export type TemplateFeature = z.infer<typeof templateFeatureSchema>;
 export type EpicDefaults = z.infer<typeof epicDefaultsSchema>;

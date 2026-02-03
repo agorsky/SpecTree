@@ -1,6 +1,343 @@
 # Copilot Instructions for SpecTree
 
+## ⚡ Quick Reference (READ FIRST)
+
+**Before Implementation:**
+- [ ] `spectree__list_teams()` - Discover teams (don't assume names)
+- [ ] `spectree__start_session({ epicId })` - Start session for existing epic
+- [ ] `spectree__list_templates()` - Use templates for new epics
+
+**During Epic Creation:**
+- [ ] Every feature: `executionOrder`, `estimatedComplexity`, `dependencies`
+- [ ] Minimum 3 tasks per feature with detailed descriptions
+- [ ] `spectree__set_structured_description()` for ALL features and tasks
+
+**Before Completing:**
+- [ ] `spectree__run_all_validations()` - Verify acceptance criteria
+- [ ] `spectree__link_code_file()` - Link modified files
+- [ ] `spectree__log_decision()` - Record important choices
+
+**At Session End:**
+- [ ] `spectree__end_session()` with summary + nextSteps
+
+**🔴 NEVER:** `prisma migrate reset`, `prisma migrate dev`, `db push --force-reset`
+
+---
+
 SpecTree is a project management tool similar to Linear, with a REST API, React frontend, and MCP server for AI integration.
+
+---
+
+## 🔴 CRITICAL: Use SpecTree for Implementation Planning
+
+**When SpecTree MCP tools are available, ALWAYS use SpecTree for implementation planning instead of creating plan.md files.**
+
+### When to Use SpecTree
+
+Use SpecTree when the user asks to:
+- "Build", "implement", "create", or "develop" a feature
+- "Plan" or "design" a new capability
+- Work on something that requires multiple steps or phases
+- Track progress on complex work
+
+### Planning Workflow
+
+**Step 1: Check for existing work**
+```typescript
+spectree__list_epics()  // See existing epics
+spectree__search({ query: "relevant keywords" })  // Find related items
+```
+
+**Step 2: Start a session (if working on existing epic)**
+```typescript
+spectree__start_session({ epicId: "Epic Name" })
+// Review previousSession context for continuity
+```
+
+**Step 3: Discover available teams (if creating new epic)**
+
+🔴 **IMPORTANT:** Before creating an epic, you MUST determine the correct team:
+
+```typescript
+// If user specifies a team, use it directly
+// If team is NOT specified, discover available teams and ASK:
+const { teams } = await spectree__list_teams();
+// teams = [{ name: "Engineering", key: "ENG" }, { name: "Commercial", key: "COM" }]
+
+// Then ask the user:
+// "Which team should I create this epic in? Available teams: Engineering (ENG), Commercial (COM)"
+```
+
+**Do NOT assume team names.** If the API returns an error like "Access denied" or "Team not found" when creating an epic, call `spectree__list_teams()` to see available teams and ask the user to choose.
+
+**Step 4: Create epic using a template (MANDATORY)**
+
+🔴 **IMPORTANT:** You MUST use templates when creating epics. Templates ensure proper structure with features, tasks, and execution metadata.
+
+```typescript
+// Step 4a: List available templates
+spectree__list_templates()
+// Available: "Code Feature", "Bug Fix", "Refactoring", "API Endpoint"
+
+// Step 4b: Preview what will be created
+spectree__preview_template({
+  templateName: "Code Feature",
+  epicName: "User Activity Dashboard",
+  variables: { topic: "Activity Dashboard" }
+})
+
+// Step 4c: Create from template (creates full hierarchy)
+spectree__create_from_template({
+  templateName: "Code Feature",
+  epicName: "User Activity Dashboard",
+  team: "Engineering",  // Use actual team from step 3
+  variables: { topic: "Activity Dashboard" }
+})
+```
+
+**Only create epics manually if NO template fits** (rare). If creating manually, you MUST still create all features and tasks with full details.
+```
+
+**Step 5: Create features with execution metadata**
+```typescript
+spectree__create_feature({
+  title: "Database Schema",
+  epic: "User Activity Dashboard",
+  executionOrder: 1,
+  estimatedComplexity: "moderate",
+  description: "Add ActivityLog and related tables..."
+})
+
+spectree__create_feature({
+  title: "Activity Service",
+  epic: "User Activity Dashboard",
+  executionOrder: 2,
+  dependencies: ["<uuid-of-schema-feature>"],
+  estimatedComplexity: "moderate"
+})
+```
+
+**Step 6: Add tasks for granular work**
+```typescript
+spectree__create_task({
+  title: "Add ActivityLog table to Prisma schema",
+  feature_id: "SPEC-123",
+  executionOrder: 1,
+  estimatedComplexity: "simple"
+})
+```
+
+**Step 7: Add structured details**
+```typescript
+spectree__set_structured_description({
+  id: "SPEC-123",
+  type: "feature",
+  structuredDesc: {
+    summary: "Add database tables for activity tracking",
+    acceptanceCriteria: [
+      "ActivityLog table exists with proper indexes",
+      "Migration runs without errors"
+    ],
+    filesInvolved: ["packages/api/prisma/schema.prisma"],
+    riskLevel: "medium",
+    estimatedEffort: "medium"
+  }
+})
+```
+
+### During Implementation
+
+- Use `spectree__start_work({ id, type })` before working on an item
+- Use `spectree__log_progress({ id, type, message })` for long tasks
+- Use `spectree__complete_work({ id, type, summary })` when done
+- Use `spectree__log_decision({ ... })` for important choices
+
+### 🔴 MANDATORY: Template Usage
+
+**Templates MUST be used for all epic creation.** Available built-in templates:
+
+| Template | Use Case | Variables |
+|----------|----------|-----------|
+| **Code Feature** | New features, enhancements | `{{topic}}` |
+| **Bug Fix** | Bug investigation/fixes | `{{bugTitle}}`, `{{component}}` |
+| **Refactoring** | Code improvements | `{{refactoringTarget}}` |
+| **API Endpoint** | New API development | `{{endpointName}}`, `{{resource}}` |
+
+If templates aren't available (empty list), **run database seed first** or create manually following all requirements below.
+
+### 🔴 MANDATORY: Epic Creation Requirements
+
+When creating a new epic, you MUST complete ALL of the following:
+
+**1. Create features with execution metadata:**
+Every feature MUST have:
+- `executionOrder` - Numeric order for sequencing
+- `estimatedComplexity` - "trivial", "simple", "moderate", or "complex"
+- `dependencies` - UUIDs of features that must complete first (if any)
+
+**2. Create tasks for EVERY feature:**
+- **Minimum 3 tasks per feature** (break down the work)
+- Each task MUST have `executionOrder` and `estimatedComplexity`
+- Each task MUST have a detailed `description` explaining what needs to be done
+
+**3. Set structured descriptions FOR EVERY FEATURE AND TASK:**
+For each feature, call `spectree__set_structured_description` with:
+- `summary` - Clear description of what the feature does (REQUIRED)
+- `acceptanceCriteria` - List of conditions that define "done" (REQUIRED, min 3 items)
+- `aiInstructions` - Specific guidance for AI working on this feature (REQUIRED)
+- `filesInvolved` - Files that will need to be modified
+- `technicalNotes` - Implementation constraints or considerations
+- `riskLevel` - "low", "medium", or "high"
+- `estimatedEffort` - "trivial", "small", "medium", "large", or "xl"
+
+For each task, call `spectree__set_structured_description` with:
+- `summary` - What this task accomplishes (REQUIRED)
+- `acceptanceCriteria` - How to verify the task is done (REQUIRED, min 2 items)
+- `aiInstructions` - Step-by-step guidance for implementation (REQUIRED)
+
+**4. Verify execution plan:**
+After creating all features and tasks, call `spectree__get_execution_plan` and review it.
+
+### 🔴 MANDATORY: Minimum Information Checklists
+
+**Another AI session MUST be able to complete the work based on the information provided.** Use these checklists:
+
+#### Feature Checklist (ALL required)
+- [ ] `title` - Descriptive title explaining what the feature does
+- [ ] `description` - Detailed description with context and requirements
+- [ ] `executionOrder` - Where this fits in the sequence
+- [ ] `estimatedComplexity` - "trivial", "simple", "moderate", or "complex"
+- [ ] `dependencies` - UUIDs of blocking features (if any)
+- [ ] Structured description with:
+  - [ ] `summary` - 2-3 sentences explaining the feature
+  - [ ] `acceptanceCriteria` - At least 3 testable criteria
+  - [ ] `aiInstructions` - Detailed implementation guidance
+
+#### Task Checklist (ALL required)
+- [ ] `title` - Specific, actionable task title
+- [ ] `description` - What needs to be done and why
+- [ ] `executionOrder` - Order within the feature
+- [ ] `estimatedComplexity` - "trivial", "simple", "moderate", or "complex"
+- [ ] Structured description with:
+  - [ ] `summary` - What this task accomplishes
+  - [ ] `acceptanceCriteria` - At least 2 verification criteria
+  - [ ] `aiInstructions` - Step-by-step implementation guidance
+
+#### Example of GOOD vs BAD Feature
+
+❌ **BAD (too sparse):**
+```typescript
+spectree__create_feature({
+  title: "Database Schema",
+  epic: "Activity Dashboard",
+  description: "Add tables"
+})
+```
+
+✅ **GOOD (sufficient detail):**
+```typescript
+spectree__create_feature({
+  title: "Activity Tracking Database Schema",
+  epic: "Activity Dashboard",
+  executionOrder: 1,
+  estimatedComplexity: "moderate",
+  description: `Add database tables for tracking user activity events.
+
+## Requirements
+- Store activity type, timestamp, user, and metadata
+- Support querying by user, time range, and activity type
+- Index for efficient queries on common access patterns
+
+## Technical Approach
+- Add ActivityLog model to Prisma schema
+- Create migration with indexes
+- Add TypeScript types to shared package`
+})
+
+// Then ALSO set structured description:
+spectree__set_structured_description({
+  id: "COM-xxx",
+  type: "feature",
+  structuredDesc: {
+    summary: "Create database schema for activity tracking with ActivityLog table, proper indexes, and relations",
+    acceptanceCriteria: [
+      "ActivityLog model exists in Prisma schema with all required fields",
+      "Migration creates table with indexes on userId, activityType, createdAt",
+      "TypeScript types are exported from @spectree/shared",
+      "Existing tests still pass after migration"
+    ],
+    aiInstructions: "1. Add ActivityLog model to schema.prisma with fields: id, userId, activityType (enum), metadata (JSON), createdAt, updatedAt. 2. Add index on (userId, createdAt) and (activityType). 3. Run prisma generate. 4. Create ActivityLogType enum in shared/types. 5. Export types from shared index.",
+    filesInvolved: ["packages/api/prisma/schema.prisma", "packages/shared/src/types/activity.ts"],
+    riskLevel: "medium",
+    estimatedEffort: "small"
+  }
+})
+```
+
+### 🔴 MANDATORY: Verification After Tool Calls
+
+After calling any MCP tool that creates or updates data, you MUST:
+
+1. **Check the response for errors** - If the tool returns an error, STOP and report it
+2. **Verify critical fields were set** - For execution metadata, check the returned object has non-null values
+3. **Do NOT proceed if data didn't persist** - The tool `spectree__set_execution_metadata` now validates this automatically
+
+Example verification:
+```typescript
+// Create feature
+const feature = await spectree__create_feature({ ... });
+
+// Verify it was created
+if (!feature.identifier) {
+  throw new Error("Feature creation failed - no identifier returned");
+}
+
+// Set execution metadata
+const updated = await spectree__set_execution_metadata({
+  id: feature.identifier,
+  type: "feature",
+  executionOrder: 1,
+  estimatedComplexity: "moderate"
+});
+
+// The tool now validates automatically and returns error if data didn't persist
+```
+
+### 🔴 MANDATORY: Sequential vs Parallel Creation
+
+**DO NOT create features in parallel.** Create them sequentially to avoid identifier race conditions:
+
+```typescript
+// ✅ CORRECT: Sequential creation
+const feature1 = await spectree__create_feature({ title: "Feature 1", ... });
+const feature2 = await spectree__create_feature({ title: "Feature 2", ... });
+
+// ❌ WRONG: Parallel creation (can cause identifier conflicts)
+await Promise.all([
+  spectree__create_feature({ title: "Feature 1", ... }),
+  spectree__create_feature({ title: "Feature 2", ... })
+]);
+```
+
+### End of Session
+
+Always end with session handoff:
+```typescript
+spectree__end_session({
+  epicId: "User Activity Dashboard",
+  summary: "Completed database schema and started service layer",
+  nextSteps: ["Implement activityService.ts", "Add API routes"],
+  blockers: [],
+  decisions: [{ decision: "Used event-driven logging", rationale: "Non-blocking, better performance" }]
+})
+```
+
+### When NOT to Use SpecTree
+
+- Quick one-off questions or explanations
+- Single-file fixes (typos, small bugs)
+- Exploratory code reading without planned changes
+- When user explicitly asks for a file-based plan
 
 ---
 

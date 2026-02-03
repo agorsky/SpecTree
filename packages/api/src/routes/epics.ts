@@ -7,12 +7,14 @@ import {
   deleteEpic,
   archiveEpic,
   unarchiveEpic,
+  createEpicComplete,
 } from "../services/epicService.js";
 import { getProgressSummary } from "../services/summaryService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
 import { reorderEpicSchema } from "../schemas/epic.js";
+import type { CreateEpicCompleteInput } from "../schemas/compositeEpic.js";
 
 // Request type definitions
 interface ListEpicsQuery {
@@ -312,6 +314,21 @@ export default function epicsRoutes(
     async (request, reply) => {
       const summary = await getProgressSummary(request.params.id);
       return reply.send({ data: summary });
+    }
+  );
+
+  /**
+   * POST /api/v1/epics/complete
+   * Create a complete epic with all features, tasks, and structured descriptions
+   * in a single transactional operation.
+   * Requires authentication, team membership, and member+ role
+   */
+  fastify.post<{ Body: CreateEpicCompleteInput }>(
+    "/complete",
+    { preHandler: [authenticate, requireTeamAccess("body.team"), requireRole("member")] },
+    async (request, reply) => {
+      const result = await createEpicComplete(request.body);
+      return reply.status(201).send({ data: result });
     }
   );
 }

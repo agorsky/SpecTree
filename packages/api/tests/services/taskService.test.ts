@@ -621,6 +621,8 @@ describe('taskService', () => {
         { identifier: 'DEV-42-1' },
       ] as any);
       vi.mocked(prisma.task.findFirst).mockResolvedValue(null);
+      // Mock findUnique to return null (identifier not taken)
+      vi.mocked(prisma.task.findUnique).mockResolvedValue(null);
       vi.mocked(prisma.task.create).mockResolvedValue({
         id: 'task-123',
         identifier: 'DEV-42-6',
@@ -647,6 +649,8 @@ describe('taskService', () => {
       // Mock findMany to return empty array (no existing tasks)
       vi.mocked(prisma.task.findMany).mockResolvedValue([]);
       vi.mocked(prisma.task.findFirst).mockResolvedValue(null);
+      // Mock findUnique to return null (identifier not taken)
+      vi.mocked(prisma.task.findUnique).mockResolvedValue(null);
       vi.mocked(prisma.task.create).mockResolvedValue({ id: 'task-123' } as any);
 
       await createTask({
@@ -657,7 +661,6 @@ describe('taskService', () => {
       expect(prisma.task.findMany).toHaveBeenCalledWith({
         where: { featureId: 'feat-123' },
         select: { identifier: true },
-        orderBy: { createdAt: 'desc' },
       });
       expect(prisma.task.create).toHaveBeenCalledWith({
         data: expect.objectContaining({

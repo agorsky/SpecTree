@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getApiClient, ApiError } from "../api-client.js";
 import { createResponse, createErrorResponse } from "./utils.js";
+import { addRemindersToResponse } from "./reminders.js";
 
 /**
  * Helper to resolve team ID from name/key/id via API
@@ -249,7 +250,8 @@ export function registerTemplateTools(server: McpServer): void {
           createInput
         );
 
-        return createResponse({
+        // Build response with reminders
+        const baseResponse = {
           epic: result.epic,
           features: result.features.map((f) => ({
             identifier: f.identifier,
@@ -267,7 +269,19 @@ export function registerTemplateTools(server: McpServer): void {
             taskCount: result.features.reduce((sum, f) => sum + f.tasks.length, 0),
           },
           message: `Created epic "${result.epic.name}" with ${String(result.features.length)} features and ${String(result.features.reduce((sum, f) => sum + f.tasks.length, 0))} tasks.`,
-        });
+        };
+
+        // Add contextual reminders for next steps
+        const responseWithReminders = addRemindersToResponse(
+          baseResponse,
+          "create_from_template",
+          {
+            id: result.epic.id,
+            identifier: result.epic.name,
+          }
+        );
+
+        return createResponse(responseWithReminders);
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           return createErrorResponse(

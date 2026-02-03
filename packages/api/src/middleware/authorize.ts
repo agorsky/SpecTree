@@ -6,7 +6,7 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { Membership } from "../generated/prisma/index.js";
 import { prisma } from "../lib/db.js";
-import { ForbiddenError } from "../errors/index.js";
+import { ForbiddenError, NotFoundError } from "../errors/index.js";
 import type { MembershipRole } from "../services/membershipService.js";
 
 /**
@@ -363,7 +363,8 @@ export function requireTeamAccess(
       // Direct team ID - resolve name/key to UUID if needed
       teamId = await resolveTeamId(resourceId);
       if (!teamId) {
-        throw new ForbiddenError("Team not found");
+        // Team doesn't exist - return 404, not 403
+        throw new NotFoundError(`Team '${resourceId}' not found`);
       }
     } else if (typeLower === "epicid" || typeLower === "epic_id") {
       // Lookup team via epic (supports UUID and name)
@@ -393,8 +394,10 @@ export function requireTeamAccess(
       // Unknown resource type - try to resolve as team ID/name/key
       teamId = await resolveTeamId(resourceId);
       if (!teamId) {
-        // Not a known team, treat as direct ID (for backwards compatibility)
-        teamId = resourceId;
+        // For direct team lookups, if the team doesn't exist, return 404
+        // This handles cases like requireTeamAccess("id") where the param
+        // is the team identifier itself
+        throw new NotFoundError(`Team '${resourceId}' not found`);
       }
     }
 
