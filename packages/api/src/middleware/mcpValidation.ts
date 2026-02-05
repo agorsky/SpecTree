@@ -49,10 +49,10 @@ function createMcpValidationError(detail: McpValidationErrorDetail): ValidationE
  * - executionOrder: positive integer indicating execution sequence
  * - estimatedComplexity: one of "trivial", "simple", "moderate", "complex"
  */
-export function validateMcpFeatureCreation(
+export async function validateMcpFeatureCreation(
   request: FastifyRequest,
   _reply: FastifyReply
-): void {
+): Promise<void> {
   if (!isMcpRequest(request)) {
     return; // Non-MCP requests skip strict validation
   }
@@ -110,10 +110,10 @@ export function validateMcpFeatureCreation(
  * Required fields for MCP task creation:
  * - executionOrder: positive integer indicating execution sequence
  */
-export function validateMcpTaskCreation(
+export async function validateMcpTaskCreation(
   request: FastifyRequest,
   _reply: FastifyReply
-): void {
+): Promise<void> {
   if (!isMcpRequest(request)) {
     return; // Non-MCP requests skip strict validation
   }

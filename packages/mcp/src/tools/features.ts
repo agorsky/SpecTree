@@ -9,7 +9,6 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getApiClient, ApiError } from "../api-client.js";
 import { createResponse, createErrorResponse } from "./utils.js";
-import { addRemindersToResponse } from "./reminders.js";
 
 // Register all feature tools
 export function registerFeatureTools(server: McpServer): void {
@@ -252,17 +251,7 @@ export function registerFeatureTools(server: McpServer): void {
           estimatedComplexity: input.estimatedComplexity,
         });
 
-        // Add contextual reminders to guide next steps
-        const responseWithReminders = addRemindersToResponse(
-          feature as unknown as Record<string, unknown>,
-          "create_feature",
-          {
-            id: feature.id,
-            identifier: feature.identifier,
-          }
-        );
-
-        return createResponse(responseWithReminders);
+        return createResponse(feature);
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           return createErrorResponse(new Error(`Epic '${input.epic}' not found`));

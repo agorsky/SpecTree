@@ -38,6 +38,7 @@
     "globals": "^15.14.0",
     "mssql": "^12.2.0",
     "prettier": "^3.4.2",
+    "tsx": "^4.19.0",
     "turbo": "^2.3.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.20.0",

@@ -1,5 +1,31 @@
 # Copilot Instructions for SpecTree
 
+## 🔴 TEMPORARY: SpecTree MCP Tools Disabled (2025-02-03)
+
+**The SpecTree MCP tools are currently experiencing stability issues ("TypeError: terminated" errors during large operations).** 
+
+**Until the CLI orchestrator (`packages/orchestrator/`) is complete, use traditional planning:**
+- Create `plan.md` files in the session workspace for implementation planning
+- Do NOT use `spectree__*` MCP tools for epic/feature/task creation
+- The MCP instructions below are preserved but commented out for future re-enablement
+
+---
+
+**🔴 NEVER:** `prisma migrate reset`, `prisma migrate dev`, `db push --force-reset`
+
+---
+
+SpecTree is a project management tool similar to Linear, with a REST API, React frontend, and MCP server for AI integration.
+
+---
+
+<!--
+=============================================================================
+DISABLED: SpecTree MCP Integration (temporarily disabled due to stability issues)
+Re-enable when packages/orchestrator CLI is complete and MCP server is stable.
+See docs/orchestrator-implementation-briefing.md for the CLI replacement plan.
+=============================================================================
+
 ## ⚡ Quick Reference (READ FIRST)
 
 **Before Implementation:**
@@ -19,14 +45,6 @@
 
 **At Session End:**
 - [ ] `spectree__end_session()` with summary + nextSteps
-
-**🔴 NEVER:** `prisma migrate reset`, `prisma migrate dev`, `db push --force-reset`
-
----
-
-SpecTree is a project management tool similar to Linear, with a REST API, React frontend, and MCP server for AI integration.
-
----
 
 ## 🔴 CRITICAL: Use SpecTree for Implementation Planning
 
@@ -62,7 +80,7 @@ spectree__start_session({ epicId: "Epic Name" })
 // If user specifies a team, use it directly
 // If team is NOT specified, discover available teams and ASK:
 const { teams } = await spectree__list_teams();
-// teams = [{ name: "Engineering", key: "ENG" }, { name: "Commercial", key: "COM" }]
+// teams = [{ id: "uuid-here", name: "Engineering", key: "ENG" }, { id: "uuid-here", name: "Commercial", key: "COM" }]
 
 // Then ask the user:
 // "Which team should I create this epic in? Available teams: Engineering (ENG), Commercial (COM)"
@@ -339,6 +357,10 @@ spectree__end_session({
 - Exploratory code reading without planned changes
 - When user explicitly asks for a file-based plan
 
+END DISABLED SECTION: SpecTree MCP Integration
+=============================================================================
+-->
+
 ---
 
 ## 🚀 SESSION START CHECKLIST
@@ -386,6 +408,11 @@ npx prisma db push             # Schema sync without --force-reset
 Tests use a separate database (`spectree-test.db`) configured in `packages/api/vitest.config.ts`. Do not modify this configuration.
 
 ---
+
+<!--
+=============================================================================
+DISABLED: AI Session Context MCP Tools (temporarily disabled)
+=============================================================================
 
 ## AI Session Context
 
@@ -521,6 +548,10 @@ await spectree__log_decision({
 ```
 
 See `docs/MCP/decision-log.md` for full documentation.
+
+END DISABLED SECTION: AI Session Context MCP Tools
+=============================================================================
+-->
 
 ---
 

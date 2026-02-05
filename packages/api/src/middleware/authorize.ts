@@ -339,9 +339,17 @@ export function requireTeamAccess(
 
     // Support mapping syntax "paramName:resourceType" (e.g., "id:epicId")
     // This allows using a different param name than the resource type
+    // Also supports "body.fieldName" to look only in request body (e.g., "body.team")
     let paramName = teamIdParam;
     let resourceType = teamIdParam;
-    if (teamIdParam.includes(":")) {
+    let bodyOnly = false;
+
+    // Check for body. prefix first (e.g., "body.team" -> look for "team" in body only)
+    if (teamIdParam.startsWith("body.")) {
+      paramName = teamIdParam.slice(5); // Remove "body." prefix
+      resourceType = paramName;
+      bodyOnly = true;
+    } else if (teamIdParam.includes(":")) {
       const parts = teamIdParam.split(":");
       if (parts.length === 2 && parts[0] && parts[1]) {
         paramName = parts[0];
@@ -349,7 +357,9 @@ export function requireTeamAccess(
       }
     }
 
-    const resourceId = params[paramName] ?? (body?.[paramName] as string | undefined);
+    const resourceId = bodyOnly
+      ? (body?.[paramName] as string | undefined)
+      : (params[paramName] ?? (body?.[paramName] as string | undefined));
 
     if (!resourceId) {
       throw new ForbiddenError(`Missing required parameter: ${paramName}`);
