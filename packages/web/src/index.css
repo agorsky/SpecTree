@@ -109,3 +109,33 @@
 @utility zoom-in-95 {
   --tw-enter-scale: 0.95;
 }
+
+/* Print styles for dashboard PDF export */
+@media print {
+  /* Hide navigation and non-content elements */
+  nav,
+  aside,
+  header:not(.print-header),
+  [data-sidebar],
+  button {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Ensure dashboard content fills the page */
+  main {
+    margin: 0 !important;
+    padding: 1rem !important;
+    max-width: 100% !important;
+  }
+
+  /* Make chart bars print-friendly */
+  .bg-blue-500 { background-color: #3b82f6 !important; print-color-adjust: exact; }
+  .bg-green-500 { background-color: #22c55e !important; print-color-adjust: exact; }
+  .bg-amber-500 { background-color: #f59e0b !important; print-color-adjust: exact; }
+  .bg-purple-500 { background-color: #a855f7 !important; print-color-adjust: exact; }
+}

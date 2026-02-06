@@ -181,7 +181,6 @@ export async function getUserActivity(
     prisma.feature.findMany({
       where: {
         epicId: { in: epicIds },
-        assigneeId: userId,
         createdAt: { gte: earliest, lt: latest },
       },
       select: { createdAt: true },
@@ -189,7 +188,6 @@ export async function getUserActivity(
     prisma.task.findMany({
       where: {
         feature: { epicId: { in: epicIds } },
-        assigneeId: userId,
         completedAt: { gte: earliest, lt: latest },
       },
       select: { completedAt: true },
@@ -197,7 +195,6 @@ export async function getUserActivity(
     prisma.decision.findMany({
       where: {
         epicId: { in: epicIds },
-        madeBy: userId,
         createdAt: { gte: earliest, lt: latest },
       },
       select: { createdAt: true },

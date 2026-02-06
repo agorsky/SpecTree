@@ -18,5 +18,7 @@ export function useUserActivity(
   return useQuery({
     queryKey: userActivityKeys.list(interval, page),
     queryFn: () => userActivityApi.get({ interval, page, limit }),
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 }

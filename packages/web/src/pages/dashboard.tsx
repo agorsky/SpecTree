@@ -4,14 +4,15 @@ import type { ActivityInterval } from '@/lib/api/user-activity';
 import { IntervalSelector } from '@/components/dashboard/interval-selector';
 import { ActivityChart } from '@/components/dashboard/activity-chart';
 import { ActivityTable } from '@/components/dashboard/activity-table';
+import { ExportMenu } from '@/components/dashboard/export-menu';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 
 export function DashboardPage() {
   const [interval, setInterval] = useState<ActivityInterval>('week');
   const [page, setPage] = useState(1);
 
-  const { data, isLoading, isError } = useUserActivity(interval, page, 14);
+  const { data, isLoading, isError, dataUpdatedAt, isFetching } = useUserActivity(interval, page, 14);
 
   // Reset page when interval changes
   const handleIntervalChange = (newInterval: ActivityInterval) => {
@@ -25,11 +26,22 @@ export function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Activity Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Your activity across features, tasks, decisions, and AI sessions
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-sm text-muted-foreground">
+              Your activity across features, tasks, decisions, and AI sessions
+            </p>
+            {dataUpdatedAt > 0 && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground/70">
+                <RefreshCw className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} />
+                {new Date(dataUpdatedAt).toLocaleTimeString()}
+              </span>
+            )}
+          </div>
         </div>
-        <IntervalSelector value={interval} onChange={handleIntervalChange} />
+        <div className="flex items-center gap-2">
+          {data && <ExportMenu data={data.data} interval={interval} />}
+          <IntervalSelector value={interval} onChange={handleIntervalChange} />
+        </div>
       </div>
 
       {/* Loading state */}
