@@ -198,7 +198,7 @@ export interface ExecutionItem {
   title: string;
   description: string | null;
   statusId: string | null;
-  epicId?: string;
+  epicId?: string; // Present for features
   executionOrder: number | null;
   canParallelize: boolean;
   parallelGroup: string | null;

@@ -357,4 +357,104 @@ export function registerEpicTools(server: McpServer): void {
       }
     }
   );
+
+  // ==========================================================================
+  // spectree__update_epic
+  // ==========================================================================
+  server.registerTool(
+    "spectree__update_epic",
+    {
+      description:
+        "Update an existing epic. Only the fields you provide will be updated; " +
+        "omitted fields retain their current values. Returns the updated epic " +
+        "with all current field values. Use this to change the name, description, " +
+        "icon, or color of an epic.",
+      inputSchema: {
+        id: z
+          .string()
+          .describe(
+            "The epic to update (required). Accepts either a UUID " +
+            "(e.g., '550e8400-e29b-41d4-a716-446655440000') or an exact epic name " +
+            "(e.g., 'Mobile App Redesign'). Name matching is case-sensitive."
+          ),
+        name: z
+          .string()
+          .min(1)
+          .optional()
+          .describe(
+            "New name for the epic. Only provide if you want to change the name."
+          ),
+        description: z
+          .string()
+          .optional()
+          .describe(
+            "New description for the epic in Markdown format. Replaces the entire " +
+            "description; there is no append mode. Supports full Markdown syntax."
+          ),
+        icon: z
+          .string()
+          .optional()
+          .describe(
+            "New icon identifier for visual display (e.g., 'rocket', 'star', 'folder')."
+          ),
+        color: z
+          .string()
+          .optional()
+          .describe(
+            "New hex color code for the epic's visual theme (e.g., '#FF5733', '#3B82F6')."
+          ),
+      },
+    },
+    async (input) => {
+      try {
+        const apiClient = getApiClient();
+
+        // First, resolve the epic ID if a name was provided
+        let epicId = input.id;
+        
+        // Check if it's a UUID pattern
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidPattern.test(input.id)) {
+          // It's a name, need to look up the epic first
+          const { data: existingEpic } = await apiClient.getEpic(input.id);
+          epicId = existingEpic.id;
+        }
+
+        // Build update payload with only provided fields
+        const updateData: {
+          name?: string;
+          description?: string;
+          icon?: string;
+          color?: string;
+        } = {};
+
+        if (input.name !== undefined) updateData.name = input.name;
+        if (input.description !== undefined) updateData.description = input.description;
+        if (input.icon !== undefined) updateData.icon = input.icon;
+        if (input.color !== undefined) updateData.color = input.color;
+
+        const { data: epic } = await apiClient.updateEpic(epicId, updateData);
+
+        const result = {
+          id: epic.id,
+          name: epic.name,
+          description: epic.description,
+          icon: epic.icon,
+          color: epic.color,
+          sortOrder: epic.sortOrder,
+          isArchived: epic.isArchived,
+          team: epic.team,
+          createdAt: epic.createdAt,
+          updatedAt: epic.updatedAt,
+        };
+
+        return createResponse(result);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(new Error(`Epic '${input.id}' not found`));
+        }
+        return createErrorResponse(error);
+      }
+    }
+  );
 }
