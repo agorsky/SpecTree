@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Task, PaginatedResponse } from './types';
+import type { Task, PaginatedResponse, CodeContextResponse } from './types';
 
 export interface TaskFilters {
   featureId?: string | undefined;
@@ -41,4 +41,10 @@ export const tasksApi = {
     api.put<{ data: Task }>(`/tasks/${id}`, input),
 
   delete: (id: string) => api.delete<void>(`/tasks/${id}`),
+
+  getCodeContext: (taskId: string) =>
+    api.get<CodeContextResponse>(`/tasks/${taskId}/code-context`),
+
+  getAiContext: (taskId: string) =>
+    api.get<import('./ai-types').AiContextResponse>(`/tasks/${taskId}/ai-context`),
 };

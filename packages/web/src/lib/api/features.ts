@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Feature, PaginatedResponse } from './types';
+import type { Feature, PaginatedResponse, CodeContextResponse } from './types';
 
 export interface FeatureFilters {
   epicId?: string | undefined;
@@ -44,4 +44,10 @@ export const featuresApi = {
     api.put<{ data: Feature }>(`/features/${id}`, input),
 
   delete: (id: string) => api.delete<void>(`/features/${id}`),
+
+  getCodeContext: (featureId: string) =>
+    api.get<CodeContextResponse>(`/features/${featureId}/code-context`),
+
+  getAiContext: (featureId: string) =>
+    api.get<import('./ai-types').AiContextResponse>(`/features/${featureId}/ai-context`),
 };

@@ -25,6 +25,11 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
+import { DetailTabs, TabsContent } from "../detail-tabs/detail-tabs";
+import { ActivityPanel } from "../activity/activity-panel";
+import DecisionsPanel from "../decisions/decisions-panel";
+import CodeContextPanel from "../code-context/code-context-panel";
+
 // Status icon based on category
 const StatusIcon = ({ category, className }: { category: string | undefined; className?: string }) => {
   if (category === "completed") {
@@ -47,6 +52,9 @@ export function FeatureDetail() {
   const deleteFeature = useDeleteFeature();
   const { data: statuses } = useStatuses(feature?.epic?.teamId);
   const { data: users } = useUsers();
+
+  // Tabs state
+  const [activeTab, setActiveTab] = useState("description");
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
@@ -181,25 +189,47 @@ export function FeatureDetail() {
       <div className="flex-1 overflow-auto flex">
         {/* Main content */}
         <div className="flex-1 p-6 overflow-auto">
-          <div className="space-y-6">
-            {/* Description */}
-            <MarkdownEditor
-              value={feature.description ?? ""}
-              onChange={(value) => void handleDescriptionChange(value)}
-              placeholder="Add a description..."
-            />
+          <DetailTabs
+            tabs={[
+              { id: "description", label: "Description" },
+              { id: "activity", label: "Activity" },
+              { id: "decisions", label: "Decisions" },
+              { id: "code", label: "Code" },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          >
+            <TabsContent value="description">
+              <div className="space-y-6">
+                {/* Description */}
+                <MarkdownEditor
+                  value={feature.description ?? ""}
+                  onChange={(value) => void handleDescriptionChange(value)}
+                  placeholder="Add a description..."
+                />
 
-            {/* Metadata */}
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>Created: {new Date(feature.createdAt).toLocaleDateString()}</p>
-              <p>Updated: {new Date(feature.updatedAt).toLocaleDateString()}</p>
-            </div>
+                {/* Metadata */}
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>Created: {new Date(feature.createdAt).toLocaleDateString()}</p>
+                  <p>Updated: {new Date(feature.updatedAt).toLocaleDateString()}</p>
+                </div>
 
-            {/* Tasks */}
-            <div className="border-t pt-6">
-              <TaskList featureId={feature.id} teamId={feature.epic?.teamId} />
-            </div>
-          </div>
+                {/* Tasks */}
+                <div className="border-t pt-6">
+                  <TaskList featureId={feature.id} teamId={feature.epic?.teamId} />
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="activity">
+              <ActivityPanel featureId={feature.id} />
+            </TabsContent>
+            <TabsContent value="decisions">
+              <DecisionsPanel featureId={feature.id} />
+            </TabsContent>
+            <TabsContent value="code">
+              <CodeContextPanel featureId={feature.id} />
+            </TabsContent>
+          </DetailTabs>
         </div>
 
         {/* Properties sidebar */}

@@ -90,6 +90,15 @@ export interface PaginatedResponse<T> {
   hasMore: boolean;
 }
 
+export interface CodeContextResponse {
+  relatedFiles: string[];
+  relatedFunctions: string[];
+  gitBranch: string | null;
+  gitCommits: string[];
+  gitPrNumber: number | null;
+  gitPrUrl: string | null;
+}
+
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
