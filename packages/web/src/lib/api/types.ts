@@ -78,6 +78,12 @@ export interface Task {
     id: string;
     identifier: string;
     title: string;
+    epicId?: string;
+    epic?: {
+      id: string;
+      name: string;
+      teamId: string;
+    };
   };
   priority?: number;
   createdAt: string;

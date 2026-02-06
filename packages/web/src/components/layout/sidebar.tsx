@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
-import { Inbox, Folder, Users, Settings, LogOut, Shield } from "lucide-react";
+import { Inbox, Folder, Users, Settings, LogOut, Shield, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 
 const navItems = [
   { href: "/inbox", label: "Inbox", icon: Inbox },
+  { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/epics", label: "Epics", icon: Folder },
   { href: "/teams", label: "Teams", icon: Users },
 ];

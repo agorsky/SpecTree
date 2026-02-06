@@ -7,9 +7,11 @@ import { InboxPage } from "@/pages/inbox";
 import { EpicsPage } from "@/pages/epics/index";
 import { EpicDetailPage } from "@/pages/epics/epic-detail";
 import { FeatureDetail } from "@/components/features/feature-detail";
+import { TaskDetail } from "@/components/tasks/task-detail";
 import { TeamsPage } from "@/pages/teams/index";
 import { TeamDetailPage } from "@/pages/teams/team-detail";
 import { SettingsPage } from "@/pages/settings";
+import { DashboardPage } from "@/pages/dashboard";
 import { AdminGuard } from "@/components/guards/AdminGuard";
 import { AdminUsersPage } from "@/pages/admin/UsersPage";
 
@@ -32,6 +34,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/inbox" replace /> },
       { path: "inbox", element: <InboxPage /> },
+      { path: "dashboard", element: <DashboardPage /> },
       { path: "epics", element: <EpicsPage /> },
       {
         path: "epics/:epicId",
@@ -40,6 +43,10 @@ export const router = createBrowserRouter([
       {
         path: "features/:featureId",
         element: <FeatureDetail />,
+      },
+      {
+        path: "tasks/:taskId",
+        element: <TaskDetail />,
       },
       { path: "teams", element: <TeamsPage /> },
       { path: "teams/:teamId", element: <TeamDetailPage /> },

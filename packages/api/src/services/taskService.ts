@@ -349,6 +349,25 @@ export async function getTaskById(idOrIdentifier: string): Promise<Task | null> 
     where: isUuid
       ? { id: idOrIdentifier }
       : { identifier: idOrIdentifier },
+    include: {
+      status: true,
+      assignee: true,
+      feature: {
+        select: {
+          id: true,
+          identifier: true,
+          title: true,
+          epicId: true,
+          epic: {
+            select: {
+              id: true,
+              name: true,
+              teamId: true,
+            },
+          },
+        },
+      },
+    },
   });
 }
 

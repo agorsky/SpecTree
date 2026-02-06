@@ -6,7 +6,7 @@ export interface ActivityItemProps {
   type: 'observation' | 'decision' | 'blocker' | 'next-step' | 'context' | 'start' | 'complete';
   content: string;
   timestamp: string;
-  sessionId?: string;
+  sessionId?: string | undefined;
 }
 
 const iconMap = {

@@ -37,8 +37,8 @@ class ApiClient {
       headers,
     });
 
-    if (res.status === 401) {
-      // Attempt refresh or redirect to login
+    if (res.status === 401 && !path.startsWith("/auth/")) {
+      // Attempt refresh or redirect to login (skip for auth endpoints)
       const refreshed = await this.refreshToken();
       if (!refreshed) {
         useAuthStore.getState().logout();

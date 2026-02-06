@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Task } from '@/lib/api/types';
 import { useUpdateTask, useDeleteTask } from '@/hooks/queries/use-tasks';
 import { useStatuses } from '@/hooks/queries/use-statuses';
@@ -29,6 +30,7 @@ interface TaskListItemProps {
 }
 
 export function TaskListItem({ task, teamId }: TaskListItemProps) {
+  const navigate = useNavigate();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const { data: statuses } = useStatuses(teamId);
@@ -90,9 +92,15 @@ export function TaskListItem({ task, teamId }: TaskListItemProps) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-mono flex-shrink-0">
+            <button
+              className="text-xs text-muted-foreground font-mono flex-shrink-0 hover:text-primary hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/tasks/${task.id}`);
+              }}
+            >
               {task.identifier}
-            </span>
+            </button>
             <span
               className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
             >
