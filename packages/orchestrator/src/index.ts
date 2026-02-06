@@ -25,14 +25,16 @@ program
 
 // Main command: run a new epic from a prompt
 program
-  .command("run <prompt>")
-  .description("Create and execute a new epic from a natural language prompt")
+  .command("run [prompt]")
+  .description("Create and execute a new epic from a natural language prompt or file")
+  .option("-f, --file <path>", "Read prompt from a file (markdown, text, etc.)")
   .option("-t, --team <name>", "Team to create epic in")
   .option("--dry-run", "Show plan without executing")
   .option("--sequential", "Disable parallel execution")
   .option("--max-agents <n>", "Maximum concurrent agents", "4")
   .option("-b, --branch <name>", "Base branch (default: current or main)")
   .option("--template <name>", "Use a template as starting point (e.g., 'Code Feature', 'Bug Fix')")
+  .option("--no-task-level-agents", "Disable per-task agent spawning (use single agent per feature)")
   .action(runCommand);
 
 // Continue working on an existing epic

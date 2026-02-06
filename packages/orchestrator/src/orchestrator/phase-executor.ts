@@ -39,6 +39,7 @@ import type {
   SpecTreeClient,
   ExecutionItem,
   ExecutionPhase,
+  Task,
 } from "../spectree/api-client.js";
 import { AgentError, OrchestratorError, wrapError } from "../errors.js";
 
@@ -100,6 +101,20 @@ export interface PhaseExecutorOptions {
   sessionId?: string;
   /** Base branch to create feature branches from (default: auto-detect) */
   baseBranch?: string;
+  /** Execute each task with its own agent (fresh context per task) */
+  taskLevelAgents?: boolean;
+}
+
+/**
+ * Streaming progress event from an agent
+ */
+export interface TaskProgressEvent {
+  item: ExecutionItem;
+  type: "message" | "tool-call" | "tool-result";
+  message?: string;
+  toolName?: string;
+  toolArgs?: unknown;
+  toolResult?: unknown;
 }
 
 /**
@@ -112,6 +127,12 @@ export interface PhaseExecutorEvents {
   "item:progress": (item: ExecutionItem, progress: number, message?: string) => void;
   "item:complete": (item: ExecutionItem, result: ItemResult) => void;
   "item:error": (item: ExecutionItem, error: Error) => void;
+  // Task-level events
+  "task:start": (task: Task, feature: ExecutionItem, branch?: string) => void;
+  "task:complete": (task: Task, feature: ExecutionItem, success: boolean) => void;
+  "task:error": (task: Task, feature: ExecutionItem, error: Error) => void;
+  // Streaming progress events
+  "task:progress": (data: TaskProgressEvent) => void;
 }
 
 // =============================================================================
@@ -130,6 +151,7 @@ export class PhaseExecutor extends EventEmitter {
   private specTreeClient: SpecTreeClient;
   private sessionId: string | undefined;
   private baseBranch: string | undefined;
+  private taskLevelAgents: boolean;
 
   constructor(options: PhaseExecutorOptions) {
     super();
@@ -138,6 +160,34 @@ export class PhaseExecutor extends EventEmitter {
     this.specTreeClient = options.specTreeClient;
     this.sessionId = options.sessionId;
     this.baseBranch = options.baseBranch;
+    this.taskLevelAgents = options.taskLevelAgents ?? true; // Default to task-level agents
+
+    // Forward streaming events from AgentPool as task:progress
+    this.agentPool.on("agent:message", (agent, chunk) => {
+      this.emit("task:progress", {
+        item: agent.item,
+        type: "message",
+        message: chunk,
+      } satisfies TaskProgressEvent);
+    });
+
+    this.agentPool.on("agent:tool-call", (agent, toolName, toolArgs) => {
+      this.emit("task:progress", {
+        item: agent.item,
+        type: "tool-call",
+        toolName,
+        toolArgs,
+      } satisfies TaskProgressEvent);
+    });
+
+    this.agentPool.on("agent:tool-result", (agent, toolName, result) => {
+      this.emit("task:progress", {
+        item: agent.item,
+        type: "tool-result",
+        toolName,
+        toolResult: result,
+      } satisfies TaskProgressEvent);
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -427,6 +477,9 @@ export class PhaseExecutor extends EventEmitter {
 
   /**
    * Execute a single item using the agent pool.
+   * 
+   * If taskLevelAgents is enabled (default), fetches tasks for the feature
+   * and spawns a separate agent for each task (fresh context per task).
    *
    * @param item - Item to execute
    * @param branch - Branch to work on
@@ -438,6 +491,363 @@ export class PhaseExecutor extends EventEmitter {
   ): Promise<ItemResult> {
     const startTime = Date.now();
 
+    // If task-level agents enabled and this is a feature, execute each task separately
+    if (this.taskLevelAgents && item.type === "feature") {
+      return this.executeFeatureWithTaskLevelAgents(item, branch, startTime);
+    }
+
+    // Otherwise, execute the item with a single agent (original behavior)
+    return this.executeSingleItemDirectly(item, branch, startTime);
+  }
+
+  /**
+   * Execute a feature by spawning a separate agent for each task.
+   * This ensures fresh context for each task, avoiding context compaction.
+   */
+  private async executeFeatureWithTaskLevelAgents(
+    feature: ExecutionItem,
+    branch: string,
+    startTime: number
+  ): Promise<ItemResult> {
+    try {
+      // 1. Fetch tasks for this feature
+      const tasksResponse = await this.specTreeClient.listTasks({ featureId: feature.id, limit: 100 });
+      const tasks = tasksResponse.data;
+
+      if (tasks.length === 0) {
+        // No tasks - execute feature directly
+        console.log(`  📋 Feature ${feature.identifier} has no tasks, executing directly`);
+        return this.executeSingleItemDirectly(feature, branch, startTime);
+      }
+
+      console.log(`  📋 Feature ${feature.identifier}: Executing ${tasks.length} tasks with individual agents`);
+
+      // 2. Sort tasks by execution order
+      const sortedTasks = [...tasks].sort((a, b) => {
+        const orderA = a.executionOrder ?? a.sortOrder ?? 0;
+        const orderB = b.executionOrder ?? b.sortOrder ?? 0;
+        return orderA - orderB;
+      });
+
+      // 3. Group tasks by parallel capability
+      const taskResults: { task: Task; success: boolean; error?: Error }[] = [];
+      let currentParallelGroup: Task[] = [];
+      let lastParallelGroup: string | null = null;
+
+      for (let i = 0; i < sortedTasks.length; i++) {
+        const task = sortedTasks[i]!;
+        const isLastTask = i === sortedTasks.length - 1;
+
+        // Check if this task can be grouped with previous tasks
+        if (task.canParallelize && task.parallelGroup === lastParallelGroup && lastParallelGroup !== null) {
+          currentParallelGroup.push(task);
+        } else {
+          // Execute any pending parallel group
+          if (currentParallelGroup.length > 0) {
+            const groupResults = await this.executeTaskGroup(currentParallelGroup, feature, branch);
+            taskResults.push(...groupResults);
+            
+            // Check for failures
+            const failed = groupResults.find(r => !r.success);
+            if (failed) {
+              return this.buildFeatureResult(feature, taskResults, startTime, branch);
+            }
+          }
+
+          // Start new group or execute single task
+          if (task.canParallelize && task.parallelGroup) {
+            currentParallelGroup = [task];
+            lastParallelGroup = task.parallelGroup;
+          } else {
+            // Execute task immediately (sequential)
+            currentParallelGroup = [];
+            lastParallelGroup = null;
+            const result = await this.executeSingleTask(task, feature, branch);
+            taskResults.push(result);
+            
+            if (!result.success) {
+              return this.buildFeatureResult(feature, taskResults, startTime, branch);
+            }
+          }
+        }
+
+        // Handle last task
+        if (isLastTask && currentParallelGroup.length > 0) {
+          const groupResults = await this.executeTaskGroup(currentParallelGroup, feature, branch);
+          taskResults.push(...groupResults);
+        }
+      }
+
+      return this.buildFeatureResult(feature, taskResults, startTime, branch);
+
+    } catch (error) {
+      const itemError = wrapError(error, `Failed to execute feature ${feature.identifier} with task-level agents`);
+      return {
+        itemId: feature.id,
+        identifier: feature.identifier,
+        type: feature.type,
+        success: false,
+        error: itemError,
+        duration: Date.now() - startTime,
+        branch,
+      };
+    }
+  }
+
+  /**
+   * Build feature result from task results.
+   */
+  private buildFeatureResult(
+    feature: ExecutionItem,
+    taskResults: { task: Task; success: boolean; error?: Error }[],
+    startTime: number,
+    branch: string
+  ): ItemResult {
+    const allSucceeded = taskResults.every(r => r.success);
+    const completedTasks = taskResults.filter(r => r.success).map(r => r.task.identifier);
+    const failedTasks = taskResults.filter(r => !r.success).map(r => r.task.identifier);
+
+    const result: ItemResult = {
+      itemId: feature.id,
+      identifier: feature.identifier,
+      type: feature.type,
+      success: allSucceeded,
+      duration: Date.now() - startTime,
+      branch,
+      summary: allSucceeded 
+        ? `Completed ${completedTasks.length} tasks: ${completedTasks.join(", ")}`
+        : `Failed at tasks: ${failedTasks.join(", ")}. Completed: ${completedTasks.join(", ") || "none"}`,
+    };
+
+    if (!allSucceeded) {
+      const firstError = taskResults.find(r => !r.success)?.error;
+      if (firstError) {
+        result.error = firstError;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Execute a group of parallelizable tasks simultaneously.
+   */
+  private async executeTaskGroup(
+    tasks: Task[],
+    feature: ExecutionItem,
+    branch: string
+  ): Promise<{ task: Task; success: boolean; error?: Error }[]> {
+    console.log(`    🔀 Executing ${tasks.length} tasks in parallel: ${tasks.map(t => t.identifier).join(", ")}`);
+
+    const promises = tasks.map(task => this.executeSingleTask(task, feature, branch));
+    return Promise.all(promises);
+  }
+
+  /**
+   * Execute a single task with its own dedicated agent.
+   * This creates a fresh Copilot session with clean context.
+   */
+  private async executeSingleTask(
+    task: Task,
+    feature: ExecutionItem,
+    branch: string
+  ): Promise<{ task: Task; success: boolean; error?: Error }> {
+    const taskStartTime = Date.now();
+
+    // Emit task start event
+    this.emit("task:start", task, feature, branch);
+    console.log(`    🤖 Starting agent for task ${task.identifier}: ${task.title}`);
+
+    try {
+      // Mark task as started in SpecTree
+      await this.markTaskStarted(task);
+
+      // Convert Task to ExecutionItem format for agent pool
+      const taskItem: ExecutionItem = {
+        type: "task",
+        id: task.id,
+        identifier: task.identifier,
+        title: task.title,
+        description: task.description,
+        statusId: task.statusId,
+        executionOrder: task.executionOrder,
+        canParallelize: task.canParallelize,
+        parallelGroup: task.parallelGroup,
+        dependencies: task.dependencies ? JSON.parse(task.dependencies) : [],
+        estimatedComplexity: task.estimatedComplexity,
+      };
+
+      // Spawn a fresh agent for this task
+      const agent = await this.agentPool.spawnAgent(taskItem, branch);
+
+      // Build prompt with feature context
+      const taskPrompt = this.buildTaskPromptWithFeatureContext(task, feature);
+
+      // Execute and wait
+      const agentResult = await this.agentPool.startAgent(agent.id, taskPrompt);
+
+      // Clean up agent
+      this.agentPool.removeAgent(agent.id);
+
+      // Mark task as completed in SpecTree
+      if (agentResult.success) {
+        await this.markTaskCompleted(task, agentResult.summary);
+        this.emit("task:complete", task, feature, true);
+        console.log(`    ✅ Task ${task.identifier} completed (${((Date.now() - taskStartTime) / 1000).toFixed(1)}s)`);
+      } else {
+        this.emit("task:error", task, feature, agentResult.error ?? new Error("Unknown error"));
+        console.log(`    ❌ Task ${task.identifier} failed`);
+      }
+
+      const taskResult: { task: Task; success: boolean; error?: Error } = {
+        task,
+        success: agentResult.success,
+      };
+      if (agentResult.error) {
+        taskResult.error = agentResult.error;
+      }
+      return taskResult;
+
+    } catch (error) {
+      const taskError = wrapError(error, `Failed to execute task ${task.identifier}`);
+      this.emit("task:error", task, feature, taskError);
+      console.log(`    ❌ Task ${task.identifier} error: ${taskError.message}`);
+
+      return {
+        task,
+        success: false,
+        error: taskError,
+      };
+    }
+  }
+
+  /**
+   * Build a task prompt that includes feature context.
+   */
+  private buildTaskPromptWithFeatureContext(task: Task, feature: ExecutionItem): string {
+    const parts: string[] = [];
+
+    parts.push(`# Task: ${task.title}`);
+    parts.push(`**Task ID:** ${task.id}`);
+    parts.push(`**Task Identifier:** ${task.identifier}`);
+    parts.push(`**Task Type:** task`);
+    parts.push(`**Parent Feature:** ${feature.identifier} - ${feature.title}`);
+    parts.push(`**Epic ID:** ${feature.epicId || "unknown"}`);
+
+    if (task.description) {
+      parts.push(`\n## Task Description\n\n${task.description}`);
+    }
+
+    if (feature.description) {
+      parts.push(`\n## Feature Context\n\n${feature.description}`);
+    }
+
+    if (task.estimatedComplexity) {
+      parts.push(`\n**Estimated Complexity:** ${task.estimatedComplexity}`);
+    }
+
+    parts.push(`\n## Progress Tracking Tools
+
+You MUST use these tools to document your work. This creates a permanent record of what was done.
+
+### log_progress - Report what you're doing
+Call this tool periodically to record progress:
+\`\`\`json
+{
+  "type": "task",
+  "id": "${task.identifier}",
+  "message": "Describe what you just completed or are working on",
+  "percentComplete": 50
+}
+\`\`\`
+
+### log_decision - Record important choices
+Call this tool when making implementation decisions:
+\`\`\`json
+{
+  "type": "task", 
+  "taskId": "${task.id}",
+  "epicId": "${feature.epicId || ""}",
+  "question": "What decision was needed?",
+  "decision": "What you decided",
+  "rationale": "Why you made this choice",
+  "category": "approach"
+}
+\`\`\`
+Categories: architecture, library, approach, scope, design, tradeoff, deferral
+
+### link_code_file - Track files you modify
+Call this for EVERY file you create or modify:
+\`\`\`json
+{
+  "type": "task",
+  "id": "${task.identifier}",
+  "filePath": "src/path/to/file.ts"
+}
+\`\`\`
+
+## Instructions
+
+1. **START** by calling log_progress with "Starting work on ${task.identifier}"
+2. Focus ONLY on this specific task - do not implement other tasks
+3. Call log_progress after completing each significant step
+4. Call log_decision when making important choices (library selection, approach, etc.)
+5. Call link_code_file for EVERY file you create or modify
+6. **END** by calling log_progress with a summary and percentComplete: 100
+
+**Important:** This task is part of feature ${feature.identifier}. Other agents handle other tasks.`);
+
+    return parts.join("\n");
+  }
+
+  /**
+   * Mark task as started in SpecTree.
+   */
+  private async markTaskStarted(task: Task): Promise<void> {
+    try {
+      const input = this.sessionId ? { sessionId: this.sessionId } : undefined;
+      await this.specTreeClient.startWork("task", task.id, input);
+    } catch (error) {
+      console.warn(
+        `Failed to mark task started for ${task.identifier}:`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  /**
+   * Mark task as completed in SpecTree.
+   */
+  private async markTaskCompleted(task: Task, summary?: string): Promise<void> {
+    try {
+      let input: { summary?: string; sessionId?: string } | undefined;
+      
+      if (this.sessionId) {
+        input = { sessionId: this.sessionId };
+        if (summary !== undefined) {
+          input.summary = summary;
+        }
+      } else if (summary !== undefined) {
+        input = { summary };
+      }
+      
+      await this.specTreeClient.completeWork("task", task.id, input);
+    } catch (error) {
+      console.warn(
+        `Failed to mark task completed for ${task.identifier}:`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  /**
+   * Execute item directly with a single agent (original behavior).
+   */
+  private async executeSingleItemDirectly(
+    item: ExecutionItem,
+    branch: string,
+    startTime: number
+  ): Promise<ItemResult> {
     try {
       // 1. Spawn agent
       const agent = await this.agentPool.spawnAgent(item, branch);
@@ -546,14 +956,18 @@ export class PhaseExecutor extends EventEmitter {
   // ---------------------------------------------------------------------------
 
   /**
-   * Build the task prompt for an agent.
+   * Build the task prompt for an agent (used when task-level agents disabled).
    */
   private buildTaskPrompt(item: ExecutionItem): string {
     const parts: string[] = [];
 
-    parts.push(`# Task: ${item.title}`);
+    parts.push(`# ${item.type === "feature" ? "Feature" : "Task"}: ${item.title}`);
+    parts.push(`**ID:** ${item.id}`);
     parts.push(`**Identifier:** ${item.identifier}`);
     parts.push(`**Type:** ${item.type}`);
+    if (item.epicId) {
+      parts.push(`**Epic ID:** ${item.epicId}`);
+    }
 
     if (item.description) {
       parts.push(`\n## Description\n\n${item.description}`);
@@ -567,13 +981,50 @@ export class PhaseExecutor extends EventEmitter {
       parts.push(`\n**Dependencies:** ${item.dependencies.join(", ")}`);
     }
 
-    parts.push(`\n## Instructions
+    parts.push(`\n## Progress Tracking Tools
 
-1. Implement the task according to the description above
-2. Use log_progress to report significant milestones
-3. Use log_decision to record any important choices
-4. Link files you create or modify with link_code_file
-5. When complete, provide a brief summary of what you did`);
+You MUST use these tools to document your work. This creates a permanent record.
+
+### log_progress - Report what you're doing
+\`\`\`json
+{
+  "type": "${item.type}",
+  "id": "${item.identifier}",
+  "message": "Describe what you completed or are working on",
+  "percentComplete": 50
+}
+\`\`\`
+
+### log_decision - Record important choices
+\`\`\`json
+{
+  "type": "${item.type}",
+  "${item.type === "feature" ? "featureId" : "taskId"}": "${item.id}",
+  "epicId": "${item.epicId || ""}",
+  "question": "What decision was needed?",
+  "decision": "What you decided",
+  "rationale": "Why you made this choice",
+  "category": "approach"
+}
+\`\`\`
+
+### link_code_file - Track files you modify
+\`\`\`json
+{
+  "type": "${item.type}",
+  "id": "${item.identifier}",
+  "filePath": "src/path/to/file.ts"
+}
+\`\`\`
+
+## Instructions
+
+1. **START** by calling log_progress with "Starting work on ${item.identifier}"
+2. Implement the ${item.type} according to the description
+3. Call log_progress after completing each significant step
+4. Call log_decision when making important choices
+5. Call link_code_file for EVERY file you create or modify
+6. **END** by calling log_progress with a summary and percentComplete: 100`);
 
     return parts.join("\n");
   }

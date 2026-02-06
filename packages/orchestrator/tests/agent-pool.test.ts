@@ -77,29 +77,101 @@ function createMockSpecTreeClient(): SpecTreeClient {
   } as unknown as SpecTreeClient;
 }
 
+/**
+ * Creates a mock CopilotClient that simulates the streaming API.
+ * The mock session supports on() for event subscription and send() to trigger execution.
+ * On send(), it schedules assistant.message and session.idle events asynchronously.
+ */
 function createMockCopilotClient(responseContent = "Task completed successfully"): CopilotClient {
-  const mockSession = {
-    sendAndWait: vi.fn().mockResolvedValue({
-      type: "assistant.message",
-      data: { content: responseContent },
-    }),
-    destroy: vi.fn().mockResolvedValue(undefined),
-  };
-
+  const mockSession = createMockStreamingSession(responseContent);
   return {
     createSession: vi.fn().mockResolvedValue(mockSession),
   } as unknown as CopilotClient;
 }
 
 function createFailingCopilotClient(): CopilotClient {
-  const mockSession = {
-    sendAndWait: vi.fn().mockRejectedValue(new Error("Agent execution failed")),
-    destroy: vi.fn().mockResolvedValue(undefined),
-  };
-
+  const mockSession = createMockStreamingSession("", "Agent execution failed");
   return {
     createSession: vi.fn().mockResolvedValue(mockSession),
   } as unknown as CopilotClient;
+}
+
+/**
+ * Creates a mock streaming session that emulates the Copilot SDK event model.
+ * @param responseContent - Content for the assistant.message event
+ * @param errorMessage - If set, emits session.error instead of session.idle
+ */
+function createMockStreamingSession(responseContent: string, errorMessage?: string) {
+  const handlers: Map<string, Array<(event: unknown) => void>> = new Map();
+
+  const mockSession = {
+    send: vi.fn().mockImplementation(() => {
+      // Schedule events asynchronously to simulate streaming
+      setTimeout(() => {
+        if (responseContent) {
+          // Emit assistant.message with content
+          const messageHandlers = handlers.get("assistant.message") ?? [];
+          for (const handler of messageHandlers) {
+            handler({
+              type: "assistant.message",
+              id: "msg-1",
+              timestamp: new Date().toISOString(),
+              parentId: null,
+              data: { messageId: "msg-1", content: responseContent },
+            });
+          }
+        }
+
+        if (errorMessage) {
+          // Emit session.error
+          const errorHandlers = handlers.get("session.error") ?? [];
+          for (const handler of errorHandlers) {
+            handler({
+              type: "session.error",
+              id: "err-1",
+              timestamp: new Date().toISOString(),
+              parentId: null,
+              data: { errorType: "execution_error", message: errorMessage },
+            });
+          }
+        } else {
+          // Emit session.idle
+          const idleHandlers = handlers.get("session.idle") ?? [];
+          for (const handler of idleHandlers) {
+            handler({
+              type: "session.idle",
+              id: "idle-1",
+              timestamp: new Date().toISOString(),
+              parentId: null,
+              ephemeral: true as const,
+              data: {},
+            });
+          }
+        }
+      }, 10);
+
+      return Promise.resolve("msg-1");
+    }),
+    on: vi.fn().mockImplementation((eventType: string, handler: (event: unknown) => void) => {
+      if (!handlers.has(eventType)) {
+        handlers.set(eventType, []);
+      }
+      handlers.get(eventType)!.push(handler);
+      // Return unsubscribe function
+      return () => {
+        const arr = handlers.get(eventType);
+        if (arr) {
+          const idx = arr.indexOf(handler);
+          if (idx >= 0) arr.splice(idx, 1);
+        }
+      };
+    }),
+    destroy: vi.fn().mockResolvedValue(undefined),
+    // Expose handlers for test assertions
+    _handlers: handlers,
+  };
+
+  return mockSession;
 }
 
 function createMockTools(): Tool<unknown>[] {
@@ -247,7 +319,7 @@ describe("AgentPool", () => {
 
       await pool.startAgent(agent.id, "Implement the auth system");
 
-      expect(mockSession.sendAndWait).toHaveBeenCalledWith({
+      expect(mockSession.send).toHaveBeenCalledWith({
         prompt: "Implement the auth system",
       });
     });
@@ -453,12 +525,9 @@ describe("AgentPool", () => {
     });
 
     it("should include failed agents in results", async () => {
-      const mixedPool = new AgentPool(createPoolOptions());
+      const failingClient = createFailingCopilotClient();
+      const mixedPool = new AgentPool(createPoolOptions({ copilotClient: failingClient }));
       const agent1 = await mixedPool.spawnAgent(MOCK_TASK, "feature/COM-1");
-
-      // Replace the session's sendAndWait to fail
-      const mockSession = await (mixedPool["copilotClient"].createSession as Mock).mock.results[0].value;
-      mockSession.sendAndWait.mockRejectedValueOnce(new Error("Failed"));
 
       mixedPool.startAgent(agent1.id, "Work");
 
@@ -706,21 +775,24 @@ describe("AgentPool", () => {
 
   describe("error isolation", () => {
     it("should not affect other agents when one fails", async () => {
-      // Create a pool where we can control individual session behavior
-      const mixedClient = createMockCopilotClient();
+      // Create a client that alternates: first session fails, second succeeds
+      let callCount = 0;
+      const mixedClient = {
+        createSession: vi.fn().mockImplementation(() => {
+          callCount++;
+          if (callCount === 1) {
+            // First session: will emit error
+            return Promise.resolve(createMockStreamingSession("", "Agent 1 failed"));
+          }
+          // Second session: will succeed normally
+          return Promise.resolve(createMockStreamingSession("Done"));
+        }),
+      } as unknown as CopilotClient;
+
       const mixedPool = new AgentPool(createPoolOptions({ copilotClient: mixedClient }));
 
       const agent1 = await mixedPool.spawnAgent(MOCK_TASK, "feature/COM-1");
       const agent2 = await mixedPool.spawnAgent(MOCK_TASK_2, "feature/COM-2");
-
-      // Get the mock sessions
-      const sessions = (mixedClient.createSession as Mock).mock.results;
-      const session1 = await sessions[0].value;
-      const session2 = await sessions[1].value;
-
-      // Make first session fail
-      session1.sendAndWait.mockRejectedValueOnce(new Error("Agent 1 failed"));
-      // Second session succeeds (default mock behavior)
 
       // Start both
       const results = await Promise.all([

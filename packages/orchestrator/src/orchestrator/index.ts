@@ -56,6 +56,7 @@ export {
   type PhaseResult,
   type PhaseExecutorOptions,
   type PhaseExecutorEvents,
+  type TaskProgressEvent,
 } from "./phase-executor.js";
 
 // Recovery / Checkpoint Manager

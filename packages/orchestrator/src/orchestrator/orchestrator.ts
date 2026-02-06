@@ -52,7 +52,7 @@ import {
   isMergeConflictError,
 } from "../errors.js";
 import { getCopilotModel, getConfig } from "../config/index.js";
-import { PhaseExecutor, type PhaseResult } from "./phase-executor.js";
+import { PhaseExecutor, type PhaseResult, type TaskProgressEvent } from "./phase-executor.js";
 import { AgentPool } from "./agent-pool.js";
 import { BranchManager } from "../git/branch-manager.js";
 import { MergeCoordinator } from "../git/merge-coordinator.js";
@@ -76,6 +76,8 @@ export interface RunOptions {
   sessionId?: string;
   /** Base branch to use for parallel branches (default: auto-detect) */
   baseBranch?: string;
+  /** Execute each task with its own dedicated agent (fresh context per task). Default: true */
+  taskLevelAgents?: boolean;
 }
 
 /**
@@ -138,6 +140,15 @@ export interface ProgressEvent {
   phaseResult?: PhaseResult;
   /** Branch being merged */
   branch?: string;
+  // Streaming progress fields
+  /** Sub-type for streaming progress (message, tool-call, tool-result) */
+  streamingType?: "message" | "tool-call" | "tool-result";
+  /** Tool name for tool-call/tool-result events */
+  toolName?: string;
+  /** Tool arguments for tool-call events */
+  toolArgs?: unknown;
+  /** Tool result data for tool-result events */
+  toolResult?: unknown;
 }
 
 /**
@@ -182,33 +193,46 @@ export interface OrchestratorEvents {
 
 const AGENT_SYSTEM_PROMPT = `You are an AI assistant implementing a task for the SpecTree orchestrator.
 
-Your job is to implement the assigned task according to its description and acceptance criteria. You have access to tools for tracking your progress.
+Your job is to implement the assigned task according to its description and acceptance criteria. 
 
-## Available Tools
+## CRITICAL: Progress Tracking
 
-- **log_progress**: Report incremental progress during long-running work
-- **log_decision**: Record implementation decisions with rationale
-- **link_code_file**: Link files you create or modify to this task
-- **get_task_context**: Get detailed requirements if needed
-- **get_code_context**: Get files and branches already linked
+You MUST use the progress tracking tools to document your work. The task prompt will provide the exact IDs to use.
+
+### Required Tool Usage
+
+1. **log_progress** - Call this tool:
+   - At the START of your work
+   - After each significant milestone
+   - At the END with percentComplete: 100 and a summary
+
+2. **log_decision** - Call this tool when you:
+   - Choose between alternatives (libraries, approaches, etc.)
+   - Make assumptions about requirements
+   - Decide to skip or defer something
+   - Change direction from the original plan
+
+3. **link_code_file** - Call this tool for EVERY file you:
+   - Create
+   - Modify
+   - Delete
 
 ## Workflow
 
 1. Review the task requirements carefully
-2. Plan your approach before making changes
-3. Implement the task step by step
-4. Use log_progress for significant milestones
-5. Use log_decision when making important choices
-6. Link any files you create or modify
-7. Test your changes if a test command is available
-8. Complete with a summary of what was done
+2. Call log_progress with "Starting work on [identifier]"
+3. Plan your approach - if making significant choices, call log_decision
+4. Implement step by step, calling log_progress at milestones
+5. Call link_code_file for every file touched
+6. Test your changes if a test command is available
+7. Call log_progress with final summary and percentComplete: 100
 
 ## Important Notes
 
 - Make minimal, targeted changes
 - Follow existing code patterns and conventions
 - Handle errors gracefully
-- Document any assumptions you make`;
+- Document ALL decisions - future agents will reference this history`;
 
 // =============================================================================
 // Orchestrator Class
@@ -281,10 +305,10 @@ export class Orchestrator extends EventEmitter {
       const sessionResponse = await this.startSpectreeSession(epicId, options?.sessionId);
       this.spectreeSession = sessionResponse.session;
 
-      // Get handoff context from previous session if available
-      const handoffContext = sessionResponse.previousSession
-        ? this.buildHandoffContext(sessionResponse.previousSession)
-        : undefined;
+      // TODO: Use handoff context from previous session for resumption
+      // const handoffContext = sessionResponse.previousSession
+      //   ? this.buildHandoffContext(sessionResponse.previousSession)
+      //   : undefined;
 
       // Step 3: Determine execution mode
       const forceSequential = options?.sequential ?? false;
@@ -293,14 +317,19 @@ export class Orchestrator extends EventEmitter {
       const phasesToExecute = this.filterPhases(this.executionPlan, options?.fromFeature);
 
       // Step 5: Process phases
+      // Always use processPhases for task-level agent support
+      // The forceSequential flag makes phases run sequentially at the feature level
+      const baseBranch = options?.baseBranch ?? (await this.branchManager.getDefaultBranch());
+      const taskLevelAgents = options?.taskLevelAgents ?? true; // Default to task-level agents
+      
+      // If forceSequential, override phase parallelism
       if (forceSequential) {
-        // Legacy sequential execution (flatten all items)
-        await this.runSequentialMode(phasesToExecute, handoffContext);
-      } else {
-        // Phase-based execution with parallel support
-        const baseBranch = options?.baseBranch ?? (await this.branchManager.getDefaultBranch());
-        mergeConflict = await this.processPhases(phasesToExecute, baseBranch);
+        for (const phase of phasesToExecute) {
+          phase.canRunInParallel = false;
+        }
       }
+      
+      mergeConflict = await this.processPhases(phasesToExecute, baseBranch, taskLevelAgents);
 
       // Step 6: End SpecTree session
       await this.endSpectreeSession(epicId, this.completedItems, this.failedItems, mergeConflict);
@@ -384,11 +413,13 @@ export class Orchestrator extends EventEmitter {
    *
    * @param phases - Phases to execute
    * @param baseBranch - Base branch for creating feature branches
+   * @param taskLevelAgents - Whether to spawn separate agents for each task
    * @returns MergeConflictError if a merge conflict occurs, undefined otherwise
    */
   private async processPhases(
     phases: ExecutionPhase[],
-    baseBranch: string
+    baseBranch: string,
+    taskLevelAgents: boolean
   ): Promise<MergeConflictError | undefined> {
     // Initialize agent pool and phase executor
     this.agentPool = new AgentPool({
@@ -404,6 +435,7 @@ export class Orchestrator extends EventEmitter {
       branchManager: this.branchManager,
       specTreeClient: this.client,
       baseBranch,
+      taskLevelAgents,
     });
 
     // Set session ID if available
@@ -573,48 +605,23 @@ export class Orchestrator extends EventEmitter {
         message,
       });
     });
+
+    // Forward streaming progress events
+    this.phaseExecutor.on("task:progress", (data: TaskProgressEvent) => {
+      this.emit("item:progress", {
+        type: "item:progress" as const,
+        item: data.item,
+        streamingType: data.type,
+        message: data.message,
+        toolName: data.toolName,
+        toolArgs: data.toolArgs,
+        toolResult: data.toolResult,
+      });
+    });
   }
 
   // ---------------------------------------------------------------------------
   // Sequential Execution (Legacy/Fallback Mode)
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Run in sequential mode (no parallel agents).
-   * This is the legacy MVP behavior.
-   */
-  private async runSequentialMode(
-    phases: ExecutionPhase[],
-    handoffContext?: string
-  ): Promise<void> {
-    // Flatten all phases into a single item list
-    const items: ExecutionItem[] = [];
-    for (const phase of phases) {
-      items.push(...phase.items);
-    }
-
-    // Execute items sequentially
-    for (const item of items) {
-      const result = await this.executeItem(item, handoffContext);
-
-      if (result.success) {
-        this.completedItems.push(result.identifier);
-      } else {
-        this.failedItems.push(result.identifier);
-
-        // Emit error event
-        this.emit("item:error", {
-          type: "item:error" as const,
-          item,
-          error: result.error,
-        });
-
-        // Stop on first failure
-        break;
-      }
-    }
-  }
-
   // ---------------------------------------------------------------------------
   // Execution Plan and Session Management
   // ---------------------------------------------------------------------------
@@ -678,8 +685,10 @@ export class Orchestrator extends EventEmitter {
 
   /**
    * Build handoff context from a previous session.
+   * @internal Used for session resumption - may be called by subclasses
    */
-  private buildHandoffContext(session: SpecTreeSession): string {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected buildHandoffContext(session: SpecTreeSession): string {
     const parts: string[] = [];
 
     if (session.summary) {
@@ -765,13 +774,15 @@ export class Orchestrator extends EventEmitter {
   }
 
   // ---------------------------------------------------------------------------
-  // Single Item Execution (for sequential mode)
+  // Single Item Execution (for direct item execution without task-level agents)
   // ---------------------------------------------------------------------------
 
   /**
-   * Execute a single item (feature or task) in sequential mode.
+   * Execute a single item (feature or task) directly with one agent.
+   * @internal Used for testing and direct execution - may be called by subclasses
    */
-  private async executeItem(item: ExecutionItem, handoffContext?: string): Promise<ItemResult> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected async executeItem(item: ExecutionItem, handoffContext?: string): Promise<ItemResult> {
     const startTime = Date.now();
 
     // Emit start event
@@ -792,9 +803,9 @@ export class Orchestrator extends EventEmitter {
       const session = await this.createSession(item, handoffContext);
       this.activeSession = session;
 
-      // Step 3: Send task prompt and wait for completion
+      // Step 3: Send task prompt and wait for completion (25-minute timeout for complex tasks)
       const taskPrompt = this.buildTaskPrompt(item, handoffContext);
-      const response = await session.sendAndWait({ prompt: taskPrompt });
+      const response = await session.sendAndWait({ prompt: taskPrompt }, 1500000);
 
       // Extract summary from response
       const summary = this.extractSummary(response);

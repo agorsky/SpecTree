@@ -13,6 +13,8 @@
 import chalk from "chalk";
 import ora, { type Ora } from "ora";
 import inquirer from "inquirer";
+import { readFileSync, existsSync } from "fs";
+import { resolve } from "path";
 import { getApiToken, getApiUrl } from "./auth.js";
 import { getDefaultTeam, initConfig } from "../../config/index.js";
 import {
@@ -27,6 +29,10 @@ import {
   type RunResult,
   type ProgressEvent,
 } from "../../orchestrator/index.js";
+import {
+  TaskProgressDisplay,
+  ActivityTracker,
+} from "../../ui/index.js";
 import {
   AuthError,
   isAuthError,
@@ -46,6 +52,8 @@ interface RunOptions {
   maxAgents?: string;
   branch?: string;
   template?: string;
+  file?: string;
+  taskLevelAgents?: boolean;
 }
 
 // =============================================================================
@@ -94,6 +102,61 @@ function displayPlan(plan: GeneratedPlan): void {
   console.log();
   console.log(chalk.gray("─".repeat(60)));
   console.log(chalk.yellow("⚠️  Dry run - no changes made. Run without --dry-run to execute."));
+  console.log();
+}
+
+/**
+ * Display the generated plan for user review before execution
+ */
+function displayPlanForReview(plan: GeneratedPlan): void {
+  console.log(chalk.cyan("\n" + "═".repeat(60)));
+  console.log(chalk.cyan("📋 GENERATED EXECUTION PLAN"));
+  console.log(chalk.cyan("═".repeat(60) + "\n"));
+
+  console.log(chalk.white.bold(`Epic: ${plan.epicName}`));
+  if (plan.epicDescription) {
+    console.log(chalk.gray(plan.epicDescription));
+  }
+  console.log();
+
+  console.log(chalk.white.bold(`Features (${plan.totalFeatures}):`));
+  console.log(chalk.gray("─".repeat(40)));
+
+  for (const feature of plan.features) {
+    const parallelTag = feature.canParallelize
+      ? chalk.blue(` [parallel: ${feature.parallelGroup || "default"}]`)
+      : "";
+    const complexityTag = feature.estimatedComplexity
+      ? chalk.magenta(` [${feature.estimatedComplexity}]`)
+      : "";
+
+    console.log(
+      chalk.yellow(`\n  ${feature.executionOrder}. `) +
+      chalk.white.bold(feature.title) +
+      parallelTag +
+      complexityTag
+    );
+    console.log(chalk.gray(`     ${feature.identifier}`));
+
+    for (const task of feature.tasks) {
+      console.log(chalk.cyan(`      ├─ `) + chalk.white(task.title));
+    }
+  }
+
+  console.log();
+  console.log(chalk.gray("─".repeat(60)));
+  console.log(
+    chalk.white(`📊 Summary: `) +
+    chalk.yellow(`${plan.totalFeatures} features`) +
+    chalk.white(` with `) +
+    chalk.yellow(`${plan.totalTasks} tasks`)
+  );
+
+  if (plan.parallelGroups.length > 0) {
+    console.log(chalk.white(`🔀 Parallel Groups: `) + chalk.blue(plan.parallelGroups.join(", ")));
+  }
+
+  console.log(chalk.gray("─".repeat(60)));
   console.log();
 }
 
@@ -175,43 +238,66 @@ function displayError(error: unknown, spinner?: Ora): void {
 }
 
 /**
- * Setup progress event handlers on the orchestrator
+ * Setup progress event handlers on the orchestrator.
+ * Uses TaskProgressDisplay for real-time streaming feedback and
+ * ActivityTracker for human-readable tool call labels.
  */
 function setupProgressHandlers(orchestrator: Orchestrator): void {
-  let currentSpinner: Ora | null = null;
+  let currentDisplay: TaskProgressDisplay | null = null;
 
   orchestrator.on("item:start", (event: ProgressEvent) => {
-    if (currentSpinner) {
-      currentSpinner.stop();
+    // Stop previous display if still running
+    if (currentDisplay) {
+      currentDisplay.stop(true);
     }
     if (event.item) {
-      currentSpinner = ora({
-        text: `Working on: ${event.item.identifier} - ${event.item.title}`,
-        color: "cyan",
-      }).start();
+      currentDisplay = new TaskProgressDisplay({
+        taskId: event.item.identifier,
+        taskTitle: event.item.title,
+        showMilestones: true,
+      });
+      currentDisplay.start();
     }
   });
 
   orchestrator.on("item:progress", (event: ProgressEvent) => {
-    if (currentSpinner && event.message && event.item) {
-      const percent = event.percentComplete !== undefined
-        ? ` (${event.percentComplete}%)`
-        : "";
-      currentSpinner.text = `${event.item.identifier}: ${event.message}${percent}`;
+    if (!currentDisplay || !event.item) return;
+
+    // Handle streaming progress events
+    if (event.streamingType === "tool-call" && event.toolName) {
+      const activity = ActivityTracker.mapToolToActivity(
+        event.toolName,
+        (event.toolArgs as Record<string, unknown>) ?? {}
+      );
+      currentDisplay.setActivity(activity);
+
+      // Log milestones for significant tools
+      if (ActivityTracker.isMilestone(event.toolName)) {
+        currentDisplay.logMilestone(activity);
+      }
+    }
+
+    if (event.streamingType === "message") {
+      currentDisplay.incrementMessageCount();
+    }
+
+    // Handle legacy percentage-based progress
+    if (event.percentComplete !== undefined && event.message) {
+      currentDisplay.setActivity(`${event.message} (${event.percentComplete}%)`);
     }
   });
 
-  orchestrator.on("item:complete", (event: ProgressEvent) => {
-    if (currentSpinner && event.item) {
-      currentSpinner.succeed(`Completed: ${event.item.identifier} - ${event.item.title}`);
-      currentSpinner = null;
+  orchestrator.on("item:complete", () => {
+    if (currentDisplay) {
+      currentDisplay.stop(true);
+      currentDisplay = null;
     }
   });
 
   orchestrator.on("item:error", (event: ProgressEvent) => {
-    if (currentSpinner && event.item) {
-      currentSpinner.fail(`Failed: ${event.item.identifier} - ${event.item.title}`);
-      currentSpinner = null;
+    if (currentDisplay) {
+      currentDisplay.stop(false);
+      currentDisplay = null;
     }
     if (event.error) {
       console.log(chalk.red(`   Error: ${event.error.message}`));
@@ -326,10 +412,46 @@ async function resolveTeam(
  * Main run command implementation
  */
 export async function runCommand(
-  prompt: string,
+  prompt: string | undefined,
   options: RunOptions
 ): Promise<void> {
   console.log(chalk.cyan("\n🚀 SpecTree Parallel Agent Orchestrator\n"));
+
+  // Resolve prompt from file and/or argument
+  let resolvedPrompt: string;
+  
+  if (options.file) {
+    const filePath = resolve(options.file);
+    if (!existsSync(filePath)) {
+      console.log(chalk.red(`❌ File not found: ${filePath}`));
+      process.exit(1);
+    }
+    try {
+      const fileContent = readFileSync(filePath, "utf-8");
+      console.log(chalk.gray(`📄 Reading from: ${options.file}`));
+      console.log(chalk.gray(`   File size: ${(fileContent.length / 1024).toFixed(1)} KB\n`));
+      
+      // If prompt is also provided, use it as instructions with file as context
+      if (prompt) {
+        resolvedPrompt = `${prompt}\n\n---\n\n## Reference Document\n\n${fileContent}`;
+        console.log(chalk.gray(`📝 Using prompt as instructions with file as reference\n`));
+      } else {
+        resolvedPrompt = fileContent;
+      }
+    } catch (error) {
+      console.log(chalk.red(`❌ Failed to read file: ${error instanceof Error ? error.message : error}`));
+      process.exit(1);
+    }
+  } else if (prompt) {
+    resolvedPrompt = prompt;
+  } else {
+    console.log(chalk.red("❌ Either a prompt or --file option is required"));
+    console.log(chalk.gray("\nUsage:"));
+    console.log(chalk.gray("  spectree-agent run \"Build a user dashboard\" --team Engineering"));
+    console.log(chalk.gray("  spectree-agent run --file docs/feature-spec.md --team Engineering"));
+    console.log(chalk.gray("  spectree-agent run \"Implement the roadmap\" --file docs/plan.md --team Engineering"));
+    process.exit(1);
+  }
 
   // Initialize config with any CLI overrides
   initConfig({
@@ -354,11 +476,17 @@ export async function runCommand(
 
     spinner.succeed("Initialized");
 
-    // Display prompt
-    console.log(chalk.white(`\nPrompt: "${prompt}"\n`));
+    // Display prompt summary (truncated for long file content)
+    const promptPreview = resolvedPrompt.length > 200 
+      ? resolvedPrompt.substring(0, 200) + "..." 
+      : resolvedPrompt;
+    console.log(chalk.white(`\nPrompt: "${promptPreview}"\n`));
 
     // Step 3: Resolve team
     const team = await resolveTeam(client, options.team);
+
+    // Use resolvedPrompt instead of prompt for plan generation
+    const prompt = resolvedPrompt;
 
     // Step 4: Generate plan
     const planSpinner = ora("Generating execution plan with AI...").start();
@@ -385,6 +513,57 @@ export async function runCommand(
       return;
     }
 
+    // Step 5.5: Display plan and prompt for confirmation
+    displayPlanForReview(plan);
+    
+    const { action } = await inquirer.prompt<{ action: string }>([
+      {
+        type: "list",
+        name: "action",
+        message: "How would you like to proceed?",
+        choices: [
+          { name: "✅ Execute this plan", value: "execute" },
+          { name: "📝 View plan in SpecTree UI first (opens browser)", value: "view" },
+          { name: "❌ Cancel and discard", value: "cancel" },
+        ],
+      },
+    ]);
+
+    if (action === "cancel") {
+      console.log(chalk.yellow("\n⚠️  Plan cancelled. The epic has been created but no tasks will be executed."));
+      console.log(chalk.gray(`   Epic ID: ${plan.epicId}`));
+      console.log(chalk.gray(`   You can continue later with: spectree-agent continue "${plan.epicName}"`));
+      console.log();
+      return;
+    }
+
+    if (action === "view") {
+      const webUrl = process.env.SPECTREE_WEB_URL || "http://localhost:5173";
+      console.log(chalk.cyan(`\n🌐 Opening SpecTree UI...`));
+      console.log(chalk.gray(`   ${webUrl}/epics/${plan.epicId}`));
+      
+      // Try to open browser
+      const open = await import("open");
+      await open.default(`${webUrl}/epics/${plan.epicId}`);
+      
+      // Ask again after viewing
+      const { confirmAfterView } = await inquirer.prompt<{ confirmAfterView: boolean }>([
+        {
+          type: "confirm",
+          name: "confirmAfterView",
+          message: "Ready to execute the plan?",
+          default: true,
+        },
+      ]);
+
+      if (!confirmAfterView) {
+        console.log(chalk.yellow("\n⚠️  Execution cancelled."));
+        console.log(chalk.gray(`   You can continue later with: spectree-agent continue "${plan.epicName}"`));
+        console.log();
+        return;
+      }
+    }
+
     // Step 6: Execute orchestration
     console.log(chalk.cyan("\n🔧 Executing plan...\n"));
 
@@ -398,6 +577,7 @@ export async function runCommand(
 
     const result = await orchestrator.run(plan.epicId, {
       sequential: options.sequential ?? true, // Default to sequential for MVP
+      taskLevelAgents: options.taskLevelAgents ?? true, // Default to task-level agents for fresh context
     });
 
     // Step 7: Display results

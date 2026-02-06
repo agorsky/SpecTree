@@ -21,3 +21,12 @@ export {
   type AgentDisplayInfo,
   type AgentStatusDisplayOptions,
 } from "./agent-status.js";
+
+// Activity Tracker
+export { ActivityTracker } from "./activity-tracker.js";
+
+// Task Progress Display
+export {
+  TaskProgressDisplay,
+  type TaskProgressDisplayOptions,
+} from "./task-progress.js";

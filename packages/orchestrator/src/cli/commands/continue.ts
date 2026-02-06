@@ -26,6 +26,10 @@ import {
   type ProgressEvent,
 } from "../../orchestrator/index.js";
 import {
+  TaskProgressDisplay,
+  ActivityTracker,
+} from "../../ui/index.js";
+import {
   AuthError,
   OrchestratorError,
   isAuthError,
@@ -235,43 +239,62 @@ function displayError(error: unknown, spinner?: Ora): void {
 }
 
 /**
- * Setup progress event handlers on the orchestrator
+ * Setup progress event handlers on the orchestrator.
+ * Uses TaskProgressDisplay for real-time streaming feedback and
+ * ActivityTracker for human-readable tool call labels.
  */
 function setupProgressHandlers(orchestrator: Orchestrator): void {
-  let currentSpinner: Ora | null = null;
+  let currentDisplay: TaskProgressDisplay | null = null;
 
   orchestrator.on("item:start", (event: ProgressEvent) => {
-    if (currentSpinner) {
-      currentSpinner.stop();
+    if (currentDisplay) {
+      currentDisplay.stop(true);
     }
     if (event.item) {
-      currentSpinner = ora({
-        text: `Working on: ${event.item.identifier} - ${event.item.title}`,
-        color: "cyan",
-      }).start();
+      currentDisplay = new TaskProgressDisplay({
+        taskId: event.item.identifier,
+        taskTitle: event.item.title,
+        showMilestones: true,
+      });
+      currentDisplay.start();
     }
   });
 
   orchestrator.on("item:progress", (event: ProgressEvent) => {
-    if (currentSpinner && event.message && event.item) {
-      const percent = event.percentComplete !== undefined
-        ? ` (${event.percentComplete}%)`
-        : "";
-      currentSpinner.text = `${event.item.identifier}: ${event.message}${percent}`;
+    if (!currentDisplay || !event.item) return;
+
+    if (event.streamingType === "tool-call" && event.toolName) {
+      const activity = ActivityTracker.mapToolToActivity(
+        event.toolName,
+        (event.toolArgs as Record<string, unknown>) ?? {}
+      );
+      currentDisplay.setActivity(activity);
+
+      if (ActivityTracker.isMilestone(event.toolName)) {
+        currentDisplay.logMilestone(activity);
+      }
+    }
+
+    if (event.streamingType === "message") {
+      currentDisplay.incrementMessageCount();
+    }
+
+    if (event.percentComplete !== undefined && event.message) {
+      currentDisplay.setActivity(`${event.message} (${event.percentComplete}%)`);
     }
   });
 
-  orchestrator.on("item:complete", (event: ProgressEvent) => {
-    if (currentSpinner && event.item) {
-      currentSpinner.succeed(`Completed: ${event.item.identifier} - ${event.item.title}`);
-      currentSpinner = null;
+  orchestrator.on("item:complete", () => {
+    if (currentDisplay) {
+      currentDisplay.stop(true);
+      currentDisplay = null;
     }
   });
 
   orchestrator.on("item:error", (event: ProgressEvent) => {
-    if (currentSpinner && event.item) {
-      currentSpinner.fail(`Failed: ${event.item.identifier} - ${event.item.title}`);
-      currentSpinner = null;
+    if (currentDisplay) {
+      currentDisplay.stop(false);
+      currentDisplay = null;
     }
     if (event.error) {
       console.log(chalk.red(`   Error: ${event.error.message}`));

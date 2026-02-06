@@ -138,6 +138,10 @@ export interface AgentPoolEvents {
   "agent:resume": (agent: Agent) => void;
   "pool:full": () => void;
   "pool:empty": () => void;
+  // Streaming/progress events
+  'agent:message': (agent: Agent, chunk: string) => void;
+  'agent:tool-call': (agent: Agent, toolName: string, toolArgs: unknown) => void;
+  'agent:tool-result': (agent: Agent, toolName: string, result: unknown) => void;
 }
 
 // =============================================================================
@@ -304,25 +308,82 @@ export class AgentPool extends EventEmitter {
     const startTime = Date.now();
 
     try {
-      // Send task to agent and wait for completion
-      const response = await agent.session.sendAndWait({ prompt });
+      // Streaming: send prompt and listen for events (10-min timeout)
+      let summary: string | undefined = undefined;
+      let completed = false;
+      let error: Error | undefined = undefined;
+      const timeoutMs = 600000; // 10 minutes
+      const session = agent.session;
 
-      // Extract summary from response
-      const summary = this.extractSummary(response);
+      // Collect unsubscribe functions (session.on() returns unsubscribe fn)
+      const unsubscribers: (() => void)[] = [];
+
+      // Streaming event handlers using actual SDK event types
+      unsubscribers.push(session.on('assistant.message_delta', (event) => {
+        this.emit('agent:message', agent, event.data.deltaContent);
+      }));
+
+      unsubscribers.push(session.on('assistant.message', (event) => {
+        summary = event.data.content;
+      }));
+
+      unsubscribers.push(session.on('tool.execution_start', (event) => {
+        this.emit('agent:tool-call', agent, event.data.toolName, event.data.arguments);
+      }));
+
+      unsubscribers.push(session.on('tool.execution_complete', (event) => {
+        this.emit('agent:tool-result', agent, event.data.toolCallId, event.data.result);
+      }));
+
+      unsubscribers.push(session.on('session.idle', () => {
+        completed = true;
+      }));
+
+      unsubscribers.push(session.on('session.error', (event) => {
+        error = new Error(event.data.message);
+        completed = true;
+      }));
+
+      session.send({ prompt });
+
+      // Wait for completion or timeout
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => {
+          completed = true;
+          error = new Error('Agent execution timed out');
+          resolve();
+        }, timeoutMs);
+        const check = () => {
+          if (completed) {
+            clearTimeout(timeout);
+            resolve();
+          } else {
+            setTimeout(check, 100);
+          }
+        };
+        check();
+      });
+
+      // Remove all listeners
+      for (const unsub of unsubscribers) {
+        unsub();
+      }
 
       // Update agent state
-      agent.status = "completed";
+      agent.status = error ? "failed" : "completed";
       agent.progress = 100;
       agent.completedAt = new Date();
-      this.completedCount++;
+      if (!error) this.completedCount++;
+      else this.failedCount++;
 
       const result: AgentResult = {
         agentId: agent.id,
         taskId: agent.taskId,
-        success: true,
-        summary,
+        success: !error,
         duration: Date.now() - startTime,
       };
+      if (summary !== undefined) result.summary = summary;
+      if (error !== undefined) result.error = error;
 
       // Resolve the waiting promise
       const resolver = this.agentResolvers.get(agentId);
@@ -330,8 +391,12 @@ export class AgentPool extends EventEmitter {
         resolver(result);
       }
 
-      // Emit completion event
-      this.emit("agent:complete", agent, result);
+      // Emit completion or error event
+      if (!error) {
+        this.emit("agent:complete", agent, result);
+      } else {
+        this.emit("agent:error", agent, error);
+      }
 
       // Check if pool is now empty
       this.checkPoolEmpty();
@@ -699,27 +764,6 @@ export class AgentPool extends EventEmitter {
     }
 
     return parts.join("\n");
-  }
-
-  /**
-   * Extract summary from agent response.
-   */
-  private extractSummary(response: unknown): string {
-    if (!response) {
-      return "Task completed (no response)";
-    }
-
-    // Handle response structure from Copilot SDK
-    const data = response as { data?: { content?: string } };
-    if (data.data?.content) {
-      const content = data.data.content;
-      if (content.length > 500) {
-        return content.substring(0, 497) + "...";
-      }
-      return content;
-    }
-
-    return "Task completed";
   }
 
   /**
