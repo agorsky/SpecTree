@@ -9,11 +9,43 @@ import {
   unarchiveEpic,
   createEpicComplete,
 } from "../services/epicService.js";
+import {
+  getEpicAiContext,
+  setEpicAiContext,
+  appendEpicAiNote,
+} from "../services/aiContextService.js";
+import {
+  getEpicStructuredDesc,
+  setEpicStructuredDesc,
+  updateEpicSection,
+  addAcceptanceCriterion,
+  linkFile,
+  addExternalLink,
+} from "../services/structuredDescriptionService.js";
 import { getProgressSummary } from "../services/summaryService.js";
 import { authenticate } from "../middleware/authenticate.js";
+import { validateBody } from "../middleware/validate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
 import { reorderEpicSchema } from "../schemas/epic.js";
+import {
+  appendAiNoteSchema,
+  setAiContextSchema,
+  type AppendAiNoteInput,
+  type SetAiContextInput,
+} from "../schemas/aiContext.js";
+import {
+  structuredDescriptionSchema,
+  updateSectionSchema,
+  addAcceptanceCriterionSchema,
+  linkFileSchema,
+  addExternalLinkSchema,
+  type StructuredDescription,
+  type UpdateSectionInput,
+  type AddAcceptanceCriterionInput,
+  type LinkFileInput,
+  type AddExternalLinkInput,
+} from "../schemas/structuredDescription.js";
 import type { CreateEpicCompleteInput } from "../schemas/compositeEpic.js";
 
 // Request type definitions
@@ -328,6 +360,176 @@ export default function epicsRoutes(
     { preHandler: [authenticate, requireTeamAccess("body.team"), requireRole("member")] },
     async (request, reply) => {
       const result = await createEpicComplete(request.body);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  // ===========================================================================
+  // AI Context Routes
+  // ===========================================================================
+
+  /**
+   * GET /api/v1/epics/:id/ai-context
+   * Get AI context for an epic
+   * Requires authentication and team membership (guest+)
+   */
+  fastify.get<{ Params: EpicIdParams }>(
+    "/:id/ai-context",
+    { preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("guest")] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const context = await getEpicAiContext(id);
+      return reply.send({ data: context });
+    }
+  );
+
+  /**
+   * PUT /api/v1/epics/:id/ai-context
+   * Set AI context for an epic (replaces entire context)
+   * Requires authentication and team membership (member+)
+   */
+  fastify.put<{ Params: EpicIdParams; Body: SetAiContextInput }>(
+    "/:id/ai-context",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("member")],
+      preValidation: [validateBody(setAiContextSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { context, sessionId } = request.body;
+      const result = await setEpicAiContext(id, { context, sessionId });
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/epics/:id/ai-note
+   * Append an AI note to an epic (non-destructive)
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: EpicIdParams; Body: AppendAiNoteInput }>(
+    "/:id/ai-note",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("member")],
+      preValidation: [validateBody(appendAiNoteSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { type, content, sessionId } = request.body;
+      const result = await appendEpicAiNote(id, { type, content, sessionId });
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  // ===========================================================================
+  // Structured Description Routes
+  // ===========================================================================
+
+  /**
+   * GET /api/v1/epics/:id/structured-desc
+   * Get structured description for an epic
+   * Requires authentication and team membership (guest+)
+   */
+  fastify.get<{ Params: EpicIdParams }>(
+    "/:id/structured-desc",
+    { preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("guest")] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await getEpicStructuredDesc(id);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * PUT /api/v1/epics/:id/structured-desc
+   * Set structured description for an epic (replaces entire object)
+   * Requires authentication and team membership (member+)
+   */
+  fastify.put<{ Params: EpicIdParams; Body: StructuredDescription }>(
+    "/:id/structured-desc",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("member")],
+      preValidation: [validateBody(structuredDescriptionSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const result = await setEpicStructuredDesc(id, request.body);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * PATCH /api/v1/epics/:id/structured-desc/section
+   * Update a specific section of the structured description
+   * Requires authentication and team membership (member+)
+   */
+  fastify.patch<{ Params: EpicIdParams; Body: UpdateSectionInput }>(
+    "/:id/structured-desc/section",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("member")],
+      preValidation: [validateBody(updateSectionSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { section, value } = request.body;
+      const result = await updateEpicSection(id, section, value);
+      return reply.send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/epics/:id/structured-desc/acceptance-criteria
+   * Add an acceptance criterion to an epic
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: EpicIdParams; Body: AddAcceptanceCriterionInput }>(
+    "/:id/structured-desc/acceptance-criteria",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("member")],
+      preValidation: [validateBody(addAcceptanceCriterionSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { criterion } = request.body;
+      const result = await addAcceptanceCriterion("epic", id, criterion);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/epics/:id/structured-desc/files
+   * Link a file to an epic
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: EpicIdParams; Body: LinkFileInput }>(
+    "/:id/structured-desc/files",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("member")],
+      preValidation: [validateBody(linkFileSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { filePath } = request.body;
+      const result = await linkFile("epic", id, filePath);
+      return reply.status(201).send({ data: result });
+    }
+  );
+
+  /**
+   * POST /api/v1/epics/:id/structured-desc/links
+   * Add an external link to an epic
+   * Requires authentication and team membership (member+)
+   */
+  fastify.post<{ Params: EpicIdParams; Body: AddExternalLinkInput }>(
+    "/:id/structured-desc/links",
+    {
+      preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("member")],
+      preValidation: [validateBody(addExternalLinkSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { url, title } = request.body;
+      const result = await addExternalLink("epic", id, { url, title });
       return reply.status(201).send({ data: result });
     }
   );

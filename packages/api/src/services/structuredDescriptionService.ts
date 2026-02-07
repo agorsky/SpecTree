@@ -24,7 +24,7 @@ export interface StructuredDescriptionResponse {
   updatedAt: string;
 }
 
-export type EntityType = "feature" | "task";
+export type EntityType = "feature" | "task" | "epic";
 
 // =============================================================================
 // Helper Functions
@@ -233,6 +233,139 @@ export async function updateFeatureSection(
 }
 
 // =============================================================================
+// Epic Structured Description Operations
+// =============================================================================
+
+/**
+ * Resolve an epic ID from UUID or exact name
+ */
+async function resolveEpicId(idOrName: string): Promise<string> {
+  const isUuid = UUID_REGEX.test(idOrName);
+
+  const whereClause = isUuid
+    ? { id: idOrName }
+    : { name: idOrName };
+
+  const epic = await prisma.epic.findFirst({
+    where: whereClause,
+    select: { id: true },
+  });
+
+  if (!epic) {
+    throw new NotFoundError(`Epic '${idOrName}' not found`);
+  }
+
+  return epic.id;
+}
+
+/**
+ * Get structured description for an epic
+ */
+export async function getEpicStructuredDesc(
+  epicIdOrName: string
+): Promise<StructuredDescriptionResponse> {
+  const id = await resolveEpicId(epicIdOrName);
+
+  const epic = await prisma.epic.findUnique({
+    where: { id },
+    select: {
+      structuredDesc: true,
+      updatedAt: true,
+    },
+  });
+
+  if (!epic) {
+    throw new NotFoundError(`Epic with id '${id}' not found`);
+  }
+
+  return {
+    structuredDesc: parseStructuredDesc(epic.structuredDesc),
+    updatedAt: epic.updatedAt.toISOString(),
+  };
+}
+
+/**
+ * Set structured description for an epic (replaces entire object)
+ */
+export async function setEpicStructuredDesc(
+  epicIdOrName: string,
+  structuredDesc: StructuredDescription
+): Promise<StructuredDescriptionResponse> {
+  const id = await resolveEpicId(epicIdOrName);
+
+  // Validate the input
+  const validationResult = structuredDescriptionSchema.safeParse(structuredDesc);
+  if (!validationResult.success) {
+    throw new ValidationError(`Invalid structured description: ${validationResult.error.message}`);
+  }
+
+  const updated = await prisma.epic.update({
+    where: { id },
+    data: {
+      structuredDesc: stringifyStructuredDesc(validationResult.data),
+    },
+    select: {
+      structuredDesc: true,
+      updatedAt: true,
+    },
+  });
+
+  return {
+    structuredDesc: parseStructuredDesc(updated.structuredDesc),
+    updatedAt: updated.updatedAt.toISOString(),
+  };
+}
+
+/**
+ * Update a specific section of an epic's structured description
+ */
+export async function updateEpicSection(
+  epicIdOrName: string,
+  section: StructuredDescriptionSection,
+  value: unknown
+): Promise<StructuredDescriptionResponse> {
+  const id = await resolveEpicId(epicIdOrName);
+
+  // Get current structured description
+  const epic = await prisma.epic.findUnique({
+    where: { id },
+    select: { structuredDesc: true },
+  });
+
+  if (!epic) {
+    throw new NotFoundError(`Epic with id '${id}' not found`);
+  }
+
+  // Parse current or initialize new
+  const current = parseStructuredDesc(epic.structuredDesc) ?? { summary: "" };
+
+  // Update the specific section
+  const updated = { ...current, [section]: value };
+
+  // Validate the updated object
+  const validationResult = structuredDescriptionSchema.safeParse(updated);
+  if (!validationResult.success) {
+    throw new ValidationError(`Invalid value for section '${section}': ${validationResult.error.message}`);
+  }
+
+  const result = await prisma.epic.update({
+    where: { id },
+    data: {
+      structuredDesc: stringifyStructuredDesc(validationResult.data),
+    },
+    select: {
+      structuredDesc: true,
+      updatedAt: true,
+    },
+  });
+
+  return {
+    structuredDesc: parseStructuredDesc(result.structuredDesc),
+    updatedAt: result.updatedAt.toISOString(),
+  };
+}
+
+// =============================================================================
 // Task Structured Description Operations
 // =============================================================================
 
@@ -356,6 +489,8 @@ export async function getStructuredDesc(
 ): Promise<StructuredDescriptionResponse> {
   if (entityType === "feature") {
     return getFeatureStructuredDesc(entityId);
+  } else if (entityType === "epic") {
+    return getEpicStructuredDesc(entityId);
   } else {
     return getTaskStructuredDesc(entityId);
   }
@@ -371,6 +506,8 @@ export async function setStructuredDesc(
 ): Promise<StructuredDescriptionResponse> {
   if (entityType === "feature") {
     return setFeatureStructuredDesc(entityId, structuredDesc);
+  } else if (entityType === "epic") {
+    return setEpicStructuredDesc(entityId, structuredDesc);
   } else {
     return setTaskStructuredDesc(entityId, structuredDesc);
   }
@@ -387,6 +524,8 @@ export async function updateSection(
 ): Promise<StructuredDescriptionResponse> {
   if (entityType === "feature") {
     return updateFeatureSection(entityId, section, value);
+  } else if (entityType === "epic") {
+    return updateEpicSection(entityId, section, value);
   } else {
     return updateTaskSection(entityId, section, value);
   }

@@ -48,6 +48,9 @@ export interface Epic {
   id: string;
   name: string;
   description: string | null;
+  structuredDesc: string | null;
+  aiContext: string | null;
+  aiNotes: string | null;
   icon: string | null;
   color: string | null;
   sortOrder: number;
@@ -1564,6 +1567,38 @@ export class ApiClient {
     );
   }
 
+  /**
+   * Get AI context for an epic.
+   */
+  async getEpicAiContext(epicId: string): Promise<{ data: AiContextResponse }> {
+    return this.request<{ data: AiContextResponse }>(
+      "GET",
+      `/api/v1/epics/${encodeURIComponent(epicId)}/ai-context`
+    );
+  }
+
+  /**
+   * Set AI context for an epic (replaces entire context).
+   */
+  async setEpicAiContext(epicId: string, input: SetAiContextInput): Promise<{ data: AiContextResponse }> {
+    return this.request<{ data: AiContextResponse }>(
+      "PUT",
+      `/api/v1/epics/${encodeURIComponent(epicId)}/ai-context`,
+      input
+    );
+  }
+
+  /**
+   * Append an AI note to an epic (non-destructive).
+   */
+  async appendEpicAiNote(epicId: string, input: AppendAiNoteInput): Promise<{ data: AiContextResponse }> {
+    return this.request<{ data: AiContextResponse }>(
+      "POST",
+      `/api/v1/epics/${encodeURIComponent(epicId)}/ai-note`,
+      input
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Progress Tracking Methods
   // ---------------------------------------------------------------------------
@@ -1818,6 +1853,87 @@ export class ApiClient {
     return this.request<{ data: StructuredDescriptionResponse }>(
       "POST",
       `/api/v1/tasks/${encodeURIComponent(taskId)}/structured-desc/links`,
+      link
+    );
+  }
+
+  /**
+   * Get structured description for an epic
+   */
+  async getEpicStructuredDesc(epicId: string): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "GET",
+      `/api/v1/epics/${encodeURIComponent(epicId)}/structured-desc`
+    );
+  }
+
+  /**
+   * Set structured description for an epic (replaces entire object)
+   */
+  async setEpicStructuredDesc(
+    epicId: string,
+    structuredDesc: StructuredDescription
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "PUT",
+      `/api/v1/epics/${encodeURIComponent(epicId)}/structured-desc`,
+      structuredDesc
+    );
+  }
+
+  /**
+   * Update a specific section of an epic's structured description
+   */
+  async updateEpicSection(
+    epicId: string,
+    section: StructuredDescriptionSection,
+    value: unknown
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "PATCH",
+      `/api/v1/epics/${encodeURIComponent(epicId)}/structured-desc/section`,
+      { section, value }
+    );
+  }
+
+  /**
+   * Add an acceptance criterion to an epic
+   */
+  async addEpicAcceptanceCriterion(
+    epicId: string,
+    criterion: string
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "POST",
+      `/api/v1/epics/${encodeURIComponent(epicId)}/structured-desc/acceptance-criteria`,
+      { criterion }
+    );
+  }
+
+  /**
+   * Link a file to an epic
+   */
+  async linkEpicFile(
+    epicId: string,
+    filePath: string
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "POST",
+      `/api/v1/epics/${encodeURIComponent(epicId)}/structured-desc/files`,
+      { filePath }
+    );
+  }
+
+  /**
+   * Add an external link to an epic
+   */
+  async addEpicExternalLink(
+    epicId: string,
+    link: ExternalLink
+  ): Promise<{ data: StructuredDescriptionResponse }> {
+    return this.request<{ data: StructuredDescriptionResponse }>(
+      "POST",
+      `/api/v1/epics/${encodeURIComponent(epicId)}/structured-desc/links`,
       link
     );
   }

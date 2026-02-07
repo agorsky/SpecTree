@@ -32,7 +32,7 @@ export type AiNote = z.infer<typeof aiNoteSchema>;
 /**
  * Entity type for AI context operations
  */
-export const entityTypeValues = ["feature", "task"] as const;
+export const entityTypeValues = ["feature", "task", "epic"] as const;
 export type EntityType = (typeof entityTypeValues)[number];
 
 /**

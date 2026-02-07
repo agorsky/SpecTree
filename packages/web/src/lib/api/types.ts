@@ -25,10 +25,26 @@ export interface Team {
   updatedAt: string;
 }
 
+export interface StructuredDescription {
+  summary: string;
+  aiInstructions?: string;
+  acceptanceCriteria?: string[];
+  filesInvolved?: string[];
+  functionsToModify?: string[];
+  testingStrategy?: string;
+  testFiles?: string[];
+  relatedItemIds?: string[];
+  externalLinks?: { url: string; title: string }[];
+  technicalNotes?: string;
+  riskLevel?: "low" | "medium" | "high";
+  estimatedEffort?: "trivial" | "small" | "medium" | "large" | "xl";
+}
+
 export interface Epic {
   id: string;
   name: string;
   description?: string;
+  structuredDesc?: StructuredDescription | null;
   teamId: string;
   isArchived?: boolean;
   createdAt: string;

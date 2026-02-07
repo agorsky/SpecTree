@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Epic, PaginatedResponse } from './types';
+import type { Epic, PaginatedResponse, StructuredDescription } from './types';
 
 export interface EpicFilters {
   teamId?: string | undefined;
@@ -30,7 +30,18 @@ export const epicsApi = {
     return api.get<PaginatedResponse<Epic>>(`/epics${queryString ? `?${queryString}` : ''}`);
   },
 
-  get: (id: string) => api.get<{ data: Epic }>(`/epics/${id}`),
+  get: async (id: string) => {
+    const response = await api.get<{ data: Epic & { structuredDesc?: string | null } }>(`/epics/${id}`);
+    // Parse structuredDesc JSON string from API into object
+    if (response.data.structuredDesc && typeof response.data.structuredDesc === 'string') {
+      try {
+        (response.data as Epic).structuredDesc = JSON.parse(response.data.structuredDesc) as StructuredDescription;
+      } catch {
+        (response.data as Epic).structuredDesc = null;
+      }
+    }
+    return response as { data: Epic };
+  },
 
   create: (input: CreateEpicInput) => api.post<{ data: Epic }>('/epics', input),
 

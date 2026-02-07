@@ -6,7 +6,7 @@ import { FeatureForm } from "@/components/features/feature-form";
 import { MarkdownRenderer } from "@/components/common/markdown-renderer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Trash2, Check, X, MoreHorizontal, ChevronDown, ChevronRight, Archive, ArchiveRestore } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Check, X, MoreHorizontal, ChevronDown, ChevronRight, Archive, ArchiveRestore, FileText, ExternalLink, AlertTriangle, Clock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -198,7 +198,7 @@ export function EpicDetailPage() {
       </div>
 
       {/* Collapsible Description Section */}
-      {epic.description && (
+      {(epic.description || epic.structuredDesc) && (
         <div className="border-b bg-muted/30">
           <button
             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
@@ -210,15 +210,93 @@ export function EpicDetailPage() {
               <ChevronRight className="h-4 w-4" />
             )}
             <span>Epic Description</span>
+            {epic.structuredDesc?.riskLevel && (
+              <Badge variant={epic.structuredDesc.riskLevel === "high" ? "destructive" : epic.structuredDesc.riskLevel === "medium" ? "secondary" : "outline"} className="ml-2 text-xs">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                {epic.structuredDesc.riskLevel} risk
+              </Badge>
+            )}
+            {epic.structuredDesc?.estimatedEffort && (
+              <Badge variant="outline" className="ml-1 text-xs">
+                <Clock className="h-3 w-3 mr-1" />
+                {epic.structuredDesc.estimatedEffort}
+              </Badge>
+            )}
           </button>
           {isDescriptionExpanded && (
-            <div className="px-4 pb-4">
+            <div className="px-4 pb-4 space-y-3">
+              {/* Summary / Description */}
               <div className="bg-background rounded-lg border p-4">
-                <MarkdownRenderer 
-                  content={epic.description} 
+                <MarkdownRenderer
+                  content={epic.structuredDesc?.summary ?? epic.description ?? ""}
                   className="text-sm"
                 />
               </div>
+
+              {/* AI Instructions */}
+              {epic.structuredDesc?.aiInstructions && (
+                <div className="bg-background rounded-lg border p-4">
+                  <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">AI Instructions</h4>
+                  <MarkdownRenderer content={epic.structuredDesc.aiInstructions} className="text-sm" />
+                </div>
+              )}
+
+              {/* Acceptance Criteria */}
+              {epic.structuredDesc?.acceptanceCriteria && epic.structuredDesc.acceptanceCriteria.length > 0 && (
+                <div className="bg-background rounded-lg border p-4">
+                  <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Acceptance Criteria</h4>
+                  <ul className="space-y-1">
+                    {epic.structuredDesc.acceptanceCriteria.map((criterion, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <span className="text-muted-foreground mt-0.5">&#9744;</span>
+                        <span>{criterion}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Files Involved */}
+              {epic.structuredDesc?.filesInvolved && epic.structuredDesc.filesInvolved.length > 0 && (
+                <div className="bg-background rounded-lg border p-4">
+                  <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                    <FileText className="h-3 w-3 inline mr-1" />
+                    Files Involved
+                  </h4>
+                  <ul className="space-y-0.5">
+                    {epic.structuredDesc.filesInvolved.map((file, i) => (
+                      <li key={i} className="text-sm font-mono text-muted-foreground">{file}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Technical Notes */}
+              {epic.structuredDesc?.technicalNotes && (
+                <div className="bg-background rounded-lg border p-4">
+                  <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Technical Notes</h4>
+                  <MarkdownRenderer content={epic.structuredDesc.technicalNotes} className="text-sm" />
+                </div>
+              )}
+
+              {/* External Links */}
+              {epic.structuredDesc?.externalLinks && epic.structuredDesc.externalLinks.length > 0 && (
+                <div className="bg-background rounded-lg border p-4">
+                  <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                    <ExternalLink className="h-3 w-3 inline mr-1" />
+                    External Links
+                  </h4>
+                  <ul className="space-y-1">
+                    {epic.structuredDesc.externalLinks.map((link, i) => (
+                      <li key={i}>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                          {link.title}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>

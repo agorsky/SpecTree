@@ -40,19 +40,19 @@ export function registerStructuredDescTools(server: McpServer): void {
     "spectree__get_structured_description",
     {
       description:
-        "Get the structured description for a feature or task. Returns parsed sections like " +
+        "Get the structured description for a feature, task, or epic. Returns parsed sections like " +
         "summary, aiInstructions, acceptanceCriteria, filesInvolved, etc. Use this to extract " +
         "specific information about what needs to be done without parsing freeform text.",
       inputSchema: {
         id: z
           .string()
           .describe(
-            "The feature or task identifier. Accepts UUID or human-readable identifier " +
-            "(e.g., 'COM-123' for features, 'COM-123-1' for tasks)."
+            "The feature, task, or epic identifier. Accepts UUID or human-readable identifier " +
+            "(e.g., 'COM-123' for features, 'COM-123-1' for tasks). Epics use UUID or exact name."
           ),
         type: z
-          .enum(["feature", "task"])
-          .describe("Whether this is a 'feature' or 'task'."),
+          .enum(["feature", "task", "epic"])
+          .describe("Whether this is a 'feature', 'task', or 'epic'."),
       },
     },
     async (input) => {
@@ -66,6 +66,15 @@ export function registerStructuredDescTools(server: McpServer): void {
             entityType: "feature",
             entityId: feature.id,
             identifier: feature.identifier,
+            ...result,
+          });
+        } else if (input.type === "epic") {
+          const { data: epic } = await apiClient.getEpic(input.id);
+          const { data: result } = await apiClient.getEpicStructuredDesc(epic.id);
+          return createResponse({
+            entityType: "epic",
+            entityId: epic.id,
+            name: epic.name,
             ...result,
           });
         } else {
@@ -94,18 +103,18 @@ export function registerStructuredDescTools(server: McpServer): void {
     "spectree__set_structured_description",
     {
       description:
-        "Set the entire structured description for a feature or task. This replaces any " +
+        "Set the entire structured description for a feature, task, or epic. This replaces any " +
         "existing structured description. The 'summary' field is required. For partial " +
         "updates, use spectree__update_section instead.",
       inputSchema: {
         id: z
           .string()
           .describe(
-            "The feature or task identifier. Accepts UUID or human-readable identifier."
+            "The feature, task, or epic identifier. Accepts UUID or human-readable identifier. Epics use UUID or exact name."
           ),
         type: z
-          .enum(["feature", "task"])
-          .describe("Whether this is a 'feature' or 'task'."),
+          .enum(["feature", "task", "epic"])
+          .describe("Whether this is a 'feature', 'task', or 'epic'."),
         structuredDesc: z.object({
           summary: z.string().describe("Required: Human-readable summary"),
           aiInstructions: z.string().optional().describe("Instructions specifically for AI agents"),
@@ -143,6 +152,19 @@ export function registerStructuredDescTools(server: McpServer): void {
             message: "Structured description set successfully",
             ...result,
           });
+        } else if (input.type === "epic") {
+          const { data: epic } = await apiClient.getEpic(input.id);
+          const { data: result } = await apiClient.setEpicStructuredDesc(
+            epic.id,
+            input.structuredDesc as StructuredDescription
+          );
+          return createResponse({
+            entityType: "epic",
+            entityId: epic.id,
+            name: epic.name,
+            message: "Structured description set successfully",
+            ...result,
+          });
         } else {
           const { data: task } = await apiClient.getTask(input.id);
           const { data: result } = await apiClient.setTaskStructuredDesc(
@@ -173,17 +195,17 @@ export function registerStructuredDescTools(server: McpServer): void {
     "spectree__update_section",
     {
       description:
-        "Update a specific section of a feature or task's structured description without " +
+        "Update a specific section of a feature, task, or epic's structured description without " +
         "touching other sections. Use this for targeted updates instead of replacing everything.",
       inputSchema: {
         id: z
           .string()
           .describe(
-            "The feature or task identifier. Accepts UUID or human-readable identifier."
+            "The feature, task, or epic identifier. Accepts UUID or human-readable identifier. Epics use UUID or exact name."
           ),
         type: z
-          .enum(["feature", "task"])
-          .describe("Whether this is a 'feature' or 'task'."),
+          .enum(["feature", "task", "epic"])
+          .describe("Whether this is a 'feature', 'task', or 'epic'."),
         section: z
           .enum(SECTION_NAMES)
           .describe(
@@ -221,6 +243,20 @@ export function registerStructuredDescTools(server: McpServer): void {
             sectionUpdated: input.section,
             ...result,
           });
+        } else if (input.type === "epic") {
+          const { data: epic } = await apiClient.getEpic(input.id);
+          const { data: result } = await apiClient.updateEpicSection(
+            epic.id,
+            input.section as StructuredDescriptionSection,
+            input.value
+          );
+          return createResponse({
+            entityType: "epic",
+            entityId: epic.id,
+            name: epic.name,
+            sectionUpdated: input.section,
+            ...result,
+          });
         } else {
           const { data: task } = await apiClient.getTask(input.id);
           const { data: result } = await apiClient.updateTaskSection(
@@ -252,17 +288,17 @@ export function registerStructuredDescTools(server: McpServer): void {
     "spectree__add_acceptance_criterion",
     {
       description:
-        "Add an acceptance criterion to a feature or task. This appends to the existing " +
+        "Add an acceptance criterion to a feature, task, or epic. This appends to the existing " +
         "list without removing other criteria. Duplicates are ignored.",
       inputSchema: {
         id: z
           .string()
           .describe(
-            "The feature or task identifier. Accepts UUID or human-readable identifier."
+            "The feature, task, or epic identifier. Accepts UUID or human-readable identifier. Epics use UUID or exact name."
           ),
         type: z
-          .enum(["feature", "task"])
-          .describe("Whether this is a 'feature' or 'task'."),
+          .enum(["feature", "task", "epic"])
+          .describe("Whether this is a 'feature', 'task', or 'epic'."),
         criterion: z
           .string()
           .min(1)
@@ -284,6 +320,20 @@ export function registerStructuredDescTools(server: McpServer): void {
             entityType: "feature",
             entityId: feature.id,
             identifier: feature.identifier,
+            criterionAdded: input.criterion,
+            totalCriteria: result.structuredDesc?.acceptanceCriteria?.length ?? 0,
+            ...result,
+          });
+        } else if (input.type === "epic") {
+          const { data: epic } = await apiClient.getEpic(input.id);
+          const { data: result } = await apiClient.addEpicAcceptanceCriterion(
+            epic.id,
+            input.criterion
+          );
+          return createResponse({
+            entityType: "epic",
+            entityId: epic.id,
+            name: epic.name,
             criterionAdded: input.criterion,
             totalCriteria: result.structuredDesc?.acceptanceCriteria?.length ?? 0,
             ...result,
@@ -319,18 +369,18 @@ export function registerStructuredDescTools(server: McpServer): void {
     "spectree__link_file",
     {
       description:
-        "Link a file to a feature or task. This appends the file path to the filesInvolved " +
+        "Link a file to a feature, task, or epic. This appends the file path to the filesInvolved " +
         "list. Useful for tracking which files are involved in implementing an item. " +
         "Duplicates are ignored.",
       inputSchema: {
         id: z
           .string()
           .describe(
-            "The feature or task identifier. Accepts UUID or human-readable identifier."
+            "The feature, task, or epic identifier. Accepts UUID or human-readable identifier. Epics use UUID or exact name."
           ),
         type: z
-          .enum(["feature", "task"])
-          .describe("Whether this is a 'feature' or 'task'."),
+          .enum(["feature", "task", "epic"])
+          .describe("Whether this is a 'feature', 'task', or 'epic'."),
         filePath: z
           .string()
           .min(1)
@@ -349,6 +399,17 @@ export function registerStructuredDescTools(server: McpServer): void {
             entityType: "feature",
             entityId: feature.id,
             identifier: feature.identifier,
+            fileLinked: input.filePath,
+            totalFiles: result.structuredDesc?.filesInvolved?.length ?? 0,
+            ...result,
+          });
+        } else if (input.type === "epic") {
+          const { data: epic } = await apiClient.getEpic(input.id);
+          const { data: result } = await apiClient.linkEpicFile(epic.id, input.filePath);
+          return createResponse({
+            entityType: "epic",
+            entityId: epic.id,
+            name: epic.name,
             fileLinked: input.filePath,
             totalFiles: result.structuredDesc?.filesInvolved?.length ?? 0,
             ...result,
@@ -381,17 +442,17 @@ export function registerStructuredDescTools(server: McpServer): void {
     "spectree__add_external_link",
     {
       description:
-        "Add an external link to a feature or task. Useful for linking to documentation, " +
+        "Add an external link to a feature, task, or epic. Useful for linking to documentation, " +
         "PRs, design docs, or other external resources. Duplicates (by URL) are ignored.",
       inputSchema: {
         id: z
           .string()
           .describe(
-            "The feature or task identifier. Accepts UUID or human-readable identifier."
+            "The feature, task, or epic identifier. Accepts UUID or human-readable identifier. Epics use UUID or exact name."
           ),
         type: z
-          .enum(["feature", "task"])
-          .describe("Whether this is a 'feature' or 'task'."),
+          .enum(["feature", "task", "epic"])
+          .describe("Whether this is a 'feature', 'task', or 'epic'."),
         url: z
           .string()
           .url()
@@ -415,6 +476,17 @@ export function registerStructuredDescTools(server: McpServer): void {
             entityType: "feature",
             entityId: feature.id,
             identifier: feature.identifier,
+            linkAdded: link,
+            totalLinks: result.structuredDesc?.externalLinks?.length ?? 0,
+            ...result,
+          });
+        } else if (input.type === "epic") {
+          const { data: epic } = await apiClient.getEpic(input.id);
+          const { data: result } = await apiClient.addEpicExternalLink(epic.id, link);
+          return createResponse({
+            entityType: "epic",
+            entityId: epic.id,
+            name: epic.name,
             linkAdded: link,
             totalLinks: result.structuredDesc?.externalLinks?.length ?? 0,
             ...result,

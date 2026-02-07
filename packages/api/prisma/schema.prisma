@@ -131,6 +131,15 @@ model Epic {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  // Structured description for AI-friendly sections
+  structuredDesc  String?   @map("structured_desc")     // JSON: StructuredDescription object
+
+  // AI session context for cross-session continuity
+  aiContext       String?   @map("ai_context")          // Structured context for AI consumption
+  aiNotes         String?   @map("ai_notes")            // JSON array of append-only notes
+  lastAiSessionId String?   @map("last_ai_session_id")  // Track last AI session
+  lastAiUpdateAt  DateTime? @map("last_ai_update_at")
+
   team          Team?          @relation(fields: [teamId], references: [id], onDelete: Cascade)
   personalScope PersonalScope? @relation(fields: [personalScopeId], references: [id], onDelete: Cascade)
   features      Feature[]

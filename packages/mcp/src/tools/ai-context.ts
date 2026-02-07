@@ -19,7 +19,7 @@ export function registerAiContextTools(server: McpServer): void {
     "spectree__get_ai_context",
     {
       description:
-        "Retrieve AI context for a feature or task. Returns structured context that was set " +
+        "Retrieve AI context for a feature, task, or epic. Returns structured context that was set " +
         "by previous AI sessions, along with an array of AI notes (observations, decisions, " +
         "blockers, next-steps). Use this at the start of a session to understand previous " +
         "work and continue from where the last session left off.",
@@ -27,13 +27,13 @@ export function registerAiContextTools(server: McpServer): void {
         id: z
           .string()
           .describe(
-            "The feature or task identifier. Accepts UUID or human-readable identifier " +
-            "(e.g., 'COM-123' for features, 'COM-123-1' for tasks)."
+            "The feature, task, or epic identifier. Accepts UUID or human-readable identifier " +
+            "(e.g., 'COM-123' for features, 'COM-123-1' for tasks). Epics use UUID or exact name."
           ),
         type: z
-          .enum(["feature", "task"])
+          .enum(["feature", "task", "epic"])
           .describe(
-            "Whether this is a 'feature' or 'task'."
+            "Whether this is a 'feature', 'task', or 'epic'."
           ),
       },
     },
@@ -49,6 +49,15 @@ export function registerAiContextTools(server: McpServer): void {
             entityType: "feature",
             entityId: feature.id,
             identifier: feature.identifier,
+            ...context,
+          });
+        } else if (input.type === "epic") {
+          const { data: epic } = await apiClient.getEpic(input.id);
+          const { data: context } = await apiClient.getEpicAiContext(epic.id);
+          return createResponse({
+            entityType: "epic",
+            entityId: epic.id,
+            name: epic.name,
             ...context,
           });
         } else {
@@ -78,20 +87,20 @@ export function registerAiContextTools(server: McpServer): void {
     "spectree__set_ai_context",
     {
       description:
-        "Set structured context for a feature or task. This replaces the entire AI context " +
+        "Set structured context for a feature, task, or epic. This replaces the entire AI context " +
         "field. Use this to store a summary or structured data that future sessions should " +
         "know. For incremental updates, prefer spectree__append_ai_note instead.",
       inputSchema: {
         id: z
           .string()
           .describe(
-            "The feature or task identifier. Accepts UUID or human-readable identifier " +
-            "(e.g., 'COM-123' for features, 'COM-123-1' for tasks)."
+            "The feature, task, or epic identifier. Accepts UUID or human-readable identifier " +
+            "(e.g., 'COM-123' for features, 'COM-123-1' for tasks). Epics use UUID or exact name."
           ),
         type: z
-          .enum(["feature", "task"])
+          .enum(["feature", "task", "epic"])
           .describe(
-            "Whether this is a 'feature' or 'task'."
+            "Whether this is a 'feature', 'task', or 'epic'."
           ),
         context: z
           .string()
@@ -126,6 +135,18 @@ export function registerAiContextTools(server: McpServer): void {
             identifier: feature.identifier,
             ...result,
           });
+        } else if (input.type === "epic") {
+          const { data: epic } = await apiClient.getEpic(input.id);
+          const { data: result } = await apiClient.setEpicAiContext(epic.id, {
+            context: input.context,
+            sessionId: input.sessionId,
+          });
+          return createResponse({
+            entityType: "epic",
+            entityId: epic.id,
+            name: epic.name,
+            ...result,
+          });
         } else {
           // Resolve task identifier to UUID if needed
           const { data: task } = await apiClient.getTask(input.id);
@@ -156,20 +177,20 @@ export function registerAiContextTools(server: McpServer): void {
     "spectree__append_ai_note",
     {
       description:
-        "Append a note to a feature or task's AI notes array. Notes are never overwritten, " +
+        "Append a note to a feature, task, or epic's AI notes array. Notes are never overwritten, " +
         "only appended. Use this to log observations, decisions, blockers, or next-steps " +
         "as you work. Each note is timestamped and can include a session identifier.",
       inputSchema: {
         id: z
           .string()
           .describe(
-            "The feature or task identifier. Accepts UUID or human-readable identifier " +
-            "(e.g., 'COM-123' for features, 'COM-123-1' for tasks)."
+            "The feature, task, or epic identifier. Accepts UUID or human-readable identifier " +
+            "(e.g., 'COM-123' for features, 'COM-123-1' for tasks). Epics use UUID or exact name."
           ),
         type: z
-          .enum(["feature", "task"])
+          .enum(["feature", "task", "epic"])
           .describe(
-            "Whether this is a 'feature' or 'task'."
+            "Whether this is a 'feature', 'task', or 'epic'."
           ),
         noteType: z
           .enum(["observation", "decision", "blocker", "next-step", "context"])
@@ -213,6 +234,24 @@ export function registerAiContextTools(server: McpServer): void {
             entityType: "feature",
             entityId: feature.id,
             identifier: feature.identifier,
+            noteAdded: {
+              type: input.noteType,
+              content: input.content,
+            },
+            totalNotes: result.aiNotes.length,
+            ...result,
+          });
+        } else if (input.type === "epic") {
+          const { data: epic } = await apiClient.getEpic(input.id);
+          const { data: result } = await apiClient.appendEpicAiNote(epic.id, {
+            type: input.noteType,
+            content: input.content,
+            sessionId: input.sessionId,
+          });
+          return createResponse({
+            entityType: "epic",
+            entityId: epic.id,
+            name: epic.name,
             noteAdded: {
               type: input.noteType,
               content: input.content,

@@ -25,6 +25,11 @@ export type EstimatedComplexity = (typeof estimatedComplexityValues)[number];
  */
 export const compositeTaskInputSchema = z.object({
   title: z.string().min(1).max(500).describe("Task title (required)"),
+  description: z
+    .string()
+    .max(5000)
+    .optional()
+    .describe("Task description in Markdown format"),
   executionOrder: z
     .number()
     .int()
@@ -47,6 +52,11 @@ export type CompositeTaskInput = z.infer<typeof compositeTaskInputSchema>;
  */
 export const compositeFeatureInputSchema = z.object({
   title: z.string().min(1).max(500).describe("Feature title (required)"),
+  description: z
+    .string()
+    .max(5000)
+    .optional()
+    .describe("Feature description in Markdown format"),
   executionOrder: z
     .number()
     .int()
@@ -65,7 +75,7 @@ export const compositeFeatureInputSchema = z.object({
     .optional()
     .describe("Group identifier for features that can run together in parallel"),
   dependencies: z
-    .array(z.number().int().positive())
+    .array(z.number().int().nonnegative())
     .optional()
     .describe("Array of feature indices (0-based) within this epic that must be completed before this feature"),
   structuredDesc: structuredDescriptionSchema
@@ -93,6 +103,9 @@ export const createEpicCompleteInputSchema = z.object({
     .describe("Epic description (optional)"),
   icon: z.string().max(50).optional().describe("Icon identifier for the epic"),
   color: z.string().max(20).optional().describe("Hex color code for the epic (e.g., '#FF5733')"),
+  structuredDesc: structuredDescriptionSchema
+    .optional()
+    .describe("Structured description with summary, acceptanceCriteria, aiInstructions, etc."),
   features: z
     .array(compositeFeatureInputSchema)
     .min(1)
@@ -131,6 +144,7 @@ export interface CreateEpicCompleteResponse {
     id: string;
     name: string;
     description: string | null;
+    structuredDesc: string | null;
     teamId: string;
   };
   features: CompositeFeatureResponse[];

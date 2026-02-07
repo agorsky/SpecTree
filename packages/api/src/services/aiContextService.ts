@@ -306,6 +306,132 @@ export async function appendTaskAiNote(
 }
 
 // =============================================================================
+// Epic AI Context Operations
+// =============================================================================
+
+/**
+ * Get AI context for an epic
+ */
+export async function getEpicAiContext(
+  epicId: string
+): Promise<AiContextResponse> {
+  const epic = await prisma.epic.findFirst({
+    where: { id: epicId },
+    select: {
+      aiContext: true,
+      aiNotes: true,
+      lastAiSessionId: true,
+      lastAiUpdateAt: true,
+    },
+  });
+
+  if (!epic) {
+    throw new NotFoundError(`Epic with id '${epicId}' not found`);
+  }
+
+  return {
+    aiContext: epic.aiContext,
+    aiNotes: parseAiNotes(epic.aiNotes),
+    lastAiSessionId: epic.lastAiSessionId,
+    lastAiUpdateAt: epic.lastAiUpdateAt?.toISOString() ?? null,
+  };
+}
+
+/**
+ * Set AI context for an epic (replaces entire context)
+ */
+export async function setEpicAiContext(
+  epicId: string,
+  input: SetAiContextInput
+): Promise<AiContextResponse> {
+  // Verify epic exists
+  const existing = await prisma.epic.findFirst({
+    where: { id: epicId },
+  });
+
+  if (!existing) {
+    throw new NotFoundError(`Epic with id '${epicId}' not found`);
+  }
+
+  const now = new Date();
+
+  const updated = await prisma.epic.update({
+    where: { id: epicId },
+    data: {
+      aiContext: input.context,
+      lastAiSessionId: input.sessionId ?? null,
+      lastAiUpdateAt: now,
+    },
+    select: {
+      aiContext: true,
+      aiNotes: true,
+      lastAiSessionId: true,
+      lastAiUpdateAt: true,
+    },
+  });
+
+  return {
+    aiContext: updated.aiContext,
+    aiNotes: parseAiNotes(updated.aiNotes),
+    lastAiSessionId: updated.lastAiSessionId,
+    lastAiUpdateAt: updated.lastAiUpdateAt?.toISOString() ?? null,
+  };
+}
+
+/**
+ * Append an AI note to an epic (non-destructive)
+ */
+export async function appendEpicAiNote(
+  epicId: string,
+  input: AppendAiNoteInput
+): Promise<AiContextResponse> {
+  // Verify epic exists and get current notes
+  const existing = await prisma.epic.findFirst({
+    where: { id: epicId },
+    select: {
+      aiNotes: true,
+    },
+  });
+
+  if (!existing) {
+    throw new NotFoundError(`Epic with id '${epicId}' not found`);
+  }
+
+  const currentNotes = parseAiNotes(existing.aiNotes);
+  const newNote: AiNote = {
+    timestamp: new Date().toISOString(),
+    type: input.type,
+    content: input.content,
+    ...(input.sessionId && { sessionId: input.sessionId }),
+  };
+
+  currentNotes.push(newNote);
+  const now = new Date();
+
+  const updated = await prisma.epic.update({
+    where: { id: epicId },
+    data: {
+      aiNotes: stringifyAiNotes(currentNotes),
+      lastAiSessionId: input.sessionId ?? null,
+      lastAiUpdateAt: now,
+    },
+    select: {
+      aiContext: true,
+      aiNotes: true,
+      lastAiSessionId: true,
+      lastAiUpdateAt: true,
+    },
+  });
+
+  return {
+    aiContext: updated.aiContext,
+    aiNotes: parseAiNotes(updated.aiNotes),
+    lastAiSessionId: updated.lastAiSessionId,
+    lastAiUpdateAt: updated.lastAiUpdateAt?.toISOString() ?? null,
+  };
+}
+
+// =============================================================================
 // Generic Operations (for MCP tools)
 // =============================================================================
 
@@ -318,6 +444,8 @@ export async function getAiContext(
 ): Promise<AiContextResponse> {
   if (entityType === "feature") {
     return getFeatureAiContext(entityId);
+  } else if (entityType === "epic") {
+    return getEpicAiContext(entityId);
   } else {
     return getTaskAiContext(entityId);
   }
@@ -333,6 +461,8 @@ export async function setAiContext(
 ): Promise<AiContextResponse> {
   if (entityType === "feature") {
     return setFeatureAiContext(entityId, input);
+  } else if (entityType === "epic") {
+    return setEpicAiContext(entityId, input);
   } else {
     return setTaskAiContext(entityId, input);
   }
@@ -348,6 +478,8 @@ export async function appendAiNote(
 ): Promise<AiContextResponse> {
   if (entityType === "feature") {
     return appendFeatureAiNote(entityId, input);
+  } else if (entityType === "epic") {
+    return appendEpicAiNote(entityId, input);
   } else {
     return appendTaskAiNote(entityId, input);
   }

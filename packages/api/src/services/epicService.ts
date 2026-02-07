@@ -442,6 +442,18 @@ export async function createEpicComplete(
     });
     const epicSortOrder = generateSortOrderBetween(lastEpic?.sortOrder ?? null, null);
 
+    // Stringify structured description if provided
+    let epicStructuredDesc: string | null = null;
+    if (validatedInput.structuredDesc) {
+      const structValidation = structuredDescriptionSchema.safeParse(validatedInput.structuredDesc);
+      if (!structValidation.success) {
+        throw new ValidationError(
+          `Invalid structuredDesc for epic '${validatedInput.name}': ${structValidation.error.message}`
+        );
+      }
+      epicStructuredDesc = JSON.stringify(structValidation.data);
+    }
+
     // Build epic data with proper null handling for Prisma
     const epicData: {
       name: string;
@@ -450,6 +462,7 @@ export async function createEpicComplete(
       description?: string | null;
       icon?: string | null;
       color?: string | null;
+      structuredDesc?: string | null;
     } = {
       name: validatedInput.name.trim(),
       teamId: team.id,
@@ -463,6 +476,9 @@ export async function createEpicComplete(
     }
     if (validatedInput.color !== undefined) {
       epicData.color = validatedInput.color;
+    }
+    if (epicStructuredDesc !== null) {
+      epicData.structuredDesc = epicStructuredDesc;
     }
 
     const epic = await tx.epic.create({ data: epicData });
@@ -540,6 +556,7 @@ export async function createEpicComplete(
         epicId: string;
         identifier: string;
         sortOrder: number;
+        description?: string | null;
         statusId?: string | null;
         executionOrder?: number | null;
         estimatedComplexity?: string | null;
@@ -556,6 +573,9 @@ export async function createEpicComplete(
       };
       if (backlogStatus?.id !== undefined) {
         featureData.statusId = backlogStatus.id;
+      }
+      if (featureInput.description !== undefined) {
+        featureData.description = featureInput.description;
       }
       if (featureInput.executionOrder !== undefined) {
         featureData.executionOrder = featureInput.executionOrder;
@@ -614,6 +634,7 @@ export async function createEpicComplete(
           featureId: string;
           identifier: string;
           sortOrder: number;
+          description?: string | null;
           statusId?: string | null;
           executionOrder?: number | null;
           estimatedComplexity?: string | null;
@@ -626,6 +647,9 @@ export async function createEpicComplete(
         };
         if (backlogStatus?.id !== undefined) {
           taskData.statusId = backlogStatus.id;
+        }
+        if (taskInput.description !== undefined) {
+          taskData.description = taskInput.description;
         }
         if (taskInput.executionOrder !== undefined) {
           taskData.executionOrder = taskInput.executionOrder;
@@ -671,6 +695,7 @@ export async function createEpicComplete(
         id: epic.id,
         name: epic.name,
         description: epic.description,
+        structuredDesc: epic.structuredDesc,
         teamId: team.id, // Use resolved team.id since we know it exists
       },
       features: createdFeatures,
