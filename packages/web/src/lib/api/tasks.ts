@@ -43,8 +43,8 @@ export const tasksApi = {
   delete: (id: string) => api.delete<void>(`/tasks/${id}`),
 
   getCodeContext: (taskId: string) =>
-    api.get<CodeContextResponse>(`/tasks/${taskId}/code-context`),
+    api.get<{ data: CodeContextResponse }>(`/tasks/${taskId}/code-context`),
 
   getAiContext: (taskId: string) =>
-    api.get<import('./ai-types').AiContextResponse>(`/tasks/${taskId}/ai-context`),
+    api.get<{ data: import('./ai-types').AiContextResponse }>(`/tasks/${taskId}/ai-context`),
 };

@@ -14,8 +14,7 @@ const CodeContextPanel: React.FC<CodeContextPanelProps> = ({ featureId, taskId }
   
   // Choose the relevant query based on props
   const query = featureId ? featureQuery : taskQuery;
-  // The API returns { data: CodeContextResponse }
-  const context: CodeContextResponse | undefined = (query.data as { data: CodeContextResponse } | undefined)?.data;
+  const context: CodeContextResponse | undefined = query.data;
 
   // Loading state
   if (query.isLoading) {

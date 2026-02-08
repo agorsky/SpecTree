@@ -46,8 +46,8 @@ export const featuresApi = {
   delete: (id: string) => api.delete<void>(`/features/${id}`),
 
   getCodeContext: (featureId: string) =>
-    api.get<CodeContextResponse>(`/features/${featureId}/code-context`),
+    api.get<{ data: CodeContextResponse }>(`/features/${featureId}/code-context`),
 
   getAiContext: (featureId: string) =>
-    api.get<import('./ai-types').AiContextResponse>(`/features/${featureId}/ai-context`),
+    api.get<{ data: import('./ai-types').AiContextResponse }>(`/features/${featureId}/ai-context`),
 };

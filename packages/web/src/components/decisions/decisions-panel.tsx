@@ -41,8 +41,8 @@ const DecisionsPanel: React.FC<DecisionsPanelProps> = ({ epicId, featureId, task
     );
   }
 
-  // API returns { decisions, count }
-  const decisions = data?.decisions || [];
+  // API returns { data: Decision[], meta: { cursor, hasMore } }
+  const decisions = data?.data || [];
 
   if (!decisions.length) {
     return (

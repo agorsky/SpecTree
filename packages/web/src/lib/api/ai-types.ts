@@ -1,5 +1,5 @@
 export interface AiNote {
-  noteType: 'observation' | 'decision' | 'blocker' | 'next-step' | 'context';
+  type: 'observation' | 'decision' | 'blocker' | 'next-step' | 'context';
   content: string;
   timestamp: string;
   sessionId?: string;
@@ -8,4 +8,6 @@ export interface AiNote {
 export interface AiContextResponse {
   aiContext: string | null;
   aiNotes: AiNote[];
+  lastAiSessionId: string | null;
+  lastAiUpdateAt: string | null;
 }

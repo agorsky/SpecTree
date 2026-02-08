@@ -10,7 +10,10 @@ export const aiContextKeys = {
 export function useFeatureAiContext(featureId: string) {
   return useQuery({
     queryKey: aiContextKeys.feature(featureId),
-    queryFn: () => featuresApi.getAiContext(featureId),
+    queryFn: async () => {
+      const response = await featuresApi.getAiContext(featureId);
+      return response.data;
+    },
     enabled: !!featureId,
   });
 }
@@ -18,7 +21,10 @@ export function useFeatureAiContext(featureId: string) {
 export function useTaskAiContext(taskId: string) {
   return useQuery({
     queryKey: aiContextKeys.task(taskId),
-    queryFn: () => tasksApi.getAiContext(taskId),
+    queryFn: async () => {
+      const response = await tasksApi.getAiContext(taskId);
+      return response.data;
+    },
     enabled: !!taskId,
   });
 }

@@ -3,7 +3,7 @@ name: SpecTree Planner
 description: "Creates structured SpecTree epics from natural language descriptions.
   Runs a 5-stage pipeline: Analyze, Decompose, Detail, Evaluate, Verify.
   Use when the user wants to plan, design, or spec out a feature or body of work."
-tools: ['read', 'search', 'agent', 'web']
+tools: ['read', 'search', 'agent', 'web', 'spectree/*']
 user-invokable: true
 ---
 

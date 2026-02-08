@@ -3,7 +3,7 @@ name: Feature Worker
 description: "Implements all tasks within a single SpecTree feature. Receives
   full context from the orchestrator including requirements, acceptance criteria,
   and code context. NOT user-invokable - only spawned as a sub-agent by the orchestrator."
-tools: ['read', 'edit', 'execute', 'search']
+tools: ['read', 'edit', 'execute', 'search', 'spectree/*']
 user-invokable: false
 ---
 

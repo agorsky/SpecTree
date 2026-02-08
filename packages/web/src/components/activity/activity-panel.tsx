@@ -29,7 +29,7 @@ const ActivityEmpty = () => (
   </div>
 );
 
-function mapNoteType(noteType: AiNote['noteType']): TimelineEntry['type'] {
+function mapNoteType(noteType: AiNote['type']): TimelineEntry['type'] {
   return noteType;
 }
 
@@ -42,8 +42,8 @@ export const ActivityPanel: React.FC<ActivityPanelProps> = ({ featureId, taskId 
 
   const activityItems: TimelineEntry[] = aiNotes
     .map((note) => ({
-      id: `${note.timestamp}-${note.noteType}`,
-      type: mapNoteType(note.noteType),
+      id: `${note.timestamp}-${note.type}`,
+      type: mapNoteType(note.type),
       content: note.content,
       timestamp: note.timestamp,
       sessionId: note.sessionId,

@@ -18,6 +18,15 @@ const categoryIcons: Record<string, { icon: string; color: string }> = {
   deferral: { icon: "⏳", color: "#64748b" }, // gray
 };
 
+function parseAlternatives(alternatives: string[] | null | unknown): string[] {
+  if (!alternatives) return [];
+  if (Array.isArray(alternatives)) return alternatives;
+  if (typeof alternatives === 'string') {
+    try { return JSON.parse(alternatives); } catch { return []; }
+  }
+  return [];
+}
+
 const DecisionsList: React.FC<DecisionsListProps> = ({ decisions, groupByCategory = false }) => {
   if (!decisions || decisions.length === 0) {
     return (
@@ -82,16 +91,19 @@ const DecisionsList: React.FC<DecisionsListProps> = ({ decisions, groupByCategor
                 {d.rationale && (
                   <div className="mt-2 text-xs text-gray-500">Rationale: {d.rationale}</div>
                 )}
-                {d.alternatives && d.alternatives.length > 0 && (
+                {(() => {
+                  const alts = parseAlternatives(d.alternatives);
+                  return alts.length > 0 ? (
                   <div className="mt-2 text-xs text-gray-500">
                     Alternatives:
                     <ul className="list-disc ml-4">
-                      {d.alternatives.map((alt, idx) => (
+                      {alts.map((alt, idx) => (
                         <li key={idx}>{alt}</li>
                       ))}
                     </ul>
                   </div>
-                )}
+                  ) : null;
+                })()}
               </div>
             ))}
           </div>

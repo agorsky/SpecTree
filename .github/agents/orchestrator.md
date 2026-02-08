@@ -3,7 +3,7 @@ name: SpecTree Orchestrator
 description: "Executes SpecTree epic execution plans by coordinating feature-worker
   agents. Reads the execution plan, manages phases, and delegates features to
   sub-agents. Use when the user wants to execute an epic or run a specific phase."
-tools: ['agent', 'execute', 'read']
+tools: ['agent', 'execute', 'read', 'spectree/*']
 agents: ['feature-worker', 'reviewer']
 user-invokable: true
 ---

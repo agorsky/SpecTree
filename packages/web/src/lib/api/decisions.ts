@@ -24,8 +24,11 @@ export interface DecisionFilters {
 }
 
 export interface GetDecisionsResponse {
-  decisions: Decision[];
-  count: number;
+  data: Decision[];
+  meta: {
+    cursor: string | null;
+    hasMore: boolean;
+  };
 }
 
 export async function getDecisions(filters: DecisionFilters = {}): Promise<GetDecisionsResponse> {

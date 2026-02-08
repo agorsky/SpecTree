@@ -3,7 +3,7 @@ name: SpecTree Reviewer
 description: "Reviews completed features against their SpecTree acceptance criteria.
   Runs validations, checks code quality, and verifies requirements are met.
   Use when you want to review a completed feature or task."
-tools: ['read', 'search', 'execute']
+tools: ['read', 'search', 'execute', 'spectree/*']
 user-invokable: true
 ---
 
