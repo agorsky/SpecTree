@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/hooks/use-theme";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { router } from "@/router";
 import { useAuthStore } from "@/stores/auth-store";
+import { LiveUpdatesProvider } from "@/providers/LiveUpdatesProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,11 +26,13 @@ function App(): React.ReactNode {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="spectree-ui-theme">
-        <TooltipProvider>
-          <RouterProvider router={router} />
-        </TooltipProvider>
-      </ThemeProvider>
+      <LiveUpdatesProvider>
+        <ThemeProvider defaultTheme="system" storageKey="spectree-ui-theme">
+          <TooltipProvider>
+            <RouterProvider router={router} />
+          </TooltipProvider>
+        </ThemeProvider>
+      </LiveUpdatesProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

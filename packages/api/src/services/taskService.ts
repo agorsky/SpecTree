@@ -13,7 +13,7 @@ import {
   getStatusIdsByCategory,
   getDefaultBacklogStatus,
 } from "./statusService.js";
-import { emitStatusChanged } from "../events/index.js";
+import { emitStatusChanged, emitEntityCreated, emitEntityUpdated, emitEntityDeleted } from "../events/index.js";
 import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
 import * as changelogService from "./changelogService.js";
 
@@ -376,7 +376,7 @@ export async function getTaskById(idOrIdentifier: string): Promise<Task | null> 
  * Create a new task with auto-generated identifier.
  * Defaults to "Backlog" status if no status is provided.
  */
-export async function createTask(input: CreateTaskInput): Promise<Task> {
+export async function createTask(input: CreateTaskInput, userId?: string): Promise<Task> {
   // Validate required fields
   if (!input.title || input.title.trim() === "") {
     throw new ValidationError("Title is required");
@@ -499,6 +499,14 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
 
       const task = await prisma.task.create({ data });
 
+      // Emit entity created event
+      emitEntityCreated({
+        entityType: "task",
+        entityId: task.id,
+        userId: userId ?? null,
+        timestamp: new Date().toISOString(),
+      });
+
       // Record creation in changelog (never fails the parent operation)
       // epicId needs to be resolved via feature
       const taskWithFeature = await prisma.task.findUnique({
@@ -513,7 +521,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
           field: "_created",
           oldValue: null,
           newValue: JSON.stringify(task),
-          changedBy: "system", // TODO: Pass actual user ID when available
+          changedBy: userId ?? "system",
           epicId: taskWithFeature.feature.epicId,
         }).catch((error) => {
           console.error("Failed to record task creation in changelog:", error);
@@ -546,7 +554,8 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
  */
 export async function updateTask(
   idOrIdentifier: string,
-  input: UpdateTaskInput
+  input: UpdateTaskInput,
+  userId?: string
 ): Promise<Task> {
   // Resolve identifier to UUID if needed
   const isUuid = UUID_REGEX.test(idOrIdentifier);
@@ -661,6 +670,20 @@ export async function updateTask(
     data,
   });
 
+  // Compute changed fields
+  const changedFields = Object.keys(data);
+
+  // Emit entity updated event
+  if (changedFields.length > 0) {
+    emitEntityUpdated({
+      entityType: "task",
+      entityId: id,
+      changedFields,
+      userId: userId ?? null,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // Emit status changed event if status was updated
   if (input.statusId !== undefined && input.statusId !== oldStatusId) {
     emitStatusChanged({
@@ -686,7 +709,7 @@ export async function updateTask(
         id,
         beforeSnapshot,
         updatedTask,
-        "system", // TODO: Pass actual user ID when available
+        userId ?? "system",
         taskWithFeature.feature.epicId
       ).catch((error) => {
         console.error("Failed to record task update in changelog:", error);
@@ -700,7 +723,7 @@ export async function updateTask(
 /**
  * Delete a task (hard delete)
  */
-export async function deleteTask(idOrIdentifier: string): Promise<void> {
+export async function deleteTask(idOrIdentifier: string, userId?: string): Promise<void> {
   // Resolve identifier to UUID if needed
   const isUuid = UUID_REGEX.test(idOrIdentifier);
   
@@ -717,5 +740,13 @@ export async function deleteTask(idOrIdentifier: string): Promise<void> {
 
   await prisma.task.delete({
     where: { id: existing.id },
+  });
+
+  // Emit entity deleted event
+  emitEntityDeleted({
+    entityType: "task",
+    entityId: existing.id,
+    userId: userId ?? null,
+    timestamp: new Date().toISOString(),
   });
 }

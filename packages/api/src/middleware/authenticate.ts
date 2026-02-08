@@ -86,10 +86,15 @@ export async function authenticate(
 ): Promise<void> {
   // Extract token from Authorization header
   const authHeader = request.headers.authorization;
-  const token = extractBearerToken(authHeader);
+  let token = extractBearerToken(authHeader);
+
+  // Fallback to query param for SSE (EventSource cannot send custom headers)
+  if (!token && request.query && typeof (request.query as any).token === 'string') {
+    token = (request.query as any).token;
+  }
 
   if (!token) {
-    throw new UnauthorizedError("Missing or invalid Authorization header");
+    throw new UnauthorizedError("Missing or invalid Authorization header or token query parameter");
   }
 
   // Check if this is an API token (st_ prefix)

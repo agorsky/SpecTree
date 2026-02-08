@@ -13,7 +13,7 @@ import {
   isAssigneeNone,
   isAssigneeInvalid,
 } from "../utils/assignee.js";
-import { emitStatusChanged } from "../events/index.js";
+import { emitStatusChanged, emitEntityCreated, emitEntityUpdated, emitEntityDeleted } from "../events/index.js";
 import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
 import * as changelogService from "./changelogService.js";
 
@@ -414,7 +414,7 @@ export async function getFeatureById(idOrIdentifierOrTitle: string): Promise<Fea
  * Create a new feature with auto-generated identifier.
  * Defaults to "Backlog" status if no status is provided.
  */
-export async function createFeature(input: CreateFeatureInput): Promise<Feature> {
+export async function createFeature(input: CreateFeatureInput, userId?: string): Promise<Feature> {
   // Validate required fields
   if (!input.title || input.title.trim() === "") {
     throw new ValidationError("Title is required");
@@ -526,6 +526,14 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
 
   const feature = await prisma.feature.create({ data });
 
+  // Emit entity created event
+  emitEntityCreated({
+    entityType: "feature",
+    entityId: feature.id,
+    userId: userId ?? null,
+    timestamp: new Date().toISOString(),
+  });
+
   // Record creation in changelog (never fails the parent operation)
   changelogService.recordChange({
     entityType: "feature",
@@ -533,7 +541,7 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
     field: "_created",
     oldValue: null,
     newValue: JSON.stringify(feature),
-    changedBy: "system", // TODO: Pass actual user ID when available
+    changedBy: userId ?? "system",
     epicId: feature.epicId,
   }).catch((error) => {
     console.error("Failed to record feature creation in changelog:", error);
@@ -548,7 +556,8 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
  */
 export async function updateFeature(
   idOrIdentifierOrTitle: string,
-  input: UpdateFeatureInput
+  input: UpdateFeatureInput,
+  userId?: string
 ): Promise<Feature> {
   // Resolve to UUID using same logic as getFeatureById
   const isUuid = UUID_REGEX.test(idOrIdentifierOrTitle);
@@ -668,6 +677,20 @@ export async function updateFeature(
     data,
   });
 
+  // Compute changed fields by comparing input with existing
+  const changedFields = Object.keys(data);
+
+  // Emit entity updated event
+  if (changedFields.length > 0) {
+    emitEntityUpdated({
+      entityType: "feature",
+      entityId: id,
+      changedFields,
+      userId: userId ?? null,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // Emit status changed event if status was updated
   if (input.statusId !== undefined && input.statusId !== oldStatusId) {
     emitStatusChanged({
@@ -686,7 +709,7 @@ export async function updateFeature(
       id,
       beforeSnapshot,
       updatedFeature,
-      "system", // TODO: Pass actual user ID when available
+      userId ?? "system",
       updatedFeature.epicId
     ).catch((error) => {
       console.error("Failed to record feature update in changelog:", error);
@@ -700,7 +723,7 @@ export async function updateFeature(
  * Delete a feature (hard delete - cascade will remove tasks).
  * Supports UUID, identifier (e.g., "ENG-4"), or exact title lookups.
  */
-export async function deleteFeature(idOrIdentifierOrTitle: string): Promise<void> {
+export async function deleteFeature(idOrIdentifierOrTitle: string, userId?: string): Promise<void> {
   // Resolve to UUID using same logic as getFeatureById
   const isUuid = UUID_REGEX.test(idOrIdentifierOrTitle);
   const isIdentifier = IDENTIFIER_REGEX.test(idOrIdentifierOrTitle);
@@ -722,5 +745,13 @@ export async function deleteFeature(idOrIdentifierOrTitle: string): Promise<void
 
   await prisma.feature.delete({
     where: { id: existing.id },
+  });
+
+  // Emit entity deleted event
+  emitEntityDeleted({
+    entityType: "feature",
+    entityId: existing.id,
+    userId: userId ?? null,
+    timestamp: new Date().toISOString(),
   });
 }

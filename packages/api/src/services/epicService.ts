@@ -4,6 +4,7 @@ import { NotFoundError, ValidationError } from "../errors/index.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
 import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
 import * as changelogService from "./changelogService.js";
+import { emitEntityCreated, emitEntityUpdated, emitEntityDeleted } from "../events/index.js";
 
 // Types for epic operations
 export interface CreateEpicInput {
@@ -171,7 +172,7 @@ export async function getEpicById(
 /**
  * Create a new epic
  */
-export async function createEpic(input: CreateEpicInput): Promise<Epic> {
+export async function createEpic(input: CreateEpicInput, userId?: string): Promise<Epic> {
   // Validate required fields
   if (!input.name || input.name.trim() === "") {
     throw new ValidationError("Name is required");
@@ -227,6 +228,14 @@ export async function createEpic(input: CreateEpicInput): Promise<Epic> {
 
   const epic = await prisma.epic.create({ data });
 
+  // Emit entity created event
+  emitEntityCreated({
+    entityType: "epic",
+    entityId: epic.id,
+    userId: userId ?? null,
+    timestamp: new Date().toISOString(),
+  });
+
   // Record creation in changelog (never fails the parent operation)
   changelogService.recordChange({
     entityType: "epic",
@@ -234,7 +243,7 @@ export async function createEpic(input: CreateEpicInput): Promise<Epic> {
     field: "_created",
     oldValue: null,
     newValue: JSON.stringify(epic),
-    changedBy: "system", // TODO: Pass actual user ID when available
+    changedBy: userId ?? "system",
     epicId: epic.id,
   }).catch((error) => {
     console.error("Failed to record epic creation in changelog:", error);
@@ -249,7 +258,8 @@ export async function createEpic(input: CreateEpicInput): Promise<Epic> {
  */
 export async function updateEpic(
   idOrName: string,
-  input: UpdateEpicInput
+  input: UpdateEpicInput,
+  userId?: string
 ): Promise<Epic> {
   // First check if epic exists and is not archived
   const isUuid = UUID_REGEX.test(idOrName);
@@ -306,6 +316,20 @@ export async function updateEpic(
     data,
   });
 
+  // Compute changed fields
+  const changedFields = Object.keys(data);
+
+  // Emit entity updated event
+  if (changedFields.length > 0) {
+    emitEntityUpdated({
+      entityType: "epic",
+      entityId: id,
+      changedFields,
+      userId: userId ?? null,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // Record changes in changelog using diffAndRecord (never fails the parent operation)
   if (beforeSnapshot) {
     changelogService.diffAndRecord(
@@ -313,7 +337,7 @@ export async function updateEpic(
       id,
       beforeSnapshot,
       updatedEpic,
-      "system", // TODO: Pass actual user ID when available
+      userId ?? "system",
       id // epicId is the entity's own ID
     ).catch((error) => {
       console.error("Failed to record epic update in changelog:", error);
@@ -329,7 +353,7 @@ export async function updateEpic(
  * - If already archived: hard delete (permanent removal)
  * Supports both UUID and exact epic name lookups.
  */
-export async function deleteEpic(idOrName: string): Promise<void> {
+export async function deleteEpic(idOrName: string, userId?: string): Promise<void> {
   // First check if epic exists
   const isUuid = UUID_REGEX.test(idOrName);
   const existing = await prisma.epic.findFirst({
@@ -347,6 +371,14 @@ export async function deleteEpic(idOrName: string): Promise<void> {
     await prisma.epic.delete({
       where: { id: existing.id },
     });
+    
+    // Emit entity deleted event
+    emitEntityDeleted({
+      entityType: "epic",
+      entityId: existing.id,
+      userId: userId ?? null,
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
@@ -355,6 +387,9 @@ export async function deleteEpic(idOrName: string): Promise<void> {
     where: { id: existing.id },
     data: { isArchived: true },
   });
+  
+  // Note: We don't emit ENTITY_DELETED for soft deletes (archiving)
+  // as the epic still exists in the database
 }
 
 /**

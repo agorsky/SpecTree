@@ -9,7 +9,7 @@ import { prisma } from "../lib/db.js";
 import type { Feature, Task } from "../generated/prisma/index.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
 import { appendFeatureAiNote, appendTaskAiNote } from "./aiContextService.js";
-import { emitStatusChanged } from "../events/index.js";
+import { emitStatusChanged, emitProgressLogged } from "../events/index.js";
 import { logSessionWork } from "./sessionService.js";
 
 // Entity type for progress operations
@@ -68,6 +68,7 @@ export interface LogProgressInput {
   message: string;
   percentComplete?: number | undefined;
   sessionId?: string | undefined;
+  userId?: string | undefined;
 }
 
 export interface ReportBlockerInput {
@@ -493,6 +494,16 @@ export async function logProgress(
       sessionId: input.sessionId,
     });
 
+    // Emit progress logged event
+    emitProgressLogged({
+      entityType: "feature",
+      entityId: feature.id,
+      message: input.message,
+      ...(input.percentComplete !== undefined ? { percentComplete: input.percentComplete } : {}),
+      userId: input.userId ?? null,
+      timestamp: new Date().toISOString(),
+    });
+
     return {
       id: updated.id,
       identifier: updated.identifier,
@@ -519,6 +530,16 @@ export async function logProgress(
       type: "observation",
       content: noteContent,
       sessionId: input.sessionId,
+    });
+
+    // Emit progress logged event
+    emitProgressLogged({
+      entityType: "task",
+      entityId: task.id,
+      message: input.message,
+      ...(input.percentComplete !== undefined ? { percentComplete: input.percentComplete } : {}),
+      userId: input.userId ?? null,
+      timestamp: new Date().toISOString(),
     });
 
     return {
