@@ -57,6 +57,57 @@ function stringifyStructuredDesc(desc: StructuredDescription): string {
 }
 
 /**
+ * Convert a StructuredDescription to a human-readable Markdown string.
+ * Used to auto-populate the `description` field when only `structuredDesc` is provided.
+ */
+export function structuredDescToMarkdown(desc: StructuredDescription): string {
+  const parts: string[] = [];
+
+  parts.push(desc.summary);
+
+  if (desc.aiInstructions) {
+    parts.push(`## AI Instructions\n${desc.aiInstructions}`);
+  }
+
+  if (desc.acceptanceCriteria && desc.acceptanceCriteria.length > 0) {
+    const items = desc.acceptanceCriteria.map((c) => `- [ ] ${c}`).join("\n");
+    parts.push(`## Acceptance Criteria\n${items}`);
+  }
+
+  if (desc.filesInvolved && desc.filesInvolved.length > 0) {
+    const items = desc.filesInvolved.map((f) => `- \`${f}\``).join("\n");
+    parts.push(`## Files Involved\n${items}`);
+  }
+
+  if (desc.functionsToModify && desc.functionsToModify.length > 0) {
+    const items = desc.functionsToModify.map((f) => `- \`${f}\``).join("\n");
+    parts.push(`## Functions to Modify\n${items}`);
+  }
+
+  if (desc.testingStrategy) {
+    parts.push(`## Testing Strategy\n${desc.testingStrategy}`);
+  }
+
+  if (desc.testFiles && desc.testFiles.length > 0) {
+    const items = desc.testFiles.map((f) => `- \`${f}\``).join("\n");
+    parts.push(`## Test Files\n${items}`);
+  }
+
+  if (desc.technicalNotes) {
+    parts.push(`## Technical Notes\n${desc.technicalNotes}`);
+  }
+
+  const meta: string[] = [];
+  if (desc.riskLevel) meta.push(`**Risk Level:** ${desc.riskLevel}`);
+  if (desc.estimatedEffort) meta.push(`**Estimated Effort:** ${desc.estimatedEffort}`);
+  if (meta.length > 0) {
+    parts.push(meta.join(" | "));
+  }
+
+  return parts.join("\n\n");
+}
+
+/**
  * UUID v4 regex pattern for validation
  */
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -170,6 +221,7 @@ export async function setFeatureStructuredDesc(
     where: { id },
     data: {
       structuredDesc: stringifyStructuredDesc(validationResult.data),
+      description: structuredDescToMarkdown(validationResult.data),
     },
     select: {
       structuredDesc: true,
@@ -219,6 +271,7 @@ export async function updateFeatureSection(
     where: { id },
     data: {
       structuredDesc: stringifyStructuredDesc(validationResult.data),
+      description: structuredDescToMarkdown(validationResult.data),
     },
     select: {
       structuredDesc: true,
@@ -303,6 +356,7 @@ export async function setEpicStructuredDesc(
     where: { id },
     data: {
       structuredDesc: stringifyStructuredDesc(validationResult.data),
+      description: structuredDescToMarkdown(validationResult.data),
     },
     select: {
       structuredDesc: true,
@@ -352,6 +406,7 @@ export async function updateEpicSection(
     where: { id },
     data: {
       structuredDesc: stringifyStructuredDesc(validationResult.data),
+      description: structuredDescToMarkdown(validationResult.data),
     },
     select: {
       structuredDesc: true,
@@ -414,6 +469,7 @@ export async function setTaskStructuredDesc(
     where: { id },
     data: {
       structuredDesc: stringifyStructuredDesc(validationResult.data),
+      description: structuredDescToMarkdown(validationResult.data),
     },
     select: {
       structuredDesc: true,
@@ -463,6 +519,7 @@ export async function updateTaskSection(
     where: { id },
     data: {
       structuredDesc: stringifyStructuredDesc(validationResult.data),
+      description: structuredDescToMarkdown(validationResult.data),
     },
     select: {
       structuredDesc: true,

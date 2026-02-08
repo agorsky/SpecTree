@@ -114,6 +114,18 @@ export class BranchManager {
   }
 
   /**
+   * Get the hash of the latest commit on the current branch.
+   */
+  async getLatestCommitHash(): Promise<string | null> {
+    try {
+      const log = await this.git.log({ maxCount: 1 });
+      return log.latest?.hash ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * List branches matching an optional pattern.
    *
    * @param pattern - Optional glob pattern to filter branches

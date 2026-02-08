@@ -38,7 +38,7 @@ export function EpicDetailPage() {
   const [editedName, setEditedName] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
 
   if (isLoading) {
     return (
@@ -225,13 +225,25 @@ export function EpicDetailPage() {
           </button>
           {isDescriptionExpanded && (
             <div className="px-4 pb-4 space-y-3">
-              {/* Summary / Description */}
-              <div className="bg-background rounded-lg border p-4">
-                <MarkdownRenderer
-                  content={epic.structuredDesc?.summary ?? epic.description ?? ""}
-                  className="text-sm"
-                />
-              </div>
+              {/* Description */}
+              {epic.description && (
+                <div className="bg-background rounded-lg border p-4">
+                  <MarkdownRenderer
+                    content={epic.description}
+                    className="text-sm"
+                  />
+                </div>
+              )}
+
+              {/* Structured Summary (only if no description or different from description) */}
+              {epic.structuredDesc?.summary && !epic.description && (
+                <div className="bg-background rounded-lg border p-4">
+                  <MarkdownRenderer
+                    content={epic.structuredDesc.summary}
+                    className="text-sm"
+                  />
+                </div>
+              )}
 
               {/* AI Instructions */}
               {epic.structuredDesc?.aiInstructions && (

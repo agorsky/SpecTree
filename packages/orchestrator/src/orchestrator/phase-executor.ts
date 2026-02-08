@@ -304,6 +304,13 @@ export class PhaseExecutor extends EventEmitter {
         // 2. Create branch (will checkout if already exists)
         await this.branchManager.createBranch(branchName, baseBranch);
 
+        // 2.5 Link branch to SpecTree item
+        try {
+          await this.specTreeClient.linkBranch(item.type, item.id, branchName);
+        } catch (e) {
+          console.warn(`Failed to link branch for ${item.identifier}:`, e instanceof Error ? e.message : e);
+        }
+
         // 3. Spawn agent
         const agent = await this.agentPool.spawnAgent(item, branchName);
 
@@ -786,14 +793,60 @@ Call this for EVERY file you create or modify:
 }
 \`\`\`
 
+### append_ai_note - Leave notes for future sessions
+\`\`\`json
+{
+  "type": "task",
+  "id": "${task.identifier}",
+  "noteType": "observation",
+  "content": "Description of what you observed or learned"
+}
+\`\`\`
+noteTypes: observation, decision, blocker, next-steps, context
+
+### get_structured_description - Read acceptance criteria
+\`\`\`json
+{
+  "type": "task",
+  "id": "${task.identifier}"
+}
+\`\`\`
+
+### get_ai_context - Read previous session context
+\`\`\`json
+{
+  "type": "task",
+  "id": "${task.identifier}"
+}
+\`\`\`
+
+### run_all_validations - Verify before completing
+\`\`\`json
+{
+  "taskId": "${task.id}"
+}
+\`\`\`
+
+### report_blocker - Report blocking issues
+\`\`\`json
+{
+  "type": "task",
+  "id": "${task.identifier}",
+  "description": "What is blocking progress"
+}
+\`\`\`
+
 ## Instructions
 
-1. **START** by calling log_progress with "Starting work on ${task.identifier}"
-2. Focus ONLY on this specific task - do not implement other tasks
-3. Call log_progress after completing each significant step
-4. Call log_decision when making important choices (library selection, approach, etc.)
-5. Call link_code_file for EVERY file you create or modify
-6. **END** by calling log_progress with a summary and percentComplete: 100
+1. **READ** requirements: call get_structured_description and get_ai_context for ${task.identifier}
+2. **START** by calling log_progress with "Starting work on ${task.identifier}"
+3. Focus ONLY on this specific task - do not implement other tasks
+4. Call log_progress after completing each significant step
+5. Call log_decision when making important choices (library selection, approach, etc.)
+6. Call link_code_file for EVERY file you create or modify
+7. Call append_ai_note to leave observations for future sessions
+8. **VALIDATE** by calling run_all_validations before completing
+9. **END** by calling log_progress with a summary and percentComplete: 100
 
 **Important:** This task is part of feature ${feature.identifier}. Other agents handle other tasks.`);
 
@@ -1017,14 +1070,60 @@ You MUST use these tools to document your work. This creates a permanent record.
 }
 \`\`\`
 
+### append_ai_note - Leave notes for future sessions
+\`\`\`json
+{
+  "type": "${item.type}",
+  "id": "${item.identifier}",
+  "noteType": "observation",
+  "content": "Description of what you observed or learned"
+}
+\`\`\`
+noteTypes: observation, decision, blocker, next-steps, context
+
+### get_structured_description - Read acceptance criteria
+\`\`\`json
+{
+  "type": "${item.type}",
+  "id": "${item.identifier}"
+}
+\`\`\`
+
+### get_ai_context - Read previous session context
+\`\`\`json
+{
+  "type": "${item.type}",
+  "id": "${item.identifier}"
+}
+\`\`\`
+
+### run_all_validations - Verify before completing
+\`\`\`json
+{
+  "${item.type === "feature" ? "featureId" : "taskId"}": "${item.id}"
+}
+\`\`\`
+
+### report_blocker - Report blocking issues
+\`\`\`json
+{
+  "type": "${item.type}",
+  "id": "${item.identifier}",
+  "description": "What is blocking progress"
+}
+\`\`\`
+
 ## Instructions
 
-1. **START** by calling log_progress with "Starting work on ${item.identifier}"
-2. Implement the ${item.type} according to the description
-3. Call log_progress after completing each significant step
-4. Call log_decision when making important choices
-5. Call link_code_file for EVERY file you create or modify
-6. **END** by calling log_progress with a summary and percentComplete: 100`);
+1. **READ** requirements: call get_structured_description and get_ai_context for ${item.identifier}
+2. **START** by calling log_progress with "Starting work on ${item.identifier}"
+3. Implement the ${item.type} according to the description
+4. Call log_progress after completing each significant step
+5. Call log_decision when making important choices
+6. Call link_code_file for EVERY file you create or modify
+7. Call append_ai_note to leave observations for future sessions
+8. **VALIDATE** by calling run_all_validations before completing
+9. **END** by calling log_progress with a summary and percentComplete: 100`);
 
     return parts.join("\n");
   }

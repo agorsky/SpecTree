@@ -523,9 +523,22 @@ export class Orchestrator extends EventEmitter {
           item,
         });
 
-        // Link merged branch to item in SpecTree (if API supports it)
-        // Note: This may need to be implemented in the API client
-        // await this.client.linkBranch(item.type, item.id, branchName);
+        if (item) {
+          try {
+            await this.client.linkBranch(item.type, item.id, branchName);
+          } catch (e) {
+            console.warn(`Failed to link branch for ${item.identifier}:`, e instanceof Error ? e.message : e);
+          }
+
+          try {
+            const hash = await this.branchManager.getLatestCommitHash();
+            if (hash) {
+              await this.client.linkCommit(item.type, item.id, hash);
+            }
+          } catch (e) {
+            console.warn(`Failed to link commit for ${item.identifier}:`, e instanceof Error ? e.message : e);
+          }
+        }
       } catch (error) {
         if (isMergeConflictError(error)) {
           // Emit merge conflict event

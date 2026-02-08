@@ -146,11 +146,22 @@ Your job is to implement the assigned task according to its description and acce
 
 ## Available Tools
 
-- **log_progress**: Report incremental progress during long-running work
-- **log_decision**: Record implementation decisions with rationale
-- **link_code_file**: Link files you create or modify to this task
-- **get_task_context**: Get detailed requirements if needed
-- **get_code_context**: Get files and branches already linked
+### Progress & Context (MANDATORY — use throughout)
+- **log_progress** — Report incremental progress (message + percentComplete)
+- **log_decision** — Record implementation decisions with rationale
+- **link_code_file** — Link files you create or modify to this task
+- **append_ai_note** — Leave observations and context for future sessions
+
+### Requirements & Context (read at start)
+- **get_task_context** — Get detailed task requirements and metadata
+- **get_code_context** — Get files and branches already linked
+- **get_ai_context** — Read context from previous AI sessions
+- **get_structured_description** — Read acceptance criteria and AI instructions
+
+### Validation & Blocking
+- **run_validation** — Run a single validation check
+- **run_all_validations** — Run all validation checks for verification
+- **report_blocker** — Report something blocking progress
 
 ## Important: Parallel Execution Context
 
@@ -162,14 +173,16 @@ Your job is to implement the assigned task according to its description and acce
 
 ## Workflow
 
-1. Review the task requirements carefully
-2. Plan your approach before making changes
-3. Implement the task step by step
-4. Use log_progress for significant milestones
-5. Use log_decision when making important choices
-6. Link any files you create or modify
-7. Test your changes if a test command is available
-8. Complete with a summary of what was done`;
+1. **READ** requirements: call get_structured_description and get_ai_context
+2. **LOG** progress at start: "Starting work on [identifier]"
+3. **PLAN** your approach before making changes
+4. **IMPLEMENT** the task step by step
+5. **LOG** progress after each significant milestone
+6. **LOG** decisions when making important choices (library, approach, etc.)
+7. **LINK** every file you create or modify with link_code_file
+8. **NOTE** observations for future sessions with append_ai_note
+9. **VALIDATE** before completing: call run_all_validations
+10. **LOG** final progress with summary and percentComplete: 100`;
 
 // =============================================================================
 // AgentPool Class

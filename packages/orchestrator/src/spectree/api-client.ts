@@ -1228,6 +1228,43 @@ export class SpecTreeClient {
     return response.data;
   }
 
+  /**
+   * Link a git branch to a feature or task.
+   */
+  async linkBranch(
+    type: "feature" | "task",
+    id: string,
+    branchName: string
+  ): Promise<void> {
+    const basePath = type === "feature" ? "/features" : "/tasks";
+    await this.request("POST", `${basePath}/${id}/code-context/branch`, { branchName });
+  }
+
+  /**
+   * Link a commit SHA to a feature or task.
+   */
+  async linkCommit(
+    type: "feature" | "task",
+    id: string,
+    commitSha: string
+  ): Promise<void> {
+    const basePath = type === "feature" ? "/features" : "/tasks";
+    await this.request("POST", `${basePath}/${id}/code-context/commits`, { commitSha });
+  }
+
+  /**
+   * Link a pull request to a feature or task.
+   */
+  async linkPr(
+    type: "feature" | "task",
+    id: string,
+    prNumber: number,
+    prUrl: string
+  ): Promise<void> {
+    const basePath = type === "feature" ? "/features" : "/tasks";
+    await this.request("POST", `${basePath}/${id}/code-context/pr`, { prNumber, prUrl });
+  }
+
   // ---------------------------------------------------------------------------
   // Decisions
   // ---------------------------------------------------------------------------

@@ -386,6 +386,7 @@ import type {
 } from "../schemas/compositeEpic.js";
 import { createEpicCompleteInputSchema } from "../schemas/compositeEpic.js";
 import { structuredDescriptionSchema } from "../schemas/structuredDescription.js";
+import { structuredDescToMarkdown } from "./structuredDescriptionService.js";
 
 /**
  * Create a complete epic with all features, tasks, and structured descriptions
@@ -470,6 +471,8 @@ export async function createEpicComplete(
     };
     if (validatedInput.description !== undefined) {
       epicData.description = validatedInput.description.trim();
+    } else if (validatedInput.structuredDesc) {
+      epicData.description = structuredDescToMarkdown(validatedInput.structuredDesc);
     }
     if (validatedInput.icon !== undefined) {
       epicData.icon = validatedInput.icon;
@@ -576,6 +579,8 @@ export async function createEpicComplete(
       }
       if (featureInput.description !== undefined) {
         featureData.description = featureInput.description;
+      } else if (featureInput.structuredDesc) {
+        featureData.description = structuredDescToMarkdown(featureInput.structuredDesc);
       }
       if (featureInput.executionOrder !== undefined) {
         featureData.executionOrder = featureInput.executionOrder;
@@ -650,6 +655,8 @@ export async function createEpicComplete(
         }
         if (taskInput.description !== undefined) {
           taskData.description = taskInput.description;
+        } else if (taskInput.structuredDesc) {
+          taskData.description = structuredDescToMarkdown(taskInput.structuredDesc);
         }
         if (taskInput.executionOrder !== undefined) {
           taskData.executionOrder = taskInput.executionOrder;
