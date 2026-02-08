@@ -36,26 +36,27 @@ import { registerCompositeTools } from "./composite.js";
 export type ToolRegistrar = (server: McpServer) => void;
 
 // Registry of all tool registration functions
+// Order matters: tools registered first appear first in MCP introspection
 const toolRegistrars: ToolRegistrar[] = [
-  registerHelpTools,  // Register first so it's discovered early
-  registerEpicTools,
-  registerFeatureTools,
-  registerTaskTools,
-  registerStatusTools,
-  registerOrderingTools,
-  registerSearchTools,
-  registerPersonalTools,
-  registerExecutionTools,
-  registerAiContextTools,
-  registerProgressTools,
-  registerTemplateTools,
-  registerStructuredDescTools,
-  registerCodeContextTools,
-  registerValidationTools,
-  registerSummaryTools,
-  registerDecisionTools,
-  registerTeamTools,
-  registerCompositeTools,
+  registerHelpTools,         // Help and documentation tools
+  registerCompositeTools,    // High-level composite operations (reduce tool call count)
+  registerAiContextTools,    // AI context management
+  registerCodeContextTools,  // Code artifact tracking
+  registerDecisionTools,     // Decision logging
+  registerEpicTools,         // Epic management
+  registerExecutionTools,    // Execution planning
+  registerFeatureTools,      // Feature management
+  registerOrderingTools,     // Item reordering
+  registerPersonalTools,     // Personal scope
+  registerProgressTools,     // Progress tracking
+  registerSearchTools,       // Search functionality
+  registerStatusTools,       // Status management
+  registerStructuredDescTools, // Structured descriptions
+  registerSummaryTools,      // Summary and reporting
+  registerTaskTools,         // Task management
+  registerTeamTools,         // Team management
+  registerTemplateTools,     // Templates
+  registerValidationTools,   // Validation checks
 ];
 
 /**

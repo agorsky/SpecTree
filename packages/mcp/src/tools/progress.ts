@@ -14,12 +14,149 @@ import { createResponse, createErrorResponse } from "./utils.js";
 // Register all progress tracking tools
 export function registerProgressTools(server: McpServer): void {
   // ==========================================================================
+  // spectree__manage_progress (COMPOSITE)
+  // ==========================================================================
+  server.registerTool(
+    "spectree__manage_progress",
+    {
+      description:
+        "Manage progress tracking for features and tasks using a unified interface. " +
+        "This composite tool consolidates 4 progress operations into a single tool with action-based routing.\n\n" +
+        "Actions:\n" +
+        "- 'start_work': Begin working on an item (sets status to In Progress)\n" +
+        "- 'complete_work': Mark an item as complete (sets status to Done)\n" +
+        "- 'log_progress': Record progress without changing status\n" +
+        "- 'report_blocker': Report that an item is blocked\n\n" +
+        "Use this instead of the individual progress tools for a more streamlined workflow.",
+      inputSchema: z.discriminatedUnion("action", [
+        z.object({
+          action: z.literal("start_work"),
+          id: z.string().describe("Feature or task identifier (UUID or human-readable like 'COM-123')"),
+          type: z.enum(["feature", "task"]).describe("Whether this is a 'feature' or 'task'"),
+          sessionId: z.string().max(255).optional().describe("Optional AI session identifier"),
+        }),
+        z.object({
+          action: z.literal("complete_work"),
+          id: z.string().describe("Feature or task identifier (UUID or human-readable like 'COM-123')"),
+          type: z.enum(["feature", "task"]).describe("Whether this is a 'feature' or 'task'"),
+          summary: z.string().max(5000).optional().describe("Optional summary of work completed"),
+          sessionId: z.string().max(255).optional().describe("Optional AI session identifier"),
+        }),
+        z.object({
+          action: z.literal("log_progress"),
+          id: z.string().describe("Feature or task identifier (UUID or human-readable like 'COM-123')"),
+          type: z.enum(["feature", "task"]).describe("Whether this is a 'feature' or 'task'"),
+          message: z.string().min(1).max(5000).describe("Progress message to log as AI note"),
+          percentComplete: z.number().int().min(0).max(100).optional().describe("Optional percentage (0-100)"),
+          sessionId: z.string().max(255).optional().describe("Optional AI session identifier"),
+        }),
+        z.object({
+          action: z.literal("report_blocker"),
+          id: z.string().describe("Feature or task identifier (UUID or human-readable like 'COM-123')"),
+          type: z.enum(["feature", "task"]).describe("Whether this is a 'feature' or 'task'"),
+          reason: z.string().min(1).max(5000).describe("Description of what is blocking progress"),
+          blockedById: z.string().uuid().optional().describe("Optional UUID of the blocking item"),
+          sessionId: z.string().max(255).optional().describe("Optional AI session identifier"),
+        }),
+      ]),
+    },
+    async (input) => {
+      try {
+        const apiClient = getApiClient();
+
+        // Route based on action
+        switch (input.action) {
+          case "start_work": {
+            if (input.type === "feature") {
+              const { data: feature } = await apiClient.getFeature(input.id);
+              const { data: result } = await apiClient.startFeatureWork(feature.id, {
+                sessionId: input.sessionId,
+              });
+              return createResponse(result);
+            } else {
+              const { data: task } = await apiClient.getTask(input.id);
+              const { data: result } = await apiClient.startTaskWork(task.id, {
+                sessionId: input.sessionId,
+              });
+              return createResponse(result);
+            }
+          }
+
+          case "complete_work": {
+            if (input.type === "feature") {
+              const { data: feature } = await apiClient.getFeature(input.id);
+              const { data: result } = await apiClient.completeFeatureWork(feature.id, {
+                summary: input.summary,
+                sessionId: input.sessionId,
+              });
+              return createResponse(result);
+            } else {
+              const { data: task } = await apiClient.getTask(input.id);
+              const { data: result } = await apiClient.completeTaskWork(task.id, {
+                summary: input.summary,
+                sessionId: input.sessionId,
+              });
+              return createResponse(result);
+            }
+          }
+
+          case "log_progress": {
+            if (input.type === "feature") {
+              const { data: feature } = await apiClient.getFeature(input.id);
+              const { data: result } = await apiClient.logFeatureProgress(feature.id, {
+                message: input.message,
+                percentComplete: input.percentComplete,
+                sessionId: input.sessionId,
+              });
+              return createResponse(result);
+            } else {
+              const { data: task } = await apiClient.getTask(input.id);
+              const { data: result } = await apiClient.logTaskProgress(task.id, {
+                message: input.message,
+                percentComplete: input.percentComplete,
+                sessionId: input.sessionId,
+              });
+              return createResponse(result);
+            }
+          }
+
+          case "report_blocker": {
+            if (input.type === "feature") {
+              const { data: feature } = await apiClient.getFeature(input.id);
+              const { data: result } = await apiClient.reportFeatureBlocker(feature.id, {
+                reason: input.reason,
+                blockedById: input.blockedById,
+                sessionId: input.sessionId,
+              });
+              return createResponse(result);
+            } else {
+              const { data: task } = await apiClient.getTask(input.id);
+              const { data: result } = await apiClient.reportTaskBlocker(task.id, {
+                reason: input.reason,
+                blockedById: input.blockedById,
+                sessionId: input.sessionId,
+              });
+              return createResponse(result);
+            }
+          }
+        }
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(new Error(`${input.type} '${input.id}' not found`));
+        }
+        return createErrorResponse(error);
+      }
+    }
+  );
+
+  // ==========================================================================
   // spectree__start_work
   // ==========================================================================
   server.registerTool(
     "spectree__start_work",
     {
       description:
+        "⚠️ DEPRECATED: Use spectree__manage_progress with action='start_work' instead.\n\n" +
         "Begin working on a feature or task. This tool:\n" +
         "- Sets the status to 'In Progress'\n" +
         "- Records the start timestamp\n" +
@@ -81,6 +218,7 @@ export function registerProgressTools(server: McpServer): void {
     "spectree__complete_work",
     {
       description:
+        "⚠️ DEPRECATED: Use spectree__manage_progress with action='complete_work' instead.\n\n" +
         "Mark a feature or task as complete. This tool:\n" +
         "- Sets the status to 'Done'\n" +
         "- Records the completion timestamp\n" +
@@ -157,6 +295,7 @@ export function registerProgressTools(server: McpServer): void {
     "spectree__log_progress",
     {
       description:
+        "⚠️ DEPRECATED: Use spectree__manage_progress with action='log_progress' instead.\n\n" +
         "Log progress on a feature or task without changing its status. This tool:\n" +
         "- Appends a progress message to AI notes\n" +
         "- Optionally updates the percent complete (0-100)\n\n" +
@@ -240,6 +379,7 @@ export function registerProgressTools(server: McpServer): void {
     "spectree__report_blocker",
     {
       description:
+        "⚠️ DEPRECATED: Use spectree__manage_progress with action='report_blocker' instead.\n\n" +
         "Report that a feature or task is blocked. This tool:\n" +
         "- Sets the status to 'Blocked' (if available)\n" +
         "- Records the blocker reason\n" +

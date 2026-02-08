@@ -18,11 +18,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run tests/integration/",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "measure-tokens": "tsx scripts/measure-tool-tokens.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
     "@spectree/shared": "workspace:*",
     "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "tiktoken": "^1.0.22"
   }
 }

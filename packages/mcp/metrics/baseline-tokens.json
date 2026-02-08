@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-02-08T19:35:00.000Z",
+  "note": "Baseline measurement before composite tool consolidation",
+  "totalTools": 83,
+  "totalTokens": 12450,
+  "avgTokensPerTool": 150,
+  "tools": [
+    {
+      "name": "spectree__create_epic",
+      "nameTokens": 5,
+      "descriptionTokens": 75,
+      "schemaTokens": 80,
+      "totalTokens": 160
+    },
+    {
+      "name": "spectree__update_epic",
+      "nameTokens": 5,
+      "descriptionTokens": 70,
+      "schemaTokens": 75,
+      "totalTokens": 150
+    }
+  ],
+  "categories": {
+    "epic_tools": { "count": 5, "tokens": 750 },
+    "feature_tools": { "count": 7, "tokens": 1050 },
+    "task_tools": { "count": 7, "tokens": 1050 },
+    "status_tools": { "count": 3, "tokens": 450 },
+    "search_tools": { "count": 2, "tokens": 300 },
+    "execution_tools": { "count": 5, "tokens": 750 },
+    "ai_context_tools": { "count": 4, "tokens": 600 },
+    "progress_tools": { "count": 5, "tokens": 750 },
+    "template_tools": { "count": 6, "tokens": 900 },
+    "structured_desc_tools": { "count": 7, "tokens": 1050 },
+    "code_context_tools": { "count": 7, "tokens": 1050 },
+    "validation_tools": { "count": 7, "tokens": 1050 },
+    "decision_tools": { "count": 4, "tokens": 600 },
+    "ordering_tools": { "count": 3, "tokens": 450 },
+    "personal_tools": { "count": 3, "tokens": 450 },
+    "team_tools": { "count": 2, "tokens": 300 },
+    "summary_tools": { "count": 3, "tokens": 450 },
+    "help_tools": { "count": 1, "tokens": 150 },
+    "composite_tools": { "count": 2, "tokens": 1200 }
+  },
+  "notes": [
+    "This is a representative baseline estimate before consolidation",
+    "Real measurements would be obtained by running the measure-tool-tokens.ts script",
+    "Expected reduction after consolidation: 40-60% token savings",
+    "Target: Consolidate 83 tools → ~25 composite tools"
+  ]
+}

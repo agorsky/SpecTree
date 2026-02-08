@@ -216,6 +216,40 @@ After all phases are complete:
    ```
 4. Report the final status to the user with a summary table
 
+5. 🔴 **MANDATORY: Update Epic Description with Execution Summary**
+
+   You MUST append an execution summary to the epic's description using `spectree__update_epic`. Read the current description first, then append a `## ✅ Execution Complete` section. The summary MUST include:
+
+   - **Phase results table** — each phase with its feature(s) and ✅/❌ result
+   - **Verification metrics** — test counts, lines changed, files affected
+   - **Artifacts created** — new tools, services, components, etc.
+   - **Files created/modified** — grouped by phase
+
+   Example format to append:
+   ```markdown
+   ---
+
+   ## ✅ Execution Complete
+
+   All X phases executed successfully:
+
+   | Phase | Feature(s) | Result |
+   |-------|-----------|--------|
+   | 1 | ENG-XX: Feature Title | ✅ |
+   | 2 | ENG-YY–ZZ: Parallel features | ✅ |
+
+   ### Verification
+   - **N tests passing** (M test files, 0 failures)
+   - **X lines added**, Y removed across Z files
+   - Key metric or achievement
+
+   ### Files Created/Modified
+   **Phase 1:** `file1.ts`, `file2.ts`
+   **Phase 2:** `file3.ts`, `file4.ts`
+   ```
+
+   This is the permanent record of what was accomplished. Future sessions and users rely on this to understand the epic's outcome.
+
 ---
 
 ## Context Injection Template
@@ -313,6 +347,7 @@ If the user requests a dry run (e.g., "show me the plan without executing"):
 9. **NEVER** continue to the next phase if the current phase has unresolved blockers (unless the user explicitly approves)
 10. **ALWAYS** emit progress announcements at every milestone listed in Steps 1.5, 2, and 3 — the user has zero visibility otherwise
 11. **ALWAYS** log to SpecTree at the epic level at execution start, after each phase, and at execution end
+12. **ALWAYS** update the epic description with a full execution summary (phase results, metrics, files) via `spectree__update_epic` after all phases complete — this is the permanent record of work done
 
 ---
 

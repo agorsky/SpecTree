@@ -187,7 +187,36 @@ If configured correctly, Copilot will use the MCP server to fetch and display yo
 
 ## Available Tools
 
-The MCP server exposes the following tools:
+The MCP server exposes **75 tools** organized into domains. We recommend using **composite tools** for common workflows—they reduce tool calls by 67-97% and provide clearer, action-based interfaces.
+
+### ⭐ Composite Tools (Recommended)
+
+**New in 2026-02:** High-level tools that consolidate multiple operations into a single, action-based interface.
+
+| Tool | Description | Replaces |
+|------|-------------|----------|
+| `spectree__create_epic_complete` | Atomically create epic with all features, tasks, and descriptions | 15-30 sequential calls |
+| `spectree__complete_task_with_validation` | Run validations and complete task if they pass | 2-3 sequential calls |
+| `spectree__manage_code_context` | Link/unlink code artifacts (files, functions, branches, commits, PRs) | 6 individual tools |
+| `spectree__manage_validations` | Add, run, list, remove validation checks | 7 individual tools |
+| `spectree__manage_description` | Get, set, update structured descriptions | 6 individual tools |
+| `spectree__manage_progress` | Start, complete, log progress, report blockers | 4 individual tools |
+| `spectree__manage_ai_context` | Get, set, append AI context and notes | 3 individual tools |
+| `spectree__reorder_item` | Reorder epics, features, or tasks | 3 individual tools |
+
+📖 **See the [Composite Tools Migration Guide](docs/composite-tools-migration.md) for detailed examples and before/after comparisons.**
+
+**Benefits:**
+- ✅ **67-97% fewer tool calls** for common workflows
+- ✅ **Atomic operations** prevent partial state (e.g., incomplete epic creation)
+- ✅ **Action-based interface** makes intent clearer
+- ✅ **100% backward compatible** - all individual tools still work
+
+---
+
+### Individual Tools (Also Available)
+
+All individual tools remain functional for backward compatibility:
 
 ### Epics
 

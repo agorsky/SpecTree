@@ -31,6 +31,9 @@ SpecTree is a project management tool similar to Linear, with a REST API, React 
 - [ ] `spectree__log_progress()` - At every significant milestone
 - [ ] `spectree__append_ai_note()` - Observations & context for future sessions
 
+**After Epic Execution (MANDATORY):**
+- [ ] `spectree__update_epic()` - Append execution summary to epic description (phase results, metrics, files)
+
 **At Session End:**
 - [ ] `spectree__end_session()` with summary + nextSteps
 
@@ -172,6 +175,19 @@ spectree__set_structured_description({
 
 **After PR creation:**
 - `spectree__link_pr({ id, type, prNumber, prUrl })` — link the pull request
+
+### 🔴 MANDATORY: Epic Execution Summary
+
+After completing execution of an epic (all phases done), you MUST update the epic's description with a permanent execution summary. This applies to orchestrator-driven execution AND manual multi-feature work.
+
+**Call `spectree__update_epic`** to append a `## ✅ Execution Complete` section to the existing description. The summary MUST include:
+
+1. **Phase results table** — each phase with feature identifiers and ✅/❌ status
+2. **Verification metrics** — test counts, lines added/removed, file counts
+3. **Artifacts created** — what was built (tools, components, services, etc.)
+4. **Files created/modified** — grouped by phase or feature
+
+**Why this matters:** The epic description is the permanent record visible to all users and future AI sessions. Without this summary, there is no way to understand what was actually accomplished.
 
 ### 🔴 MANDATORY: Template Usage
 

@@ -1,0 +1,533 @@
+{
+  "timestamp": "2026-02-08T20:08:18.337Z",
+  "totalTools": 75,
+  "totalTokens": 25923,
+  "avgTokensPerTool": 346,
+  "tools": [
+    {
+      "name": "spectree__search",
+      "nameTokens": 4,
+      "descriptionTokens": 77,
+      "schemaTokens": 1059,
+      "totalTokens": 1140
+    },
+    {
+      "name": "spectree__log_decision",
+      "nameTokens": 5,
+      "descriptionTokens": 91,
+      "schemaTokens": 982,
+      "totalTokens": 1078
+    },
+    {
+      "name": "spectree__update_feature",
+      "nameTokens": 5,
+      "descriptionTokens": 101,
+      "schemaTokens": 900,
+      "totalTokens": 1006
+    },
+    {
+      "name": "spectree__update_task",
+      "nameTokens": 5,
+      "descriptionTokens": 101,
+      "schemaTokens": 886,
+      "totalTokens": 992
+    },
+    {
+      "name": "spectree__create_feature",
+      "nameTokens": 5,
+      "descriptionTokens": 66,
+      "schemaTokens": 901,
+      "totalTokens": 972
+    },
+    {
+      "name": "spectree__create_task",
+      "nameTokens": 5,
+      "descriptionTokens": 74,
+      "schemaTokens": 879,
+      "totalTokens": 958
+    },
+    {
+      "name": "spectree__add_validation",
+      "nameTokens": 5,
+      "descriptionTokens": 110,
+      "schemaTokens": 718,
+      "totalTokens": 833
+    },
+    {
+      "name": "spectree__set_execution_metadata",
+      "nameTokens": 6,
+      "descriptionTokens": 37,
+      "schemaTokens": 656,
+      "totalTokens": 699
+    },
+    {
+      "name": "spectree__list_features",
+      "nameTokens": 5,
+      "descriptionTokens": 77,
+      "schemaTokens": 598,
+      "totalTokens": 680
+    },
+    {
+      "name": "spectree__create_epic_complete",
+      "nameTokens": 7,
+      "descriptionTokens": 182,
+      "schemaTokens": 487,
+      "totalTokens": 676
+    },
+    {
+      "name": "spectree__list_decisions",
+      "nameTokens": 6,
+      "descriptionTokens": 53,
+      "schemaTokens": 568,
+      "totalTokens": 627
+    },
+    {
+      "name": "spectree__list_epics",
+      "nameTokens": 6,
+      "descriptionTokens": 88,
+      "schemaTokens": 522,
+      "totalTokens": 616
+    },
+    {
+      "name": "spectree__create_from_template",
+      "nameTokens": 6,
+      "descriptionTokens": 37,
+      "schemaTokens": 518,
+      "totalTokens": 561
+    },
+    {
+      "name": "spectree__list_tasks",
+      "nameTokens": 5,
+      "descriptionTokens": 97,
+      "schemaTokens": 456,
+      "totalTokens": 558
+    },
+    {
+      "name": "spectree__create_epic",
+      "nameTokens": 6,
+      "descriptionTokens": 57,
+      "schemaTokens": 454,
+      "totalTokens": 517
+    },
+    {
+      "name": "spectree__complete_task_with_validation",
+      "nameTokens": 7,
+      "descriptionTokens": 115,
+      "schemaTokens": 391,
+      "totalTokens": 513
+    },
+    {
+      "name": "spectree__update_epic",
+      "nameTokens": 6,
+      "descriptionTokens": 48,
+      "schemaTokens": 428,
+      "totalTokens": 482
+    },
+    {
+      "name": "spectree__append_ai_note",
+      "nameTokens": 6,
+      "descriptionTokens": 76,
+      "schemaTokens": 380,
+      "totalTokens": 462
+    },
+    {
+      "name": "spectree__log_progress",
+      "nameTokens": 5,
+      "descriptionTokens": 77,
+      "schemaTokens": 374,
+      "totalTokens": 456
+    },
+    {
+      "name": "spectree__report_blocker",
+      "nameTokens": 6,
+      "descriptionTokens": 80,
+      "schemaTokens": 345,
+      "totalTokens": 431
+    },
+    {
+      "name": "spectree__create_personal_project",
+      "nameTokens": 6,
+      "descriptionTokens": 61,
+      "schemaTokens": 347,
+      "totalTokens": 414
+    },
+    {
+      "name": "spectree__update_section",
+      "nameTokens": 5,
+      "descriptionTokens": 41,
+      "schemaTokens": 345,
+      "totalTokens": 391
+    },
+    {
+      "name": "spectree__complete_work",
+      "nameTokens": 5,
+      "descriptionTokens": 95,
+      "schemaTokens": 289,
+      "totalTokens": 389
+    },
+    {
+      "name": "spectree__set_ai_context",
+      "nameTokens": 6,
+      "descriptionTokens": 70,
+      "schemaTokens": 285,
+      "totalTokens": 361
+    },
+    {
+      "name": "spectree__search_decisions",
+      "nameTokens": 6,
+      "descriptionTokens": 38,
+      "schemaTokens": 317,
+      "totalTokens": 361
+    },
+    {
+      "name": "spectree__reorder_epic",
+      "nameTokens": 7,
+      "descriptionTokens": 91,
+      "schemaTokens": 258,
+      "totalTokens": 356
+    },
+    {
+      "name": "spectree__reorder_task",
+      "nameTokens": 6,
+      "descriptionTokens": 85,
+      "schemaTokens": 258,
+      "totalTokens": 349
+    },
+    {
+      "name": "spectree__reorder_feature",
+      "nameTokens": 6,
+      "descriptionTokens": 84,
+      "schemaTokens": 258,
+      "totalTokens": 348
+    },
+    {
+      "name": "spectree__get_decision_context",
+      "nameTokens": 6,
+      "descriptionTokens": 61,
+      "schemaTokens": 276,
+      "totalTokens": 343
+    },
+    {
+      "name": "spectree__get_instructions",
+      "nameTokens": 5,
+      "descriptionTokens": 108,
+      "schemaTokens": 210,
+      "totalTokens": 323
+    },
+    {
+      "name": "spectree__preview_template",
+      "nameTokens": 5,
+      "descriptionTokens": 37,
+      "schemaTokens": 253,
+      "totalTokens": 295
+    },
+    {
+      "name": "spectree__add_external_link",
+      "nameTokens": 6,
+      "descriptionTokens": 60,
+      "schemaTokens": 226,
+      "totalTokens": 292
+    },
+    {
+      "name": "spectree__start_work",
+      "nameTokens": 5,
+      "descriptionTokens": 73,
+      "schemaTokens": 199,
+      "totalTokens": 277
+    },
+    {
+      "name": "spectree__run_all_validations",
+      "nameTokens": 7,
+      "descriptionTokens": 55,
+      "schemaTokens": 212,
+      "totalTokens": 274
+    },
+    {
+      "name": "spectree__link_function",
+      "nameTokens": 5,
+      "descriptionTokens": 56,
+      "schemaTokens": 209,
+      "totalTokens": 270
+    },
+    {
+      "name": "spectree__link_pr",
+      "nameTokens": 5,
+      "descriptionTokens": 56,
+      "schemaTokens": 207,
+      "totalTokens": 268
+    },
+    {
+      "name": "spectree__get_status",
+      "nameTokens": 5,
+      "descriptionTokens": 56,
+      "schemaTokens": 201,
+      "totalTokens": 262
+    },
+    {
+      "name": "spectree__list_personal_projects",
+      "nameTokens": 6,
+      "descriptionTokens": 53,
+      "schemaTokens": 199,
+      "totalTokens": 258
+    },
+    {
+      "name": "spectree__link_file",
+      "nameTokens": 5,
+      "descriptionTokens": 63,
+      "schemaTokens": 179,
+      "totalTokens": 247
+    },
+    {
+      "name": "spectree__mark_manual_validated",
+      "nameTokens": 7,
+      "descriptionTokens": 54,
+      "schemaTokens": 186,
+      "totalTokens": 247
+    },
+    {
+      "name": "spectree__add_acceptance_criterion",
+      "nameTokens": 8,
+      "descriptionTokens": 52,
+      "schemaTokens": 181,
+      "totalTokens": 241
+    },
+    {
+      "name": "spectree__link_code_file",
+      "nameTokens": 6,
+      "descriptionTokens": 72,
+      "schemaTokens": 161,
+      "totalTokens": 239
+    },
+    {
+      "name": "spectree__save_as_template",
+      "nameTokens": 6,
+      "descriptionTokens": 35,
+      "schemaTokens": 198,
+      "totalTokens": 239
+    },
+    {
+      "name": "spectree__run_validation",
+      "nameTokens": 5,
+      "descriptionTokens": 46,
+      "schemaTokens": 187,
+      "totalTokens": 238
+    },
+    {
+      "name": "spectree__set_structured_description",
+      "nameTokens": 7,
+      "descriptionTokens": 49,
+      "schemaTokens": 179,
+      "totalTokens": 235
+    },
+    {
+      "name": "spectree__link_branch",
+      "nameTokens": 5,
+      "descriptionTokens": 55,
+      "schemaTokens": 166,
+      "totalTokens": 226
+    },
+    {
+      "name": "spectree__get_ai_context",
+      "nameTokens": 6,
+      "descriptionTokens": 85,
+      "schemaTokens": 134,
+      "totalTokens": 225
+    },
+    {
+      "name": "spectree__link_commit",
+      "nameTokens": 5,
+      "descriptionTokens": 52,
+      "schemaTokens": 164,
+      "totalTokens": 221
+    },
+    {
+      "name": "spectree__unlink_code_file",
+      "nameTokens": 6,
+      "descriptionTokens": 55,
+      "schemaTokens": 151,
+      "totalTokens": 212
+    },
+    {
+      "name": "spectree__mark_blocked",
+      "nameTokens": 5,
+      "descriptionTokens": 30,
+      "schemaTokens": 162,
+      "totalTokens": 197
+    },
+    {
+      "name": "spectree__get_structured_description",
+      "nameTokens": 7,
+      "descriptionTokens": 51,
+      "schemaTokens": 134,
+      "totalTokens": 192
+    },
+    {
+      "name": "spectree__mark_unblocked",
+      "nameTokens": 6,
+      "descriptionTokens": 29,
+      "schemaTokens": 152,
+      "totalTokens": 187
+    },
+    {
+      "name": "spectree__get_code_context",
+      "nameTokens": 6,
+      "descriptionTokens": 64,
+      "schemaTokens": 116,
+      "totalTokens": 186
+    },
+    {
+      "name": "spectree__get_epic",
+      "nameTokens": 6,
+      "descriptionTokens": 73,
+      "schemaTokens": 93,
+      "totalTokens": 172
+    },
+    {
+      "name": "spectree__list_statuses",
+      "nameTokens": 5,
+      "descriptionTokens": 68,
+      "schemaTokens": 97,
+      "totalTokens": 170
+    },
+    {
+      "name": "spectree__remove_validation",
+      "nameTokens": 5,
+      "descriptionTokens": 43,
+      "schemaTokens": 107,
+      "totalTokens": 155
+    },
+    {
+      "name": "spectree__manage_code_context",
+      "nameTokens": 6,
+      "descriptionTokens": 147,
+      "schemaTokens": 1,
+      "totalTokens": 154
+    },
+    {
+      "name": "spectree__get_progress_summary",
+      "nameTokens": 6,
+      "descriptionTokens": 90,
+      "schemaTokens": 58,
+      "totalTokens": 154
+    },
+    {
+      "name": "spectree__get_feature",
+      "nameTokens": 5,
+      "descriptionTokens": 50,
+      "schemaTokens": 97,
+      "totalTokens": 152
+    },
+    {
+      "name": "spectree__get_task",
+      "nameTokens": 5,
+      "descriptionTokens": 34,
+      "schemaTokens": 99,
+      "totalTokens": 138
+    },
+    {
+      "name": "spectree__get_execution_plan",
+      "nameTokens": 6,
+      "descriptionTokens": 60,
+      "schemaTokens": 68,
+      "totalTokens": 134
+    },
+    {
+      "name": "spectree__manage_description",
+      "nameTokens": 5,
+      "descriptionTokens": 128,
+      "schemaTokens": 1,
+      "totalTokens": 134
+    },
+    {
+      "name": "spectree__manage_validations",
+      "nameTokens": 6,
+      "descriptionTokens": 126,
+      "schemaTokens": 1,
+      "totalTokens": 133
+    },
+    {
+      "name": "spectree__reorder_item",
+      "nameTokens": 6,
+      "descriptionTokens": 118,
+      "schemaTokens": 1,
+      "totalTokens": 125
+    },
+    {
+      "name": "spectree__list_validations",
+      "nameTokens": 6,
+      "descriptionTokens": 48,
+      "schemaTokens": 58,
+      "totalTokens": 112
+    },
+    {
+      "name": "spectree__manage_progress",
+      "nameTokens": 5,
+      "descriptionTokens": 103,
+      "schemaTokens": 1,
+      "totalTokens": 109
+    },
+    {
+      "name": "spectree__reset_validations",
+      "nameTokens": 6,
+      "descriptionTokens": 40,
+      "schemaTokens": 58,
+      "totalTokens": 104
+    },
+    {
+      "name": "spectree__manage_ai_context",
+      "nameTokens": 6,
+      "descriptionTokens": 95,
+      "schemaTokens": 1,
+      "totalTokens": 102
+    },
+    {
+      "name": "spectree__get_template",
+      "nameTokens": 5,
+      "descriptionTokens": 32,
+      "schemaTokens": 55,
+      "totalTokens": 92
+    },
+    {
+      "name": "spectree__get_my_work",
+      "nameTokens": 6,
+      "descriptionTokens": 63,
+      "schemaTokens": 1,
+      "totalTokens": 70
+    },
+    {
+      "name": "spectree__get_personal_scope",
+      "nameTokens": 6,
+      "descriptionTokens": 57,
+      "schemaTokens": 1,
+      "totalTokens": 64
+    },
+    {
+      "name": "spectree__list_teams",
+      "nameTokens": 5,
+      "descriptionTokens": 53,
+      "schemaTokens": 1,
+      "totalTokens": 59
+    },
+    {
+      "name": "spectree__list_templates",
+      "nameTokens": 5,
+      "descriptionTokens": 53,
+      "schemaTokens": 1,
+      "totalTokens": 59
+    },
+    {
+      "name": "spectree__get_blocked_summary",
+      "nameTokens": 6,
+      "descriptionTokens": 51,
+      "schemaTokens": 1,
+      "totalTokens": 58
+    },
+    {
+      "name": "spectree__list_personal_statuses",
+      "nameTokens": 6,
+      "descriptionTokens": 46,
+      "schemaTokens": 1,
+      "totalTokens": 53
+    }
+  ]
+}
