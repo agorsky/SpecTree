@@ -54,14 +54,35 @@ spectree__get_code_context({ type: "feature", id: "<feature-identifier>" })
 spectree__get_decision_context({ epicId: "<epic-id>" })
 ```
 
-3. **Build the context prompt** for the feature-worker sub-agent (see Context Injection Template below)
+3. **Mark the feature as in progress** in SpecTree BEFORE spawning the feature-worker. This ensures the dashboard reflects work has started even if the feature-worker fails to update SpecTree:
+   ```
+   spectree__start_work({ type: "feature", id: "<feature-identifier>" })
+   ```
 
-4. **Spawn the feature-worker sub-agent** via `#runSubagent`:
+4. **Build the context prompt** for the feature-worker sub-agent (see Context Injection Template below)
+
+5. **Spawn the feature-worker sub-agent** via `#runSubagent`:
    - For **parallel features**: Spawn all sub-agents at once
    - For **sequential features**: Wait for each to complete before starting the next
 
-5. **After each feature completes**: Mark it done in SpecTree:
+6. **After each feature completes**: Record AI notes, set context, then mark done:
    ```
+   // a) Log an orchestrator-level AI note summarizing the feature-worker's output
+   spectree__append_ai_note({
+     type: "feature",
+     id: "<feature-identifier>",
+     noteType: "context",
+     content: "Completed by orchestrator phase execution. Feature-worker output: <summary from sub-agent response>"
+   })
+
+   // b) Set structured AI context for future sessions
+   spectree__set_ai_context({
+     type: "feature",
+     id: "<feature-identifier>",
+     context: "## Implementation Summary\n- What was implemented: <summary>\n- Tasks completed: <list of task identifiers>\n- Issues encountered: <any errors or blockers>\n- Files modified: <list of files from feature-worker output>"
+   })
+
+   // c) Mark the feature as complete
    spectree__complete_work({
      type: "feature",
      id: "<feature-identifier>",
@@ -69,7 +90,55 @@ spectree__get_decision_context({ epicId: "<epic-id>" })
    })
    ```
 
-6. **After all features in the phase complete**: Invoke the `reviewer` agent to verify the phase's work.
+7. **After all features in the phase complete**: Invoke the `reviewer` agent to verify the phase's work.
+
+8. **Verify SpecTree Updates (Defense-in-Depth)**: After the reviewer completes, verify that all features and tasks in this phase were properly updated. This catches cases where the feature-worker failed to call SpecTree tools:
+
+   For **each feature** in the completed phase:
+   ```
+   // a) Check if the feature was properly completed
+   const feature = spectree__get_feature({ id: "<feature-identifier>" })
+
+   // b) If feature status is still Backlog/In Progress, apply fallback
+   if (feature.status.category !== "completed") {
+     // Log a warning
+     spectree__append_ai_note({
+       type: "feature",
+       id: "<feature-identifier>",
+       noteType: "observation",
+       content: "⚠️ FALLBACK: Feature-worker did not update SpecTree status. Orchestrator applying fallback completion."
+     })
+     spectree__complete_work({
+       type: "feature",
+       id: "<feature-identifier>",
+       summary: "Completed via orchestrator fallback — feature-worker did not update status"
+     })
+   }
+
+   // c) Check each task in the feature
+   for each task in feature.tasks:
+     if (task.status.category !== "completed") {
+       spectree__update_task({ id: "<task-identifier>", status: "Done" })
+       spectree__append_ai_note({
+         type: "task",
+         id: "<task-identifier>",
+         noteType: "observation",
+         content: "⚠️ FALLBACK: Feature-worker did not update task status. Orchestrator applied fallback."
+       })
+     }
+
+   // d) Check if AI notes are empty — if so, add a fallback note
+   if (feature.aiNotes is null or empty) {
+     spectree__append_ai_note({
+       type: "feature",
+       id: "<feature-identifier>",
+       noteType: "context",
+       content: "Feature-worker did not log AI notes. Orchestrator fallback applied. Phase completed successfully per reviewer verification."
+     })
+   }
+   ```
+
+   **Log a summary warning** if any fallback updates were needed — this helps diagnose feature-worker tool access issues.
 
 ### Step 3: Post-Execution
 
@@ -165,7 +234,10 @@ If the user requests a dry run (e.g., "show me the plan without executing"):
 
 1. **NEVER** skip reading the execution plan — always start with `spectree__get_execution_plan`
 2. **ALWAYS** inject full SpecTree context into sub-agent prompts — never spawn workers without context
-3. **ALWAYS** update SpecTree progress after each feature completes
-4. **ALWAYS** invoke the reviewer agent after each phase
-5. **NEVER** implement features yourself — delegate to feature-worker sub-agents
-6. **NEVER** continue to the next phase if the current phase has unresolved blockers (unless the user explicitly approves)
+3. **ALWAYS** call `spectree__start_work` for each feature BEFORE spawning its feature-worker
+4. **ALWAYS** log AI notes and set AI context for each feature AFTER it completes
+5. **ALWAYS** update SpecTree progress after each feature completes
+6. **ALWAYS** invoke the reviewer agent after each phase
+7. **ALWAYS** run post-phase verification (Step 8) to catch missed SpecTree updates
+8. **NEVER** implement features yourself — delegate to feature-worker sub-agents
+9. **NEVER** continue to the next phase if the current phase has unresolved blockers (unless the user explicitly approves)
