@@ -741,6 +741,19 @@ Usage: @orchestrator "Execute epic ENG-42"
 
 The orchestrator reads the execution plan via `spectree__get_execution_plan`, gathers full context for each feature from SpecTree (structured descriptions, AI context, code context, decisions), builds context prompts, and spawns feature-worker sub-agents. After each phase, it invokes the reviewer agent to verify the work.
 
+**Monitoring Progress:** The orchestrator logs progress to SpecTree at the epic level after each phase. While execution is running, you can check progress from a second terminal:
+```
+@copilot "Check progress on epic <epic-id>"
+# → calls spectree__get_progress_summary({ epicId: "<epic-id>" })
+```
+Or check epic AI notes for detailed phase-by-phase updates:
+```
+@copilot "Show AI notes for epic <epic-name>"
+# → calls spectree__get_ai_context({ type: "epic", id: "<epic-id>" })
+```
+
+> **Note:** When invoked via the `task` tool, the orchestrator's text output is buffered and returned at the end. SpecTree polling is the recommended way to monitor real-time progress.
+
 ### @reviewer - Acceptance Review
 
 Reviews completed features against their SpecTree acceptance criteria. Runs validations, checks code quality, and verifies requirements are met.

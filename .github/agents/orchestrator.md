@@ -33,12 +33,39 @@ This returns a phased execution plan with:
 
 Present the execution plan to the user and confirm before proceeding.
 
+### Step 1.5: Announce Execution Start
+
+Before entering the phase loop, emit a progress announcement and log to SpecTree:
+
+**Output to user:**
+```
+🚀 Starting orchestrator execution for epic "<epic-name>"
+📋 Execution plan: <total-phases> phases, <total-features> features
+```
+
+**Log to SpecTree:**
+```
+spectree__append_ai_note({
+  type: "epic",
+  id: "<epic-id>",
+  noteType: "context",
+  content: "🚀 Orchestrator execution started. Total phases: X, Total features: Y. Features: [list of identifiers]."
+})
+```
+
 ### Step 2: Execute Each Phase
 
 For each phase in the execution plan:
 
-1. **Identify execution mode**: Are items in this phase parallel or sequential?
-2. **For each feature in the phase**, gather full context from SpecTree:
+1. **Announce phase start** (output to user):
+   ```
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🚀 Starting Phase X of Y: [feature-1 title], [feature-2 title]
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+
+2. **Identify execution mode**: Are items in this phase parallel or sequential?
+3. **For each feature in the phase**, gather full context from SpecTree:
 
 ```
 // Get structured description (requirements, acceptance criteria, AI instructions)
@@ -61,11 +88,22 @@ spectree__get_decision_context({ epicId: "<epic-id>" })
 
 4. **Build the context prompt** for the feature-worker sub-agent (see Context Injection Template below)
 
-5. **Spawn the feature-worker sub-agent** via `#runSubagent`:
+5. **Announce feature spawn** (output to user), then **spawn the feature-worker sub-agent** via `#runSubagent`:
+   ```
+   ⏳ Spawning feature-worker for <identifier>: <title>
+   ```
    - For **parallel features**: Spawn all sub-agents at once
    - For **sequential features**: Wait for each to complete before starting the next
 
-6. **After each feature completes**: Record AI notes, set context, then mark done:
+6. **After each feature completes**: Announce the result and mark it done in SpecTree:
+   ```
+   ✅ Feature-worker completed <identifier>: <brief result summary>
+   ```
+   Or if it failed:
+   ```
+   ❌ Feature-worker failed <identifier>: <brief error description>
+   ```
+   Then call:
    ```
    // a) Log an orchestrator-level AI note summarizing the feature-worker's output
    spectree__append_ai_note({
@@ -90,7 +128,24 @@ spectree__get_decision_context({ epicId: "<epic-id>" })
    })
    ```
 
-7. **After all features in the phase complete**: Invoke the `reviewer` agent to verify the phase's work.
+7. **After all features in the phase complete**: Announce phase result, invoke reviewer, and log to SpecTree:
+   ```
+   ✅ Phase X complete: X/Y features done, X failed
+   🔍 Invoking reviewer for Phase X...
+   ```
+   Invoke the `reviewer` agent to verify the phase's work. After reviewer returns:
+   ```
+   🔍 Phase X review: [PASS/FAIL — brief summary of reviewer findings]
+   ```
+   **Log to SpecTree:**
+   ```
+   spectree__append_ai_note({
+     type: "epic",
+     id: "<epic-id>",
+     noteType: "context",
+     content: "Phase X/Y complete. Features completed: [list]. Features failed: [list]. Reviewer verdict: [PASS/FAIL]."
+   })
+   ```
 
 8. **Verify SpecTree Updates (Defense-in-Depth)**: After the reviewer completes, verify that all features and tasks in this phase were properly updated. This catches cases where the feature-worker failed to call SpecTree tools:
 
@@ -143,8 +198,23 @@ spectree__get_decision_context({ epicId: "<epic-id>" })
 ### Step 3: Post-Execution
 
 After all phases are complete:
-1. Call `spectree__get_progress_summary` to confirm everything is done
-2. Report the final status to the user
+1. **Announce completion** (output to user):
+   ```
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🏁 All phases complete. Final status: X/Y features done, X blocked, X failed.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+2. Call `spectree__get_progress_summary` to confirm everything is done
+3. **Log final status to SpecTree:**
+   ```
+   spectree__append_ai_note({
+     type: "epic",
+     id: "<epic-id>",
+     noteType: "context",
+     content: "🏁 Orchestrator execution complete. Results: X/Y features done, X blocked, X failed. Duration: ~Xm."
+   })
+   ```
+4. Report the final status to the user with a summary table
 
 ---
 
@@ -241,3 +311,69 @@ If the user requests a dry run (e.g., "show me the plan without executing"):
 7. **ALWAYS** run post-phase verification (Step 8) to catch missed SpecTree updates
 8. **NEVER** implement features yourself — delegate to feature-worker sub-agents
 9. **NEVER** continue to the next phase if the current phase has unresolved blockers (unless the user explicitly approves)
+10. **ALWAYS** emit progress announcements at every milestone listed in Steps 1.5, 2, and 3 — the user has zero visibility otherwise
+11. **ALWAYS** log to SpecTree at the epic level at execution start, after each phase, and at execution end
+
+---
+
+## Progress Reporting Format
+
+Use these emoji indicators consistently in all progress messages:
+
+| Emoji | Meaning | Usage |
+|-------|---------|-------|
+| 🚀 | Starting | Execution start, phase start |
+| ⏳ | In Progress | Spawning feature-worker |
+| ✅ | Complete | Feature done, phase done |
+| ❌ | Failed | Feature failed, phase failed |
+| 🔍 | Reviewing | Reviewer invocation and results |
+| 🏁 | Finished | All phases complete |
+| ⚠️ | Warning | Partial failure, fallback applied |
+
+**Mandatory progress points** (output ALL of these as plain text):
+1. Execution start: total phases and features
+2. Phase start: phase number, feature names
+3. Feature spawn: identifier and title
+4. Feature result: identifier and brief outcome
+5. Phase result: features done/failed count
+6. Reviewer invocation and verdict
+7. Final status: overall counts
+
+---
+
+## Streaming Behavior & Visibility
+
+**⚠️ IMPORTANT: The `task` tool buffers output.** When the orchestrator is invoked via the `task` tool (the standard invocation path), output is collected and returned as a single message when the agent completes. The user does **not** see incremental text output during execution.
+
+### Implications
+
+- Progress announcements (Step 2) are still valuable: they appear in the final output and help the user understand what happened.
+- **SpecTree epic-level logging is the primary mechanism for real-time visibility.** The user (or another agent) can call `spectree__get_progress_summary` or `spectree__get_ai_context({ type: "epic", id: "<epic-id>" })` at any time to check progress.
+- The `report_intent` tool updates a UI status indicator and provides some visibility during execution.
+
+### Workarounds for Real-Time Monitoring
+
+1. **SpecTree Polling (Recommended):** The user can open a second terminal session and periodically check:
+   ```
+   spectree__get_progress_summary({ epicId: "<epic-id>" })
+   ```
+   This returns feature/task counts, blocked items, and recently completed items — all updated in real-time by the orchestrator's SpecTree logging.
+
+2. **Background Mode:** The parent agent can invoke the orchestrator in `background` mode and use `read_agent` to periodically check output:
+   ```
+   task({ agent_type: "orchestrator", prompt: "...", mode: "background" })
+   // Then periodically:
+   read_agent({ agent_id: "<id>", wait: false })
+   ```
+
+3. **Direct Invocation:** If the user invokes `@orchestrator` directly (not via `task`), text output is visible in real-time in the conversation.
+
+### Use `report_intent` for UI Feedback
+
+At each major milestone, call `report_intent` to update the UI status indicator:
+```
+report_intent({ intent: "Executing Phase 2/3" })
+report_intent({ intent: "Reviewing Phase 2" })
+report_intent({ intent: "Completing execution" })
+```
+This provides at least a one-line status update visible to the user during execution.

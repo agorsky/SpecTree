@@ -23,6 +23,22 @@ The orchestrator provides you with:
 
 Read this context carefully before starting implementation.
 
+## 🔴 CRITICAL REQUIREMENTS
+
+You **MUST** call these SpecTree MCP tools during execution. These calls are **NOT optional**. If you skip them, the SpecTree dashboard will show no progress, no activity, and features will remain in Backlog.
+
+**Mandatory calls for EVERY task:**
+- `spectree__start_work` — before implementing (sets status to "In Progress")
+- `spectree__link_code_file` — for EVERY file you create or modify
+- `spectree__log_progress` — after each significant step
+- `spectree__complete_task_with_validation` — when done (validates + sets status to "Done")
+
+**Mandatory calls for EVERY feature (after all tasks):**
+- `spectree__append_ai_note` — summarize what was done
+- `spectree__log_decision` — for every non-trivial implementation choice
+
+> ⚠️ **Common parameter mistakes:** `spectree__append_ai_note` uses `content` (NOT `note`) and requires `noteType`. `spectree__complete_task_with_validation` and `spectree__run_all_validations` use `taskId` (NOT `id`/`type`).
+
 ## Per-Task Workflow
 
 For each task in the feature, follow this workflow in order:
@@ -96,8 +112,7 @@ spectree__log_decision({
 Before marking the task complete, run all validations:
 ```
 spectree__run_all_validations({
-  type: "task",
-  id: "<task-identifier>"
+  taskId: "<task-identifier>"    // e.g., "ENG-42-1" — NOT 'id' or 'type'
 })
 ```
 
@@ -108,13 +123,23 @@ Review the results. If any validation fails, fix the issue before proceeding.
 Call `spectree__complete_task_with_validation` to atomically validate and mark done:
 ```
 spectree__complete_task_with_validation({
-  type: "task",
-  id: "<task-identifier>",
+  taskId: "<task-identifier>",   // e.g., "ENG-42-1" — NOT 'id' or 'type'
   summary: "Implemented GET and PUT endpoints for user preferences with Zod validation"
 })
 ```
 
 If validation fails, fix the issues and retry.
+
+### ✅ Per-Task Completion Checklist
+
+Before moving to the next task, verify ALL of these:
+
+- ☐ `spectree__start_work` called at the beginning
+- ☐ All created/modified files linked via `spectree__link_code_file`
+- ☐ Progress logged via `spectree__log_progress`
+- ☐ Decisions logged via `spectree__log_decision` (if any choices were made)
+- ☐ Validations run via `spectree__run_all_validations`
+- ☐ Task completed via `spectree__complete_task_with_validation`
 
 ---
 
@@ -126,12 +151,33 @@ Once all tasks in the feature are complete:
    ```
    spectree__append_ai_note({
      type: "feature",
-     id: "<feature-identifier>",
-     note: "Implemented all 3 tasks: API routes, database model, frontend page. Used Zod for validation. All tests passing."
+     id: "<feature-identifier>",   // e.g., "ENG-42"
+     noteType: "observation",       // REQUIRED: "observation" | "decision" | "blocker" | "next-step" | "context"
+     content: "Implemented all 3 tasks: API routes, database model, frontend page. Used Zod for validation. All tests passing."
    })
    ```
 
 2. Ensure every modified file has been linked via `spectree__link_code_file`.
+
+---
+
+## Error Handling for SpecTree Calls
+
+If a SpecTree MCP tool call fails:
+
+1. **Retry once** with the same parameters
+2. **If it fails again**, log the error in your output text so the orchestrator can see it
+3. **Continue with the implementation** — do NOT stop working because of a SpecTree tracking failure. Code implementation is your primary job; SpecTree tracking is secondary
+4. **At the end of the feature**, list ALL failed SpecTree calls in your summary output so the orchestrator can compensate with fallback updates
+
+Example summary when SpecTree calls failed:
+```
+## SpecTree Tracking Failures
+- spectree__link_code_file for "src/routes/auth.ts" failed twice (timeout)
+- spectree__log_progress for ENG-42-2 failed once (retried successfully)
+```
+
+> The orchestrator has its own defensive status management and will apply fallback updates for any calls you missed.
 
 ---
 
