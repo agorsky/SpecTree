@@ -25,6 +25,12 @@ SpecTree is a project management tool similar to Linear, with a REST API, React 
 - [ ] `spectree__link_code_file()` - Link modified files
 - [ ] `spectree__log_decision()` - Record important choices
 
+**During Implementation (EVERY file/decision):**
+- [ ] `spectree__link_code_file()` - For EVERY file created or modified
+- [ ] `spectree__log_decision()` - For every non-trivial choice
+- [ ] `spectree__log_progress()` - At every significant milestone
+- [ ] `spectree__append_ai_note()` - Observations & context for future sessions
+
 **At Session End:**
 - [ ] `spectree__end_session()` with summary + nextSteps
 
@@ -147,10 +153,25 @@ spectree__set_structured_description({
 
 ### During Implementation
 
-- Use `spectree__start_work({ id, type })` before working on an item
-- Use `spectree__log_progress({ id, type, message })` for long tasks
-- Use `spectree__complete_work({ id, type, summary })` when done
-- Use `spectree__log_decision({ ... })` for important choices
+**At START:**
+- `spectree__start_work({ id, type })` — mark item in-progress
+- `spectree__get_structured_description({ id, type })` — read acceptance criteria
+- `spectree__get_ai_context({ id, type })` — read prior session notes
+
+**While working (call repeatedly):**
+- `spectree__log_progress({ id, type, message, percentComplete })` — at milestones
+- `spectree__log_decision({ epicId, question, decision, rationale, category })` — for choices
+- `spectree__link_code_file({ id, type, filePath })` — for EVERY file touched
+- `spectree__append_ai_note({ id, type, noteType, content })` — observations, context
+
+**Before completing:**
+- `spectree__run_all_validations({ taskId })` — verify acceptance criteria
+- `spectree__link_branch({ id, type, branchName })` — link git branch
+- `spectree__link_commit({ id, type, commitSha })` — link merge/squash commit
+- `spectree__complete_work({ id, type, summary })` — mark done
+
+**After PR creation:**
+- `spectree__link_pr({ id, type, prNumber, prUrl })` — link the pull request
 
 ### 🔴 MANDATORY: Template Usage
 
