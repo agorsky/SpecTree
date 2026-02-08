@@ -2,7 +2,9 @@
  * CLI Commands Registry
  */
 
-export { runCommand } from "./commands/run.js";
+export { runCommand, type RunOptions } from "./commands/run.js";
+export { planCommand, type PlanOptions } from "./commands/plan.js";
+export { validateCommand, type ValidateOptions } from "./commands/validate.js";
 export { continueCommand } from "./commands/continue.js";
 export { statusCommand, type StatusOptions } from "./commands/status.js";
 export { authCommand, getApiToken, getApiUrl, isAuthenticated } from "./commands/auth.js";

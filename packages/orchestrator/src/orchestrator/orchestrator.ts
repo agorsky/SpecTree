@@ -21,7 +21,7 @@
  * // Parallel execution (default)
  * const orchestrator = new Orchestrator({
  *   client: specTreeClient,
- *   tools: createAgentTools(specTreeClient),
+ *   sessionManager,
  *   maxAgents: 4,
  * });
  *
@@ -33,7 +33,7 @@
  */
 
 import { EventEmitter } from "events";
-import { CopilotClient, type Tool } from "@github/copilot-sdk";
+import { AcpSessionManager, type AcpSession } from "../acp/index.js";
 import {
   SpecTreeClient,
   type ExecutionPlan,
@@ -51,14 +51,11 @@ import {
   wrapError,
   isMergeConflictError,
 } from "../errors.js";
-import { getCopilotModel, getConfig } from "../config/index.js";
+import { getConfig } from "../config/index.js";
 import { PhaseExecutor, type PhaseResult, type TaskProgressEvent } from "./phase-executor.js";
 import { AgentPool } from "./agent-pool.js";
 import { BranchManager } from "../git/branch-manager.js";
 import { MergeCoordinator } from "../git/merge-coordinator.js";
-
-// Type for Copilot SDK session (inferred from createSession return)
-type CopilotSession = Awaited<ReturnType<CopilotClient["createSession"]>>;
 
 // =============================================================================
 // Types and Interfaces
@@ -157,12 +154,10 @@ export interface ProgressEvent {
 export interface OrchestratorOptions {
   /** SpecTree API client */
   client: SpecTreeClient;
-  /** Tools to provide to the agent */
-  tools: Tool<unknown>[];
+  /** ACP session manager for creating sessions */
+  sessionManager: AcpSessionManager;
   /** Maximum concurrent agents (default: 4) */
   maxAgents?: number;
-  /** Optional Copilot client (created if not provided) */
-  copilotClient?: CopilotClient;
   /** Optional branch manager (created if not provided) */
   branchManager?: BranchManager;
   /** Optional merge coordinator (created if not provided) */
@@ -246,11 +241,9 @@ You MUST use the progress tracking tools to document your work. The task prompt 
  */
 export class Orchestrator extends EventEmitter {
   private client: SpecTreeClient;
-  private tools: Tool<unknown>[];
-  private copilotClient: CopilotClient;
-  private model: string;
+  private sessionManager: AcpSessionManager;
   private maxAgents: number;
-  private activeSession: CopilotSession | null = null;
+  private activeSession: AcpSession | null = null;
   private spectreeSession: SpecTreeSession | null = null;
   private branchManager: BranchManager;
   private mergeCoordinator: MergeCoordinator;
@@ -266,9 +259,7 @@ export class Orchestrator extends EventEmitter {
   constructor(options: OrchestratorOptions) {
     super();
     this.client = options.client;
-    this.tools = options.tools;
-    this.copilotClient = options.copilotClient ?? new CopilotClient();
-    this.model = getCopilotModel();
+    this.sessionManager = options.sessionManager;
     this.maxAgents = options.maxAgents ?? getConfig().maxConcurrentAgents ?? 4;
 
     // Initialize git integration
@@ -382,7 +373,7 @@ export class Orchestrator extends EventEmitter {
 
       throw wrapError(error, "Orchestration failed");
     } finally {
-      // Cleanup any active Copilot session
+      // Cleanup any active ACP session
       if (this.activeSession) {
         try {
           await this.closeSession(this.activeSession);
@@ -424,10 +415,8 @@ export class Orchestrator extends EventEmitter {
     // Initialize agent pool and phase executor
     this.agentPool = new AgentPool({
       maxAgents: this.maxAgents,
-      tools: this.tools,
+      sessionManager: this.sessionManager,
       specTreeClient: this.client,
-      copilotClient: this.copilotClient,
-      model: this.model,
     });
 
     this.phaseExecutor = new PhaseExecutor({
@@ -799,15 +788,15 @@ export class Orchestrator extends EventEmitter {
         : undefined;
       await this.client.startWork(item.type, item.id, startWorkInput);
 
-      // Step 2: Create Copilot SDK session with tools
+      // Step 2: Create ACP session
       const session = await this.createSession(item, handoffContext);
       this.activeSession = session;
 
       // Step 3: Send task prompt and wait for completion (25-minute timeout for complex tasks)
       const taskPrompt = this.buildTaskPrompt(item, handoffContext);
-      const response = await session.sendAndWait({ prompt: taskPrompt }, 1500000);
+      const response = await session.sendAndWait(taskPrompt, 1500000);
 
-      // Extract summary from response
+      // Extract summary from response (ACP sendAndWait returns string directly)
       const summary = this.extractSummary(response);
 
       // Step 4: Mark item as completed in SpecTree
@@ -861,14 +850,12 @@ export class Orchestrator extends EventEmitter {
   }
 
   /**
-   * Create a Copilot SDK session for a task.
+   * Create an ACP session for a task.
    */
-  private async createSession(item: ExecutionItem, _handoffContext?: string): Promise<CopilotSession> {
+  private async createSession(item: ExecutionItem, _handoffContext?: string): Promise<AcpSession> {
     try {
-      const session = await this.copilotClient.createSession({
-        model: this.model,
-        systemMessage: { content: AGENT_SYSTEM_PROMPT },
-        tools: this.tools,
+      const session = await this.sessionManager.createSession({
+        systemMessage: AGENT_SYSTEM_PROMPT,
       });
 
       return session;
@@ -882,9 +869,9 @@ export class Orchestrator extends EventEmitter {
   }
 
   /**
-   * Close a Copilot SDK session.
+   * Close an ACP session.
    */
-  private async closeSession(session: CopilotSession): Promise<void> {
+  private async closeSession(session: AcpSession): Promise<void> {
     try {
       await session.destroy();
     } catch {
@@ -941,15 +928,12 @@ export class Orchestrator extends EventEmitter {
       return "Task completed (no response)";
     }
 
-    // Handle response structure from Copilot SDK
-    const data = response as { data?: { content?: string } };
-    if (data.data?.content) {
-      // Truncate long summaries
-      const content = data.data.content;
-      if (content.length > 500) {
-        return content.substring(0, 497) + "...";
+    // ACP sendAndWait returns content as a string directly
+    if (typeof response === "string") {
+      if (response.length > 500) {
+        return response.substring(0, 497) + "...";
       }
-      return content;
+      return response;
     }
 
     return "Task completed";

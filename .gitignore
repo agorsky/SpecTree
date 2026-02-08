@@ -65,3 +65,6 @@ packages/api/prisma/data/*.db-journal
 
 # Azure credentials (DO NOT COMMIT)
 infra/.env.azure
+
+# Superseded strategy docs
+docs/copilot-cli-automation-strategy.md

@@ -1,7 +1,7 @@
 /**
  * Agent Pool
  *
- * Manages multiple concurrent Copilot SDK sessions for parallel agent execution.
+ * Manages multiple concurrent ACP sessions for parallel agent execution.
  * This is the core component that enables the orchestrator to run multiple AI agents
  * simultaneously on independent tasks.
  *
@@ -16,7 +16,7 @@
  * ```typescript
  * const pool = new AgentPool({
  *   maxAgents: 4,
- *   tools: createAgentTools(specTreeClient),
+ *   sessionManager,
  *   specTreeClient,
  * });
  *
@@ -29,13 +29,9 @@
  */
 
 import { EventEmitter } from "events";
-import { CopilotClient, type Tool } from "@github/copilot-sdk";
+import { AcpSessionManager, type AcpSession } from "../acp/index.js";
 import type { SpecTreeClient, ExecutionItem } from "../spectree/api-client.js";
 import { AgentError, OrchestratorError, ErrorCode } from "../errors.js";
-import { getCopilotModel } from "../config/index.js";
-
-// Type for Copilot SDK session (inferred from createSession return)
-type CopilotSession = Awaited<ReturnType<CopilotClient["createSession"]>>;
 
 // =============================================================================
 // Types and Interfaces
@@ -58,8 +54,8 @@ export interface Agent {
   branch: string;
   /** Current agent status */
   status: AgentStatus;
-  /** The underlying Copilot SDK session */
-  session: CopilotSession;
+  /** The underlying ACP session */
+  session: AcpSession;
   /** Progress percentage (0-100) */
   progress: number;
   /** When the agent was spawned */
@@ -114,14 +110,10 @@ export interface PoolStatus {
 export interface AgentPoolOptions {
   /** Maximum number of concurrent agents */
   maxAgents: number;
-  /** Tools to provide to each agent */
-  tools: Tool<unknown>[];
+  /** ACP session manager for creating sessions */
+  sessionManager: AcpSessionManager;
   /** SpecTree client for API operations */
   specTreeClient: SpecTreeClient;
-  /** Optional Copilot client (created if not provided) */
-  copilotClient?: CopilotClient;
-  /** Optional model override */
-  model?: string;
 }
 
 // =============================================================================
@@ -184,17 +176,15 @@ Your job is to implement the assigned task according to its description and acce
 // =============================================================================
 
 /**
- * Manages multiple concurrent Copilot SDK sessions for parallel agent execution.
+ * Manages multiple concurrent ACP sessions for parallel agent execution.
  */
 export class AgentPool extends EventEmitter {
   private maxAgents: number;
   private activeAgents: Map<string, Agent>;
   private agentPromises: Map<string, Promise<AgentResult>>;
   private agentResolvers: Map<string, (result: AgentResult) => void>;
-  private copilotClient: CopilotClient;
-  private tools: Tool<unknown>[];
+  private sessionManager: AcpSessionManager;
   private specTreeClient: SpecTreeClient;
-  private model: string;
   private nextId: number = 1;
   private completedCount: number = 0;
   private failedCount: number = 0;
@@ -202,10 +192,8 @@ export class AgentPool extends EventEmitter {
   constructor(options: AgentPoolOptions) {
     super();
     this.maxAgents = options.maxAgents;
-    this.tools = options.tools;
+    this.sessionManager = options.sessionManager;
     this.specTreeClient = options.specTreeClient;
-    this.copilotClient = options.copilotClient ?? new CopilotClient();
-    this.model = options.model ?? getCopilotModel();
     this.activeAgents = new Map();
     this.agentPromises = new Map();
     this.agentResolvers = new Map();
@@ -242,13 +230,11 @@ export class AgentPool extends EventEmitter {
       );
     }
 
-    // 2. Create SDK session
-    let session: CopilotSession;
+    // 2. Create ACP session
+    let session: AcpSession;
     try {
-      session = await this.copilotClient.createSession({
-        model: this.model,
-        systemMessage: { content: this.buildAgentPrompt(task) },
-        tools: this.tools,
+      session = await this.sessionManager.createSession({
+        systemMessage: this.buildAgentPrompt(task),
       });
     } catch (error) {
       throw AgentError.spawnFailed(
@@ -315,36 +301,43 @@ export class AgentPool extends EventEmitter {
       const timeoutMs = 600000; // 10 minutes
       const session = agent.session;
 
-      // Collect unsubscribe functions (session.on() returns unsubscribe fn)
-      const unsubscribers: (() => void)[] = [];
+      // Collect listener cleanup functions
+      const cleanups: (() => void)[] = [];
 
-      // Streaming event handlers using actual SDK event types
-      unsubscribers.push(session.on('assistant.message_delta', (event) => {
-        this.emit('agent:message', agent, event.data.deltaContent);
-      }));
+      // ACP streaming event handlers
+      const onText = (chunk: string) => {
+        this.emit('agent:message', agent, chunk);
+      };
+      session.on('text', onText);
+      cleanups.push(() => session.removeListener('text', onText));
 
-      unsubscribers.push(session.on('assistant.message', (event) => {
-        summary = event.data.content;
-      }));
-
-      unsubscribers.push(session.on('tool.execution_start', (event) => {
-        this.emit('agent:tool-call', agent, event.data.toolName, event.data.arguments);
-      }));
-
-      unsubscribers.push(session.on('tool.execution_complete', (event) => {
-        this.emit('agent:tool-result', agent, event.data.toolCallId, event.data.result);
-      }));
-
-      unsubscribers.push(session.on('session.idle', () => {
+      const onComplete = (content: string) => {
+        summary = content;
         completed = true;
-      }));
+      };
+      session.on('complete', onComplete);
+      cleanups.push(() => session.removeListener('complete', onComplete));
 
-      unsubscribers.push(session.on('session.error', (event) => {
-        error = new Error(event.data.message);
+      const onToolCall = (toolName: string, toolArgs: unknown) => {
+        this.emit('agent:tool-call', agent, toolName, toolArgs);
+      };
+      session.on('tool_call', onToolCall);
+      cleanups.push(() => session.removeListener('tool_call', onToolCall));
+
+      const onToolResult = (toolName: string, result: unknown) => {
+        this.emit('agent:tool-result', agent, toolName, result);
+      };
+      session.on('tool_result', onToolResult);
+      cleanups.push(() => session.removeListener('tool_result', onToolResult));
+
+      const onError = (err: Error) => {
+        error = err;
         completed = true;
-      }));
+      };
+      session.on('error', onError);
+      cleanups.push(() => session.removeListener('error', onError));
 
-      session.send({ prompt });
+      session.send(prompt);
 
       // Wait for completion or timeout
       await new Promise<void>((resolve) => {
@@ -365,8 +358,8 @@ export class AgentPool extends EventEmitter {
       });
 
       // Remove all listeners
-      for (const unsub of unsubscribers) {
-        unsub();
+      for (const cleanup of cleanups) {
+        cleanup();
       }
 
       // Update agent state
@@ -558,7 +551,7 @@ export class AgentPool extends EventEmitter {
     }
 
     // Signal agent to pause at next safe point
-    // Note: If agent is in the middle of an SDK call, we wait for completion before pausing
+    // Note: If agent is in the middle of an ACP call, we wait for completion before pausing
     agent.status = "paused";
     this.emit("agent:pause", agent);
   }
@@ -643,7 +636,7 @@ export class AgentPool extends EventEmitter {
     }
 
     try {
-      // Destroy the SDK session
+      // Destroy the ACP session
       await agent.session.destroy();
     } catch {
       // Ignore cleanup errors

@@ -18,13 +18,7 @@ import {
   type GeneratedPlan,
 } from "../src/orchestrator/plan-generator.js";
 import { SpecTreeClient } from "../src/spectree/api-client.js";
-import { CopilotClient } from "@github/copilot-sdk";
-
-// Mock the config module
-vi.mock("../src/config/index.js", () => ({
-  getApiUrl: () => "http://localhost:3001",
-  getCopilotModel: () => "gpt-4.1",
-}));
+import { AcpSessionManager } from "../src/acp/index.js";
 
 // =============================================================================
 // Test Fixtures
@@ -160,18 +154,17 @@ function createMockSpecTreeClient(): SpecTreeClient {
   } as unknown as SpecTreeClient;
 }
 
-function createMockCopilotClient(responseContent: string): CopilotClient {
+function createMockSessionManager(responseContent: string): AcpSessionManager {
   const mockSession = {
-    sendAndWait: vi.fn().mockResolvedValue({
-      type: "assistant.message",
-      data: { content: responseContent },
-    }),
+    sendAndWait: vi.fn().mockResolvedValue(responseContent),
     destroy: vi.fn().mockResolvedValue(undefined),
+    on: vi.fn(),
+    removeListener: vi.fn(),
   };
 
   return {
     createSession: vi.fn().mockResolvedValue(mockSession),
-  } as unknown as CopilotClient;
+  } as unknown as AcpSessionManager;
 }
 
 // =============================================================================
@@ -180,13 +173,13 @@ function createMockCopilotClient(responseContent: string): CopilotClient {
 
 describe("PlanGenerator", () => {
   let mockSpecTreeClient: SpecTreeClient;
-  let mockCopilotClient: CopilotClient;
+  let mockSessionManager: AcpSessionManager;
   let generator: PlanGenerator;
 
   beforeEach(() => {
     mockSpecTreeClient = createMockSpecTreeClient();
-    mockCopilotClient = createMockCopilotClient(JSON.stringify(VALID_AI_RESPONSE));
-    generator = new PlanGenerator(mockSpecTreeClient, mockCopilotClient);
+    mockSessionManager = createMockSessionManager(JSON.stringify(VALID_AI_RESPONSE));
+    generator = new PlanGenerator(mockSpecTreeClient, mockSessionManager);
   });
 
   describe("generatePlan - Dry Run Mode", () => {
@@ -289,7 +282,7 @@ describe("PlanGenerator", () => {
         ),
       } as unknown as SpecTreeClient;
 
-      const gen = new PlanGenerator(specTreeClient, mockCopilotClient);
+      const gen = new PlanGenerator(specTreeClient, mockSessionManager);
       await gen.generatePlan("Build user auth system", {
         team: "Engineering",
         teamId: "team-1",
@@ -326,7 +319,7 @@ describe("PlanGenerator", () => {
         ),
       } as unknown as SpecTreeClient;
 
-      const gen = new PlanGenerator(specTreeClient, mockCopilotClient);
+      const gen = new PlanGenerator(specTreeClient, mockSessionManager);
       await gen.generatePlan("Build user auth system", {
         team: "Engineering",
         teamId: "team-1",
@@ -359,7 +352,7 @@ describe("PlanGenerator", () => {
         ),
       } as unknown as SpecTreeClient;
 
-      const gen = new PlanGenerator(specTreeClient, mockCopilotClient);
+      const gen = new PlanGenerator(specTreeClient, mockSessionManager);
       await gen.generatePlan("Build user auth system", {
         team: "Engineering",
         teamId: "team-1",
@@ -389,7 +382,7 @@ describe("PlanGenerator", () => {
         }),
       } as unknown as SpecTreeClient;
 
-      const gen = new PlanGenerator(specTreeClient, mockCopilotClient);
+      const gen = new PlanGenerator(specTreeClient, mockSessionManager);
       const result = await gen.generatePlan("Build user auth system", {
         team: "Engineering",
         teamId: "team-1",
@@ -415,7 +408,7 @@ describe("PlanGenerator", () => {
 
     it("should extract JSON from response with extra text", async () => {
       const responseWithText = `Here is the plan:\n\n${JSON.stringify(VALID_AI_RESPONSE)}\n\nLet me know if you need changes.`;
-      const client = createMockCopilotClient(responseWithText);
+      const client = createMockSessionManager(responseWithText);
       const gen = new PlanGenerator(mockSpecTreeClient, client);
 
       const result = await gen.generatePlan("Build something", {
@@ -428,7 +421,7 @@ describe("PlanGenerator", () => {
     });
 
     it("should throw PlanParsingError for non-JSON response", async () => {
-      const client = createMockCopilotClient("This is not JSON at all");
+      const client = createMockSessionManager("This is not JSON at all");
       const gen = new PlanGenerator(mockSpecTreeClient, client);
 
       await expect(
@@ -442,7 +435,7 @@ describe("PlanGenerator", () => {
 
     it("should throw PlanParsingError for missing epicName", async () => {
       const invalidResponse = { features: [] };
-      const client = createMockCopilotClient(JSON.stringify(invalidResponse));
+      const client = createMockSessionManager(JSON.stringify(invalidResponse));
       const gen = new PlanGenerator(mockSpecTreeClient, client);
 
       await expect(
@@ -456,7 +449,7 @@ describe("PlanGenerator", () => {
 
     it("should throw PlanParsingError for empty features array", async () => {
       const invalidResponse = { epicName: "Test", features: [] };
-      const client = createMockCopilotClient(JSON.stringify(invalidResponse));
+      const client = createMockSessionManager(JSON.stringify(invalidResponse));
       const gen = new PlanGenerator(mockSpecTreeClient, client);
 
       await expect(
@@ -479,7 +472,7 @@ describe("PlanGenerator", () => {
           },
         ],
       };
-      const client = createMockCopilotClient(
+      const client = createMockSessionManager(
         JSON.stringify(responseWithInvalidComplexity)
       );
       const gen = new PlanGenerator(mockSpecTreeClient, client);
@@ -494,17 +487,17 @@ describe("PlanGenerator", () => {
     });
   });
 
-  describe("Copilot SDK Integration", () => {
-    it("should create session with correct model", async () => {
+  describe("ACP Session Integration", () => {
+    it("should create session with system message", async () => {
       await generator.generatePlan("Build something", {
         team: "Engineering",
         teamId: "team-1",
         dryRun: true,
       });
 
-      expect(mockCopilotClient.createSession).toHaveBeenCalledWith(
+      expect(mockSessionManager.createSession).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: "gpt-4.1",
+          systemMessage: expect.any(String),
         })
       );
     });
@@ -517,7 +510,7 @@ describe("PlanGenerator", () => {
       });
 
       // Get the mock session
-      const mockSession = await (mockCopilotClient.createSession as Mock).mock
+      const mockSession = await (mockSessionManager.createSession as Mock).mock
         .results[0].value;
       expect(mockSession.destroy).toHaveBeenCalled();
     });
@@ -529,12 +522,11 @@ describe("PlanGenerator", () => {
         dryRun: true,
       });
 
-      const mockSession = await (mockCopilotClient.createSession as Mock).mock
+      const mockSession = await (mockSessionManager.createSession as Mock).mock
         .results[0].value;
       expect(mockSession.sendAndWait).toHaveBeenCalledWith(
-        expect.objectContaining({
-          prompt: expect.stringContaining("Build a todo app"),
-        })
+        expect.stringContaining("Build a todo app"),
+        expect.any(Number)
       );
     });
   });
@@ -542,16 +534,16 @@ describe("PlanGenerator", () => {
 
 describe("generatePlan function", () => {
   it("should be a convenience wrapper for PlanGenerator", async () => {
-    const mockSpecTreeClient = createMockSpecTreeClient();
-    const mockCopilotClient = createMockCopilotClient(
+    const specTreeClient = createMockSpecTreeClient();
+    const sessionManager = createMockSessionManager(
       JSON.stringify(VALID_AI_RESPONSE)
     );
 
     const result = await generatePlan(
       "Build auth",
       { team: "Engineering", teamId: "team-1", dryRun: true },
-      mockSpecTreeClient,
-      mockCopilotClient
+      specTreeClient,
+      sessionManager
     );
 
     expect(result).toBeDefined();

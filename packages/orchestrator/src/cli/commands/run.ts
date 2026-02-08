@@ -19,8 +19,8 @@ import { getApiToken, getApiUrl } from "./auth.js";
 import { getDefaultTeam, initConfig } from "../../config/index.js";
 import {
   SpecTreeClient,
-  createAgentTools,
   type Team,
+  type ExecutionPlan,
 } from "../../spectree/index.js";
 import {
   PlanGenerator,
@@ -28,7 +28,9 @@ import {
   type GeneratedPlan,
   type RunResult,
   type ProgressEvent,
+  type OrchestratorOptions,
 } from "../../orchestrator/index.js";
+import { AcpClient, AcpSessionManager } from "../../acp/index.js";
 import {
   TaskProgressDisplay,
   ActivityTracker,
@@ -45,7 +47,7 @@ import {
 // Types
 // =============================================================================
 
-interface RunOptions {
+export interface RunOptions {
   team?: string;
   dryRun?: boolean;
   sequential?: boolean;
@@ -54,6 +56,8 @@ interface RunOptions {
   template?: string;
   file?: string;
   taskLevelAgents?: boolean;
+  phase?: string;
+  parallel?: string;
 }
 
 // =============================================================================
@@ -409,54 +413,131 @@ async function resolveTeam(
 // =============================================================================
 
 /**
- * Main run command implementation
+ * Check if a string looks like a UUID (epic ID).
+ */
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value
+  );
+}
+
+/**
+ * Display execution plan phases for --dry-run on an existing epic
+ */
+function displayExecutionPlan(
+  epicName: string,
+  plan: ExecutionPlan
+): void {
+  console.log(chalk.cyan("\n" + "=".repeat(60)));
+  console.log(chalk.cyan("  EXECUTION PLAN (Dry Run)"));
+  console.log(chalk.cyan("=".repeat(60) + "\n"));
+
+  console.log(chalk.white.bold(`Epic: ${epicName}`));
+  console.log(
+    chalk.gray(
+      `Total items: ${plan.totalItems} across ${plan.phases.length} phases`
+    )
+  );
+  console.log();
+
+  for (const phase of plan.phases) {
+    const modeTag = phase.canRunInParallel
+      ? chalk.blue(" [parallel]")
+      : chalk.yellow(" [sequential]");
+    const complexityTag = phase.estimatedComplexity
+      ? chalk.magenta(` [${phase.estimatedComplexity}]`)
+      : "";
+
+    console.log(
+      chalk.white.bold(`  Phase ${phase.order}`) + modeTag + complexityTag
+    );
+
+    for (const item of phase.items) {
+      const depInfo =
+        item.dependencies.length > 0
+          ? chalk.gray(` (depends on: ${item.dependencies.length} items)`)
+          : "";
+      console.log(
+        chalk.yellow(`    ${item.identifier}`) +
+          chalk.white(` ${item.title}`) +
+          depInfo
+      );
+    }
+    console.log();
+  }
+
+  console.log(chalk.gray("-".repeat(60)));
+  console.log(
+    chalk.yellow(
+      "  Dry run - no execution started. Run without --dry-run to execute."
+    )
+  );
+  console.log();
+}
+
+/**
+ * Main run command implementation.
+ *
+ * Supports two modes:
+ * 1. Prompt mode: `spectree-agent run "Build a dashboard"` — generates plan then executes
+ * 2. Epic mode: `spectree-agent run <epic-id>` — executes an existing epic
  */
 export async function runCommand(
   prompt: string | undefined,
   options: RunOptions
 ): Promise<void> {
-  console.log(chalk.cyan("\n🚀 SpecTree Parallel Agent Orchestrator\n"));
+  console.log(chalk.cyan("\n  SpecTree Parallel Agent Orchestrator\n"));
 
-  // Resolve prompt from file and/or argument
+  // Detect if the argument is an epic ID (UUID) — if so, run in epic mode
+  if (prompt && isUuid(prompt)) {
+    await runEpicCommand(prompt, options);
+    return;
+  }
+
+  // Prompt mode: resolve prompt from file and/or argument
   let resolvedPrompt: string;
-  
+
   if (options.file) {
     const filePath = resolve(options.file);
     if (!existsSync(filePath)) {
-      console.log(chalk.red(`❌ File not found: ${filePath}`));
+      console.log(chalk.red(`  File not found: ${filePath}`));
       process.exit(1);
     }
     try {
       const fileContent = readFileSync(filePath, "utf-8");
-      console.log(chalk.gray(`📄 Reading from: ${options.file}`));
+      console.log(chalk.gray(`  Reading from: ${options.file}`));
       console.log(chalk.gray(`   File size: ${(fileContent.length / 1024).toFixed(1)} KB\n`));
-      
+
       // If prompt is also provided, use it as instructions with file as context
       if (prompt) {
         resolvedPrompt = `${prompt}\n\n---\n\n## Reference Document\n\n${fileContent}`;
-        console.log(chalk.gray(`📝 Using prompt as instructions with file as reference\n`));
+        console.log(chalk.gray(`  Using prompt as instructions with file as reference\n`));
       } else {
         resolvedPrompt = fileContent;
       }
     } catch (error) {
-      console.log(chalk.red(`❌ Failed to read file: ${error instanceof Error ? error.message : error}`));
+      console.log(chalk.red(`  Failed to read file: ${error instanceof Error ? error.message : error}`));
       process.exit(1);
     }
   } else if (prompt) {
     resolvedPrompt = prompt;
   } else {
-    console.log(chalk.red("❌ Either a prompt or --file option is required"));
+    console.log(chalk.red("  Either a prompt, epic ID, or --file option is required"));
     console.log(chalk.gray("\nUsage:"));
-    console.log(chalk.gray("  spectree-agent run \"Build a user dashboard\" --team Engineering"));
+    console.log(chalk.gray('  spectree-agent run "Build a user dashboard" --team Engineering'));
+    console.log(chalk.gray("  spectree-agent run <epic-id>                               # execute existing epic"));
+    console.log(chalk.gray("  spectree-agent run <epic-id> --dry-run                     # show plan without executing"));
     console.log(chalk.gray("  spectree-agent run --file docs/feature-spec.md --team Engineering"));
-    console.log(chalk.gray("  spectree-agent run \"Implement the roadmap\" --file docs/plan.md --team Engineering"));
     process.exit(1);
   }
 
   // Initialize config with any CLI overrides
-  initConfig({
-    maxAgents: options.maxAgents ? parseInt(options.maxAgents, 10) : undefined,
-  });
+  const maxAgents = options.parallel
+    ? parseInt(options.parallel, 10)
+    : options.maxAgents
+      ? parseInt(options.maxAgents, 10)
+      : undefined;
+  initConfig({ maxAgents });
 
   const spinner = ora("Checking authentication...").start();
 
@@ -472,13 +553,14 @@ export async function runCommand(
     // Step 2: Initialize clients
     const apiUrl = getApiUrl();
     const client = new SpecTreeClient({ apiUrl, token });
-    const tools = createAgentTools(client);
+    const acpClient = new AcpClient();
+    const sessionManager = new AcpSessionManager(acpClient);
 
     spinner.succeed("Initialized");
 
     // Display prompt summary (truncated for long file content)
-    const promptPreview = resolvedPrompt.length > 200 
-      ? resolvedPrompt.substring(0, 200) + "..." 
+    const promptPreview = resolvedPrompt.length > 200
+      ? resolvedPrompt.substring(0, 200) + "..."
       : resolvedPrompt;
     console.log(chalk.white(`\nPrompt: "${promptPreview}"\n`));
 
@@ -490,7 +572,7 @@ export async function runCommand(
 
     // Step 4: Generate plan
     const planSpinner = ora("Generating execution plan with AI...").start();
-    const planGenerator = new PlanGenerator(client);
+    const planGenerator = new PlanGenerator(client, sessionManager);
     const planOptions: {
       team: string;
       teamId: string;
@@ -515,22 +597,22 @@ export async function runCommand(
 
     // Step 5.5: Display plan and prompt for confirmation
     displayPlanForReview(plan);
-    
+
     const { action } = await inquirer.prompt<{ action: string }>([
       {
         type: "list",
         name: "action",
         message: "How would you like to proceed?",
         choices: [
-          { name: "✅ Execute this plan", value: "execute" },
-          { name: "📝 View plan in SpecTree UI first (opens browser)", value: "view" },
-          { name: "❌ Cancel and discard", value: "cancel" },
+          { name: "Execute this plan", value: "execute" },
+          { name: "View plan in SpecTree UI first (opens browser)", value: "view" },
+          { name: "Cancel and discard", value: "cancel" },
         ],
       },
     ]);
 
     if (action === "cancel") {
-      console.log(chalk.yellow("\n⚠️  Plan cancelled. The epic has been created but no tasks will be executed."));
+      console.log(chalk.yellow("\n  Plan cancelled. The epic has been created but no tasks will be executed."));
       console.log(chalk.gray(`   Epic ID: ${plan.epicId}`));
       console.log(chalk.gray(`   You can continue later with: spectree-agent continue "${plan.epicName}"`));
       console.log();
@@ -539,13 +621,13 @@ export async function runCommand(
 
     if (action === "view") {
       const webUrl = process.env.SPECTREE_WEB_URL || "http://localhost:5173";
-      console.log(chalk.cyan(`\n🌐 Opening SpecTree UI...`));
+      console.log(chalk.cyan(`\n  Opening SpecTree UI...`));
       console.log(chalk.gray(`   ${webUrl}/epics/${plan.epicId}`));
-      
+
       // Try to open browser
       const open = await import("open");
       await open.default(`${webUrl}/epics/${plan.epicId}`);
-      
+
       // Ask again after viewing
       const { confirmAfterView } = await inquirer.prompt<{ confirmAfterView: boolean }>([
         {
@@ -557,7 +639,7 @@ export async function runCommand(
       ]);
 
       if (!confirmAfterView) {
-        console.log(chalk.yellow("\n⚠️  Execution cancelled."));
+        console.log(chalk.yellow("\n  Execution cancelled."));
         console.log(chalk.gray(`   You can continue later with: spectree-agent continue "${plan.epicName}"`));
         console.log();
         return;
@@ -565,25 +647,132 @@ export async function runCommand(
     }
 
     // Step 6: Execute orchestration
-    console.log(chalk.cyan("\n🔧 Executing plan...\n"));
+    console.log(chalk.cyan("\n  Executing plan...\n"));
 
-    const orchestrator = new Orchestrator({
-      client,
-      tools,
-    });
+    const orchOptions: OrchestratorOptions = { client, sessionManager };
+    if (maxAgents !== undefined) {
+      orchOptions.maxAgents = maxAgents;
+    }
+    const orchestrator = new Orchestrator(orchOptions);
 
     // Setup progress event handlers
     setupProgressHandlers(orchestrator);
 
     const result = await orchestrator.run(plan.epicId, {
-      sequential: options.sequential ?? true, // Default to sequential for MVP
-      taskLevelAgents: options.taskLevelAgents ?? true, // Default to task-level agents for fresh context
+      sequential: options.sequential ?? true,
+      taskLevelAgents: options.taskLevelAgents ?? true,
     });
 
     // Step 7: Display results
     displayResults(result);
 
     // Exit with appropriate code
+    if (!result.success) {
+      process.exit(1);
+    }
+  } catch (error) {
+    displayError(error, spinner.isSpinning ? spinner : undefined);
+    process.exit(1);
+  }
+}
+
+/**
+ * Execute an existing epic by ID.
+ * Supports --dry-run, --phase, and --parallel flags.
+ */
+async function runEpicCommand(
+  epicId: string,
+  options: RunOptions
+): Promise<void> {
+  const maxAgents = options.parallel
+    ? parseInt(options.parallel, 10)
+    : options.maxAgents
+      ? parseInt(options.maxAgents, 10)
+      : undefined;
+  initConfig({ maxAgents });
+
+  const spinner = ora("Checking authentication...").start();
+
+  try {
+    // Step 1: Verify authentication
+    const token = getApiToken();
+    if (!token) {
+      throw AuthError.missingToken();
+    }
+
+    spinner.text = "Initializing API client...";
+
+    // Step 2: Initialize clients
+    const apiUrl = getApiUrl();
+    const client = new SpecTreeClient({ apiUrl, token });
+    const acpClient = new AcpClient();
+    const sessionManager = new AcpSessionManager(acpClient);
+
+    // Step 3: Get epic info
+    spinner.text = "Loading epic...";
+    const epic = await client.getEpic(epicId);
+
+    // Step 4: Get execution plan
+    spinner.text = "Building execution plan...";
+    const executionPlan = await client.getExecutionPlan(epicId);
+
+    spinner.succeed(
+      `Loaded: "${epic.name}" (${executionPlan.totalItems} items, ${executionPlan.phases.length} phases)`
+    );
+
+    // Step 5: Handle dry-run — show execution plan without running
+    if (options.dryRun) {
+      displayExecutionPlan(epic.name, executionPlan);
+      return;
+    }
+
+    // Step 6: Execute
+    const phaseNum = options.phase ? parseInt(options.phase, 10) : undefined;
+    if (phaseNum !== undefined) {
+      console.log(chalk.cyan(`\n  Executing phase ${phaseNum} only...\n`));
+    } else {
+      console.log(chalk.cyan("\n  Executing epic...\n"));
+    }
+
+    const orchOpts: OrchestratorOptions = { client, sessionManager };
+    if (maxAgents !== undefined) {
+      orchOpts.maxAgents = maxAgents;
+    }
+    const orchestrator = new Orchestrator(orchOpts);
+
+    setupProgressHandlers(orchestrator);
+
+    const runOptions: import("../../orchestrator/orchestrator.js").RunOptions =
+      {
+        sequential: options.sequential ?? (maxAgents === 1),
+        taskLevelAgents: options.taskLevelAgents ?? true,
+      };
+
+    // If --phase is specified, we only run items in that phase
+    // by setting fromFeature to the first item in the target phase
+    if (phaseNum !== undefined) {
+      const targetPhase = executionPlan.phases.find(
+        (p) => p.order === phaseNum
+      );
+      if (!targetPhase) {
+        console.log(
+          chalk.red(
+            `  Phase ${phaseNum} not found. Available phases: ${executionPlan.phases.map((p) => p.order).join(", ")}`
+          )
+        );
+        process.exit(1);
+      }
+      const firstItem = targetPhase.items[0];
+      if (firstItem) {
+        runOptions.fromFeature = firstItem.identifier;
+      }
+    }
+
+    const result = await orchestrator.run(epicId, runOptions);
+
+    // Step 7: Display results
+    displayResults(result);
+
     if (!result.success) {
       process.exit(1);
     }

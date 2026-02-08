@@ -1,16 +1,5 @@
 # Copilot Instructions for SpecTree
 
-## 🔴 TEMPORARY: SpecTree MCP Tools Disabled (2025-02-03)
-
-**The SpecTree MCP tools are currently experiencing stability issues ("TypeError: terminated" errors during large operations).** 
-
-**Until the CLI orchestrator (`packages/orchestrator/`) is complete, use traditional planning:**
-- Create `plan.md` files in the session workspace for implementation planning
-- Do NOT use `spectree__*` MCP tools for epic/feature/task creation
-- The MCP instructions below are preserved but commented out for future re-enablement
-
----
-
 **🔴 NEVER:** `prisma migrate reset`, `prisma migrate dev`, `db push --force-reset`
 
 ---
@@ -18,13 +7,6 @@
 SpecTree is a project management tool similar to Linear, with a REST API, React frontend, and MCP server for AI integration.
 
 ---
-
-<!--
-=============================================================================
-DISABLED: SpecTree MCP Integration (temporarily disabled due to stability issues)
-Re-enable when packages/orchestrator CLI is complete and MCP server is stable.
-See docs/orchestrator-implementation-briefing.md for the CLI replacement plan.
-=============================================================================
 
 ## ⚡ Quick Reference (READ FIRST)
 
@@ -357,9 +339,6 @@ spectree__end_session({
 - Exploratory code reading without planned changes
 - When user explicitly asks for a file-based plan
 
-END DISABLED SECTION: SpecTree MCP Integration
-=============================================================================
--->
 
 ---
 
@@ -381,6 +360,13 @@ END DISABLED SECTION: SpecTree MCP Integration
    - If commits exist, recommend: `git rebase origin/main`
 
 4. **Before any code changes, confirm the branch is synced with remote**
+
+5. **If working on a SpecTree epic, initialize session context:**
+   ```typescript
+   spectree__list_epics()  // Check for tracked epics
+   spectree__start_session({ epicId: "<epic-id>" })  // Initialize session
+   // Review previousSession.summary, nextSteps, blockers, decisions for continuity
+   ```
 
 **Prompt the user if:**
 - Working directly on `main` (should create feature branch)
@@ -408,11 +394,6 @@ npx prisma db push             # Schema sync without --force-reset
 Tests use a separate database (`spectree-test.db`) configured in `packages/api/vitest.config.ts`. Do not modify this configuration.
 
 ---
-
-<!--
-=============================================================================
-DISABLED: AI Session Context MCP Tools (temporarily disabled)
-=============================================================================
 
 ## AI Session Context
 
@@ -549,9 +530,6 @@ await spectree__log_decision({
 
 See `docs/MCP/decision-log.md` for full documentation.
 
-END DISABLED SECTION: AI Session Context MCP Tools
-=============================================================================
--->
 
 ---
 
@@ -713,3 +691,120 @@ git merge release/x.y
 - **Policy docs:** `docs/GIT/git-release-flow-strategy-final-with-definitions.md`
 - **Cheat sheet:** `docs/GIT/git-release-flow-cheat-sheet.md`
 - **PR template:** `docs/GIT/PULL_REQUEST_TEMPLATE.md`
+
+---
+
+## Custom Agents
+
+Four custom agents are defined in `.github/agents/`. Three are user-invokable; `feature-worker` is a sub-agent only.
+
+### @planner - SpecTree Planning Pipeline
+
+Creates structured SpecTree epics from natural language descriptions. Runs a 5-stage pipeline: Analyze → Decompose → Detail → Evaluate → Verify. Supports configurable review gates at each stage.
+
+```
+Usage: @planner "Build a user activity dashboard"
+       @planner --gates=auto "Build a user preferences API"
+       @planner --gates=auto,auto,review,review,review "Build a CSV export feature"
+```
+
+The planner reads the codebase to understand scope, creates the epic with `spectree__create_epic_complete`, sets structured descriptions on every feature and task, evaluates quality, and verifies the execution plan.
+
+### @orchestrator - Epic Execution
+
+Executes SpecTree execution plans by delegating features to feature-worker sub-agents. Reads the execution plan, spawns workers in parallel where safe, and tracks progress back to SpecTree.
+
+```
+Usage: @orchestrator "Execute epic ENG-42"
+```
+
+The orchestrator reads the execution plan via `spectree__get_execution_plan`, gathers full context for each feature from SpecTree (structured descriptions, AI context, code context, decisions), builds context prompts, and spawns feature-worker sub-agents. After each phase, it invokes the reviewer agent to verify the work.
+
+### @reviewer - Acceptance Review
+
+Reviews completed features against their SpecTree acceptance criteria. Runs validations, checks code quality, and verifies requirements are met.
+
+```
+Usage: @reviewer "Review feature ENG-42-1"
+```
+
+The reviewer reads acceptance criteria from structured descriptions, runs `spectree__run_all_validations`, reviews code changes, and presents a structured review report with per-criterion PASS/FAIL/PARTIAL verdicts.
+
+### feature-worker (Sub-Agent Only)
+
+Implements all tasks within a single SpecTree feature. **Not user-invokable** — only spawned by the orchestrator as a sub-agent. Receives full context from the orchestrator including requirements, acceptance criteria, and code context. Follows a strict per-task workflow: `spectree__start_work` → implement → `spectree__link_code_file` → `spectree__log_progress` → `spectree__complete_task_with_validation`.
+
+---
+
+## Custom Skills
+
+Three reusable procedure skills are available in `.github/skills/`. Skills are step-by-step procedures that any agent can reference — they complement agents by providing the "how" while agents provide the "who".
+
+| Skill | Location | Purpose |
+|-------|----------|---------|
+| **spectree-planning** | `.github/skills/spectree-planning/SKILL.md` | 5-stage planning pipeline procedure with quality heuristics, review gates, and task scoping guidelines |
+| **spectree-session** | `.github/skills/spectree-session/SKILL.md` | Session start/during/end protocol for SpecTree context continuity across AI sessions |
+| **spectree-validation** | `.github/skills/spectree-validation/SKILL.md` | Validation run/interpret/complete workflow for verifying acceptance criteria with automated checks |
+
+---
+
+## Automation Workflow
+
+### Planning (`spectree plan`)
+
+Create a fully-specified SpecTree epic from a natural language description:
+
+```bash
+# Interactive planning with review gates (default)
+spectree plan "Build a user activity dashboard"
+
+# Headless planning (auto-approve all stages except Evaluate)
+spectree plan --auto "Build a user preferences API"
+```
+
+Or use the planner agent directly in a Copilot CLI session:
+
+```
+@planner "Build a user activity dashboard"
+```
+
+The planning pipeline produces an epic with features, tasks, structured descriptions (AI instructions, acceptance criteria, files involved), execution ordering, and a validated execution plan.
+
+### Execution (`spectree run`)
+
+Execute a SpecTree epic's execution plan:
+
+```bash
+# Execute all phases
+spectree run <epic-id>
+
+# Dry run — show execution plan without executing
+spectree run --dry-run <epic-id>
+```
+
+The execution engine reads the execution plan from SpecTree, spawns Copilot CLI sessions (via ACP) for each feature, manages git branches, tracks progress, and runs validations on completion.
+
+### Validation (`spectree validate`)
+
+Run all validation checks for an epic's tasks and report results:
+
+```bash
+spectree validate <epic-id>
+```
+
+### Shell Scripts
+
+Headless automation scripts are available in `scripts/` for CI/CD integration:
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/spectree-plan.sh` | Headless planning pipeline |
+| `scripts/spectree-run.sh` | Headless epic execution |
+| `scripts/spectree-validate.sh` | Headless validation run |
+
+```bash
+# Example: Full headless workflow
+./scripts/spectree-plan.sh "Build a CSV export feature"
+./scripts/spectree-run.sh ENG-42
+./scripts/spectree-validate.sh ENG-42
+```

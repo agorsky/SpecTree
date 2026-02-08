@@ -19,6 +19,19 @@ import { initializeApiClient } from "./api-client.js";
 const SERVER_NAME = "spectree-mcp";
 const SERVER_VERSION = "0.1.0";
 
+// ---------------------------------------------------------------------------
+// Global error handlers - prevent silent crashes from unhandled errors
+// ---------------------------------------------------------------------------
+process.on("uncaughtException", (error: Error) => {
+  console.error(`[${SERVER_NAME}] uncaughtException:`, error);
+  // Keep the process alive - MCP tool handlers should catch their own errors
+});
+
+process.on("unhandledRejection", (reason: unknown) => {
+  console.error(`[${SERVER_NAME}] unhandledRejection:`, reason);
+  // Keep the process alive - don't crash on stray rejected promises
+});
+
 // Validate required environment variables
 function validateEnvironment(): { token: string; baseUrl: string } {
   const token = process.env.API_TOKEN;
@@ -67,6 +80,18 @@ async function main(): Promise<void> {
   console.error(`${SERVER_NAME} v${SERVER_VERSION} started (stdio transport)`);
   console.error(`API endpoint: ${baseUrl}`);
 }
+
+// ---------------------------------------------------------------------------
+// Graceful shutdown
+// ---------------------------------------------------------------------------
+function shutdown(): void {
+  console.error(`[${SERVER_NAME}] shutting down...`);
+  // Allow a brief window for in-flight responses, then exit
+  setTimeout(() => process.exit(0), 500);
+}
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 
 main().catch((error: unknown) => {
   console.error("Fatal error:", error);

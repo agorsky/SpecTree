@@ -12,7 +12,7 @@
  * - Dry-run mode for plan preview without creation
  */
 
-import { CopilotClient } from "@github/copilot-sdk";
+import { AcpSessionManager } from "../acp/index.js";
 import {
   SpecTreeClient,
   type CreateEpicInput,
@@ -30,7 +30,6 @@ import {
   type AddValidationInput,
 } from "../spectree/api-client.js";
 import { OrchestratorError, ErrorCode, wrapError } from "../errors.js";
-import { getCopilotModel } from "../config/index.js";
 
 // =============================================================================
 // Types and Interfaces
@@ -343,14 +342,12 @@ export class PlanParsingError extends OrchestratorError {
  * Generates SpecTree epic structures from natural language prompts.
  */
 export class PlanGenerator {
-  private copilotClient: CopilotClient;
+  private sessionManager: AcpSessionManager;
   private spectreeClient: SpecTreeClient;
-  private model: string;
 
-  constructor(spectreeClient: SpecTreeClient, copilotClient?: CopilotClient) {
+  constructor(spectreeClient: SpecTreeClient, sessionManager: AcpSessionManager) {
     this.spectreeClient = spectreeClient;
-    this.copilotClient = copilotClient ?? new CopilotClient();
-    this.model = getCopilotModel();
+    this.sessionManager = sessionManager;
   }
 
   /**
@@ -516,32 +513,24 @@ export class PlanGenerator {
   }
 
   /**
-   * Use the Copilot SDK to generate a structured plan from the prompt.
+   * Use ACP to generate a structured plan from the prompt.
    */
   private async generatePlanStructure(prompt: string): Promise<PlannerResponse> {
-    const session = await this.copilotClient.createSession({
-      model: this.model,
-      systemMessage: { content: PLANNER_SYSTEM_PROMPT },
+    const session = await this.sessionManager.createSession({
+      systemMessage: PLANNER_SYSTEM_PROMPT,
     });
 
     try {
       // Use 5-minute timeout for complex plan generation
-      const response = await session.sendAndWait({
-        prompt: `Create an implementation plan for the following feature request:\n\n${prompt}`,
-      }, 300000);
+      const content = await session.sendAndWait(
+        `Create an implementation plan for the following feature request:\n\n${prompt}`,
+        300000
+      );
 
-      // Extract content from the response
-      if (!response) {
-        throw new PlanParsingError(
-          "No response received from AI",
-          ""
-        );
-      }
-
-      const content = response.data.content;
+      // ACP sendAndWait returns the content string directly
       if (!content) {
         throw new PlanParsingError(
-          "Empty response content from AI",
+          "No response received from AI",
           ""
         );
       }
@@ -1543,15 +1532,15 @@ export class PlanGenerator {
  * @param prompt - User's feature request in natural language
  * @param options - Generation options including team and dry-run mode
  * @param spectreeClient - SpecTree API client
- * @param copilotClient - Optional Copilot SDK client (created if not provided)
+ * @param sessionManager - ACP session manager
  * @returns The generated plan with all created IDs
  */
 export async function generatePlan(
   prompt: string,
   options: GeneratePlanOptions,
   spectreeClient: SpecTreeClient,
-  copilotClient?: CopilotClient
+  sessionManager: AcpSessionManager
 ): Promise<GeneratedPlan> {
-  const generator = new PlanGenerator(spectreeClient, copilotClient);
+  const generator = new PlanGenerator(spectreeClient, sessionManager);
   return generator.generatePlan(prompt, options);
 }

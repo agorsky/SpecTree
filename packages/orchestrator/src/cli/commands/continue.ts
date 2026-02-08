@@ -14,7 +14,6 @@ import ora, { type Ora } from "ora";
 import { getApiToken, getApiUrl } from "./auth.js";
 import {
   SpecTreeClient,
-  createAgentTools,
   type Epic,
   type Feature,
   type Session,
@@ -25,6 +24,7 @@ import {
   type RunResult,
   type ProgressEvent,
 } from "../../orchestrator/index.js";
+import { AcpClient, AcpSessionManager } from "../../acp/index.js";
 import {
   TaskProgressDisplay,
   ActivityTracker,
@@ -487,10 +487,11 @@ export async function continueCommand(
     }
 
     // Step 7: Create orchestrator and execute
-    const tools = createAgentTools(client);
+    const acpClient = new AcpClient();
+    const sessionManager = new AcpSessionManager(acpClient);
     const orchestrator = new Orchestrator({
       client,
-      tools,
+      sessionManager,
     });
 
     setupProgressHandlers(orchestrator);

@@ -20,6 +20,40 @@ import {
 } from "../api-client.js";
 import { createResponse, createErrorResponse } from "./utils.js";
 
+// ---------------------------------------------------------------------------
+// Timeout helper for long-running API calls
+// ---------------------------------------------------------------------------
+const COMPOSITE_TIMEOUT_MS = 120_000; // 2 minutes for large atomic operations
+
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  operationName: string
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(
+        new Error(
+          `${operationName} timed out after ${String(ms / 1000)}s. ` +
+            "The operation may still be processing on the server. " +
+            "Try checking the results with spectree__list_epics or retry with a smaller payload."
+        )
+      );
+    }, ms);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
 // Valid values for estimated complexity
 const estimatedComplexityValues = ["trivial", "simple", "moderate", "complex"] as const;
 
@@ -218,7 +252,11 @@ export function registerCompositeTools(server: McpServer): void {
           })),
         } as CreateEpicCompleteInput;
 
-        const { data: result } = await apiClient.createEpicComplete(apiInput);
+        const { data: result } = await withTimeout(
+          apiClient.createEpicComplete(apiInput),
+          COMPOSITE_TIMEOUT_MS,
+          "create_epic_complete"
+        );
 
         // Format a helpful response
         const responseText = {
@@ -256,6 +294,15 @@ export function registerCompositeTools(server: McpServer): void {
               new Error(`Validation error: ${body.error || "Invalid input"}`)
             );
           }
+        }
+        // Handle TypeError: terminated (connection dropped during large payloads)
+        if (error instanceof TypeError && error.message.includes("terminated")) {
+          return createErrorResponse(
+            new Error(
+              "The API request was terminated unexpectedly. This can happen with very large payloads. " +
+                "Check if the epic was partially created with spectree__list_epics, then retry or split into smaller operations."
+            )
+          );
         }
         return createErrorResponse(error);
       }
@@ -424,6 +471,14 @@ export function registerCompositeTools(server: McpServer): void {
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           return createErrorResponse(new Error(`Task '${input.taskId}' not found`));
+        }
+        if (error instanceof TypeError && error.message.includes("terminated")) {
+          return createErrorResponse(
+            new Error(
+              "The API request was terminated unexpectedly. " +
+                "Check the task status with spectree__get_task and retry if needed."
+            )
+          );
         }
         return createErrorResponse(error);
       }

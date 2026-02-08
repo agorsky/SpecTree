@@ -26,8 +26,17 @@ vi.mock("../src/config/index.js", () => ({
 function createMockClient(): SpecTreeClient {
   return {
     logProgress: vi.fn(),
+    logDecision: vi.fn(),
+    linkCodeFile: vi.fn(),
     getFeature: vi.fn(),
     getTask: vi.fn(),
+    getCodeContext: vi.fn(),
+    reportBlocker: vi.fn(),
+    getAiContext: vi.fn(),
+    appendAiNote: vi.fn(),
+    runValidation: vi.fn(),
+    runAllValidations: vi.fn(),
+    getStructuredDescription: vi.fn(),
   } as unknown as SpecTreeClient;
 }
 
@@ -39,10 +48,10 @@ describe("MCP Bridge - Tool Creation", () => {
   });
 
   describe("createAgentTools", () => {
-    it("should create all 5 agent tools", () => {
+    it("should create all 11 agent tools", () => {
       const tools = createAgentTools(mockClient);
 
-      expect(tools).toHaveLength(5);
+      expect(tools).toHaveLength(11);
     });
 
     it("should create tools with correct names", () => {
@@ -54,6 +63,12 @@ describe("MCP Bridge - Tool Creation", () => {
       expect(toolNames).toContain("link_code_file");
       expect(toolNames).toContain("get_task_context");
       expect(toolNames).toContain("get_code_context");
+      expect(toolNames).toContain("report_blocker");
+      expect(toolNames).toContain("get_ai_context");
+      expect(toolNames).toContain("append_ai_note");
+      expect(toolNames).toContain("run_validation");
+      expect(toolNames).toContain("run_all_validations");
+      expect(toolNames).toContain("get_structured_description");
     });
 
     it("should create tools with descriptions", () => {
@@ -90,8 +105,8 @@ describe("MCP Bridge - Tool Creation", () => {
   });
 
   describe("agentToolNames", () => {
-    it("should contain exactly 5 tool names", () => {
-      expect(agentToolNames).toHaveLength(5);
+    it("should contain exactly 11 tool names", () => {
+      expect(agentToolNames).toHaveLength(11);
     });
 
     it("should be a readonly tuple", () => {
@@ -202,13 +217,17 @@ describe("MCP Bridge - log_decision Tool", () => {
 
   it("should log decision to task when taskId provided", async () => {
     const tool = createAgentTool("log_decision", mockClient);
-    vi.mocked(mockClient.logProgress).mockResolvedValue({
-      id: "task-123",
-      identifier: "TEAM-1-1",
-      status: null,
-      percentComplete: null,
-      startedAt: null,
-      completedAt: null,
+    vi.mocked(mockClient.logDecision).mockResolvedValue({
+      id: "decision-123",
+      epicId: "epic-123",
+      taskId: "task-123",
+      question: "Which library to use?",
+      decision: "Use Zustand",
+      rationale: "Simple API and small bundle",
+      alternatives: ["Redux", "MobX"],
+      category: "library",
+      impact: "medium",
+      createdAt: "2024-01-01T00:00:00Z",
     });
 
     const result = await tool!.handler(
@@ -225,9 +244,15 @@ describe("MCP Bridge - log_decision Tool", () => {
       { sessionId: "test-session", toolCallId: "call-1", toolName: "log_decision", arguments: {} }
     );
 
-    expect(mockClient.logProgress).toHaveBeenCalledWith("task", "task-123", {
-      message: expect.stringContaining("DECISION: Which library to use?"),
-    });
+    expect(mockClient.logDecision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        epicId: "epic-123",
+        taskId: "task-123",
+        question: "Which library to use?",
+        decision: "Use Zustand",
+        rationale: "Simple API and small bundle",
+      })
+    );
     expect(result).toEqual({
       success: true,
       data: expect.objectContaining({
@@ -239,13 +264,16 @@ describe("MCP Bridge - log_decision Tool", () => {
 
   it("should log decision to feature when featureId provided but no taskId", async () => {
     const tool = createAgentTool("log_decision", mockClient);
-    vi.mocked(mockClient.logProgress).mockResolvedValue({
-      id: "feature-123",
-      identifier: "TEAM-1",
-      status: null,
-      percentComplete: null,
-      startedAt: null,
-      completedAt: null,
+    vi.mocked(mockClient.logDecision).mockResolvedValue({
+      id: "decision-456",
+      epicId: "epic-123",
+      featureId: "feature-123",
+      question: "API design approach?",
+      decision: "REST over GraphQL",
+      rationale: "Team familiarity",
+      category: null,
+      impact: null,
+      createdAt: "2024-01-01T00:00:00Z",
     });
 
     await tool!.handler(
@@ -259,9 +287,14 @@ describe("MCP Bridge - log_decision Tool", () => {
       { sessionId: "test-session", toolCallId: "call-1", toolName: "log_decision", arguments: {} }
     );
 
-    expect(mockClient.logProgress).toHaveBeenCalledWith("feature", "feature-123", {
-      message: expect.stringContaining("DECISION: API design approach?"),
-    });
+    expect(mockClient.logDecision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        epicId: "epic-123",
+        featureId: "feature-123",
+        question: "API design approach?",
+        decision: "REST over GraphQL",
+      })
+    );
   });
 });
 
@@ -364,15 +397,8 @@ describe("MCP Bridge - link_code_file Tool", () => {
       updatedAt: "2024-01-01T00:00:00Z",
     };
 
+    vi.mocked(mockClient.linkCodeFile).mockResolvedValue(undefined);
     vi.mocked(mockClient.getTask).mockResolvedValue(mockTask);
-    vi.mocked(mockClient.logProgress).mockResolvedValue({
-      id: "task-123",
-      identifier: "TEAM-1-1",
-      status: null,
-      percentComplete: null,
-      startedAt: null,
-      completedAt: null,
-    });
 
     const result = await tool!.handler(
       {
@@ -383,10 +409,8 @@ describe("MCP Bridge - link_code_file Tool", () => {
       { sessionId: "test-session", toolCallId: "call-1", toolName: "link_code_file", arguments: {} }
     );
 
+    expect(mockClient.linkCodeFile).toHaveBeenCalledWith("task", "TEAM-1-1", "src/components/LoginForm.tsx");
     expect(mockClient.getTask).toHaveBeenCalledWith("TEAM-1-1");
-    expect(mockClient.logProgress).toHaveBeenCalledWith("task", "TEAM-1-1", {
-      message: "Linked file: src/components/LoginForm.tsx",
-    });
     expect(result).toEqual({
       success: true,
       data: expect.objectContaining({
@@ -425,6 +449,14 @@ describe("MCP Bridge - get_code_context Tool", () => {
     };
 
     vi.mocked(mockClient.getFeature).mockResolvedValue(mockFeature);
+    vi.mocked(mockClient.getCodeContext).mockResolvedValue({
+      relatedFiles: [],
+      relatedFunctions: [],
+      gitBranch: null,
+      gitCommits: [],
+      gitPrNumber: null,
+      gitPrUrl: null,
+    });
 
     const result = await tool!.handler(
       {
@@ -435,6 +467,7 @@ describe("MCP Bridge - get_code_context Tool", () => {
     );
 
     expect(mockClient.getFeature).toHaveBeenCalledWith("TEAM-1");
+    expect(mockClient.getCodeContext).toHaveBeenCalledWith("feature", "TEAM-1");
     expect(result).toEqual({
       success: true,
       data: expect.objectContaining({

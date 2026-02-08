@@ -262,6 +262,7 @@ function createExecutorOptions(overrides?: Partial<PhaseExecutorOptions>): Phase
     agentPool: createMockAgentPool(),
     branchManager: createMockBranchManager(),
     specTreeClient: createMockSpecTreeClient(),
+    taskLevelAgents: false,
     ...overrides,
   };
 }
