@@ -1165,6 +1165,46 @@ export interface FeatureDecisionContextResponse {
   epicDecisions: Decision[];
 }
 
+// -----------------------------------------------------------------------------
+// Changelog Types
+// -----------------------------------------------------------------------------
+
+/** Valid entity types for changelog queries */
+export type ChangelogEntityType = "epic" | "feature" | "task";
+
+/** Changelog entry record */
+export interface ChangelogEntry {
+  id: string;
+  entityType: string;
+  entityId: string;
+  epicId: string;
+  field: string;
+  oldValue: string | null; // JSON stringified value
+  newValue: string | null; // JSON stringified value
+  changedBy: string;
+  changedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Parameters for getting entity changelog */
+export interface GetChangelogParams {
+  entityType: ChangelogEntityType;
+  entityId: string;
+  cursor?: string | undefined;
+  limit?: number | undefined;
+  field?: string | undefined;
+  changedBy?: string | undefined;
+  since?: string | undefined;
+  until?: string | undefined;
+}
+
+/** Response for listing changelog entries */
+export interface ChangelogResponse {
+  data: ChangelogEntry[];
+  meta: PaginationMeta;
+}
+
 // =============================================================================
 // API Client Configuration
 // =============================================================================
@@ -2939,6 +2979,29 @@ export class ApiClient {
     return this.request<{ data: FeatureDecisionContextResponse }>(
       "GET",
       `/api/v1/decisions/context/feature/${encodeURIComponent(featureId)}`
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Changelog Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get changelog for a specific entity.
+   * Returns paginated history of field-level changes.
+   */
+  async getChangelog(params: GetChangelogParams): Promise<ChangelogResponse> {
+    const query = this.buildQueryString({
+      cursor: params.cursor,
+      limit: params.limit,
+      field: params.field,
+      changedBy: params.changedBy,
+      since: params.since,
+      until: params.until,
+    });
+    return this.request<ChangelogResponse>(
+      "GET",
+      `/api/v1/changelog/${encodeURIComponent(params.entityType)}/${encodeURIComponent(params.entityId)}${query}`
     );
   }
 }

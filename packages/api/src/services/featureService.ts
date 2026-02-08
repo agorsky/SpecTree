@@ -15,6 +15,7 @@ import {
 } from "../utils/assignee.js";
 import { emitStatusChanged } from "../events/index.js";
 import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
+import * as changelogService from "./changelogService.js";
 
 // Types for feature operations
 export interface CreateFeatureInput {
@@ -523,7 +524,22 @@ export async function createFeature(input: CreateFeatureInput): Promise<Feature>
     data.estimatedComplexity = input.estimatedComplexity;
   }
 
-  return prisma.feature.create({ data });
+  const feature = await prisma.feature.create({ data });
+
+  // Record creation in changelog (never fails the parent operation)
+  changelogService.recordChange({
+    entityType: "feature",
+    entityId: feature.id,
+    field: "_created",
+    oldValue: null,
+    newValue: JSON.stringify(feature),
+    changedBy: "system", // TODO: Pass actual user ID when available
+    epicId: feature.epicId,
+  }).catch((error) => {
+    console.error("Failed to record feature creation in changelog:", error);
+  });
+
+  return feature;
 }
 
 /**
@@ -642,6 +658,11 @@ export async function updateFeature(
   // Track old status for event emission
   const oldStatusId = existing.statusId;
 
+  // Fetch the entity BEFORE the update for changelog diff
+  const beforeSnapshot = await prisma.feature.findUnique({
+    where: { id },
+  });
+
   const updatedFeature = await prisma.feature.update({
     where: { id },
     data,
@@ -655,6 +676,20 @@ export async function updateFeature(
       oldStatusId,
       newStatusId: input.statusId,
       timestamp: new Date(),
+    });
+  }
+
+  // Record changes in changelog using diffAndRecord (never fails the parent operation)
+  if (beforeSnapshot) {
+    changelogService.diffAndRecord(
+      "feature",
+      id,
+      beforeSnapshot,
+      updatedFeature,
+      "system", // TODO: Pass actual user ID when available
+      updatedFeature.epicId
+    ).catch((error) => {
+      console.error("Failed to record feature update in changelog:", error);
     });
   }
 

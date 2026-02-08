@@ -8,6 +8,10 @@ export interface TimelineEntry {
   content: string;
   timestamp: string;
   sessionId?: string | undefined;
+  // Changelog-specific fields
+  field?: string | undefined;
+  oldValue?: string | null | undefined;
+  newValue?: string | null | undefined;
 }
 
 interface ActivityTimelineProps {
@@ -41,6 +45,9 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ items }) => 
               content={item.content}
               timestamp={item.timestamp}
               sessionId={item.sessionId}
+              field={item.field}
+              oldValue={item.oldValue}
+              newValue={item.newValue}
             />
           </div>
         </div>

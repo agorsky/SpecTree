@@ -64,7 +64,6 @@ model User {
   personalScope    PersonalScope?
   invitationsCreated UserInvitation[] @relation("InvitationCreator")
   createdTemplates PlanTemplate[]
-
   @@index([email])
   @@map("users")
 }
@@ -396,4 +395,37 @@ model Decision {
   @@index([taskId])
   @@index([category])
   @@map("decisions")
+}
+
+// =============================================================================
+// ChangeLog Model
+// Track entity field-level changes for audit trails and history
+// =============================================================================
+
+model ChangeLog {
+  id         String   @id @default(uuid())
+  
+  // Entity identification
+  entityType String   @map("entity_type") // 'epic' | 'feature' | 'task'
+  entityId   String   @map("entity_id")
+  
+  // Change details
+  field      String   // Field name that changed
+  oldValue   String?  @map("old_value") // JSON stringified value
+  newValue   String?  @map("new_value") // JSON stringified value
+  
+  // Audit info
+  changedBy  String   @map("changed_by") // User ID
+  changedAt  DateTime @default(now()) @map("changed_at")
+  
+  // Epic hierarchy for efficient filtering
+  epicId     String?  @map("epic_id") // Resolved at write time for hierarchy queries
+  
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([entityType, entityId, changedAt(sort: Desc)])
+  @@index([epicId, changedAt(sort: Desc)])
+  @@index([changedBy])
+  @@map("change_logs")
 }

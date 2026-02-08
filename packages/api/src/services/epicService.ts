@@ -3,6 +3,7 @@ import type { Epic } from "../generated/prisma/index.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
 import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
+import * as changelogService from "./changelogService.js";
 
 // Types for epic operations
 export interface CreateEpicInput {
@@ -224,7 +225,22 @@ export async function createEpic(input: CreateEpicInput): Promise<Epic> {
     data.color = input.color.trim();
   }
 
-  return prisma.epic.create({ data });
+  const epic = await prisma.epic.create({ data });
+
+  // Record creation in changelog (never fails the parent operation)
+  changelogService.recordChange({
+    entityType: "epic",
+    entityId: epic.id,
+    field: "_created",
+    oldValue: null,
+    newValue: JSON.stringify(epic),
+    changedBy: "system", // TODO: Pass actual user ID when available
+    epicId: epic.id,
+  }).catch((error) => {
+    console.error("Failed to record epic creation in changelog:", error);
+  });
+
+  return epic;
 }
 
 /**
@@ -280,10 +296,31 @@ export async function updateEpic(
     data.sortOrder = input.sortOrder;
   }
 
-  return prisma.epic.update({
+  // Fetch the entity BEFORE the update for changelog diff
+  const beforeSnapshot = await prisma.epic.findUnique({
+    where: { id },
+  });
+
+  const updatedEpic = await prisma.epic.update({
     where: { id },
     data,
   });
+
+  // Record changes in changelog using diffAndRecord (never fails the parent operation)
+  if (beforeSnapshot) {
+    changelogService.diffAndRecord(
+      "epic",
+      id,
+      beforeSnapshot,
+      updatedEpic,
+      "system", // TODO: Pass actual user ID when available
+      id // epicId is the entity's own ID
+    ).catch((error) => {
+      console.error("Failed to record epic update in changelog:", error);
+    });
+  }
+
+  return updatedEpic;
 }
 
 /**
@@ -341,10 +378,25 @@ export async function archiveEpic(idOrName: string): Promise<Epic> {
     throw new ValidationError("Epic is already archived");
   }
 
-  return prisma.epic.update({
+  const archivedEpic = await prisma.epic.update({
     where: { id: existing.id },
     data: { isArchived: true },
   });
+
+  // Record archive action in changelog (never fails the parent operation)
+  changelogService.recordChange({
+    entityType: "epic",
+    entityId: existing.id,
+    field: "_archived",
+    oldValue: false,
+    newValue: true,
+    changedBy: "system", // TODO: Pass actual user ID when available
+    epicId: existing.id,
+  }).catch((error) => {
+    console.error("Failed to record epic archive in changelog:", error);
+  });
+
+  return archivedEpic;
 }
 
 /**

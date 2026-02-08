@@ -15,6 +15,7 @@ import {
 } from "./statusService.js";
 import { emitStatusChanged } from "../events/index.js";
 import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
+import * as changelogService from "./changelogService.js";
 
 // Types for task operations
 export interface CreateTaskInput {
@@ -496,7 +497,30 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
         data.estimatedComplexity = input.estimatedComplexity;
       }
 
-      return await prisma.task.create({ data });
+      const task = await prisma.task.create({ data });
+
+      // Record creation in changelog (never fails the parent operation)
+      // epicId needs to be resolved via feature
+      const taskWithFeature = await prisma.task.findUnique({
+        where: { id: task.id },
+        select: { feature: { select: { epicId: true } } },
+      });
+
+      if (taskWithFeature?.feature.epicId) {
+        changelogService.recordChange({
+          entityType: "task",
+          entityId: task.id,
+          field: "_created",
+          oldValue: null,
+          newValue: JSON.stringify(task),
+          changedBy: "system", // TODO: Pass actual user ID when available
+          epicId: taskWithFeature.feature.epicId,
+        }).catch((error) => {
+          console.error("Failed to record task creation in changelog:", error);
+        });
+      }
+
+      return task;
     } catch (error) {
       lastError = error;
       // Check if this is a unique constraint error on identifier
@@ -627,6 +651,11 @@ export async function updateTask(
   // Track old status for event emission
   const oldStatusId = existing.statusId;
 
+  // Fetch the entity BEFORE the update for changelog diff
+  const beforeSnapshot = await prisma.task.findUnique({
+    where: { id },
+  });
+
   const updatedTask = await prisma.task.update({
     where: { id },
     data,
@@ -641,6 +670,28 @@ export async function updateTask(
       newStatusId: input.statusId,
       timestamp: new Date(),
     });
+  }
+
+  // Record changes in changelog using diffAndRecord (never fails the parent operation)
+  // epicId needs to be resolved via feature
+  if (beforeSnapshot) {
+    const taskWithFeature = await prisma.task.findUnique({
+      where: { id },
+      select: { feature: { select: { epicId: true } } },
+    });
+
+    if (taskWithFeature?.feature.epicId) {
+      changelogService.diffAndRecord(
+        "task",
+        id,
+        beforeSnapshot,
+        updatedTask,
+        "system", // TODO: Pass actual user ID when available
+        taskWithFeature.feature.epicId
+      ).catch((error) => {
+        console.error("Failed to record task update in changelog:", error);
+      });
+    }
   }
 
   return updatedTask;

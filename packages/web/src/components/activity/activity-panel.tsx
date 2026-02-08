@@ -1,8 +1,10 @@
 import React from 'react';
 import { useFeatureAiContext, useTaskAiContext } from '@/hooks/queries/use-ai-context';
+import { useFeatureChangelog, useTaskChangelog } from '@/hooks/queries/use-changelog';
 import { ActivityTimeline } from './activity-timeline';
 import type { TimelineEntry } from './activity-timeline';
 import type { AiNote } from '@/lib/api/ai-types';
+import type { ChangeLogEntry } from '@/lib/api/changelog';
 
 interface ActivityPanelProps {
   featureId?: string;
@@ -33,32 +35,69 @@ function mapNoteType(noteType: AiNote['type']): TimelineEntry['type'] {
   return noteType;
 }
 
+/**
+ * Convert a changelog entry to a timeline entry
+ */
+function changelogToTimelineEntry(change: ChangeLogEntry): TimelineEntry {
+  return {
+    id: `changelog-${change.id}`,
+    type: 'change',
+    content: '', // Not used for changelog entries
+    timestamp: change.changedAt,
+    field: change.field,
+    oldValue: change.oldValue,
+    newValue: change.newValue,
+  };
+}
+
 export const ActivityPanel: React.FC<ActivityPanelProps> = ({ featureId, taskId }) => {
-  const featureQuery = useFeatureAiContext(featureId ?? '');
-  const taskQuery = useTaskAiContext(taskId ?? '');
+  const featureAiQuery = useFeatureAiContext(featureId ?? '');
+  const taskAiQuery = useTaskAiContext(taskId ?? '');
+  
+  const featureChangelogQuery = useFeatureChangelog(featureId ?? '', { limit: 50 });
+  const taskChangelogQuery = useTaskChangelog(taskId ?? '', { limit: 50 });
 
-  const query = featureId ? featureQuery : taskQuery;
-  const aiNotes: AiNote[] = query.data?.aiNotes ?? [];
+  // Select the appropriate queries based on whether it's a feature or task
+  const aiQuery = featureId ? featureAiQuery : taskAiQuery;
+  const changelogQuery = featureId ? featureChangelogQuery : taskChangelogQuery;
+  
+  const aiNotes: AiNote[] = aiQuery.data?.aiNotes ?? [];
+  const changelogEntries: ChangeLogEntry[] = changelogQuery.data?.data ?? [];
 
-  const activityItems: TimelineEntry[] = aiNotes
-    .map((note) => ({
-      id: `${note.timestamp}-${note.type}`,
-      type: mapNoteType(note.type),
-      content: note.content,
-      timestamp: note.timestamp,
-      sessionId: note.sessionId,
-    }))
+  // Convert AI notes to timeline entries
+  const aiTimelineEntries: TimelineEntry[] = aiNotes.map((note) => ({
+    id: `ai-${note.timestamp}-${note.type}`,
+    type: mapNoteType(note.type),
+    content: note.content,
+    timestamp: note.timestamp,
+    sessionId: note.sessionId,
+  }));
+  
+  // Convert changelog entries to timeline entries
+  const changelogTimelineEntries: TimelineEntry[] = changelogEntries.map(changelogToTimelineEntry);
+  
+  // Merge and sort all entries by timestamp (newest first)
+  const activityItems: TimelineEntry[] = [...aiTimelineEntries, ...changelogTimelineEntries]
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-  if (query.isLoading) return <ActivitySkeleton />;
-  if (query.isError) {
+  // Loading state: show skeleton if either query is loading
+  if (aiQuery.isLoading || changelogQuery.isLoading) {
+    return <ActivitySkeleton />;
+  }
+  
+  // Error state: show error if either query failed
+  if (aiQuery.isError || changelogQuery.isError) {
     return (
       <div className="p-4 text-destructive text-sm text-center">
         Failed to load activity data
       </div>
     );
   }
-  if (!activityItems.length) return <ActivityEmpty />;
+  
+  // Empty state
+  if (!activityItems.length) {
+    return <ActivityEmpty />;
+  }
 
   return <ActivityTimeline items={activityItems} />;
 };

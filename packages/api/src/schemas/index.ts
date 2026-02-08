@@ -206,3 +206,19 @@ export {
   type CompositeFeatureResponse,
   type CreateEpicCompleteResponse,
 } from "./compositeEpic.js";
+
+// Changelog schemas
+export {
+  entityTypeValues as changelogEntityTypeValues,
+  entityChangelogQuerySchema,
+  epicChangelogQuerySchema,
+  entityTypeParamSchema,
+  entityIdParamSchema,
+  epicIdParamSchema,
+  type EntityType as ChangelogEntityType,
+  type EntityChangelogQuery,
+  type EpicChangelogQuery,
+  type EntityTypeParam,
+  type EntityIdParam,
+  type EpicIdParam,
+} from "./changelog.js";

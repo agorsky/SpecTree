@@ -21,6 +21,7 @@ export * as validationExecutor from "./validationExecutor.js";
 export * as summaryService from "./summaryService.js";
 export * as decisionService from "./decisionService.js";
 export * as userActivityService from "./userActivityService.js";
+export * as changelogService from "./changelogService.js";
 
 // Re-export the database client
 export { prisma } from "../lib/db.js";

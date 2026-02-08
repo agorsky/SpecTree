@@ -34,6 +34,7 @@ import {
   logProgress,
   reportBlocker,
 } from "../services/progressService.js";
+import { getEntityChangelog } from "../services/changelogService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { validateBody } from "../middleware/validate.js";
 import { validateMcpFeatureCreation } from "../middleware/mcpValidation.js";
@@ -880,6 +881,44 @@ export default function featuresRoutes(
       const { prNumber, prUrl } = request.body;
       const result = await linkFeaturePr(id, prNumber, prUrl);
       return reply.status(201).send({ data: result });
+    }
+  );
+
+  // ===========================================================================
+  // Changelog Endpoints
+  // ===========================================================================
+
+  /**
+   * GET /api/v1/features/:id/changelog
+   * Get changelog for a feature with cursor-based pagination
+   * Returns field-level change history ordered by changedAt (newest first)
+   * Requires authentication and team membership (guest+)
+   */
+  fastify.get<{ 
+    Params: FeatureIdParams; 
+    Querystring: { 
+      cursor?: string; 
+      limit?: string; 
+      field?: string; 
+      changedBy?: string;
+    } 
+  }>(
+    "/:id/changelog",
+    { preHandler: [authenticate, requireTeamAccess("id:featureId"), requireRole("guest")] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { cursor, limit, field, changedBy } = request.query;
+      
+      const result = await getEntityChangelog({
+        entityType: "feature",
+        entityId: id,
+        cursor,
+        limit: limit ? parseInt(limit, 10) : undefined,
+        field,
+        changedBy,
+      });
+      
+      return reply.send(result);
     }
   );
 }

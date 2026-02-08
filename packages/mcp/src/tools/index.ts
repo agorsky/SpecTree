@@ -32,6 +32,9 @@ import { registerDecisionTools } from "./decisions.js";
 import { registerTeamTools } from "./teams.js";
 import { registerCompositeTools } from "./composite.js";
 
+// Import changelog tools
+import { registerChangelogTools } from "./changelog.js";
+
 // Tool registration function type
 export type ToolRegistrar = (server: McpServer) => void;
 
@@ -41,6 +44,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerHelpTools,         // Help and documentation tools
   registerCompositeTools,    // High-level composite operations (reduce tool call count)
   registerAiContextTools,    // AI context management
+  registerChangelogTools,    // Changelog queries
   registerCodeContextTools,  // Code artifact tracking
   registerDecisionTools,     // Decision logging
   registerEpicTools,         // Epic management
