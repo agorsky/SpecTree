@@ -419,6 +419,12 @@ export function requireTeamAccess(
       return;  // Allow access - actual ownership validated by route handler
     }
 
+    // Global admins bypass team membership checks
+    if (request.user?.isGlobalAdmin) {
+      request.teamId = teamId;
+      return;
+    }
+
     // Check if user has access to the team
     if (!hasTeamAccess(userTeams, teamId)) {
       throw new ForbiddenError("Access denied: not a member of this team");
@@ -563,6 +569,11 @@ export function requireRole(
   ...roles: MembershipRole[]
 ): (request: FastifyRequest, reply: FastifyReply) => Promise<void> {
   return async (request: FastifyRequest, _reply: FastifyReply): Promise<void> => {
+    // Global admins bypass role checks
+    if (request.user?.isGlobalAdmin) {
+      return;
+    }
+
     // Ensure userTeams is available (requireTeamAccess must be called first)
     if (!request.userTeams) {
       throw new ForbiddenError(

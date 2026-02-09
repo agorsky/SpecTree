@@ -5,7 +5,11 @@ export class ApiError extends Error {
     public response: Response,
     public data?: unknown
   ) {
-    super(`API Error: ${String(response.status)}`);
+    const serverMessage =
+      data && typeof data === "object" && "error" in data
+        ? (data as { error?: { message?: string } }).error?.message
+        : undefined;
+    super(serverMessage || `API Error: ${String(response.status)}`);
   }
 }
 
