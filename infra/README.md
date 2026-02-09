@@ -77,11 +77,49 @@ The application should retrieve connection credentials from Key Vault:
 **Secrets stored in Key Vault:**
 | Secret Name | Description |
 |------------|-------------|
-| `sql-connection-string` | Full connection string with app user credentials |
-| `sql-app-user-login` | Application user login name |
-| `sql-app-user-password` | Application user password |
-| `sql-server-fqdn` | SQL Server fully qualified domain name |
-| `sql-database-name` | Database name |
+| `sql-connection-string` | Full connection string with app user credentials (legacy) |
+| `sql-app-user-login` | Application user login name (legacy) |
+| `sql-app-user-password` | Application user password (legacy) |
+| `sql-server-fqdn` | SQL Server fully qualified domain name (legacy) |
+| `sql-database-name` | Database name (legacy) |
+| `JWT-SECRET` | JWT signing secret for token authentication |
+| `DATABASE-URL` | Database connection URL for the application |
+
+### Secret Name Mapping Convention
+
+The SpecTree application uses a consistent naming convention for secrets:
+
+- **Key Vault secret names** use hyphens (e.g., `JWT-SECRET`, `DATABASE-URL`)
+- **Application code variables** use underscores (e.g., `JWT_SECRET`, `DATABASE_URL`)
+
+This mapping is handled automatically by the secrets provider implementation in `packages/api/src/lib/secrets/azure-keyvault-provider.ts`.
+
+**Application Secret Mappings:**
+| Application Variable | Key Vault Secret Name | Purpose |
+|---------------------|----------------------|---------|
+| `JWT_SECRET` | `JWT-SECRET` | JWT token signing and verification |
+| `DATABASE_URL` | `DATABASE-URL` | Database connection string |
+
+**Example Usage in Application Code:**
+
+```typescript
+// packages/api/src/lib/secrets/index.ts
+import { getSecret } from './lib/secrets';
+
+// Application code uses underscores
+const jwtSecret = await getSecret('JWT_SECRET');
+const databaseUrl = await getSecret('DATABASE_URL');
+
+// The secrets provider automatically:
+// - Uses 'JWT-SECRET' when querying Key Vault
+// - Uses 'JWT_SECRET' when reading environment variables
+```
+
+The `getSecret()` function from `packages/api/src/lib/secrets/index.ts` automatically selects the correct name format based on the configured provider:
+- When `SECRETS_PROVIDER=azure-keyvault`: Uses hyphenated Key Vault names
+- When `SECRETS_PROVIDER=env` (default): Uses underscore environment variable names
+
+**Note:** The legacy SQL-specific secrets (`sql-connection-string`, etc.) are used by Container Apps for backward compatibility. New applications should use the standardized `DATABASE-URL` secret instead.
 
 **Using Managed Identity (Preferred):**
 ```csharp

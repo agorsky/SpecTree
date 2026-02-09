@@ -1,0 +1,282 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "14165506723020197719"
+    }
+  },
+  "parameters": {
+    "baseName": {
+      "type": "string",
+      "metadata": {
+        "description": "Base name for resources"
+      }
+    },
+    "environment": {
+      "type": "string",
+      "metadata": {
+        "description": "Environment name"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for resources"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags to apply to resources"
+      }
+    },
+    "subnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet ID for private endpoint"
+      }
+    },
+    "enableSoftDelete": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable soft delete"
+      }
+    },
+    "softDeleteRetentionInDays": {
+      "type": "int",
+      "defaultValue": 90,
+      "metadata": {
+        "description": "Soft delete retention in days"
+      }
+    },
+    "enablePurgeProtection": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable purge protection"
+      }
+    },
+    "sqlConnectionString": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "SQL connection string for application user"
+      }
+    },
+    "sqlAppUserLogin": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "SQL application user login"
+      }
+    },
+    "sqlAppUserPassword": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "SQL application user password"
+      }
+    },
+    "sqlServerFqdn": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "SQL Server fully qualified domain name"
+      }
+    },
+    "sqlDatabaseName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "SQL Database name"
+      }
+    },
+    "jwtSecret": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "JWT secret for token signing"
+      }
+    },
+    "databaseUrl": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Database URL connection string"
+      }
+    }
+  },
+  "variables": {
+    "keyVaultName": "[format('kv-{0}-{1}', parameters('baseName'), parameters('environment'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-07-01",
+      "name": "[variables('keyVaultName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "tenantId": "[subscription().tenantId]",
+        "enableRbacAuthorization": true,
+        "enableSoftDelete": "[parameters('enableSoftDelete')]",
+        "softDeleteRetentionInDays": "[parameters('softDeleteRetentionInDays')]",
+        "enablePurgeProtection": "[if(parameters('enablePurgeProtection'), true(), null())]",
+        "publicNetworkAccess": "Disabled",
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "defaultAction": "Deny",
+          "ipRules": [],
+          "virtualNetworkRules": []
+        }
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('sqlConnectionString')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'sql-connection-string')]",
+      "properties": {
+        "value": "[parameters('sqlConnectionString')]",
+        "contentType": "text/plain",
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('sqlAppUserLogin')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'sql-app-user-login')]",
+      "properties": {
+        "value": "[parameters('sqlAppUserLogin')]",
+        "contentType": "text/plain",
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('sqlAppUserPassword')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'sql-app-user-password')]",
+      "properties": {
+        "value": "[parameters('sqlAppUserPassword')]",
+        "contentType": "text/plain",
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('sqlServerFqdn')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'sql-server-fqdn')]",
+      "properties": {
+        "value": "[parameters('sqlServerFqdn')]",
+        "contentType": "text/plain",
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('sqlDatabaseName')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'sql-database-name')]",
+      "properties": {
+        "value": "[parameters('sqlDatabaseName')]",
+        "contentType": "text/plain",
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('jwtSecret')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'JWT-SECRET')]",
+      "properties": {
+        "value": "[parameters('jwtSecret')]",
+        "contentType": "text/plain",
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('databaseUrl')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'DATABASE-URL')]",
+      "properties": {
+        "value": "[parameters('databaseUrl')]",
+        "contentType": "text/plain",
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "keyVaultId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[variables('keyVaultName')]"
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName')), '2023-07-01').vaultUri]"
+    },
+    "sqlConnectionStringSecretUri": {
+      "type": "string",
+      "value": "[if(not(empty(parameters('sqlConnectionString'))), reference(resourceId('Microsoft.KeyVault/vaults/secrets', variables('keyVaultName'), 'sql-connection-string'), '2023-07-01').secretUri, '')]"
+    },
+    "jwtSecretUri": {
+      "type": "string",
+      "value": "[if(not(empty(parameters('jwtSecret'))), reference(resourceId('Microsoft.KeyVault/vaults/secrets', variables('keyVaultName'), 'JWT-SECRET'), '2023-07-01').secretUri, '')]"
+    },
+    "databaseUrlSecretUri": {
+      "type": "string",
+      "value": "[if(not(empty(parameters('databaseUrl'))), reference(resourceId('Microsoft.KeyVault/vaults/secrets', variables('keyVaultName'), 'DATABASE-URL'), '2023-07-01').secretUri, '')]"
+    }
+  }
+}

@@ -47,6 +47,14 @@ param sqlServerFqdn string = ''
 @description('SQL Database name')
 param sqlDatabaseName string = ''
 
+@description('JWT secret for token signing')
+@secure()
+param jwtSecret string = ''
+
+@description('Database URL connection string')
+@secure()
+param databaseUrl string = ''
+
 // ============================================================================
 // Variables
 // ============================================================================
@@ -171,6 +179,37 @@ resource sqlDatabaseNameSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = 
 }
 
 // ============================================================================
+// Application Secrets
+// Note: These secrets use hyphenated names to match azure-keyvault-provider.ts
+// expectations. The provider maps from application names (JWT_SECRET, DATABASE_URL)
+// to Key Vault names (JWT-SECRET, DATABASE-URL).
+// ============================================================================
+
+resource jwtSecretResource 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (!empty(jwtSecret)) {
+  parent: keyVault
+  name: 'JWT-SECRET'
+  properties: {
+    value: jwtSecret
+    contentType: 'text/plain'
+    attributes: {
+      enabled: true
+    }
+  }
+}
+
+resource databaseUrlSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (!empty(databaseUrl)) {
+  parent: keyVault
+  name: 'DATABASE-URL'
+  properties: {
+    value: databaseUrl
+    contentType: 'text/plain'
+    attributes: {
+      enabled: true
+    }
+  }
+}
+
+// ============================================================================
 // Outputs
 // ============================================================================
 
@@ -178,3 +217,5 @@ output keyVaultId string = keyVault.id
 output keyVaultName string = keyVault.name
 output keyVaultUri string = keyVault.properties.vaultUri
 output sqlConnectionStringSecretUri string = !empty(sqlConnectionString) ? sqlConnectionStringSecret.properties.secretUri : ''
+output jwtSecretUri string = !empty(jwtSecret) ? jwtSecretResource.properties.secretUri : ''
+output databaseUrlSecretUri string = !empty(databaseUrl) ? databaseUrlSecret.properties.secretUri : ''

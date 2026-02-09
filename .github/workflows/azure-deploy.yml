@@ -15,7 +15,7 @@ permissions:
 env:
   ACR_NAME: acrspectreedev
   RESOURCE_GROUP: rg-spectree-dev
-  API_CONTAINER_APP: ca-spectree-api-dev
+  API_CONTAINER_APP: ca-spectree-dev
   WEB_CONTAINER_APP: ca-spectree-web-dev
 
 jobs:
@@ -67,7 +67,7 @@ jobs:
         run: |
           VERSION=${{ github.sha }}
 
-          docker build -f packages/api/Dockerfile \
+          docker build -f packages/api/Dockerfile.azure \
             -t ${{ env.ACR_NAME }}.azurecr.io/spectree-api:$VERSION \
             -t ${{ env.ACR_NAME }}.azurecr.io/spectree-api:latest .
 

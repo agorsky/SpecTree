@@ -76,7 +76,8 @@ SpecTree/
 │   ├── api/              # Fastify backend API (port 3001)
 │   │   ├── src/          # TypeScript source
 │   │   ├── prisma/       # Database schema and migrations
-│   │   ├── Dockerfile    # Production container image
+│   │   ├── Dockerfile    # Development container image
+│   │   ├── Dockerfile.azure  # Production container image for Azure
 │   │   └── package.json
 │   ├── web/              # React frontend (port 5173 dev, 80 prod)
 │   │   ├── src/          # React components
@@ -400,7 +401,7 @@ echo "ACR_LOGIN_SERVER: $ACR_NAME.azurecr.io"
 cd /path/to/SpecTree
 
 # Build API image
-docker build -t spectree-api:latest -f packages/api/Dockerfile .
+docker build -t spectree-api:latest -f packages/api/Dockerfile.azure .
 
 # Build Web image
 docker build -t spectree-web:latest -f packages/web/Dockerfile .
@@ -551,12 +552,14 @@ az sql server firewall-rule create \
   --start-ip-address $MY_IP \
   --end-ip-address $MY_IP
 
-# Set DATABASE_URL for Azure SQL
-export DATABASE_URL="sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=<PASSWORD>;encrypt=true"
+# Set SQLSERVER_DATABASE_URL for Azure SQL
+# ⚠️ NOTE: For production deployments, this should be stored as a Container App secret.
+# See "Security Best Practices > Container App Secrets" section below.
+export SQLSERVER_DATABASE_URL="sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=<PASSWORD>;encrypt=true"
 
 # Run Prisma migrations
 cd packages/api
-npx prisma migrate deploy
+npx prisma db push --schema=prisma/schema.sqlserver.prisma
 
 # Remove firewall rule
 az sql server firewall-rule delete \
@@ -796,10 +799,10 @@ The existing Bicep templates deploy Azure SQL with:
 **Prisma Configuration for Azure SQL:**
 
 ```prisma
-// schema.prisma
+// schema.sqlserver.prisma
 datasource db {
   provider = "sqlserver"
-  url      = env("DATABASE_URL")
+  url      = env("SQLSERVER_DATABASE_URL")
 }
 ```
 
@@ -878,6 +881,9 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     
     steps:
     - uses: actions/checkout@v4
@@ -901,17 +907,19 @@ jobs:
     - name: Run tests
       run: pnpm test
       
-    - name: Azure Login
-      uses: azure/login@v1
+    - name: Azure Login (OIDC)
+      uses: azure/login@v2
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         
     - name: Login to ACR
       run: az acr login --name ${{ env.ACR_NAME }}
       
     - name: Build and push API image
       run: |
-        docker build -t ${{ env.ACR_NAME }}.azurecr.io/spectree-api:${{ github.sha }} -f packages/api/Dockerfile .
+        docker build -t ${{ env.ACR_NAME }}.azurecr.io/spectree-api:${{ github.sha }} -f packages/api/Dockerfile.azure .
         docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-api:${{ github.sha }}
         
     - name: Deploy to Container Apps
@@ -922,17 +930,40 @@ jobs:
           --image ${{ env.ACR_NAME }}.azurecr.io/spectree-api:${{ github.sha }}
 ```
 
-### Create Azure Service Principal for GitHub Actions
+### Configure GitHub OIDC Authentication
+
+Modern approach using OpenID Connect (no secrets to rotate):
 
 ```bash
-# Create service principal with Contributor role
-az ad sp create-for-rbac \
-  --name "sp-github-spectree" \
-  --role contributor \
-  --scopes /subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP \
-  --sdk-auth
+# Create an Azure AD application
+APP_ID=$(az ad app create --display-name "GitHub-SpecTree-OIDC" --query appId -o tsv)
 
-# Copy the JSON output and add as GitHub secret named AZURE_CREDENTIALS
+# Create a service principal
+az ad sp create --id $APP_ID
+
+# Get the service principal object ID
+SP_OBJECT_ID=$(az ad sp show --id $APP_ID --query id -o tsv)
+
+# Set federated credentials for GitHub
+az ad app federated-credential create \
+  --id $APP_ID \
+  --parameters '{
+    "name": "GitHub-SpecTree-Main",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "subject": "repo:<YOUR_GITHUB_ORG>/<YOUR_REPO>:ref:refs/heads/main",
+    "audiences": ["api://AzureADTokenExchange"]
+  }'
+
+# Grant Contributor role
+az role assignment create \
+  --role Contributor \
+  --assignee $APP_ID \
+  --scope /subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP
+
+# Add these secrets to GitHub repository settings:
+# - AZURE_CLIENT_ID: $APP_ID
+# - AZURE_TENANT_ID: (your tenant ID)
+# - AZURE_SUBSCRIPTION_ID: (your subscription ID)
 ```
 
 ---
@@ -953,31 +984,221 @@ az sql server show \
 
 ### 2. Key Vault for Secrets
 
-Never store secrets in environment variables. Use Key Vault:
+Never store secrets in environment variables. Use Key Vault with the SpecTree secrets provider system:
+
+#### Application Configuration
+
+SpecTree uses a pluggable secrets provider system (see `packages/api/src/lib/secrets/azure-keyvault-provider.ts`) that requires two environment variables:
+
+```bash
+# Enable Azure Key Vault provider
+export SECRETS_PROVIDER=azure-keyvault
+
+# Specify the Key Vault URL
+export AZURE_KEYVAULT_URL=https://kv-spectree-dev.vault.azure.net
+```
+
+#### Authentication Method
+
+The application uses `DefaultAzureCredential` from `@azure/identity`, which automatically supports:
+- **Managed Identity** (when running in Azure Container Apps/App Service)
+- **Azure CLI credentials** (for local development with `az login`)
+- **Environment variables** (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID for service principals)
+
+#### Required Secrets
+
+Store secrets with hyphenated names (Key Vault naming convention):
 
 ```bash
 # Store JWT secret
 az keyvault secret set \
   --vault-name kv-spectree-dev \
-  --name "jwt-secret" \
+  --name "JWT-SECRET" \
   --value "$(openssl rand -base64 32)"
 
-# Grant Container App access
+# Store database connection string
+az keyvault secret set \
+  --vault-name kv-spectree-dev \
+  --name "DATABASE-URL" \
+  --value "sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=<PASSWORD>;encrypt=true"
+```
+
+**Secret Name Mapping:**
+
+The application automatically maps between environment variable names and Key Vault secret names:
+
+| Application Name | Environment Variable | Key Vault Secret Name |
+|-----------------|---------------------|----------------------|
+| JWT_SECRET | `JWT_SECRET` | `JWT-SECRET` |
+| DATABASE_URL | `DATABASE_URL` | `DATABASE-URL` |
+
+#### Grant Access to Container App
+
+```bash
+# Get the Container App's managed identity
 IDENTITY=$(az containerapp show -n ca-spectree-dev -g $RESOURCE_GROUP --query identity.principalId -o tsv)
+
+# Grant Key Vault Secrets User role
 az role assignment create \
   --role "Key Vault Secrets User" \
   --assignee $IDENTITY \
   --scope $(az keyvault show -n kv-spectree-dev --query id -o tsv)
 ```
 
-### 3. Enable Managed Identity
+#### Local Development
+
+For local development, authenticate with Azure CLI:
+
+```bash
+# Login to Azure
+az login
+
+# Set environment variables
+export SECRETS_PROVIDER=azure-keyvault
+export AZURE_KEYVAULT_URL=https://kv-spectree-dev.vault.azure.net
+
+# The DefaultAzureCredential will use your Azure CLI credentials
+pnpm dev
+```
+
+### 3. Container App Secrets for Database Connection String
+
+**⚠️ SECURITY IMPROVEMENT**: As of ENG-72, the database connection string is stored as a Container App secret (NOT a plaintext environment variable).
+
+#### Why Container App Secrets?
+
+Container App secrets provide a pragmatic security solution:
+- ✅ **Encrypted at rest** - Password is encrypted in Azure storage
+- ✅ **Hidden from Portal** - Secret value is NOT visible in Azure Portal UI
+- ✅ **No logging** - Bicep `@secure()` parameter prevents logging in deployment history
+- ✅ **Simple management** - No additional resources required (unlike Key Vault)
+- ✅ **Compatible** - Works seamlessly with Prisma's `SQLSERVER_DATABASE_URL`
+
+#### How It Works
+
+The Bicep template (`infra/modules/containerApps.bicep`) implements this pattern:
+
+```bicep
+// 1. Secure parameter (not logged)
+@secure()
+param sqlConnectionString string
+
+// 2. Secret definition (encrypted at rest)
+configuration: {
+  secrets: [
+    {
+      name: 'sql-connection-string'
+      value: sqlConnectionString
+    }
+  ]
+}
+
+// 3. Environment variable with secret reference (no plaintext)
+env: [
+  {
+    name: 'SQLSERVER_DATABASE_URL'
+    secretRef: 'sql-connection-string'
+  }
+]
+```
+
+#### Deploying with Secure Connection String
+
+```bash
+# ⚠️ NEVER commit this to source control!
+export SQL_CONN="sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=YourSecurePassword123!;encrypt=true"
+
+# Deploy Container App with secure parameter
+az deployment group create \
+  --resource-group $RESOURCE_GROUP \
+  --template-file infra/modules/containerApps.bicep \
+  --parameters sqlConnectionString="$SQL_CONN" \
+  --parameters baseName=spectree \
+  --parameters environment=dev \
+  --parameters containerImage=$CONTAINER_IMAGE \
+  --parameters keyVaultUri=https://kv-spectree-dev.vault.azure.net \
+  --parameters containerAppsSubnetId=$SUBNET_ID
+
+# Clear the variable from your shell
+unset SQL_CONN
+```
+
+#### Verifying Secret Configuration
+
+```bash
+# ✅ Check secret exists (name only, not value)
+az containerapp show \
+  --name ca-spectree-dev \
+  --resource-group $RESOURCE_GROUP \
+  --query "properties.configuration.secrets[?name=='sql-connection-string'].name" -o json
+
+# ✅ Verify environment variable uses secretRef
+az containerapp show \
+  --name ca-spectree-dev \
+  --resource-group $RESOURCE_GROUP \
+  --query "properties.template.containers[0].env[?name=='SQLSERVER_DATABASE_URL']" -o json
+
+# Expected output:
+# [
+#   {
+#     "name": "SQLSERVER_DATABASE_URL",
+#     "secretRef": "sql-connection-string"
+#   }
+# ]
+```
+
+#### Rotating Database Password
+
+To rotate the SQL Server password:
+
+1. Update SQL Server password in Azure Portal or via CLI
+2. Update deployment with new connection string
+
+```bash
+# Update SQL password
+az sql server update \
+  --resource-group $RESOURCE_GROUP \
+  --name sql-spectree-dev \
+  --admin-password "NewSecurePassword456!"
+
+# Redeploy Container App with new connection string
+export SQL_CONN="sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=NewSecurePassword456!;encrypt=true"
+
+az deployment group create \
+  --resource-group $RESOURCE_GROUP \
+  --template-file infra/modules/containerApps.bicep \
+  --parameters sqlConnectionString="$SQL_CONN" \
+  # ... other parameters
+
+unset SQL_CONN
+```
+
+The Container App will create a new revision with the updated secret.
+
+#### Local Development
+
+For local development, continue using `.env` files (NOT committed to source control):
+
+```bash
+# packages/api/.env.local
+SQLSERVER_DATABASE_URL=sqlserver://localhost:1433;database=spectree_dev;user=sa;password=LocalDev123!;encrypt=false
+```
+
+#### See Also
+
+- [Bicep Secret Reference Pattern](./bicep-secret-reference-pattern.md) - Detailed technical documentation
+- [Secure Database Connection Evaluation](./secure-database-connection-evaluation.md) - Decision rationale
+
+---
+
+### 4. Enable Managed Identity
 
 The Bicep templates already configure User-Assigned Managed Identity for:
 - Key Vault access
 - ACR pull
 - Azure SQL authentication (optional)
 
-### 4. Enable Azure AD Authentication for SQL
+### 5. Enable Azure AD Authentication for SQL
 
 For enhanced security, use Azure AD authentication:
 
@@ -988,7 +1209,7 @@ az sql server ad-only-auth enable \
   --name sql-spectree-dev
 ```
 
-### 5. Enable WAF with Azure Front Door (Optional)
+### 6. Enable WAF with Azure Front Door (Optional)
 
 For public-facing production deployments:
 
@@ -1243,7 +1464,7 @@ cd infra && ./deploy.sh -e dev
 ./deploy.sh -e dev --what-if
 
 # Build and push images
-docker build -t $ACR.azurecr.io/spectree-api:latest -f packages/api/Dockerfile .
+docker build -t $ACR.azurecr.io/spectree-api:latest -f packages/api/Dockerfile.azure .
 docker push $ACR.azurecr.io/spectree-api:latest
 
 # Update Container App
@@ -1409,6 +1630,7 @@ Test by asking your AI assistant to list SpecTree epics or features. If connecti
 
 - [README.md](/README.md) - Project overview and local development
 - [infra/README.md](/infra/README.md) - Infrastructure documentation
+- [docs/database-multi-provider.md](/docs/database-multi-provider.md) - Multi-database provider setup and Prisma schema configuration
 - [docs/MCP/api-token-authentication.md](/docs/MCP/api-token-authentication.md) - Detailed API token documentation
 - [docs/MCP/security-architecture.md](/docs/MCP/security-architecture.md) - Security model explanation
 - [docs/database-safety-guide.md](/docs/database-safety-guide.md) - Database safety guidelines
