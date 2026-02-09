@@ -7,6 +7,8 @@ import { MarkdownRenderer } from "@/components/common/markdown-renderer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Plus, Trash2, Check, X, MoreHorizontal, ChevronDown, ChevronRight, Archive, ArchiveRestore, FileText, ExternalLink, AlertTriangle, Clock } from "lucide-react";
+import { PlanView } from "@/components/execution-plan";
+import { DetailTabs, TabsContent } from "@/components/detail-tabs/detail-tabs";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +41,7 @@ export function EpicDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'plan'>('overview');
 
   if (isLoading) {
     return (
@@ -314,9 +317,26 @@ export function EpicDetailPage() {
         </div>
       )}
 
-      {/* Issues (Features + Tasks) */}
+      {/* Tab Navigation and Content */}
       <div className="flex-1 overflow-auto">
-        {epicId && <IssuesList epicId={epicId} />}
+        <DetailTabs
+          tabs={[
+            { id: 'overview', label: 'Overview' },
+            { id: 'plan', label: 'Plan' }
+          ]}
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab as 'overview' | 'plan');
+          }}
+        >
+          <TabsContent value="overview" className="h-full">
+            {epicId && <IssuesList epicId={epicId} />}
+          </TabsContent>
+          
+          <TabsContent value="plan" className="h-full">
+            {epicId && <PlanView epicId={epicId} />}
+          </TabsContent>
+        </DetailTabs>
       </div>
 
       {/* Feature form */}
