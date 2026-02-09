@@ -35,40 +35,40 @@ export interface UserActivityResponse {
 }
 
 /**
- * Returns the start of the interval bucket for a given date.
+ * Returns the start of the interval bucket for a given date (in UTC).
  */
 function getIntervalStart(date: Date, interval: ActivityInterval): Date {
   const d = new Date(date);
   if (interval === "day") {
-    d.setHours(0, 0, 0, 0);
+    d.setUTCHours(0, 0, 0, 0);
   } else if (interval === "week") {
-    const day = d.getDay();
-    d.setDate(d.getDate() - day);
-    d.setHours(0, 0, 0, 0);
+    const day = d.getUTCDay();
+    d.setUTCDate(d.getUTCDate() - day);
+    d.setUTCHours(0, 0, 0, 0);
   } else {
-    d.setDate(1);
-    d.setHours(0, 0, 0, 0);
+    d.setUTCDate(1);
+    d.setUTCHours(0, 0, 0, 0);
   }
   return d;
 }
 
 /**
- * Returns the end of the interval bucket (start of next bucket).
+ * Returns the end of the interval bucket (start of next bucket, in UTC).
  */
 function getIntervalEnd(start: Date, interval: ActivityInterval): Date {
   const d = new Date(start);
   if (interval === "day") {
-    d.setDate(d.getDate() + 1);
+    d.setUTCDate(d.getUTCDate() + 1);
   } else if (interval === "week") {
-    d.setDate(d.getDate() + 7);
+    d.setUTCDate(d.getUTCDate() + 7);
   } else {
-    d.setMonth(d.getMonth() + 1);
+    d.setUTCMonth(d.getUTCMonth() + 1);
   }
   return d;
 }
 
 /**
- * Generates an array of interval buckets going backwards from now.
+ * Generates an array of interval buckets going backwards from now (in UTC).
  */
 function generateBuckets(
   interval: ActivityInterval,
@@ -86,11 +86,11 @@ function generateBuckets(
   // Move back by totalSkip intervals
   for (let i = 0; i < totalSkip; i++) {
     if (interval === "day") {
-      startBucket.setDate(startBucket.getDate() - 1);
+      startBucket.setUTCDate(startBucket.getUTCDate() - 1);
     } else if (interval === "week") {
-      startBucket.setDate(startBucket.getDate() - 7);
+      startBucket.setUTCDate(startBucket.getUTCDate() - 7);
     } else {
-      startBucket.setMonth(startBucket.getMonth() - 1);
+      startBucket.setUTCMonth(startBucket.getUTCMonth() - 1);
     }
   }
 
@@ -100,11 +100,11 @@ function generateBuckets(
     const end = getIntervalEnd(cursor, interval);
     buckets.push({ start: new Date(cursor), end });
     if (interval === "day") {
-      cursor.setDate(cursor.getDate() - 1);
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
     } else if (interval === "week") {
-      cursor.setDate(cursor.getDate() - 7);
+      cursor.setUTCDate(cursor.getUTCDate() - 7);
     } else {
-      cursor.setMonth(cursor.getMonth() - 1);
+      cursor.setUTCMonth(cursor.getUTCMonth() - 1);
     }
   }
 
@@ -120,12 +120,32 @@ function countInRange<T extends { [key: string]: unknown }>(
   start: Date,
   end: Date
 ): number {
-  return records.filter((r) => {
+  const filtered = records.filter((r) => {
     const val = r[dateField];
     if (val == null) return false;
     const d = val instanceof Date ? val : new Date(val as string);
     return d >= start && d < end;
-  }).length;
+  });
+  
+  // Debug logging for countInRange
+  if (records.length > 0) {
+    console.log('[UserActivity] countInRange:', {
+      field: String(dateField),
+      totalRecords: records.length,
+      filteredCount: filtered.length,
+      range: {
+        start: start.toISOString(),
+        end: end.toISOString(),
+      },
+      sampleRecord: records[0] ? {
+        timestamp: records[0][dateField] instanceof Date 
+          ? (records[0][dateField] as Date).toISOString()
+          : String(records[0][dateField]),
+      } : null,
+    });
+  }
+  
+  return filtered.length;
 }
 
 /**
@@ -176,6 +196,18 @@ export async function getUserActivity(
   const earliest = firstBucket.start;
   const latest = lastBucket.end;
 
+  // Debug logging: Query parameters
+  console.log('[UserActivity] Query parameters:', {
+    epicIds: epicIds.length > 0 ? epicIds : 'none',
+    epicIdsSample: epicIds.slice(0, 3),
+    dateRange: {
+      earliest: earliest.toISOString(),
+      latest: latest.toISOString(),
+    },
+    interval,
+    bucketsCount: buckets.length,
+  });
+
   // Fetch all relevant records in the date range (parallel queries)
   const [features, tasks, decisions, aiSessions] = await Promise.all([
     prisma.feature.findMany({
@@ -204,9 +236,21 @@ export async function getUserActivity(
         epicId: { in: epicIds },
         startedAt: { gte: earliest, lt: latest },
       },
-      select: { startedAt: true },
+      select: { startedAt: true, epicId: true },
     }),
   ]);
+
+  // Debug logging: Query results
+  console.log('[UserActivity] Query results:', {
+    featuresCount: features.length,
+    tasksCount: tasks.length,
+    decisionsCount: decisions.length,
+    aiSessionsCount: aiSessions.length,
+    aiSessionsSample: aiSessions.slice(0, 3).map(s => ({
+      startedAt: s.startedAt.toISOString(),
+      epicId: s.epicId,
+    })),
+  });
 
   // Aggregate into buckets
   const data: UserActivityDataPoint[] = buckets.map(({ start, end }) => {

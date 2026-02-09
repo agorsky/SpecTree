@@ -38,9 +38,8 @@ import {
 // =============================================================================
 
 /**
- * Create a Date for the given local-time year/month/day at the given local hour.
- * This avoids timezone confusion since the service's getIntervalStart/getIntervalEnd
- * use local-time methods (setHours, getDay, etc.).
+ * Create a Date for the given UTC year/month/day at the given UTC hour.
+ * Updated to use UTC to match the service's UTC-based date calculations.
  */
 function localDate(
   year: number,
@@ -51,11 +50,11 @@ function localDate(
   second = 0,
   ms = 0
 ): Date {
-  return new Date(year, month, day, hour, minute, second, ms);
+  return new Date(Date.UTC(year, month, day, hour, minute, second, ms));
 }
 
 /**
- * Midnight (00:00:00.000) local time for a given date.
+ * Midnight (00:00:00.000) UTC time for a given date.
  */
 function localMidnight(year: number, month: number, day: number): Date {
   return localDate(year, month, day, 0, 0, 0, 0);
@@ -294,11 +293,11 @@ describe("userActivityService", () => {
       // First bucket start should be today at midnight local
       const first = result.data[0];
       const start = new Date(first.intervalStart);
-      expect(start.getFullYear()).toBe(2026);
-      expect(start.getMonth()).toBe(0); // January
-      expect(start.getDate()).toBe(14);
-      expect(start.getHours()).toBe(0);
-      expect(start.getMinutes()).toBe(0);
+      expect(start.getUTCFullYear()).toBe(2026);
+      expect(start.getUTCMonth()).toBe(0); // January
+      expect(start.getUTCDate()).toBe(14);
+      expect(start.getUTCHours()).toBe(0);
+      expect(start.getUTCMinutes()).toBe(0);
     });
 
     it("should have each bucket span exactly one day", async () => {
@@ -351,8 +350,8 @@ describe("userActivityService", () => {
       );
 
       const start = new Date(result.data[0].intervalStart);
-      expect(start.getDay()).toBe(0); // Sunday
-      expect(start.getDate()).toBe(11);
+      expect(start.getUTCDay()).toBe(0); // Sunday
+      expect(start.getUTCDate()).toBe(11);
     });
 
     it("should have each bucket span exactly 7 days", async () => {
@@ -389,8 +388,8 @@ describe("userActivityService", () => {
       );
 
       const start = new Date(result.data[0].intervalStart);
-      expect(start.getDate()).toBe(1);
-      expect(start.getMonth()).toBe(0); // January
+      expect(start.getUTCDate()).toBe(1);
+      expect(start.getUTCMonth()).toBe(0); // January
     });
 
     it("should produce month-length buckets that move backwards", async () => {
@@ -403,18 +402,18 @@ describe("userActivityService", () => {
 
       // First bucket: Jan 2026
       const first = result.data[0];
-      expect(new Date(first.intervalStart).getMonth()).toBe(0);
-      expect(new Date(first.intervalEnd).getMonth()).toBe(1); // Feb 1
+      expect(new Date(first.intervalStart).getUTCMonth()).toBe(0);
+      expect(new Date(first.intervalEnd).getUTCMonth()).toBe(1); // Feb 1
 
       // Second bucket: Dec 2025
       const second = result.data[1];
-      expect(new Date(second.intervalStart).getMonth()).toBe(11);
-      expect(new Date(second.intervalStart).getFullYear()).toBe(2025);
+      expect(new Date(second.intervalStart).getUTCMonth()).toBe(11);
+      expect(new Date(second.intervalStart).getUTCFullYear()).toBe(2025);
 
       // Third bucket: Nov 2025
       const third = result.data[2];
-      expect(new Date(third.intervalStart).getMonth()).toBe(10);
-      expect(new Date(third.intervalStart).getFullYear()).toBe(2025);
+      expect(new Date(third.intervalStart).getUTCMonth()).toBe(10);
+      expect(new Date(third.intervalStart).getUTCFullYear()).toBe(2025);
     });
   });
 
@@ -1004,7 +1003,7 @@ describe("userActivityService", () => {
               lt: expect.any(Date),
             },
           }),
-          select: { startedAt: true },
+          select: { startedAt: true, epicId: true },
         })
       );
 
@@ -1026,9 +1025,9 @@ describe("userActivityService", () => {
       const gte = (featureCall as any).where.createdAt.gte as Date;
       const lt = (featureCall as any).where.createdAt.lt as Date;
 
-      // gte should be Jan 10 00:00 local, lt should be Jan 15 00:00 local
-      expect(gte.getDate()).toBe(10);
-      expect(lt.getDate()).toBe(15);
+      // gte should be Jan 10 00:00 UTC, lt should be Jan 15 00:00 UTC
+      expect(gte.getUTCDate()).toBe(10);
+      expect(lt.getUTCDate()).toBe(15);
     });
 
     it("should not call record queries when there are no epics", async () => {

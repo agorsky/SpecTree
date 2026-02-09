@@ -145,13 +145,14 @@ export function SettingsPage() {
         onOpenChange={setIsCreateKeyDialogOpen}
       />
 
-      {/* Danger Zone */}
-      <Card className="border-destructive">
+      {/* Session */}
+      <Card>
         <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardTitle>Session</CardTitle>
+          <CardDescription>Manage your current session</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="destructive" onClick={() => { logout(); }}>
+          <Button variant="outline" onClick={() => { logout(); }}>
             Sign Out
           </Button>
         </CardContent>

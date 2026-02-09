@@ -5,6 +5,8 @@ import { useAuthStore } from "@/stores/auth-store";
 import { MemberList } from "@/components/teams/member-list";
 import { TeamForm } from "@/components/teams/team-form";
 import { AddMemberModal } from "@/components/teams/add-member-modal";
+import { StatusList } from "@/components/teams/status-list";
+import { StatusForm } from "@/components/teams/status-form";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -15,7 +17,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Pencil, UserPlus, Trash2 } from "lucide-react";
+import { Pencil, UserPlus, Trash2, Plus } from "lucide-react";
+import type { Status } from "@/lib/api/types";
 
 export function TeamDetailPage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -26,6 +29,8 @@ export function TeamDetailPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
+  const [isStatusFormOpen, setIsStatusFormOpen] = useState(false);
+  const [editingStatus, setEditingStatus] = useState<Status | undefined>(undefined);
 
   if (isLoading) {
     return (
@@ -49,6 +54,16 @@ export function TeamDetailPage() {
   const handleDelete = async () => {
     await deleteTeam.mutateAsync(team.id);
     navigate("/teams");
+  };
+
+  const handleEditStatus = (status: Status) => {
+    setEditingStatus(status);
+    setIsStatusFormOpen(true);
+  };
+
+  const handleAddStatus = () => {
+    setEditingStatus(undefined);
+    setIsStatusFormOpen(true);
   };
 
   return (
@@ -87,13 +102,19 @@ export function TeamDetailPage() {
         <TabsContent value="settings" className="mt-4">
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-medium mb-2">Workflow Statuses</h3>
-              <p className="text-muted-foreground text-sm mb-4">
-                Configure the statuses available for features and tasks.
-              </p>
-              <div className="text-sm text-muted-foreground">
-                Status configuration coming soon...
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-medium">Workflow Statuses</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Configure the statuses available for features and tasks.
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleAddStatus}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Status
+                </Button>
               </div>
+              <StatusList teamId={team.id} onEdit={handleEditStatus} />
             </div>
           </div>
         </TabsContent>
@@ -131,6 +152,14 @@ export function TeamDetailPage() {
         teamId={team.id}
         open={showAddMember}
         onOpenChange={setShowAddMember}
+      />
+
+      {/* Status form dialog */}
+      <StatusForm
+        teamId={team.id}
+        status={editingStatus}
+        open={isStatusFormOpen}
+        onOpenChange={setIsStatusFormOpen}
       />
     </div>
   );

@@ -32,7 +32,7 @@ export const router = createBrowserRouter([
     path: "/",
     element: <AppLayout />,
     children: [
-      { index: true, element: <Navigate to="/inbox" replace /> },
+      { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: "inbox", element: <InboxPage /> },
       { path: "dashboard", element: <DashboardPage /> },
       { path: "epics", element: <EpicsPage /> },
