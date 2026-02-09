@@ -34,6 +34,7 @@ import { registerCompositeTools } from "./composite.js";
 
 // Import changelog tools
 import { registerChangelogTools } from "./changelog.js";
+import { registerSessionTools } from "./sessions.js";
 
 // Tool registration function type
 export type ToolRegistrar = (server: McpServer) => void;
@@ -60,6 +61,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerTaskTools,         // Task management
   registerTeamTools,         // Team management
   registerTemplateTools,     // Templates
+  registerSessionTools,      // AI session lifecycle
   registerValidationTools,   // Validation checks
 ];
 

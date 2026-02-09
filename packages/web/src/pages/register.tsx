@@ -51,7 +51,7 @@ export function RegisterPage() {
 
         // Auto-login after registration
         await login(email, password);
-        void navigate("/inbox");
+        void navigate("/dashboard");
       } catch (err: unknown) {
         if (err && typeof err === "object" && "data" in err) {
           const data = (err as { data: { message?: string } }).data;

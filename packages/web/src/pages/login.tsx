@@ -22,7 +22,7 @@ export function LoginPage() {
     const doLogin = async () => {
       try {
         await login(email, password);
-        void navigate("/inbox");
+        void navigate("/dashboard");
       } catch {
         setError("Invalid email or password");
       } finally {

@@ -133,7 +133,7 @@ export default function epicsRoutes(
     "/:id",
     { preHandler: [authenticate, requireTeamAccess("id:epicId"), requireRole("guest")] },
     async (request, reply) => {
-      const epic = await getEpicById(request.params.id);
+      const epic = await getEpicById(request.params.id, { includeArchived: true });
       if (!epic) {
         return reply.status(404).send({
           error: "Not Found",

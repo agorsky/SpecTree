@@ -33,9 +33,15 @@ This returns a phased execution plan with:
 
 Present the execution plan to the user and confirm before proceeding.
 
-### Step 1.5: Announce Execution Start
+### Step 1.5: Start Session and Announce Execution
 
-Before entering the phase loop, emit a progress announcement and log to SpecTree:
+**Start an AI session** to track this execution run:
+```
+spectree__start_session({ epicId: "<epic-id>" })
+```
+Review any previous session handoff data returned and use it for context.
+
+Then emit a progress announcement and log to SpecTree:
 
 **Output to user:**
 ```
@@ -205,7 +211,17 @@ After all phases are complete:
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
 2. Call `spectree__get_progress_summary` to confirm everything is done
-3. **Log final status to SpecTree:**
+3. **End the AI session** with handoff data:
+   ```
+   spectree__end_session({
+     epicId: "<epic-id>",
+     summary: "Executed X phases, completed Y/Z features. Key changes: ...",
+     nextSteps: ["List of recommended follow-up actions"],
+     blockers: ["Any unresolved blockers"],
+     decisions: [{ decision: "...", rationale: "..." }]
+   })
+   ```
+4. **Log final status to SpecTree:**
    ```
    spectree__append_ai_note({
      type: "epic",
@@ -337,7 +353,9 @@ If the user requests a dry run (e.g., "show me the plan without executing"):
 ## Rules
 
 1. **NEVER** skip reading the execution plan — always start with `spectree__get_execution_plan`
-2. **ALWAYS** inject full SpecTree context into sub-agent prompts — never spawn workers without context
+2. **ALWAYS** call `spectree__start_session` before executing any phases — this tracks the session on the dashboard
+3. **ALWAYS** call `spectree__end_session` after all phases complete — this records handoff data for future sessions
+4. **ALWAYS** inject full SpecTree context into sub-agent prompts — never spawn workers without context
 3. **ALWAYS** call `spectree__start_work` for each feature BEFORE spawning its feature-worker
 4. **ALWAYS** log AI notes and set AI context for each feature AFTER it completes
 5. **ALWAYS** update SpecTree progress after each feature completes

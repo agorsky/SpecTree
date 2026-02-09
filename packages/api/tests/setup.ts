@@ -37,6 +37,24 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+// =============================================================================
+// SAFETY GUARD: Refuse to run tests against the production database.
+// This prevents catastrophic data loss from test fixtures overwriting real data.
+// =============================================================================
+function assertTestDatabase(url: string | undefined): void {
+  if (url && !url.includes("test") && !url.includes("Test")) {
+    throw new Error(
+      "\n\n🛑 ABORTING: DATABASE_URL does not point to a test database!\n" +
+      `   Current: ${url}\n` +
+      "   Tests MUST use a database with 'test' in the filename (e.g., spectree-test.db).\n" +
+      "   This guard prevents tests from overwriting production data.\n" +
+      "   Fix: Run tests via 'pnpm --filter api test' or from packages/api/.\n\n"
+    );
+  }
+}
+
+assertTestDatabase(process.env.DATABASE_URL);
+
 // Create a dedicated test Prisma client instance IMMEDIATELY
 // This ensures it's set in the global singleton before lib/db.ts is imported
 // which fixes issues where authenticate middleware couldn't find test users
@@ -90,11 +108,12 @@ export async function setupTestDatabase(): Promise<void> {
     );
   }
 
-  // Warn if the URL doesn't appear to be a test database
+  // HARD FAIL if the URL doesn't appear to be a test database
   if (!databaseUrl.includes("test") && !databaseUrl.includes("Test")) {
-    console.warn(
-      "WARNING: DATABASE_URL does not contain 'test'. " +
-        "Make sure you are using the test database to avoid data loss."
+    throw new Error(
+      "\n🛑 ABORTING: DATABASE_URL does not point to a test database!\n" +
+      `   Current: ${databaseUrl}\n` +
+      "   This guard prevents tests from overwriting production data.\n"
     );
   }
 

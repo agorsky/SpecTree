@@ -4,6 +4,7 @@ description: "Creates structured SpecTree epics from natural language descriptio
   Runs a 5-stage pipeline: Analyze, Decompose, Detail, Evaluate, Verify.
   Use when the user wants to plan, design, or spec out a feature or body of work."
 tools: ['read', 'search', 'agent', 'web', 'spectree/*']
+agents: []
 user-invokable: true
 ---
 
