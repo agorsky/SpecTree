@@ -111,17 +111,17 @@ See [Azure Deployment Guide](./azure-deployment-guide.md) for full deployment in
 
 ## Production Deployment
 
-For production, set `DATABASE_URL` environment variable in your Container App configuration to point to Azure SQL:
+The Azure Container App uses `SQLSERVER_DATABASE_URL` for the database connection. This is configured via a Key Vault secret reference in the Bicep template (`containerApps.bicep`), so you typically don't need to set it manually. If you do need to update it:
 
 ```bash
-# In Container App, set DATABASE_URL (not SQLSERVER_DATABASE_URL)
+# In Container App, set SQLSERVER_DATABASE_URL
 az containerapp update \
-  --name api-spectree-dev \
+  --name ca-spectree-dev \
   --resource-group rg-spectree-dev \
-  --set-env-vars "DATABASE_URL=sqlserver://..."
+  --set-env-vars "SQLSERVER_DATABASE_URL=sqlserver://..."
 ```
 
-The application uses `DATABASE_URL` at runtime. The separate `SQLSERVER_DATABASE_URL` is only for local Prisma CLI operations.
+The SQL Server Prisma schema (`schema.sqlserver.prisma`) reads `env("SQLSERVER_DATABASE_URL")` at runtime. The local SQLite schema (`schema.prisma`) reads `env("DATABASE_URL")` — these are separate variables for their respective providers.
 
 ## Keeping Schemas in Sync
 

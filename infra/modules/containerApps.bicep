@@ -195,7 +195,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-11-02-preview' = {
             {
               type: 'Readiness'
               httpGet: {
-                path: '/health/ready'
+                path: '/health'
                 port: 3001
               }
               initialDelaySeconds: 5

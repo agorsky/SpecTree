@@ -154,9 +154,11 @@ Complete ALL items before proceeding with deployment. Missing prerequisites will
 ### 7. Environment Variables
 
 - [ ] All required environment variables documented
-  - `DATABASE_URL` - Set in Container App (points to Azure SQL)
-  - `SESSION_SECRET` - Stored in Azure Key Vault
-  - `ALLOWED_ORIGINS` - CORS configuration
+  - `SQLSERVER_DATABASE_URL` - Set via Key Vault secret ref in Container App (points to Azure SQL)
+  - `JWT_SECRET` - Stored in Azure Key Vault (mapped as `JWT-SECRET`)
+  - `SECRETS_PROVIDER` - Set to `azure-keyvault` for Key Vault integration
+  - `AZURE_KEYVAULT_URL` - Key Vault URL for secret retrieval
+  - `AZURE_CLIENT_ID` - Managed identity client ID
   - Any other application-specific variables
 
 ### 8. Network Access
@@ -799,9 +801,9 @@ az containerapp logs show \
 # Test root endpoint
 curl https://$APP_URL/
 
-# Test API routes (adjust based on your API)
-curl https://$APP_URL/api/health
-curl https://$APP_URL/api/version
+# Test API routes
+curl https://$APP_URL/health
+curl https://$APP_URL/health/db
 
 # If your API requires authentication, test with credentials
 # curl -H "Authorization: Bearer <token>" https://$APP_URL/api/protected-endpoint
@@ -810,7 +812,7 @@ curl https://$APP_URL/api/version
 curl -H "Origin: https://yourdomain.com" \
   -H "Access-Control-Request-Method: GET" \
   -X OPTIONS \
-  -i https://$APP_URL/api/health
+  -i https://$APP_URL/health
 
 # Expected: Access-Control-Allow-Origin header present
 ```
@@ -836,14 +838,14 @@ az containerapp show \
   --query "properties.template.containers[0].env" \
   --output table
 
-# Check DATABASE_URL is set (value will be hidden)
+# Check SQLSERVER_DATABASE_URL is set (value will be hidden)
 az containerapp show \
   --name $CONTAINER_APP \
   --resource-group $RESOURCE_GROUP \
-  --query "properties.template.containers[0].env[?name=='DATABASE_URL'].name" \
+  --query "properties.template.containers[0].env[?name=='SQLSERVER_DATABASE_URL'].name" \
   --output tsv
 
-# Expected: DATABASE_URL
+# Expected: SQLSERVER_DATABASE_URL
 ```
 
 ### 6. Performance Check
@@ -1154,11 +1156,11 @@ sleep 120
 curl -i https://$APP_URL/health
 
 # Problem: Database connection failing
-# Solution: Check DATABASE_URL environment variable
+# Solution: Check SQLSERVER_DATABASE_URL environment variable
 az containerapp show \
   --name $CONTAINER_APP \
   --resource-group $RESOURCE_GROUP \
-  --query "properties.template.containers[0].env[?name=='DATABASE_URL']" \
+  --query "properties.template.containers[0].env[?name=='SQLSERVER_DATABASE_URL']" \
   --output table
 
 # Check logs for database errors
@@ -1194,11 +1196,11 @@ az containerapp replica list \
 
 ```bash
 # Error: "Prisma Client did not initialize yet"
-# Solution: Database URL not set correctly, check environment variable
+# Solution: SQLSERVER_DATABASE_URL not set correctly, check environment variable
 az containerapp update \
   --name $CONTAINER_APP \
   --resource-group $RESOURCE_GROUP \
-  --set-env-vars "DATABASE_URL=sqlserver://..."
+  --set-env-vars "SQLSERVER_DATABASE_URL=sqlserver://..."
 
 # Error: "ECONNREFUSED" or "Connection refused"
 # Solution: Database not accessible, check firewall rules on SQL Server

@@ -42,7 +42,7 @@ SpecTree is a **project management and issue tracking platform** similar to Line
 
 | Component | Technology | Version |
 |-----------|------------|---------|
-| Runtime | Node.js | 20+ |
+| Runtime | Node.js | 22+ |
 | Package Manager | pnpm | 9+ |
 | API Framework | Fastify | 5.x |
 | Frontend | React | 19.x |
@@ -136,8 +136,9 @@ Key entities (from `packages/api/prisma/schema.prisma`):
 
 ### Container Configuration
 
-**API Container** (`packages/api/Dockerfile`):
+**API Container** (`packages/api/Dockerfile.azure` for Azure):
 - Base: `node:22-alpine`
+- Generates SQL Server Prisma client (`schema.sqlserver.prisma`)
 - Exposes port 3001
 - Multi-stage build (builder → runner)
 - Runs: `node packages/api/dist/index.js`
@@ -326,7 +327,7 @@ az provider show --namespace Microsoft.App --query "registrationState"
 ### 3. Install Required Tools
 
 ```bash
-# Verify Node.js (20+)
+# Verify Node.js (22+)
 node --version
 
 # Verify pnpm (9+)
@@ -580,7 +581,7 @@ APP_URL=$(az containerapp show \
 echo "Application URL: https://$APP_URL"
 
 # Test health endpoint
-curl -s "https://$APP_URL/api/health" | jq
+curl -s "https://$APP_URL/health" | jq
 
 # Test API endpoint
 curl -s "https://$APP_URL/api/v1/teams" | jq
@@ -617,14 +618,14 @@ az webapp create \
   --name $API_APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --plan $APP_SERVICE_PLAN \
-  --runtime "NODE:20-lts"
+  --runtime "NODE:22-lts"
 
 # Create Web App for static frontend
 az webapp create \
   --name $WEB_APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --plan $APP_SERVICE_PLAN \
-  --runtime "NODE:20-lts"
+  --runtime "NODE:22-lts"
 ```
 
 ### Step 2: Configure App Settings
@@ -744,13 +745,13 @@ spec:
             memory: "512Mi"
         livenessProbe:
           httpGet:
-            path: /api/health
+            path: /health
             port: 3001
           initialDelaySeconds: 10
           periodSeconds: 30
         readinessProbe:
           httpGet:
-            path: /api/health/ready
+            path: /health
             port: 3001
           initialDelaySeconds: 5
           periodSeconds: 10
@@ -863,7 +864,7 @@ az postgres flexible-server create \
 
 ### GitHub Actions Workflow
 
-Create `.github/workflows/deploy.yml`:
+Create `.github/workflows/azure-deploy.yml`:
 
 ```yaml
 name: Deploy to Azure
@@ -876,7 +877,7 @@ on:
 env:
   AZURE_RESOURCE_GROUP: rg-spectree-dev
   AZURE_CONTAINER_APP: ca-spectree-dev
-  ACR_NAME: acrspectree
+  ACR_NAME: acrspectreedev
 
 jobs:
   build-and-deploy:
@@ -891,7 +892,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         
     - name: Install pnpm
       uses: pnpm/action-setup@v2
@@ -1540,7 +1541,7 @@ Once the API is deployed to Azure, configure the MCP server to connect to it.
 ```bash
 # Get the API URL
 API_URL=$(az containerapp show \
-  -n ca-spectree-api-dev \
+  -n ca-spectree-dev \
   -g rg-spectree-dev \
   --query properties.configuration.ingress.fqdn -o tsv)
 
@@ -1581,7 +1582,7 @@ Update your MCP configuration file (location varies by client):
       "args": ["/path/to/spectree/packages/mcp/dist/index.js"],
       "env": {
         "API_TOKEN": "st_your_token_here",
-        "API_BASE_URL": "https://ca-spectree-api-dev.azurecontainerapps.io"
+        "API_BASE_URL": "https://ca-spectree-dev.azurecontainerapps.io"
       }
     }
   }
@@ -1597,7 +1598,7 @@ Update your MCP configuration file (location varies by client):
       "args": ["/path/to/spectree/packages/mcp/dist/index.js"],
       "env": {
         "API_TOKEN": "st_your_token_here",
-        "API_BASE_URL": "https://ca-spectree-api-dev.azurecontainerapps.io"
+        "API_BASE_URL": "https://ca-spectree-dev.azurecontainerapps.io"
       }
     }
   }
@@ -1608,7 +1609,7 @@ Update your MCP configuration file (location varies by client):
 
 Test by asking your AI assistant to list SpecTree epics or features. If connection fails:
 
-1. Verify API URL is accessible: `curl https://<api-url>/api/health`
+1. Verify API URL is accessible: `curl https://<api-url>/health`
 2. Check API token hasn't expired
 3. Ensure `API_BASE_URL` does not have a trailing slash
 
