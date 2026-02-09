@@ -6,6 +6,12 @@
 //   Generate client: npx prisma generate --schema=prisma/schema.sqlserver.prisma
 //   Deploy migrations: npx prisma migrate deploy --schema=prisma/schema.sqlserver.prisma
 //   Push schema: npx prisma db push --schema=prisma/schema.sqlserver.prisma
+//
+// SQL Server differences from SQLite schema:
+//   - onDelete: NoAction / onUpdate: NoAction on cyclic cascade paths
+//     (Status→Team/PersonalScope, Feature→Status/Assignee, Task→Status/Assignee,
+//      Decision→Feature/Task)
+//   - Application must handle cleanup in correct order when deleting
 
 generator client {
   provider = "prisma-client-js"
@@ -68,6 +74,7 @@ model User {
   apiTokens        ApiToken[]
   personalScope    PersonalScope?
   invitationsCreated UserInvitation[] @relation("InvitationCreator")
+  createdTemplates PlanTemplate[]
 
   @@index([email])
   @@map("users")
@@ -135,9 +142,20 @@ model Epic {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  // Structured description for AI-friendly sections
+  structuredDesc  String?   @map("structured_desc")     // JSON: StructuredDescription object
+
+  // AI session context for cross-session continuity
+  aiContext       String?   @map("ai_context")          // Structured context for AI consumption
+  aiNotes         String?   @map("ai_notes")            // JSON array of append-only notes
+  lastAiSessionId String?   @map("last_ai_session_id")  // Track last AI session
+  lastAiUpdateAt  DateTime? @map("last_ai_update_at")
+
   team          Team?          @relation(fields: [teamId], references: [id], onDelete: Cascade)
   personalScope PersonalScope? @relation(fields: [personalScopeId], references: [id], onDelete: Cascade)
   features      Feature[]
+  aiSessions    AiSession[]
+  decisions     Decision[]
 
   @@index([teamId])
   @@index([teamId, sortOrder])
@@ -182,12 +200,44 @@ model Feature {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  // Execution metadata for AI agents
+  executionOrder      Int?     @map("execution_order")
+  canParallelize      Boolean  @default(false) @map("can_parallelize")
+  parallelGroup       String?  @map("parallel_group")
+  dependencies        String?  @map("dependencies") // JSON array of feature IDs
+  estimatedComplexity String?  @map("estimated_complexity") // trivial | simple | moderate | complex
+
+  // AI session context for cross-session continuity
+  aiContext       String?   @map("ai_context")          // Structured context for AI consumption
+  aiNotes         String?   @map("ai_notes")            // JSON array of append-only notes
+  lastAiSessionId String?   @map("last_ai_session_id")  // Track last AI session
+  lastAiUpdateAt  DateTime? @map("last_ai_update_at")
+
+  // Progress tracking fields
+  startedAt       DateTime? @map("started_at")          // When work started
+  completedAt     DateTime? @map("completed_at")        // When work completed
+  durationMinutes Int?      @map("duration_minutes")    // Calculated work duration
+  percentComplete Int?      @map("percent_complete")    // 0-100 progress indicator
+  blockerReason   String?   @map("blocker_reason")      // What's blocking progress
+
+  // Structured description for AI-friendly sections
+  structuredDesc  String?   @map("structured_desc")     // JSON: StructuredDescription object
+
+  // Codebase integration - link features to code artifacts
+  relatedFiles     String?   @map("related_files")      // JSON array: ["src/a.ts", "src/b.ts"]
+  relatedFunctions String?   @map("related_functions")  // JSON array: ["file.ts:funcName", ...]
+  gitBranch        String?   @map("git_branch")         // Git branch name
+  gitCommits       String?   @map("git_commits")        // JSON array: ["abc123", "def456"]
+  gitPrNumber      Int?      @map("git_pr_number")      // Pull request number
+  gitPrUrl         String?   @map("git_pr_url")         // Pull request URL
+
   // Note: SQL Server doesn't allow multiple cascade paths, so we use NoAction
   // to break the cyclic referential action paths. Application handles nullifying.
-  epic     Epic    @relation(fields: [epicId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  status   Status? @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  assignee User?   @relation("AssignedFeatures", fields: [assigneeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tasks    Task[]
+  epic      Epic       @relation(fields: [epicId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  status    Status?    @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignee  User?      @relation("AssignedFeatures", fields: [assigneeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tasks     Task[]
+  decisions Decision[]
 
   @@index([epicId])
   @@index([statusId])
@@ -210,10 +260,45 @@ model Task {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  // Execution metadata for AI agents
+  executionOrder      Int?     @map("execution_order")
+  canParallelize      Boolean  @default(false) @map("can_parallelize")
+  parallelGroup       String?  @map("parallel_group")
+  dependencies        String?  @map("dependencies") // JSON array of task IDs
+  estimatedComplexity String?  @map("estimated_complexity") // trivial | simple | moderate | complex
+
+  // AI session context for cross-session continuity
+  aiContext       String?   @map("ai_context")          // Structured context for AI consumption
+  aiNotes         String?   @map("ai_notes")            // JSON array of append-only notes
+  lastAiSessionId String?   @map("last_ai_session_id")  // Track last AI session
+  lastAiUpdateAt  DateTime? @map("last_ai_update_at")
+
+  // Progress tracking fields
+  startedAt       DateTime? @map("started_at")          // When work started
+  completedAt     DateTime? @map("completed_at")        // When work completed
+  durationMinutes Int?      @map("duration_minutes")    // Calculated work duration
+  percentComplete Int?      @map("percent_complete")    // 0-100 progress indicator
+  blockerReason   String?   @map("blocker_reason")      // What's blocking progress
+
+  // Structured description for AI-friendly sections
+  structuredDesc  String?   @map("structured_desc")     // JSON: StructuredDescription object
+
+  // Codebase integration - link tasks to code artifacts
+  relatedFiles     String?   @map("related_files")      // JSON array: ["src/a.ts", "src/b.ts"]
+  relatedFunctions String?   @map("related_functions")  // JSON array: ["file.ts:funcName", ...]
+  gitBranch        String?   @map("git_branch")         // Git branch name
+  gitCommits       String?   @map("git_commits")        // JSON array: ["abc123", "def456"]
+  gitPrNumber      Int?      @map("git_pr_number")      // Pull request number
+  gitPrUrl         String?   @map("git_pr_url")         // Pull request URL
+
+  // Validation checklists - executable checks that define "done"
+  validationChecks String?   @map("validation_checks")  // JSON array: ValidationCheck[]
+
   // Note: SQL Server doesn't allow multiple cascade paths, so we use NoAction
-  feature  Feature @relation(fields: [featureId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  status   Status? @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  assignee User?   @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  feature   Feature    @relation(fields: [featureId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  status    Status?    @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignee  User?      @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  decisions Decision[]
 
   @@index([featureId])
   @@index([statusId])
@@ -234,4 +319,132 @@ model PersonalScope {
   epics    Epic[]
 
   @@map("personal_scopes")
+}
+
+model PlanTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isBuiltIn   Boolean  @default(false) @map("is_built_in")
+  structure   String   // JSON: Template definition (TemplateStructure)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdById String?  @map("created_by_id")
+
+  // NoAction to avoid multi-cascade path through User
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([name])
+  @@index([isBuiltIn])
+  @@map("plan_templates")
+}
+
+// =============================================================================
+// AI Session Model
+// Tracks AI work sessions for handoff between sessions
+// =============================================================================
+
+model AiSession {
+  id             String    @id @default(uuid())
+  epicId         String    @map("epic_id")
+  externalId     String?   @map("external_id") // Optional external session ID (e.g., from Copilot)
+  startedAt      DateTime  @default(now()) @map("started_at")
+  endedAt        DateTime? @map("ended_at")
+  status         String    @default("active") // active | completed | abandoned
+
+  // Work tracking
+  itemsWorkedOn  String?   @map("items_worked_on") // JSON array of {type, id, identifier, action}
+  summary        String?   // AI-generated summary of session work
+
+  // Handoff info for successor sessions
+  nextSteps      String?   @map("next_steps")    // JSON array of recommended next actions
+  blockers       String?   // JSON array of blockers encountered
+  decisions      String?   // JSON array of decisions made with rationale
+  contextBlob    String?   @map("context_blob") // Serialized context for next session
+
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  epic Epic @relation(fields: [epicId], references: [id], onDelete: Cascade)
+
+  @@index([epicId])
+  @@index([epicId, status])
+  @@index([startedAt])
+  @@map("ai_sessions")
+}
+
+// =============================================================================
+// Decision Log Model
+// Append-only decision record that preserves rationale behind implementation choices
+// =============================================================================
+
+model Decision {
+  id           String   @id @default(uuid())
+
+  // Context - at least epicId is required
+  epicId       String   @map("epic_id")
+  featureId    String?  @map("feature_id")
+  taskId       String?  @map("task_id")
+
+  // Decision details
+  question     String   // What was being decided
+  decision     String   // The choice made
+  rationale    String   // Why this choice was made
+  alternatives String?  // JSON: What else was considered
+
+  // Metadata
+  madeBy       String   @map("made_by")     // "AI" | "human" | user ID
+  madeAt       DateTime @default(now()) @map("made_at")
+
+  // Optional categorization
+  category     String?  // "architecture" | "library" | "approach" | "scope" | etc.
+  impact       String?  // "low" | "medium" | "high"
+
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  epic    Epic     @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  // NoAction to break cyclic cascade paths (Epic→Feature→Decision vs Epic→Decision)
+  feature Feature? @relation(fields: [featureId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  task    Task?    @relation(fields: [taskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([epicId])
+  @@index([epicId, madeAt])
+  @@index([featureId])
+  @@index([taskId])
+  @@index([category])
+  @@map("decisions")
+}
+
+// =============================================================================
+// ChangeLog Model
+// Track entity field-level changes for audit trails and history
+// =============================================================================
+
+model ChangeLog {
+  id         String   @id @default(uuid())
+
+  // Entity identification
+  entityType String   @map("entity_type") // 'epic' | 'feature' | 'task'
+  entityId   String   @map("entity_id")
+
+  // Change details
+  field      String   // Field name that changed
+  oldValue   String?  @map("old_value") // JSON stringified value
+  newValue   String?  @map("new_value") // JSON stringified value
+
+  // Audit info
+  changedBy  String   @map("changed_by") // User ID
+  changedAt  DateTime @default(now()) @map("changed_at")
+
+  // Epic hierarchy for efficient filtering
+  epicId     String?  @map("epic_id") // Resolved at write time for hierarchy queries
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([entityType, entityId, changedAt(sort: Desc)])
+  @@index([epicId, changedAt(sort: Desc)])
+  @@index([changedBy])
+  @@map("change_logs")
 }
