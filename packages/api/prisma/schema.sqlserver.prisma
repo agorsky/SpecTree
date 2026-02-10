@@ -76,6 +76,9 @@ model User {
   personalScope    PersonalScope?
   invitationsCreated UserInvitation[] @relation("InvitationCreator")
   createdTemplates PlanTemplate[]
+  epicRequests     EpicRequest[]
+  epicRequestReactions EpicRequestReaction[]
+  epicRequestComments  EpicRequestComment[]
 
   @@index([email])
   @@map("users")
@@ -157,6 +160,7 @@ model Epic {
   features      Feature[]
   aiSessions    AiSession[]
   decisions     Decision[]
+  convertedFromRequests EpicRequest[]
 
   @@index([teamId])
   @@index([teamId, sortOrder])
@@ -448,4 +452,65 @@ model ChangeLog {
   @@index([epicId, changedAt(sort: Desc)])
   @@index([changedBy])
   @@map("change_logs")
+}
+
+// =============================================================================
+// Epic Request Models
+// Community-driven epic suggestions with voting and discussion
+// =============================================================================
+
+model EpicRequest {
+  id               String   @id @default(uuid())
+  title            String
+  description      String?  @db.NVarChar(Max)
+  structuredDesc   String?  @db.NVarChar(Max) @map("structured_desc") // JSON: StructuredDescription object
+  status           String   @default("pending") // pending | approved | rejected | converted
+  requestedById    String   @map("requested_by_id")
+  convertedEpicId  String?  @unique @map("converted_epic_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  requestedBy  User                     @relation(fields: [requestedById], references: [id], onDelete: Cascade)
+  convertedEpic Epic?                   @relation(fields: [convertedEpicId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reactions    EpicRequestReaction[]
+  comments     EpicRequestComment[]
+
+  @@index([requestedById])
+  @@index([convertedEpicId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("epic_requests")
+}
+
+model EpicRequestReaction {
+  id             String   @id @default(uuid())
+  epicRequestId  String   @map("epic_request_id")
+  userId         String   @map("user_id")
+  reactionType   String   @map("reaction_type") // thumbs-up, heart, rocket, etc.
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  epicRequest EpicRequest @relation(fields: [epicRequestId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([epicRequestId, userId])
+  @@index([epicRequestId])
+  @@index([userId])
+  @@map("epic_request_reactions")
+}
+
+model EpicRequestComment {
+  id            String   @id @default(uuid())
+  epicRequestId String   @map("epic_request_id")
+  authorId      String   @map("author_id")
+  content       String   @db.NVarChar(Max)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  epicRequest EpicRequest @relation(fields: [epicRequestId], references: [id], onDelete: Cascade)
+  author      User        @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([epicRequestId])
+  @@index([authorId])
+  @@index([epicRequestId, createdAt])
+  @@map("epic_request_comments")
 }

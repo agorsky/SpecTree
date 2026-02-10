@@ -13,6 +13,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 // Import tool modules - these export their registrar functions
 import { registerEpicTools } from "./epics.js";
+import { registerEpicRequestTools } from "./epic-requests.js";
 import { registerFeatureTools } from "./features.js";
 import { registerTaskTools } from "./tasks.js";
 import { registerStatusTools } from "./statuses.js";
@@ -49,6 +50,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerCodeContextTools,  // Code artifact tracking
   registerDecisionTools,     // Decision logging
   registerEpicTools,         // Epic management
+  registerEpicRequestTools,  // Epic Request management (user proposals)
   registerExecutionTools,    // Execution planning
   registerFeatureTools,      // Feature management
   registerOrderingTools,     // Item reordering

@@ -68,3 +68,6 @@ infra/.env.azure
 
 # Superseded strategy docs
 docs/copilot-cli-automation-strategy.md
+
+# Local docs (personal notes, not for repo)
+docs/local/

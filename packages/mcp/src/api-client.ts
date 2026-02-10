@@ -1166,6 +1166,125 @@ export interface FeatureDecisionContextResponse {
 }
 
 // -----------------------------------------------------------------------------
+// Epic Request Types
+// -----------------------------------------------------------------------------
+
+/** Valid epic request status values */
+export type EpicRequestStatus = "pending" | "approved" | "rejected" | "converted";
+
+/** Valid reaction types */
+export type ReactionType = "like" | "fire" | "dislike";
+
+/** Structured description for Epic Requests */
+export interface EpicRequestStructuredDesc {
+  problemStatement: string;
+  proposedSolution: string;
+  impactAssessment: string;
+  targetAudience?: string;
+  successMetrics?: string;
+  alternatives?: string;
+  dependencies?: string;
+  estimatedEffort?: string;
+}
+
+/** Epic Request entity */
+export interface EpicRequest {
+  id: string;
+  title: string;
+  description: string | null;
+  structuredDesc: EpicRequestStructuredDesc | null;
+  status: EpicRequestStatus;
+  requestedById: string;
+  requestedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Epic Request with aggregated reaction counts */
+export interface EpicRequestWithReactionCounts extends EpicRequest {
+  reactionCounts: Array<{
+    reactionType: string;
+    count: number;
+  }>;
+  userReaction?: string | null;
+}
+
+/** Epic Request Comment */
+export interface EpicRequestComment {
+  id: string;
+  content: string;
+  epicRequestId: string;
+  authorId: string;
+  author: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Parameters for listing epic requests */
+export interface ListEpicRequestsParams {
+  cursor?: string | undefined;
+  limit?: number | undefined;
+  status?: EpicRequestStatus | undefined;
+  requestedById?: string | undefined;
+}
+
+/** Response for listing epic requests */
+export interface ListEpicRequestsResponse {
+  data: EpicRequestWithReactionCounts[];
+  meta: PaginationMeta;
+}
+
+/** Input for creating a new epic request */
+export interface CreateEpicRequestInput {
+  title: string;
+  description?: string | undefined;
+  structuredDesc?: EpicRequestStructuredDesc | undefined;
+}
+
+/** Input for updating an epic request */
+export interface UpdateEpicRequestInput {
+  title?: string | undefined;
+  description?: string | undefined;
+  structuredDesc?: EpicRequestStructuredDesc | undefined;
+  status?: EpicRequestStatus | undefined;
+}
+
+/** Input for adding a reaction */
+export interface AddReactionInput {
+  reactionType: ReactionType;
+}
+
+/** Input for creating a comment */
+export interface CreateCommentInput {
+  content: string;
+}
+
+/** Input for updating a comment */
+export interface UpdateCommentInput {
+  content: string;
+}
+
+/** Parameters for listing comments */
+export interface ListCommentsParams {
+  cursor?: string | undefined;
+  limit?: number | undefined;
+}
+
+/** Response for listing comments */
+export interface ListCommentsResponse {
+  data: EpicRequestComment[];
+  meta: PaginationMeta;
+}
+
+// -----------------------------------------------------------------------------
 // Changelog Types
 // -----------------------------------------------------------------------------
 
@@ -3002,6 +3121,134 @@ export class ApiClient {
     return this.request<ChangelogResponse>(
       "GET",
       `/api/v1/changelog/${encodeURIComponent(params.entityType)}/${encodeURIComponent(params.entityId)}${query}`
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Epic Request Methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List epic requests with cursor-based pagination and optional filtering.
+   * Returns requests with aggregated reaction counts.
+   */
+  async listEpicRequests(params?: ListEpicRequestsParams): Promise<ListEpicRequestsResponse> {
+    const query = this.buildQueryString({
+      cursor: params?.cursor,
+      limit: params?.limit,
+      status: params?.status,
+      requestedById: params?.requestedById,
+    });
+    return this.request<ListEpicRequestsResponse>("GET", `/api/v1/epic-requests${query}`);
+  }
+
+  /**
+   * Get a single epic request by ID with reaction counts and user's own reaction.
+   */
+  async getEpicRequest(id: string): Promise<{ data: EpicRequestWithReactionCounts }> {
+    return this.request<{ data: EpicRequestWithReactionCounts }>(
+      "GET",
+      `/api/v1/epic-requests/${encodeURIComponent(id)}`
+    );
+  }
+
+  /**
+   * Create a new epic request.
+   */
+  async createEpicRequest(input: CreateEpicRequestInput): Promise<{ data: EpicRequest }> {
+    return this.request<{ data: EpicRequest }>("POST", "/api/v1/epic-requests", input);
+  }
+
+  /**
+   * Update an existing epic request.
+   * Only the creator can update (unless approved/converted status prevents edits).
+   */
+  async updateEpicRequest(id: string, input: UpdateEpicRequestInput): Promise<{ data: EpicRequest }> {
+    return this.request<{ data: EpicRequest }>(
+      "PUT",
+      `/api/v1/epic-requests/${encodeURIComponent(id)}`,
+      input
+    );
+  }
+
+  /**
+   * Delete an epic request.
+   * Only the creator or global admin can delete.
+   */
+  async deleteEpicRequest(id: string): Promise<void> {
+    await this.request<void>("DELETE", `/api/v1/epic-requests/${encodeURIComponent(id)}`);
+  }
+
+  /**
+   * Add or update (upsert) a reaction on an epic request.
+   * Replaces any existing reaction from the same user.
+   */
+  async addEpicRequestReaction(id: string, input: AddReactionInput): Promise<{ message: string; data: { reactionType: string } }> {
+    return this.request<{ message: string; data: { reactionType: string } }>(
+      "POST",
+      `/api/v1/epic-requests/${encodeURIComponent(id)}/reactions`,
+      input
+    );
+  }
+
+  /**
+   * Remove user's reaction from an epic request.
+   */
+  async removeEpicRequestReaction(id: string): Promise<void> {
+    await this.request<void>("DELETE", `/api/v1/epic-requests/${encodeURIComponent(id)}/reactions`);
+  }
+
+  /**
+   * List comments for an epic request with pagination.
+   * Returns comments with author information.
+   */
+  async listEpicRequestComments(id: string, params?: ListCommentsParams): Promise<ListCommentsResponse> {
+    const query = this.buildQueryString({
+      cursor: params?.cursor,
+      limit: params?.limit,
+    });
+    return this.request<ListCommentsResponse>(
+      "GET",
+      `/api/v1/epic-requests/${encodeURIComponent(id)}/comments${query}`
+    );
+  }
+
+  /**
+   * Create a new comment on an epic request.
+   * Current user is automatically set as the author.
+   */
+  async createEpicRequestComment(id: string, input: CreateCommentInput): Promise<{ data: EpicRequestComment }> {
+    return this.request<{ data: EpicRequestComment }>(
+      "POST",
+      `/api/v1/epic-requests/${encodeURIComponent(id)}/comments`,
+      input
+    );
+  }
+
+  /**
+   * Update an existing comment.
+   * Only the comment author can update.
+   */
+  async updateEpicRequestComment(
+    epicRequestId: string,
+    commentId: string,
+    input: UpdateCommentInput
+  ): Promise<{ data: EpicRequestComment }> {
+    return this.request<{ data: EpicRequestComment }>(
+      "PUT",
+      `/api/v1/epic-requests/${encodeURIComponent(epicRequestId)}/comments/${encodeURIComponent(commentId)}`,
+      input
+    );
+  }
+
+  /**
+   * Delete a comment.
+   * Only the comment author or global admin can delete.
+   */
+  async deleteEpicRequestComment(epicRequestId: string, commentId: string): Promise<void> {
+    await this.request<void>(
+      "DELETE",
+      `/api/v1/epic-requests/${encodeURIComponent(epicRequestId)}/comments/${encodeURIComponent(commentId)}`
     );
   }
 }

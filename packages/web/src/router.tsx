@@ -6,6 +6,8 @@ import { ActivatePage } from "@/pages/activate";
 import { InboxPage } from "@/pages/inbox";
 import { EpicsPage } from "@/pages/epics/index";
 import { EpicDetailPage } from "@/pages/epics/epic-detail";
+import { EpicRequestsPage } from "@/pages/epic-requests/index";
+import { EpicRequestDetailPage } from "@/pages/epic-requests/epic-request-detail";
 import { FeatureDetail } from "@/components/features/feature-detail";
 import { TaskDetail } from "@/components/tasks/task-detail";
 import { TeamsPage } from "@/pages/teams/index";
@@ -35,6 +37,8 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: "inbox", element: <InboxPage /> },
       { path: "dashboard", element: <DashboardPage /> },
+      { path: "epic-requests", element: <EpicRequestsPage /> },
+      { path: "epic-requests/:requestId", element: <EpicRequestDetailPage /> },
       { path: "epics", element: <EpicsPage /> },
       {
         path: "epics/:epicId",

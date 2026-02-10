@@ -733,7 +733,7 @@ git merge release/x.y
 
 ## Custom Agents
 
-Four custom agents are defined in `.github/agents/`. Three are user-invokable; `feature-worker` is a sub-agent only.
+Five custom agents are defined in `.github/agents/`. Four are user-invokable; `feature-worker` is a sub-agent only.
 
 ### @planner - SpecTree Planning Pipeline
 
@@ -746,6 +746,18 @@ Usage: @planner "Build a user activity dashboard"
 ```
 
 The planner reads the codebase to understand scope, creates the epic with `spectree__create_epic_complete`, sets structured descriptions on every feature and task, evaluates quality, and verifies the execution plan.
+
+### @request-formulator - AI-Assisted Epic Request Creation
+
+Guides users through a structured interview to craft high-quality Epic Requests. Conducts a multi-step interview covering problem statement, proposed solution, impact assessment, success criteria, target audience, and technical context.
+
+```
+Usage: @request-formulator "I want to propose adding real-time notifications"
+```
+
+The request-formulator conducts an interactive interview gathering requirements, checks for duplicate requests via `spectree__list_epic_requests`, presents a formatted preview with both markdown description and structured JSON, and submits via `spectree__create_epic_request` with both `description` and `structuredDesc` fields.
+
+**When to recommend:** When a user mentions wanting to "propose a feature", "suggest an epic", "request a new feature", or "submit an idea for review". The formulator helps users create well-structured proposals that are easier for admins to review and approve.
 
 ### @orchestrator - Epic Execution
 

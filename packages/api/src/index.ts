@@ -12,6 +12,7 @@ import { getSecretsProvider } from "./lib/secrets/index.js";
 import usersRoutes from "./routes/users.js";
 import teamsRoutes from "./routes/teams.js";
 import epicsRoutes from "./routes/epics.js";
+import epicRequestsRoutes from "./routes/epic-requests.js";
 import statusesRoutes from "./routes/statuses.js";
 import { teamMembershipsRoutes, userTeamsRoutes } from "./routes/memberships.js";
 import featuresRoutes from "./routes/features.js";
@@ -63,6 +64,7 @@ async function main(): Promise<void> {
   await fastify.register(usersRoutes, { prefix: "/api/v1/users" });
   await fastify.register(teamsRoutes, { prefix: "/api/v1/teams" });
   await fastify.register(epicsRoutes, { prefix: "/api/v1/epics" });
+  await fastify.register(epicRequestsRoutes, { prefix: "/api/v1/epic-requests" });
   await fastify.register(statusesRoutes, { prefix: "/api/v1/statuses" });
   await fastify.register(teamMembershipsRoutes, { prefix: "/api/v1/teams" });
   await fastify.register(userTeamsRoutes, { prefix: "/api/v1/users" });
