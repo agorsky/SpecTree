@@ -25,7 +25,8 @@ This returns comprehensive guidance on:
 | Category | Tools | Description |
 |----------|-------|-------------|
 | [Help](#help) | 1 | Instructions and guidance |
-| [Epics](#epics) | 4 | Epic/project management |
+| [**Composite Tools**](#composite-tools) | **7** | **High-level multi-operation tools (reduces call count)** |
+| [Epics](#epics) | 5 | Epic/project management |
 | [Features](#features) | 4 | Feature management |
 | [Tasks](#tasks) | 4 | Task management |
 | [Progress](#progress-tracking) | 4 | Auto-progress tracking |
@@ -33,15 +34,17 @@ This returns comprehensive guidance on:
 | [Search](#search) | 1 | Unified search |
 | [Statuses](#statuses) | 2 | Workflow status queries |
 | [Execution](#execution-planning) | 4 | Execution planning and dependencies |
-| [AI Context](#ai-context) | 3 | Cross-session context transfer |
-| [Session Handoff](#session-handoff) | 6 | Session lifecycle and handoff |
-| [Structured Descriptions](#structured-descriptions) | 6 | Rich structured descriptions |
-| [Code Context](#code-context) | 7 | Codebase integration (files, git, PRs) |
-| [Validation Checklists](#validation-checklists) | 7 | Executable acceptance criteria |
+| [AI Context](#ai-context) | 4 | Cross-session context transfer (includes composite) |
+| [Session Handoff](#session-handoff) | 5 | Session lifecycle and handoff |
+| [Structured Descriptions](#structured-descriptions) | 7 | Rich structured descriptions (includes composite) |
+| [Code Context](#code-context) | 8 | Codebase integration (files, git, PRs, includes composite) |
+| [Validation Checklists](#validation-checklists) | 8 | Executable acceptance criteria (includes composite) |
+| [Changelog](#changelog) | 1 | Entity change history |
 | [Decision Log](#decision-log) | 4 | Append-only decision records |
 | [Personal](#personal-scope) | 4 | Personal workspace |
 | [Templates](#templates) | 5 | Implementation plan templates |
-| [Ordering](#ordering) | 3 | Reorder items |
+| [Teams](#teams) | 1 | Team management |
+| [Ordering](#ordering) | 4 | Reorder items |
 
 ---
 
@@ -66,6 +69,325 @@ Get instructions and guidance for using SpecTree effectively. **Recommended to c
 **Example:**
 ```json
 { "topic": "execution" }
+```
+
+---
+
+## Composite Tools
+
+**⚡ High-level tools that consolidate multiple operations into single calls.**
+
+These composite tools use action-based routing to reduce the number of tool calls required for common workflows. Instead of making 3-8 separate calls, you make 1 call with an `action` parameter. This significantly reduces token usage and improves performance.
+
+**Benefits:**
+- **Fewer calls**: 1 call instead of 3-8 individual calls
+- **Lower latency**: Reduced round-trip time
+- **Token efficiency**: Less overhead in tool call formatting
+- **Simpler workflows**: Single unified interface per domain
+
+**Recommendation:** Use composite tools whenever possible. The individual tools they consolidate are still available but marked as deprecated.
+
+### spectree__create_epic_complete
+
+**Create an entire epic with features and tasks in one atomic operation.**
+
+Replaces 15-30+ individual calls to `create_epic`, `create_feature`, `create_task`, `set_structured_description`, etc.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Epic name |
+| `team` | string | Yes | Team name, key, or ID |
+| `description` | string | No | Epic description |
+| `icon` | string | No | Icon identifier |
+| `color` | string | No | Hex color code |
+| `features` | array | Yes | Array of feature objects (see below) |
+
+**Feature object structure:**
+```json
+{
+  "title": "Feature title",
+  "executionOrder": 1,
+  "estimatedComplexity": "moderate",
+  "canParallelize": true,
+  "parallelGroup": "group-1",
+  "dependencies": [0],  // indices of earlier features
+  "structuredDesc": {
+    "summary": "Brief summary",
+    "aiInstructions": "Detailed instructions for AI",
+    "acceptanceCriteria": ["Criterion 1", "Criterion 2"],
+    "filesInvolved": ["src/file1.ts"],
+    "testingStrategy": "Unit tests + integration tests"
+  },
+  "tasks": [
+    {
+      "title": "Task title",
+      "executionOrder": 1,
+      "estimatedComplexity": "simple",
+      "structuredDesc": { /* same as feature */ }
+    }
+  ]
+}
+```
+
+**Example:**
+```json
+{
+  "name": "User Authentication System",
+  "team": "Engineering",
+  "features": [
+    {
+      "title": "Database Schema",
+      "executionOrder": 1,
+      "estimatedComplexity": "simple",
+      "structuredDesc": {
+        "summary": "Create users and sessions tables",
+        "aiInstructions": "Use PostgreSQL migrations. Add indexes on email and session_token.",
+        "acceptanceCriteria": ["Migration runs successfully", "Indexes created"]
+      },
+      "tasks": [
+        {
+          "title": "Create users table migration",
+          "estimatedComplexity": "trivial",
+          "structuredDesc": {
+            "summary": "Add users table with email, hashed_password, created_at"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### spectree__complete_task_with_validation
+
+**Run all validations and complete a task atomically if they pass.**
+
+Combines `spectree__run_all_validations` + `spectree__complete_work`.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `taskId` | string | Yes | Task UUID or identifier (e.g., "COM-123-1") |
+| `summary` | string | No | Summary of work completed |
+| `workingDirectory` | string | No | Directory for validation commands |
+| `stopOnFirstFailure` | boolean | No | Stop after first failed validation |
+| `skipValidations` | boolean | No | Skip validations and complete immediately |
+
+**Behavior:**
+- Runs ALL validation checks
+- If any fail: returns failure details WITHOUT completing
+- If all pass: marks task as Done and records completion timestamp
+- If no validations defined: completes immediately
+
+**Example:**
+```json
+{
+  "taskId": "COM-123-1",
+  "summary": "Implemented user authentication with JWT tokens. All tests passing.",
+  "workingDirectory": "/Users/dev/project"
+}
+```
+
+### spectree__manage_ai_context
+
+**Unified interface for AI context operations (get/set/append).**
+
+Consolidates 3 tools: `spectree__get_ai_context`, `spectree__set_ai_context`, `spectree__append_ai_note`.
+
+**Actions:**
+- `get_context`: Retrieve AI context and notes
+- `set_context`: Replace entire context field
+- `append_note`: Add a note to the notes array
+
+**Get context example:**
+```json
+{
+  "action": "get_context",
+  "id": "COM-123",
+  "type": "feature"
+}
+```
+
+**Set context example:**
+```json
+{
+  "action": "set_context",
+  "id": "COM-123",
+  "type": "feature",
+  "context": "## Progress\nImplemented 3 of 5 endpoints...",
+  "sessionId": "session-abc"
+}
+```
+
+**Append note example:**
+```json
+{
+  "action": "append_note",
+  "id": "COM-123",
+  "type": "feature",
+  "noteType": "decision",
+  "content": "Chose Express over Fastify for better middleware ecosystem",
+  "sessionId": "session-abc"
+}
+```
+
+### spectree__manage_code_context
+
+**Unified interface for code artifact tracking (files, functions, branches, commits, PRs).**
+
+Consolidates 7 tools: `spectree__get_code_context`, `spectree__link_code_file`, `spectree__unlink_code_file`, `spectree__link_function`, `spectree__link_branch`, `spectree__link_commit`, `spectree__link_pr`.
+
+**Actions:**
+- `get_context`: Get all code artifacts
+- `link_file`: Link a file path
+- `unlink_file`: Remove a file
+- `link_function`: Link a function (file:function)
+- `link_branch`: Link git branch
+- `link_commit`: Link git commit SHA
+- `link_pr`: Link pull request
+
+**Link file example:**
+```json
+{
+  "action": "link_file",
+  "id": "COM-123",
+  "type": "feature",
+  "filePath": "src/auth/jwt.ts"
+}
+```
+
+**Link branch example:**
+```json
+{
+  "action": "link_branch",
+  "id": "COM-123",
+  "type": "feature",
+  "branchName": "feature/COM-123-auth-system"
+}
+```
+
+### spectree__manage_description
+
+**Unified interface for structured descriptions (get/set/update/add).**
+
+Consolidates 6 tools: `spectree__get_structured_description`, `spectree__set_structured_description`, `spectree__update_section`, `spectree__add_acceptance_criterion`, `spectree__link_file`, `spectree__add_external_link`.
+
+**Actions:**
+- `get`: Get structured description
+- `set`: Replace entire structured description
+- `update_section`: Update one section
+- `add_criterion`: Append acceptance criterion
+- `link_file`: Add file to filesInvolved
+- `add_link`: Add external link
+
+**Set structured description example:**
+```json
+{
+  "action": "set",
+  "id": "COM-123",
+  "type": "feature",
+  "structuredDesc": {
+    "summary": "User authentication system",
+    "aiInstructions": "Use JWT tokens. Store in httpOnly cookies.",
+    "acceptanceCriteria": [
+      "Users can register with email/password",
+      "Login returns JWT token",
+      "Protected routes verify tokens"
+    ],
+    "filesInvolved": ["src/auth/jwt.ts", "src/middleware/auth.ts"],
+    "testingStrategy": "Unit tests + E2E tests with Playwright"
+  }
+}
+```
+
+**Update section example:**
+```json
+{
+  "action": "update_section",
+  "id": "COM-123",
+  "type": "feature",
+  "section": "testingStrategy",
+  "value": "Unit tests + integration tests + E2E with Cypress"
+}
+```
+
+### spectree__manage_progress
+
+**Unified interface for progress tracking (start/complete/log/report blocker).**
+
+Consolidates 4 tools: `spectree__start_work`, `spectree__complete_work`, `spectree__log_progress`, `spectree__report_blocker`.
+
+**Actions:**
+- `start_work`: Begin work (sets status to In Progress)
+- `complete_work`: Mark as Done (records completion time)
+- `log_progress`: Record incremental progress
+- `report_blocker`: Report blocker (sets status to Blocked)
+
+**Start work example:**
+```json
+{
+  "action": "start_work",
+  "id": "COM-123-1",
+  "type": "task",
+  "sessionId": "session-abc"
+}
+```
+
+**Complete work example:**
+```json
+{
+  "action": "complete_work",
+  "id": "COM-123-1",
+  "type": "task",
+  "summary": "Implemented JWT authentication with proper error handling",
+  "sessionId": "session-abc"
+}
+```
+
+**Log progress example:**
+```json
+{
+  "action": "log_progress",
+  "id": "COM-123-1",
+  "type": "task",
+  "message": "Completed login endpoint. Working on logout endpoint.",
+  "percentComplete": 50
+}
+```
+
+### spectree__manage_validations
+
+**Unified interface for validation checks (add/list/run/mark/remove/reset).**
+
+Consolidates 7 tools: `spectree__add_validation`, `spectree__list_validations`, `spectree__run_validation`, `spectree__run_all_validations`, `spectree__mark_manual_validated`, `spectree__remove_validation`, `spectree__reset_validations`.
+
+**Actions:**
+- `add`: Add a validation check
+- `list`: List all checks with status
+- `run`: Run a single check
+- `run_all`: Run all checks
+- `mark_manual`: Mark manual check as validated
+- `remove`: Remove a check
+- `reset`: Reset all to pending
+
+**Add validation example:**
+```json
+{
+  "action": "add",
+  "taskId": "COM-123-1",
+  "type": "test_passes",
+  "description": "All auth tests pass",
+  "testCommand": "npm test -- auth"
+}
+```
+
+**Run all validations example:**
+```json
+{
+  "action": "run_all",
+  "taskId": "COM-123-1",
+  "workingDirectory": "/Users/dev/project",
+  "stopOnFailure": false
+}
 ```
 
 ---
@@ -103,6 +425,18 @@ Create a new team-scoped epic.
 | `description` | string | No | Epic description |
 | `color` | string | No | Hex color code (e.g., "#FF5733") |
 | `icon` | string | No | Icon identifier |
+
+### spectree__update_epic
+
+Update an existing epic. Only provided fields are updated.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Epic ID (UUID) or exact name |
+| `name` | string | No | New epic name |
+| `description` | string | No | New description |
+| `color` | string | No | New hex color code |
+| `icon` | string | No | New icon identifier |
 
 ### spectree__reorder_epic
 
@@ -237,9 +571,13 @@ Update an existing task.
 
 These tools make status updates natural and automatic for AI workflows. They track timing, log context, and integrate with the AI notes system.
 
+**⚡ Recommended:** Use the composite tool [`spectree__manage_progress`](#spectree__manage_progress) for better efficiency.
+
 **Full documentation:** [Progress Tracking](./progress-tracking.md)
 
 ### spectree__start_work
+
+⚠️ **DEPRECATED:** Use `spectree__manage_progress` with `action='start_work'` instead.
 
 Begin working on a feature or task. Sets status to "In Progress" and records start time.
 
@@ -250,6 +588,8 @@ Begin working on a feature or task. Sets status to "In Progress" and records sta
 | `sessionId` | string | No | AI session identifier |
 
 ### spectree__complete_work
+
+⚠️ **DEPRECATED:** Use `spectree__manage_progress` with `action='complete_work'` instead.
 
 Mark a feature or task as complete. Sets status to "Done", calculates duration, and logs summary.
 
@@ -262,6 +602,8 @@ Mark a feature or task as complete. Sets status to "Done", calculates duration, 
 
 ### spectree__log_progress
 
+⚠️ **DEPRECATED:** Use `spectree__manage_progress` with `action='log_progress'` instead.
+
 Log incremental progress without changing status. Use for long-running work items.
 
 | Parameter | Type | Required | Description |
@@ -273,6 +615,8 @@ Log incremental progress without changing status. Use for long-running work item
 | `sessionId` | string | No | AI session identifier |
 
 ### spectree__report_blocker
+
+⚠️ **DEPRECATED:** Use `spectree__manage_progress` with `action='report_blocker'` instead.
 
 Report that work is blocked. Records reason and optionally links to blocking item.
 
@@ -485,9 +829,15 @@ Remove a blocker from a feature or task.
 
 ## AI Context
 
-These tools enable AI sessions to store and retrieve context, enabling cross-session continuity and knowledge transfer. When an AI session works on a task, it can leave notes and context for the next session.
+AI sessions can store and retrieve context about features, tasks, and epics. This enables cross-session continuity where one AI session can pick up where another left off.
+
+**⚡ Recommended:** Use the composite tool [`spectree__manage_ai_context`](#spectree__manage_ai_context) for better efficiency.
+
+**Full documentation:** [AI Session Context](./ai-session-context.md)
 
 ### spectree__get_ai_context
+
+⚠️ **DEPRECATED:** Use `spectree__manage_ai_context` with `action='get_context'` instead.
 
 Retrieve AI context for a feature or task. Returns structured context and notes from previous sessions.
 
@@ -518,6 +868,8 @@ Retrieve AI context for a feature or task. Returns structured context and notes 
 
 ### spectree__set_ai_context
 
+⚠️ **DEPRECATED:** Use `spectree__manage_ai_context` with `action='set_context'` instead.
+
 Set structured context for a feature or task. This replaces the entire AI context field.
 
 | Parameter | Type | Required | Description |
@@ -530,6 +882,8 @@ Set structured context for a feature or task. This replaces the entire AI contex
 **Use this to store:** Summary of current state, structured data (JSON), key decisions, technical notes.
 
 ### spectree__append_ai_note
+
+⚠️ **DEPRECATED:** Use `spectree__manage_ai_context` with `action='append_note'` instead.
 
 Append a note to a feature or task's AI notes array. Notes are never overwritten, only appended.
 
@@ -624,25 +978,19 @@ Check if there's an active session for an epic.
 |-----------|------|----------|-------------|
 | `epicId` | string | Yes | Epic ID (UUID) or exact name |
 
-### spectree__log_session_work
-
-Manually log work on an item to the active session. Usually called automatically by `spectree__start_work` and `spectree__complete_work`.
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `epicId` | string | Yes | Epic ID (UUID) or exact name |
-| `itemId` | string | Yes | UUID of feature or task |
-| `itemType` | enum | Yes | "feature" or "task" |
-| `identifier` | string | Yes | Human-readable identifier (e.g., "COM-123") |
-| `action` | string | Yes | Action performed (e.g., "started", "completed") |
-
 ---
 
 ## Structured Descriptions
 
-These tools enable AI agents to work with structured, AI-friendly descriptions that break down work items into extractable sections. See [Structured Descriptions](./structured-descriptions.md) for full documentation.
+These tools enable AI agents to work with structured, AI-friendly descriptions that break down work items into extractable sections.
+
+**⚡ Recommended:** Use the composite tool [`spectree__manage_description`](#spectree__manage_description) for better efficiency.
+
+**Full documentation:** [Structured Descriptions](./structured-descriptions.md)
 
 ### spectree__get_structured_description
+
+⚠️ **DEPRECATED:** Use `spectree__manage_description` with `action='get'` instead.
 
 Get the parsed structured description from a feature or task.
 
@@ -655,6 +1003,8 @@ Get the parsed structured description from a feature or task.
 
 ### spectree__set_structured_description
 
+⚠️ **DEPRECATED:** Use `spectree__manage_description` with `action='set'` instead.
+
 Replace the entire structured description.
 
 | Parameter | Type | Required | Description |
@@ -664,6 +1014,8 @@ Replace the entire structured description.
 | `structuredDescription` | object | Yes | Full StructuredDescription object |
 
 ### spectree__update_section
+
+⚠️ **DEPRECATED:** Use `spectree__manage_description` with `action='update_section'` instead.
 
 Update a single section without affecting others (recommended approach).
 
@@ -678,6 +1030,8 @@ Update a single section without affecting others (recommended approach).
 
 ### spectree__add_acceptance_criterion
 
+⚠️ **DEPRECATED:** Use `spectree__manage_description` with `action='add_criterion'` instead.
+
 Append an acceptance criterion to the list.
 
 | Parameter | Type | Required | Description |
@@ -688,6 +1042,8 @@ Append an acceptance criterion to the list.
 
 ### spectree__link_file
 
+⚠️ **DEPRECATED:** Use `spectree__manage_description` with `action='link_file'` instead.
+
 Add a file path to filesInvolved.
 
 | Parameter | Type | Required | Description |
@@ -697,6 +1053,8 @@ Add a file path to filesInvolved.
 | `filePath` | string | Yes | File path to link |
 
 ### spectree__add_external_link
+
+⚠️ **DEPRECATED:** Use `spectree__manage_description` with `action='add_link'` instead.
 
 Add an external URL reference.
 
@@ -712,13 +1070,30 @@ Add an external URL reference.
 
 ## Code Context
 
-Code Context tools link features and tasks directly to code artifacts (files, functions, git branches, commits, PRs). This enables AI agents to instantly understand the code context for any work item. See [Code Context](./code-context.md) for full documentation.
+Code Context tools link features and tasks directly to code artifacts (files, functions, git branches, commits, PRs). This enables AI agents to instantly understand the code context for any work item.
+
+**⚡ Recommended:** Use the composite tool [`spectree__manage_code_context`](#spectree__manage_code_context) for better efficiency.
+
+**Full documentation:** [Code Context](./code-context.md)
 
 **Difference from Structured Descriptions:**
 - Structured descriptions (`filesInvolved`) = files you *plan* to modify
 - Code context (`relatedFiles`) = files you *actually* modified
 
+### spectree__get_code_context
+
+⚠️ **DEPRECATED:** Use `spectree__manage_code_context` with `action='get_context'` instead.
+
+Get all code artifacts (files, functions, branch, commits, PR) for a feature or task.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Feature/task ID or identifier |
+| `type` | enum | Yes | "feature" or "task" |
+
 ### spectree__link_code_file
+
+⚠️ **DEPRECATED:** Use `spectree__manage_code_context` with `action='link_file'` instead.
 
 Add a source file to a feature or task's related files list. Duplicates are silently ignored.
 
@@ -730,6 +1105,8 @@ Add a source file to a feature or task's related files list. Duplicates are sile
 
 ### spectree__unlink_code_file
 
+⚠️ **DEPRECATED:** Use `spectree__manage_code_context` with `action='unlink_file'` instead.
+
 Remove a source file from the related files list.
 
 | Parameter | Type | Required | Description |
@@ -739,6 +1116,8 @@ Remove a source file from the related files list.
 | `filePath` | string | Yes | File path to unlink |
 
 ### spectree__link_function
+
+⚠️ **DEPRECATED:** Use `spectree__manage_code_context` with `action='link_function'` instead.
 
 Add a function reference. Functions are stored as `"filePath:functionName"`.
 
@@ -750,6 +1129,8 @@ Add a function reference. Functions are stored as `"filePath:functionName"`.
 | `functionName` | string | Yes | Function/method name |
 
 ### spectree__link_branch
+
+⚠️ **DEPRECATED:** Use `spectree__manage_code_context` with `action='link_branch'` instead.
 
 Set the git branch for a feature or task. Only one branch per item (replaces previous).
 
@@ -770,6 +1151,8 @@ Add a commit SHA to the commits list. Duplicates are ignored; commits accumulate
 | `commitSha` | string | Yes | Git commit SHA |
 
 ### spectree__link_pr
+
+⚠️ **DEPRECATED:** Use `spectree__manage_code_context` with `action='link_pr'` instead.
 
 Link a pull request. Only one PR per item (replaces previous).
 
@@ -805,9 +1188,15 @@ Get all code context for a feature or task.
 
 ## Validation Checklists
 
-Validation checklists allow tasks to have executable acceptance criteria that verify work is truly "done". See [Validation Checklists](./validation-checklists.md) for full documentation.
+Validation checklists allow tasks to have executable acceptance criteria that verify work is truly "done".
+
+**⚡ Recommended:** Use the composite tool [`spectree__manage_validations`](#spectree__manage_validations) for better efficiency.
+
+**Full documentation:** [Validation Checklists](./validation-checklists.md)
 
 ### spectree__add_validation
+
+⚠️ **DEPRECATED:** Use `spectree__manage_validations` with `action='add'` instead.
 
 Add a validation check to a task.
 
@@ -835,6 +1224,8 @@ Add a validation check to a task.
 
 ### spectree__list_validations
 
+⚠️ **DEPRECATED:** Use `spectree__manage_validations` with `action='list'` instead.
+
 List all validation checks for a task with status summary.
 
 | Parameter | Type | Required | Description |
@@ -851,6 +1242,8 @@ List all validation checks for a task with status summary.
 
 ### spectree__run_validation
 
+⚠️ **DEPRECATED:** Use `spectree__manage_validations` with `action='run'` instead.
+
 Run a single validation check.
 
 | Parameter | Type | Required | Description |
@@ -860,6 +1253,8 @@ Run a single validation check.
 | `workingDirectory` | string | No | Working directory for execution |
 
 ### spectree__run_all_validations
+
+⚠️ **DEPRECATED:** Use `spectree__manage_validations` with `action='run_all'` instead. Or use `spectree__complete_task_with_validation` to run validations and complete the task atomically.
 
 Run all automated validation checks for a task.
 
@@ -883,6 +1278,8 @@ Run all automated validation checks for a task.
 
 ### spectree__mark_manual_validated
 
+⚠️ **DEPRECATED:** Use `spectree__manage_validations` with `action='mark_manual'` instead.
+
 Mark a manual validation check as passed.
 
 | Parameter | Type | Required | Description |
@@ -893,6 +1290,8 @@ Mark a manual validation check as passed.
 
 ### spectree__remove_validation
 
+⚠️ **DEPRECATED:** Use `spectree__manage_validations` with `action='remove'` instead.
+
 Remove a validation check from a task.
 
 | Parameter | Type | Required | Description |
@@ -902,11 +1301,51 @@ Remove a validation check from a task.
 
 ### spectree__reset_validations
 
+⚠️ **DEPRECATED:** Use `spectree__manage_validations` with `action='reset'` instead.
+
 Reset all validation checks to pending status.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `taskId` | string | Yes | Task identifier |
+
+---
+
+## Changelog
+
+Query entity change history to understand how features, tasks, and epics evolved over time. Returns field-level changes with timestamps.
+
+### spectree__get_changelog
+
+Get change history for an entity with field-level details.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `entityType` | enum | Yes | "epic", "feature", or "task" |
+| `entityId` | string | Yes | UUID of the entity |
+| `epicId` | UUID | No | Filter by epic ID |
+| `field` | string | No | Filter by specific field (e.g., "statusId", "title") |
+| `changedBy` | UUID | No | Filter by user who made the change |
+| `since` | string | No | Filter changes after date (ISO-8601 or duration like "-P7D") |
+| `until` | string | No | Filter changes before date (ISO-8601) |
+| `limit` | number | No | Max results (default: 20, max: 100) |
+| `cursor` | string | No | Pagination cursor |
+
+**Use cases:**
+- Track status changes over time
+- Find who changed a specific field
+- Audit changes within a date range
+- Review epic-wide changes
+
+**Example:**
+```json
+{
+  "entityType": "feature",
+  "entityId": "550e8400-...",
+  "field": "statusId",
+  "since": "-P7D"
+}
+```
 
 ---
 
@@ -1006,6 +1445,46 @@ Create an epic in the personal scope.
 List workflow statuses in the personal scope.
 
 *No parameters required.*
+
+---
+
+## Teams
+
+Manage and query team information.
+
+### spectree__list_teams
+
+List all teams the authenticated user has access to.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| None | - | - | Returns all accessible teams |
+
+**Returns:** Array of teams with id, name, key, and team metadata.
+
+**Use this to:**
+- Discover available teams before creating epics
+- Find team keys for referencing in other operations
+- List team-specific workflow statuses
+
+**Example response:**
+```json
+{
+  "teams": [
+    {
+      "id": "550e8400-...",
+      "name": "Engineering",
+      "key": "ENG",
+      "description": "Core engineering team"
+    },
+    {
+      "id": "660e9500-...",
+      "name": "Design",
+      "key": "DES"
+    }
+  ]
+}
+```
 
 ---
 
@@ -1120,11 +1599,43 @@ Built-in templates cannot be modified or deleted.
 
 ## Ordering
 
+**Note:** Individual reorder tools are deprecated. Use `spectree__reorder_item` instead for a unified interface.
+
+### spectree__reorder_item
+
+**Unified interface for reordering epics, features, and tasks.**
+
+Consolidates 3 tools: `spectree__reorder_epic`, `spectree__reorder_feature`, `spectree__reorder_task`.
+
+**Actions:**
+- `reorder_epic`: Change epic position within team
+- `reorder_feature`: Change feature position within epic
+- `reorder_task`: Change task position within feature
+
+**Parameters:**
+- `action`: "reorder_epic", "reorder_feature", or "reorder_task"
+- `id`: UUID of the item to reorder
+- `afterId`: UUID of item to place after (optional)
+- `beforeId`: UUID of item to place before (optional)
+
+**Example:**
+```json
+{
+  "action": "reorder_feature",
+  "id": "550e8400-...",
+  "afterId": "660e9500-..."
+}
+```
+
 ### spectree__reorder_epic
+
+⚠️ **DEPRECATED:** Use `spectree__reorder_item` with `action='reorder_epic'` instead.
 
 *See [Epics](#spectree__reorder_epic) section.*
 
 ### spectree__reorder_feature
+
+⚠️ **DEPRECATED:** Use `spectree__reorder_item` with `action='reorder_feature'` instead.
 
 Change feature position within its epic.
 
@@ -1135,6 +1646,8 @@ Change feature position within its epic.
 | `beforeId` | string | No | Place before this feature |
 
 ### spectree__reorder_task
+
+⚠️ **DEPRECATED:** Use `spectree__reorder_item` with `action='reorder_task'` instead.
 
 Change task position within its feature.
 

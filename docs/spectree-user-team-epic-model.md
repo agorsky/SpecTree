@@ -51,15 +51,6 @@ User ─────────────────────────
 - **PersonalScope**: Private workspace for a user's personal epics (1:1 with User)
 - **Membership**: Join table linking users to teams with role-based permissions
 - **Epic**: Container for features; belongs to either a team OR a user's personal scope (via `scopeType`)
-- **Feature**: Primary work item (like Linear's "Issue"), belongs to an epic
-- **Task**: Sub-item of a feature, for breaking down work
-
----
-
-## Database Schema
-
-### User Model
-
 ```prisma
 model User {
   id           String   @id @default(uuid())
@@ -68,15 +59,17 @@ model User {
   passwordHash String   @map("password_hash")
   avatarUrl    String?  @map("avatar_url")
   isActive     Boolean  @default(true) @map("is_active")
+  isGlobalAdmin Boolean  @default(false) @map("is_global_admin")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  memberships      Membership[]
-  assignedFeatures Feature[]       @relation("AssignedFeatures")
-  assignedTasks    Task[]          @relation("AssignedTasks")
-  apiTokens        ApiToken[]
-  personalScope    PersonalScope?
-  invitations      UserInvitation[]
+  memberships        Membership[]
+  assignedFeatures   Feature[]        @relation("AssignedFeatures")
+  assignedTasks      Task[]           @relation("AssignedTasks")
+  apiTokens          ApiToken[]
+  personalScope      PersonalScope?
+  invitationsCreated UserInvitation[] @relation("InvitationCreator")
+  createdTemplates   PlanTemplate[]
 
   @@index([email])
   @@map("users")
@@ -92,6 +85,16 @@ model User {
 | `passwordHash` | String | bcrypt-hashed password (10 rounds) |
 | `avatarUrl` | String? | Optional profile image URL |
 | `isActive` | Boolean | Soft delete flag (default: true) |
+| `isGlobalAdmin` | Boolean | Global admin privileges flag (default: false) |
+
+**Relations:**
+- `memberships`: Teams this user belongs to (many-to-many via Membership)
+- `assignedFeatures`: Features assigned to this user
+- `assignedTasks`: Tasks assigned to this user
+- `apiTokens`: API tokens created by this user
+- `personalScope`: User's personal workspace (1:1, optional)
+- `invitationsCreated`: Invitations created by this user (admin feature)
+- `createdTemplates`: Plan templates created by this user
 
 ### Team Model
 

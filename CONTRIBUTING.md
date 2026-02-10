@@ -236,7 +236,16 @@ pnpm format:check
 
 ## Git Workflow
 
-We use a trunk-based development workflow with short-lived feature branches.
+We use a **trunk-based development** workflow with continuous deployment from the `main` branch.
+
+### Current Workflow
+
+- **`main` branch**: The single integration branch - always deployable, deploys automatically to Azure
+- **Feature branches**: Short-lived branches created from `main` for new functionality
+- **Pull Requests**: All changes must go through PR review before merging to `main`
+- **Continuous Deployment**: Every merge to `main` triggers automated deployment to Azure
+
+> **🚀 Future Workflow**: As SpecTree matures into production with customer deployments, we will adopt a release train workflow with dedicated release branches for QA stabilization. See [`docs/GIT/git-release-flow-strategy-final-with-definitions.md`](./docs/GIT/git-release-flow-strategy-final-with-definitions.md) for the planned future workflow.
 
 ### Branch Naming
 
@@ -244,11 +253,13 @@ Use this format: `<type>/<ticket>-<short-description>`
 
 | Type | Use Case | Example |
 |------|----------|---------|
-| `feature/` | New features | `feature/COM-123-user-auth` |
-| `fix/` | Bug fixes | `fix/COM-456-login-error` |
-| `refactor/` | Code refactoring | `refactor/COM-789-api-cleanup` |
-| `docs/` | Documentation | `docs/COM-012-api-docs` |
+| `feature/` | New features | `feature/ENG-123-user-auth` |
+| `fix/` | Bug fixes | `fix/ENG-456-login-error` |
+| `refactor/` | Code refactoring | `refactor/ENG-789-api-cleanup` |
+| `docs/` | Documentation | `docs/ENG-012-api-docs` |
 | `chore/` | Maintenance tasks | `chore/update-dependencies` |
+
+> **Note**: Use your team's issue tracking prefix (e.g., `ENG-` for Engineering team issues).
 
 ### Workflow Steps
 
@@ -256,7 +267,7 @@ Use this format: `<type>/<ticket>-<short-description>`
    ```bash
    git checkout main
    git pull origin main
-   git checkout -b feature/COM-123-new-feature
+   git checkout -b feature/ENG-123-new-feature
    ```
 
 2. **Make changes** with atomic commits (see [Commit Messages](#commit-messages))
@@ -269,17 +280,20 @@ Use this format: `<type>/<ticket>-<short-description>`
 
 4. **Push and create PR**:
    ```bash
-   git push -u origin feature/COM-123-new-feature
+   git push -u origin feature/ENG-123-new-feature
    ```
 
-5. **After PR approval**, squash and merge into main
+5. **After PR approval**, the PR will be **squash merged** into `main`
+
+6. **Automatic deployment**: Changes merged to `main` automatically deploy to Azure
 
 ### Branch Rules
 
-- Never commit directly to `main`
+- **Never commit directly to `main`** - all changes must go through PR review
 - Keep branches short-lived (< 1 week ideally)
 - Delete branches after merging
-- Rebase onto main before merging to keep history clean
+- Rebase onto `main` before creating PR to keep history clean
+- PRs are squash merged to maintain clean commit history on `main`
 
 ## Pull Request Process
 

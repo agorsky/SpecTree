@@ -82,8 +82,8 @@ Report progress at meaningful milestones (not after every line of code):
 
 ```
 spectree__log_progress({
-  id: "ENG-123-1",
   type: "task",
+  id: "ENG-123-1",
   message: "Completed database schema migration, moving to API route implementation",
   percentComplete: 40
 })
@@ -101,12 +101,14 @@ When you make a choice between alternatives, log it:
 
 ```
 spectree__log_decision({
-  id: "ENG-123-1",
-  type: "task",
-  title: "Chose Zod over Joi for validation",
-  decision: "Using Zod for request validation because it integrates with TypeScript types natively and the project already uses it in packages/api/src/validation/",
-  alternatives: "Joi (more mature but no TS integration), class-validator (decorator-based, different pattern)",
-  rationale: "Consistency with existing codebase patterns and TypeScript-first approach"
+  epicId: "<epic-uuid>",
+  taskId: "<task-uuid>",      // optional - only if decision is task-specific
+  question: "Which validation library to use for request bodies?",
+  decision: "Use Zod",
+  rationale: "Already used throughout the project for schema validation in packages/api/src/validation/",
+  alternatives: ["Joi", "class-validator"],
+  category: "library",  // architecture, library, approach, scope, design, tradeoff, deferral
+  impact: "low"         // low, medium, high
 })
 ```
 
@@ -124,8 +126,7 @@ Track which files you create or modify:
 spectree__link_code_file({
   type: "task",
   id: "ENG-123-1",
-  filePath: "packages/api/src/routes/preferences.ts",
-  description: "New API route for user preferences CRUD"
+  filePath: "packages/api/src/routes/preferences.ts"
 })
 ```
 
@@ -137,16 +138,11 @@ If you encounter something that prevents progress:
 
 ```
 spectree__report_blocker({
-  id: "ENG-123-1",
   type: "task",
-  reason: "Cannot implement API route because the database migration from task ENG-123-0 hasn't been applied yet",
-  severity: "blocking"
+  id: "ENG-123-1",
+  reason: "Cannot implement API route because the database migration from task ENG-123-0 hasn't been applied yet"
 })
 ```
-
-Severity levels:
-- `"blocking"` - Cannot continue at all, need intervention
-- `"partial"` - Can work around it but the result will be incomplete
 
 ### Leave Notes for Future Sessions
 
@@ -154,9 +150,10 @@ If you need to communicate something to the next AI session:
 
 ```
 spectree__append_ai_note({
-  id: "ENG-123-1",
   type: "task",
-  note: "The Prisma client needs to be regenerated after the schema change in this task. Run 'pnpm prisma generate' in packages/api/ before running tests."
+  id: "ENG-123-1",
+  noteType: "context",
+  content: "The Prisma client needs to be regenerated after the schema change in this task. Run 'pnpm prisma generate' in packages/api/ before running tests."
 })
 ```
 
@@ -172,8 +169,8 @@ For each task you fully completed:
 
 ```
 spectree__complete_work({
-  id: "ENG-123-1",
   type: "task",
+  id: "ENG-123-1",
   summary: "Implemented user preferences API with GET/PUT endpoints, Zod validation, and Prisma queries. All acceptance criteria met."
 })
 ```
@@ -186,8 +183,8 @@ For tasks you started but didn't finish:
 
 ```
 spectree__log_progress({
-  id: "ENG-123-2",
   type: "task",
+  id: "ENG-123-2",
   message: "Completed 3 of 5 unit tests. Remaining: error handling tests and edge case tests.",
   percentComplete: 60
 })
@@ -199,9 +196,10 @@ Leave a summary for the next session:
 
 ```
 spectree__append_ai_note({
-  id: "<epic-uuid>",
   type: "epic",
-  note: "Session completed tasks ENG-123-1 and ENG-123-2 (partial). Next: finish ENG-123-2 tests, then start ENG-123-3. Key decision: using Zod for validation (logged). No blockers."
+  id: "<epic-uuid>",
+  noteType: "context",
+  content: "Session completed tasks ENG-123-1 and ENG-123-2 (partial). Next: finish ENG-123-2 tests, then start ENG-123-3. Key decision: using Zod for validation (logged). No blockers."
 })
 ```
 
@@ -222,8 +220,8 @@ If you cannot complete a task due to an error:
 1. Log the failure:
    ```
    spectree__log_progress({
-     id: "ENG-123-1",
      type: "task",
+     id: "ENG-123-1",
      message: "FAILED: TypeScript compilation errors in preferences.ts due to missing type export from shared package",
      percentComplete: 70
    })
@@ -232,10 +230,9 @@ If you cannot complete a task due to an error:
 2. Report the blocker:
    ```
    spectree__report_blocker({
-     id: "ENG-123-1",
      type: "task",
-     reason: "Missing type export from @spectree/shared - need UserPreferences type exported from packages/shared/src/types/index.ts",
-     severity: "blocking"
+     id: "ENG-123-1",
+     reason: "Missing type export from @spectree/shared - need UserPreferences type exported from packages/shared/src/types/index.ts"
    })
    ```
 

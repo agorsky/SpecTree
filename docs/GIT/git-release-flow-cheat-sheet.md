@@ -1,5 +1,12 @@
 # Git Release Flow – Cheat Sheet
 
+> **⚠️ FUTURE WORKFLOW NOTICE**  
+> This cheat sheet describes a **planned future workflow** for production releases with QA cycles.  
+> **Current workflow**: Trunk-based development with continuous deployment from `main`.  
+> See [`CONTRIBUTING.md`](../../CONTRIBUTING.md) for current guidelines.
+
+---
+
 **Quick Reference** | Full policy: [git-release-flow-strategy-final-with-definitions.md](git-release-flow-strategy-final-with-definitions.md)
 
 ---

@@ -108,6 +108,8 @@ SpecTree/
 │   │   └── Dockerfile
 │   ├── mcp/          # MCP server for AI integrations
 │   │   └── src/      # MCP server source
+│   ├── orchestrator/ # CLI for parallel AI agent execution
+│   │   └── src/      # Orchestrator source
 │   └── shared/       # Shared types and utilities
 ├── infra/            # Azure Bicep infrastructure files
 │   ├── modules/      # Bicep modules
@@ -127,9 +129,11 @@ SpecTree/
 ```
 @spectree/shared  ─── No dependencies (base package)
        │
-       ├── @spectree/api     (depends on shared)
-       ├── @spectree/web     (depends on shared)
-       └── @spectree/mcp     (depends on shared, api)
+       ├── @spectree/api         (depends on shared)
+       ├── @spectree/web         (depends on shared)
+       └── @spectree/mcp         (depends on shared)
+
+@spectree/orchestrator ─── Standalone (own REST client/MCP bridge, no internal deps)
 ```
 
 ## Environment Variables
@@ -166,6 +170,8 @@ cp .env.example .env
 | `pnpm install` | Install all dependencies |
 | `pnpm build` | Build all packages |
 | `pnpm dev` | Start development servers (API + Web) |
+| `pnpm test` | Run all tests |
+| `pnpm test:watch` | Run tests in watch mode |
 | `pnpm lint` | Run ESLint on all packages |
 | `pnpm lint:fix` | Fix ESLint issues automatically |
 | `pnpm format` | Format code with Prettier |
@@ -212,6 +218,7 @@ pnpm --filter @spectree/api db:seed
 pnpm --filter @spectree/api build
 pnpm --filter @spectree/web build
 pnpm --filter @spectree/mcp build
+pnpm --filter @spectree/orchestrator build
 
 # Run a specific package in dev mode
 pnpm --filter @spectree/api dev
@@ -219,6 +226,7 @@ pnpm --filter @spectree/web dev
 
 # Run tests for a specific package
 pnpm --filter @spectree/api test
+pnpm --filter @spectree/orchestrator test
 ```
 
 ### Database Backup & Restore
@@ -476,6 +484,38 @@ GET /api/v1/me/blocked
 ## MCP Server with Claude Code
 
 The SpecTree MCP server enables AI assistants like Claude to interact with the project management platform through secure API token authentication.
+
+### Orchestrator CLI
+
+SpecTree includes a powerful CLI tool (`@spectree/orchestrator`) for parallel AI agent execution:
+
+```bash
+# Install globally
+npm install -g @spectree/orchestrator
+
+# Authenticate
+spectree-agent auth --token st_your-token-here
+
+# Create and execute epic from natural language
+spectree-agent run "Build user authentication with OAuth" --team Engineering
+
+# Resume existing epic
+spectree-agent continue "User Authentication"
+
+# Check progress
+spectree-agent status
+```
+
+**Key Features:**
+- Natural language to implementation planning
+- Parallel agent execution (multiple features at once)
+- Git branch management per feature
+- Real-time progress tracking
+- Session pause/resume with context preservation
+
+See [`packages/orchestrator/README.md`](./packages/orchestrator/README.md) for full documentation.
+
+### MCP Server Documentation
 
 > **📚 Detailed Documentation**: See [`docs/MCP/`](./docs/MCP/) for comprehensive guides on:
 > - [Tools Reference](./docs/MCP/tools-reference.md) — Complete MCP tools documentation
@@ -854,4 +894,3 @@ Additional documentation is available in the `docs/` directory:
 | [MCP Decision Log](./docs/MCP/decision-log.md) | Append-only decision records for preserving rationale |
 | [MCP Documentation](./docs/MCP/) | MCP server setup, authentication, and security |
 | [Azure Deployment Guide](./docs/azure-deployment-guide.md) | Production deployment to Azure |
-| [Design References](./docs/DESIGN-REFERENCES/) | Architectural decisions and Linear API patterns |

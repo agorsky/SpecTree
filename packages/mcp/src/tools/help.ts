@@ -197,7 +197,6 @@ Session Handoff preserves this information for the next session.
 | \`spectree__get_last_session\` | Read previous session without starting new |
 | \`spectree__get_session_history\` | View all sessions for an epic |
 | \`spectree__get_active_session\` | Check if session is active |
-| \`spectree__log_session_work\` | Manually log work (usually automatic) |
 
 ## Recommended Workflow
 

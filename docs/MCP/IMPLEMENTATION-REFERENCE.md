@@ -597,7 +597,7 @@ model PlanTemplate {
 | `docs/MCP/decision-log.md` | Decision logging docs |
 | `docs/MCP/progress-summary.md` | Progress tracking docs |
 | `docs/MCP/templates.md` | Template system docs |
-| `docs/ai-enhancement-proposals.md` | Original enhancement proposals |
+| `docs/archive/planning/ai-enhancement-proposals.md` | Original enhancement proposals (archived) |
 
 ---
 
