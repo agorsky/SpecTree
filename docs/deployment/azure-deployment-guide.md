@@ -1188,7 +1188,7 @@ SQLSERVER_DATABASE_URL=sqlserver://localhost:1433;database=spectree_dev;user=sa;
 #### See Also
 
 - [Bicep Secret Reference Pattern](./bicep-secret-reference-pattern.md) - Detailed technical documentation
-- [Secure Database Connection Evaluation](./secure-database-connection-evaluation.md) - Decision rationale
+- [Secure Database Connection Evaluation](../database/secure-database-connection-evaluation.md) - Decision rationale
 
 ---
 
@@ -1631,7 +1631,7 @@ Test by asking your AI assistant to list SpecTree epics or features. If connecti
 
 - [README.md](/README.md) - Project overview and local development
 - [infra/README.md](/infra/README.md) - Infrastructure documentation
-- [docs/database-multi-provider.md](/docs/database-multi-provider.md) - Multi-database provider setup and Prisma schema configuration
-- [docs/MCP/api-token-authentication.md](/docs/MCP/api-token-authentication.md) - Detailed API token documentation
-- [docs/MCP/security-architecture.md](/docs/MCP/security-architecture.md) - Security model explanation
-- [docs/database-safety-guide.md](/docs/database-safety-guide.md) - Database safety guidelines
+- [docs/database/database-multi-provider.md](/docs/database/database-multi-provider.md) - Multi-database provider setup and Prisma schema configuration
+- [docs/mcp/api-token-authentication.md](/docs/mcp/api-token-authentication.md) - Detailed API token documentation
+- [docs/mcp/security-architecture.md](/docs/mcp/security-architecture.md) - Security model explanation
+- [docs/database/database-safety-guide.md](/docs/database/database-safety-guide.md) - Database safety guidelines

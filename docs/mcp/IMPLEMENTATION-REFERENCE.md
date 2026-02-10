@@ -587,16 +587,16 @@ model PlanTemplate {
 | File | Purpose |
 |------|---------|
 | `packages/mcp/README.md` | MCP server setup guide |
-| `docs/MCP/tools-reference.md` | Complete tool reference |
-| `docs/MCP/ai-native-epic-workflow-guide.md` | "3 prompts" workflow guide |
-| `docs/MCP/session-handoff.md` | Session continuity docs |
-| `docs/MCP/execution-metadata.md` | Execution planning docs |
-| `docs/MCP/structured-descriptions.md` | Rich descriptions docs |
-| `docs/MCP/code-context.md` | Code linking docs |
-| `docs/MCP/validation-checklists.md` | Validation system docs |
-| `docs/MCP/decision-log.md` | Decision logging docs |
-| `docs/MCP/progress-summary.md` | Progress tracking docs |
-| `docs/MCP/templates.md` | Template system docs |
+| `docs/mcp/tools-reference.md` | Complete tool reference |
+| `docs/mcp/ai-native-epic-workflow-guide.md` | "3 prompts" workflow guide |
+| `docs/mcp/session-handoff.md` | Session continuity docs |
+| `docs/mcp/execution-metadata.md` | Execution planning docs |
+| `docs/mcp/structured-descriptions.md` | Rich descriptions docs |
+| `docs/mcp/code-context.md` | Code linking docs |
+| `docs/mcp/validation-checklists.md` | Validation system docs |
+| `docs/mcp/decision-log.md` | Decision logging docs |
+| `docs/mcp/progress-summary.md` | Progress tracking docs |
+| `docs/mcp/templates.md` | Template system docs |
 | `docs/archive/planning/ai-enhancement-proposals.md` | Original enhancement proposals (archived) |
 
 ---

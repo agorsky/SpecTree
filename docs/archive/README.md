@@ -100,11 +100,7 @@ This makes it immediately clear that:
 
 ### Where to Find Current Docs
 
-For current, active documentation, see:
-- **Main documentation index:** [docs/README.md](../README.md)
-- **MCP implementation:** [docs/MCP/](../MCP/)
-- **API documentation:** [docs/api/](../api/)
-- **Setup guide:** [docs/SETUP_GUIDE.md](../SETUP_GUIDE.md)
+For current documentation, see [docs/README.md](../README.md)
 
 ---
 

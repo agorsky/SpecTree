@@ -17,9 +17,9 @@ Please refer to that file for:
 ## Quick Links
 
 - [Copilot Instructions](./.github/copilot-instructions.md) — Complete AI agent guide
-- [Git Release Flow Strategy](./docs/GIT/git-release-flow-strategy-final-with-definitions.md) — Branching and release process
+- [Git Release Flow Strategy](./docs/git/git-release-flow-strategy-final-with-definitions.md) — Branching and release process
 - [Database Safety Guide](./docs/database-safety-guide.md) — Critical database operation rules
-- [MCP Tools Reference](./docs/MCP/tools-reference.md) — Complete MCP tools documentation
+- [MCP Tools Reference](./docs/mcp/tools-reference.md) — Complete MCP tools documentation
 
 ---
 

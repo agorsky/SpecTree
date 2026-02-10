@@ -259,11 +259,13 @@ Authorization: Bearer <access_token>
 
 ## Team Membership Endpoints
 
-See [Membership Endpoints](./membership-endpoints.md) for detailed team membership management:
+Team membership management endpoints:
 - `GET /api/v1/teams/:teamId/members` - List team members
 - `POST /api/v1/teams/:teamId/members` - Add member to team
 - `PUT /api/v1/teams/:teamId/members/:userId` - Update member role
 - `DELETE /api/v1/teams/:teamId/members/:userId` - Remove member from team
+
+> **Note:** Detailed membership endpoint documentation is planned for a future update.
 
 ---
 
@@ -281,5 +283,4 @@ See [Membership Endpoints](./membership-endpoints.md) for detailed team membersh
 
 - [Status Endpoints](./status-endpoints.md) - Team workflow statuses
 - [Epic Endpoints](./epic-endpoints.md) - Epics belong to teams
-- [Membership Endpoints](./membership-endpoints.md) - Team membership management
-- [MCP Tools Reference](../MCP/tools-reference.md) - Complete MCP tools reference
+- [MCP Tools Reference](../mcp/tools-reference.md) - Complete MCP tools reference

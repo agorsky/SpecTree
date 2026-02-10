@@ -1255,7 +1255,7 @@ If issues persist:
 
 3. **Review related documentation**:
    - [azure-deployment-guide.md](./azure-deployment-guide.md) - Full deployment guide
-   - [database-multi-provider.md](./database-multi-provider.md) - Database configuration
+   - [database-multi-provider.md](../database/database-multi-provider.md) - Database configuration
    - [Azure Container Apps documentation](https://learn.microsoft.com/en-us/azure/container-apps/)
 
 ---

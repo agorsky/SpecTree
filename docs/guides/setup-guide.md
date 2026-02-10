@@ -655,7 +655,7 @@ pnpm dev
 
 ## Getting Help
 
-- Check existing [GitHub Issues](../../issues)
+- Check existing GitHub Issues (if repository has issues enabled)
 - Review logs: browser console for frontend
 - For Azure issues: Check Azure Portal activity logs
 - See the main [README.md](../README.md) for additional details

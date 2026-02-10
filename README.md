@@ -517,17 +517,17 @@ See [`packages/orchestrator/README.md`](./packages/orchestrator/README.md) for f
 
 ### MCP Server Documentation
 
-> **📚 Detailed Documentation**: See [`docs/MCP/`](./docs/MCP/) for comprehensive guides on:
-> - [Tools Reference](./docs/MCP/tools-reference.md) — Complete MCP tools documentation
-> - [Progress Summary](./docs/MCP/progress-summary.md) — Dashboard and status summaries for AI sessions
-> - [AI Session Context](./docs/MCP/ai-session-context.md) — Cross-session context transfer for AI agents
-> - [Execution Metadata](./docs/MCP/execution-metadata.md) — Execution planning for AI agents
-> - [Validation Checklists](./docs/MCP/validation-checklists.md) — Executable acceptance criteria for tasks
-> - [Decision Log](./docs/MCP/decision-log.md) — Append-only decision records for preserving rationale
-> - [API Token Authentication](./docs/MCP/api-token-authentication.md) — Token system details
-> - [Security Architecture](./docs/MCP/security-architecture.md) — Security model
-> - [Migration Guide](./docs/MCP/migration-guide.md) — Migrating from older configurations
-> - [Azure Deployment](./docs/azure-deployment-guide.md) — Production deployment
+> **📚 Detailed Documentation**: See [`docs/mcp/`](./docs/mcp/) for comprehensive guides on:
+> - [Tools Reference](./docs/mcp/tools-reference.md) — Complete MCP tools documentation
+> - [Progress Summary](./docs/mcp/progress-summary.md) — Dashboard and status summaries for AI sessions
+> - [AI Session Context](./docs/mcp/ai-session-context.md) — Cross-session context transfer for AI agents
+> - [Execution Metadata](./docs/mcp/execution-metadata.md) — Execution planning for AI agents
+> - [Validation Checklists](./docs/mcp/validation-checklists.md) — Executable acceptance criteria for tasks
+> - [Decision Log](./docs/mcp/decision-log.md) — Append-only decision records for preserving rationale
+> - [API Token Authentication](./docs/mcp/api-token-authentication.md) — Token system details
+> - [Security Architecture](./docs/mcp/security-architecture.md) — Security model
+> - [Migration Guide](./docs/mcp/migration-guide.md) — Migrating from older configurations
+> - [Azure Deployment](./docs/deployment/azure-deployment-guide.md) — Production deployment
 
 ### Quick Setup
 
@@ -693,7 +693,7 @@ Features and Tasks support execution metadata to help AI agents plan work:
 - **dependencies** — IDs of items that must complete first
 - **estimatedComplexity** — `trivial`, `simple`, `moderate`, or `complex`
 
-> **📚 Full Documentation**: See [`docs/MCP/execution-metadata.md`](./docs/MCP/execution-metadata.md)
+> **📚 Full Documentation**: See [`docs/mcp/execution-metadata.md`](./docs/mcp/execution-metadata.md)
 
 ### Search Tool (`spectree__search`)
 
@@ -883,14 +883,14 @@ Additional documentation is available in the `docs/` directory:
 
 | Document | Description |
 |----------|-------------|
-| [Database Safety Guide](./docs/database-safety-guide.md) | Critical safety rules for database operations |
-| [Identity & Collaboration Reference](./docs/identity-collaboration-vnext-implementation-reference.md) | Implementation details for personal scopes and team membership |
-| [MCP Tools Reference](./docs/MCP/tools-reference.md) | Complete reference for all MCP tools |
-| [MCP AI Session Context](./docs/MCP/ai-session-context.md) | Cross-session context transfer for AI agents |
-| [MCP Execution Metadata](./docs/MCP/execution-metadata.md) | Execution planning and dependencies for AI agents |
-| [MCP Templates Guide](./docs/MCP/templates.md) | Implementation plan templates for AI agents |
-| [MCP Structured Descriptions](./docs/MCP/structured-descriptions.md) | Rich structured descriptions for AI-friendly data extraction |
-| [MCP Code Context](./docs/MCP/code-context.md) | Codebase integration - link code artifacts to features/tasks |
-| [MCP Decision Log](./docs/MCP/decision-log.md) | Append-only decision records for preserving rationale |
-| [MCP Documentation](./docs/MCP/) | MCP server setup, authentication, and security |
-| [Azure Deployment Guide](./docs/azure-deployment-guide.md) | Production deployment to Azure |
+| [Database Safety Guide](./docs/database/database-safety-guide.md) | Critical safety rules for database operations |
+| [Identity & Collaboration Reference](./docs/architecture/identity-collaboration-vnext-implementation-reference.md) | Implementation details for personal scopes and team membership |
+| [MCP Tools Reference](./docs/mcp/tools-reference.md) | Complete reference for all MCP tools |
+| [MCP AI Session Context](./docs/mcp/ai-session-context.md) | Cross-session context transfer for AI agents |
+| [MCP Execution Metadata](./docs/mcp/execution-metadata.md) | Execution planning and dependencies for AI agents |
+| [MCP Templates Guide](./docs/mcp/templates.md) | Implementation plan templates for AI agents |
+| [MCP Structured Descriptions](./docs/mcp/structured-descriptions.md) | Rich structured descriptions for AI-friendly data extraction |
+| [MCP Code Context](./docs/mcp/code-context.md) | Codebase integration - link code artifacts to features/tasks |
+| [MCP Decision Log](./docs/mcp/decision-log.md) | Append-only decision records for preserving rationale |
+| [MCP Documentation](./docs/mcp/) | MCP server setup, authentication, and security |
+| [Azure Deployment Guide](./docs/deployment/azure-deployment-guide.md) | Production deployment to Azure |

@@ -395,9 +395,9 @@ packages/mcp/
 
 ## Related Documentation
 
-- [API Token Authentication](../../docs/MCP/api-token-authentication.md) – Detailed token system documentation
-- [Security Architecture](../../docs/MCP/security-architecture.md) – Security design and threat model
-- [Migration Guide](../../docs/MCP/migration-guide.md) – Migrating from direct DB access
+- [API Token Authentication](../../docs/mcp/api-token-authentication.md) – Detailed token system documentation
+- [Security Architecture](../../docs/mcp/security-architecture.md) – Security design and threat model
+- [Migration Guide](../../docs/mcp/migration-guide.md) – Migrating from direct DB access
 
 ---
 

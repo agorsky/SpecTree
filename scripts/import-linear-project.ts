@@ -36,8 +36,8 @@ The orchestrator CLI (\`packages/orchestrator/\`) was built to externalize contr
 
 ## Reference Documentation
 
-* \`docs/MCP/IMPLEMENTATION-REFERENCE.md\` — Full MCP implementation reference
-* \`docs/MCP/tools-reference.md\` — Complete MCP tools reference
+* \`docs/mcp/IMPLEMENTATION-REFERENCE.md\` — Full MCP implementation reference
+* \`docs/mcp/tools-reference.md\` — Complete MCP tools reference
 * \`.github/copilot-instructions.md\` — Original requirements (commented out)
 
 ---

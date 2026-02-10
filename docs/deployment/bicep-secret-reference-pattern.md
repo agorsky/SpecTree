@@ -252,4 +252,4 @@ If you see the connection string in deployment logs, verify:
 
 - [Azure Container Apps Secrets](https://learn.microsoft.com/en-us/azure/container-apps/manage-secrets)
 - [Bicep Secure Parameters](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters#secure-parameters)
-- [Secure Database Connection Evaluation](./secure-database-connection-evaluation.md)
+- [Secure Database Connection Evaluation](../database/secure-database-connection-evaluation.md)

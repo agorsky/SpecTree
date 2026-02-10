@@ -58,7 +58,7 @@ The orchestrator emits real-time events for UI and CLI consumption:
 - The CLI and UI display parallel agent status, progress bars, and merge status after parallel phases.
 - Progress is also tracked in the SpecTree backend using dedicated MCP tools (`spectree__start_work`, `spectree__log_progress`, `spectree__complete_work`).
 
-See [docs/MCP/progress-tracking.md](./MCP/progress-tracking.md) for API and tool details.
+See [docs/mcp/progress-tracking.md](../mcp/progress-tracking.md) for API and tool details.
 
 ---
 
@@ -927,4 +927,4 @@ After parallel tasks complete:
 
 - [Orchestrator Architecture](./orchestrator-architecture.md)
 - [Orchestrator Implementation Briefing](./orchestrator-implementation-briefing.md)
-- [Platform Analysis for SpecTree Orchestrator](./archive/analysis/platform-analysis-for-spectree-orchestrator.md)
+- [Platform Analysis for SpecTree Orchestrator](../archive/analysis/platform-analysis-for-spectree-orchestrator.md)

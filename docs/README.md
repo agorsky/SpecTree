@@ -23,9 +23,9 @@
 
 | Document | Description | For |
 |----------|-------------|-----|
-| [SETUP_GUIDE.md](./SETUP_GUIDE.md) | Complete setup instructions for local development | New developers |
-| [automation-quickstart.md](./automation-quickstart.md) | Quick start guide for using SpecTree automation | AI/automation users |
-| [mcp-auth-fix-summary.md](./mcp-auth-fix-summary.md) | Troubleshooting MCP authentication issues | Developers |
+| [guides/setup-guide.md](./guides/setup-guide.md) | Complete setup instructions for local development | New developers |
+| [guides/automation-quickstart.md](./guides/automation-quickstart.md) | Quick start guide for using SpecTree automation | AI/automation users |
+| [guides/mcp-auth-fix-summary.md](./guides/mcp-auth-fix-summary.md) | Troubleshooting MCP authentication issues | Developers |
 
 ---
 
@@ -33,19 +33,19 @@
 
 ### Core Architecture
 
-| Document | Description | Status |
-|----------|-------------|--------|
-| [spectree-user-team-epic-model.md](./spectree-user-team-epic-model.md) | Data model: Users, Teams, Epics, Features, Tasks | Current |
-| [identity-collaboration-vnext-implementation-reference.md](./identity-collaboration-vnext-implementation-reference.md) | Personal scopes, invite-only teams, access control | Implemented ✅ |
-| [user-invitation-system.md](./user-invitation-system.md) | User invitation and registration system | Current |
+| Document | Status | Notes |
+|----------|--------|-------|
+| [spectree-user-team-epic-model.md](./architecture/spectree-user-team-epic-model.md) | Current |
+| [identity-collaboration-vnext-implementation-reference.md](./architecture/identity-collaboration-vnext-implementation-reference.md) | Implemented ✅ |
+| [user-invitation-system.md](./architecture/user-invitation-system.md) | Current |
 
 ### Orchestrator Architecture
 
 | Document | Description | Status |
 |----------|-------------|--------|
-| [orchestrator-architecture.md](./orchestrator-architecture.md) | High-level architecture of the parallel orchestrator | Current |
-| [orchestrator-implementation-briefing.md](./orchestrator-implementation-briefing.md) | Detailed implementation guide | Current |
-| [orchestrator-parallelism.md](./orchestrator-parallelism.md) | Parallel execution strategy and patterns | Current |
+| [orchestrator/orchestrator-architecture.md](./orchestrator/orchestrator-architecture.md) | High-level architecture of the parallel orchestrator | Current |
+| [orchestrator/orchestrator-implementation-briefing.md](./orchestrator/orchestrator-implementation-briefing.md) | Detailed implementation guide | Current |
+| [orchestrator/orchestrator-parallelism.md](./orchestrator/orchestrator-parallelism.md) | Parallel execution strategy and patterns | Current |
 
 ---
 
@@ -55,16 +55,16 @@
 
 | Document | Description |
 |----------|-------------|
-| [database-safety-guide.md](./database-safety-guide.md) | Critical safety practices for database operations |
-| [database-multi-provider.md](./database-multi-provider.md) | Multi-provider database strategy (SQLite/PostgreSQL) |
-| [secrets-provider.md](./secrets-provider.md) | Azure Key Vault secrets management |
-| [secure-database-connection-evaluation.md](./secure-database-connection-evaluation.md) | Database connection security evaluation |
+| [database/database-safety-guide.md](./database/database-safety-guide.md) | Critical safety practices for database operations |
+| [database/database-multi-provider.md](./database/database-multi-provider.md) | Multi-provider database strategy (SQLite/PostgreSQL) |
+| [deployment/secrets-provider.md](./deployment/secrets-provider.md) | Azure Key Vault secrets management |
+| [database/secure-database-connection-evaluation.md](./database/secure-database-connection-evaluation.md) | Database connection security evaluation |
 
 ### Testing
 
 | Document | Description |
 |----------|-------------|
-| [manual-test-sse.md](./manual-test-sse.md) | Manual testing procedures for Server-Sent Events (SSE) |
+| [guides/manual-test-sse.md](./guides/manual-test-sse.md) | Manual testing procedures for Server-Sent Events (SSE) |
 
 ---
 
@@ -74,27 +74,27 @@ SpecTree provides a Model Context Protocol (MCP) server that exposes 60+ tools f
 
 | Document | Description |
 |----------|-------------|
-| [MCP/IMPLEMENTATION-REFERENCE.md](./MCP/IMPLEMENTATION-REFERENCE.md) | Complete MCP implementation reference |
-| [MCP/tools-reference.md](./MCP/tools-reference.md) | Tool reference with categories and descriptions |
-| [MCP/api-token-authentication.md](./MCP/api-token-authentication.md) | API token authentication for MCP |
-| [MCP/security-architecture.md](./MCP/security-architecture.md) | Security architecture and best practices |
+| [mcp/IMPLEMENTATION-REFERENCE.md](./mcp/IMPLEMENTATION-REFERENCE.md) | Complete MCP implementation reference |
+| [mcp/tools-reference.md](./mcp/tools-reference.md) | Tool reference with categories and descriptions |
+| [mcp/api-token-authentication.md](./mcp/api-token-authentication.md) | API token authentication for MCP |
+| [mcp/security-architecture.md](./mcp/security-architecture.md) | Security architecture and best practices |
 
 ### MCP Features
 
 | Document | Feature |
 |----------|---------|
-| [MCP/ai-native-epic-workflow-guide.md](./MCP/ai-native-epic-workflow-guide.md) | AI-native workflow patterns |
-| [MCP/session-handoff.md](./MCP/session-handoff.md) | Cross-session context handoff |
-| [MCP/ai-session-context.md](./MCP/ai-session-context.md) | Session context management |
-| [MCP/execution-metadata.md](./MCP/execution-metadata.md) | Execution order and dependencies |
-| [MCP/structured-descriptions.md](./MCP/structured-descriptions.md) | Rich structured descriptions |
-| [MCP/code-context.md](./MCP/code-context.md) | Code file and function tracking |
-| [MCP/validation-checklists.md](./MCP/validation-checklists.md) | Task validation and acceptance criteria |
-| [MCP/decision-log.md](./MCP/decision-log.md) | Decision logging for accountability |
-| [MCP/progress-tracking.md](./MCP/progress-tracking.md) | Progress tracking tools |
-| [MCP/progress-summary.md](./MCP/progress-summary.md) | Progress dashboard for epics |
-| [MCP/templates.md](./MCP/templates.md) | Implementation plan templates |
-| [MCP/migration-guide.md](./MCP/migration-guide.md) | Migration guide for MCP updates |
+| [mcp/ai-native-epic-workflow-guide.md](./mcp/ai-native-epic-workflow-guide.md) | AI-native workflow patterns |
+| [mcp/session-handoff.md](./mcp/session-handoff.md) | Cross-session context handoff |
+| [mcp/ai-session-context.md](./mcp/ai-session-context.md) | Session context management |
+| [mcp/execution-metadata.md](./mcp/execution-metadata.md) | Execution order and dependencies |
+| [mcp/structured-descriptions.md](./mcp/structured-descriptions.md) | Rich structured descriptions |
+| [mcp/code-context.md](./mcp/code-context.md) | Code file and function tracking |
+| [mcp/validation-checklists.md](./mcp/validation-checklists.md) | Task validation and acceptance criteria |
+| [mcp/decision-log.md](./mcp/decision-log.md) | Decision logging for accountability |
+| [mcp/progress-tracking.md](./mcp/progress-tracking.md) | Progress tracking tools |
+| [mcp/progress-summary.md](./mcp/progress-summary.md) | Progress dashboard for epics |
+| [mcp/templates.md](./mcp/templates.md) | Implementation plan templates |
+| [mcp/migration-guide.md](./mcp/migration-guide.md) | Migration guide for MCP updates |
 
 ---
 
@@ -104,9 +104,9 @@ The orchestrator runs parallel AI agents to execute SpecTree epics automatically
 
 | Document | Description |
 |----------|-------------|
-| [orchestrator-architecture.md](./orchestrator-architecture.md) | Architecture overview |
-| [orchestrator-implementation-briefing.md](./orchestrator-implementation-briefing.md) | Implementation details |
-| [orchestrator-parallelism.md](./orchestrator-parallelism.md) | Parallel execution patterns |
+| [orchestrator/orchestrator-architecture.md](./orchestrator/orchestrator-architecture.md) | Architecture overview |
+| [orchestrator/orchestrator-implementation-briefing.md](./orchestrator/orchestrator-implementation-briefing.md) | Implementation details |
+| [orchestrator/orchestrator-parallelism.md](./orchestrator/orchestrator-parallelism.md) | Parallel execution patterns |
 
 ---
 
@@ -116,11 +116,11 @@ The orchestrator runs parallel AI agents to execute SpecTree epics automatically
 
 | Document | Description | Audience |
 |----------|-------------|----------|
-| [azure-deployment-guide.md](./azure-deployment-guide.md) | Complete Azure deployment guide | Ops/DevOps |
-| [azure-manual-deployment-runbook.md](./azure-manual-deployment-runbook.md) | Step-by-step manual deployment runbook | Ops |
-| [DEPLOYMENT_REVIEW_ENG7.md](./DEPLOYMENT_REVIEW_ENG7.md) | Deployment review and post-mortem | Team |
-| [bicep-secret-reference-pattern.md](./bicep-secret-reference-pattern.md) | Bicep pattern for secret references | Developers |
-| [github-actions-azure-setup.md](./github-actions-azure-setup.md) | GitHub Actions CI/CD setup for Azure | DevOps |
+| [deployment/azure-deployment-guide.md](./deployment/azure-deployment-guide.md) | Complete Azure deployment guide | Ops/DevOps |
+| [deployment/azure-manual-deployment-runbook.md](./deployment/azure-manual-deployment-runbook.md) | Step-by-step manual deployment runbook | Ops |
+| [guides/deployment-review-eng7.md](./guides/deployment-review-eng7.md) | Deployment review and post-mortem | Team |
+| [deployment/bicep-secret-reference-pattern.md](./deployment/bicep-secret-reference-pattern.md) | Bicep pattern for secret references | Developers |
+| [deployment/github-actions-azure-setup.md](./deployment/github-actions-azure-setup.md) | GitHub Actions CI/CD setup for Azure | DevOps |
 
 ---
 
@@ -131,8 +131,6 @@ The API documentation is organized in the [api/](./api/) subdirectory:
 | Document | Description |
 |----------|-------------|
 | [api/README.md](./api/README.md) | API overview and getting started |
-| [api/ENDPOINT-INVENTORY.md](./api/ENDPOINT-INVENTORY.md) | Complete list of all API endpoints |
-| [api/AUDIT-REPORT.md](./api/AUDIT-REPORT.md) | API quality audit report |
 
 ### Endpoint Documentation
 
@@ -157,8 +155,8 @@ The API documentation is organized in the [api/](./api/) subdirectory:
 
 | Document | Description |
 |----------|-------------|
-| [GIT/git-release-flow-strategy-final-with-definitions.md](./GIT/git-release-flow-strategy-final-with-definitions.md) | Git release flow strategy with definitions |
-| [GIT/git-release-flow-cheat-sheet.md](./GIT/git-release-flow-cheat-sheet.md) | Quick reference cheat sheet |
+| [git/git-release-flow-strategy-final-with-definitions.md](./git/git-release-flow-strategy-final-with-definitions.md) | Git release flow strategy with definitions |
+| [git/git-release-flow-cheat-sheet.md](./git/git-release-flow-cheat-sheet.md) | Quick reference cheat sheet |
 
 ---
 
@@ -200,31 +198,30 @@ Located in [archive/analysis/](./archive/analysis/):
 ### By Use Case
 
 **"I need to set up SpecTree locally"**  
-→ [SETUP_GUIDE.md](./SETUP_GUIDE.md)
+→ [guides/setup-guide.md](./guides/setup-guide.md)
 
 **"I want to use AI automation"**  
-→ [automation-quickstart.md](./automation-quickstart.md)  
-→ [MCP/ai-native-epic-workflow-guide.md](./MCP/ai-native-epic-workflow-guide.md)
+→ [guides/automation-quickstart.md](./guides/automation-quickstart.md)  
+→ [mcp/ai-native-epic-workflow-guide.md](./mcp/ai-native-epic-workflow-guide.md)
 
 **"I'm deploying to Azure"**  
-→ [azure-deployment-guide.md](./azure-deployment-guide.md)  
-→ [azure-manual-deployment-runbook.md](./azure-manual-deployment-runbook.md)
+→ [deployment/azure-deployment-guide.md](./deployment/azure-deployment-guide.md)  
+→ [deployment/azure-manual-deployment-runbook.md](./deployment/azure-manual-deployment-runbook.md)
 
 **"I need API documentation"**  
 → [api/README.md](./api/README.md)  
-→ [api/ENDPOINT-INVENTORY.md](./api/ENDPOINT-INVENTORY.md)
 
 **"I'm building an MCP client/agent"**  
-→ [MCP/tools-reference.md](./MCP/tools-reference.md)  
-→ [MCP/IMPLEMENTATION-REFERENCE.md](./MCP/IMPLEMENTATION-REFERENCE.md)
+→ [mcp/tools-reference.md](./mcp/tools-reference.md)  
+→ [mcp/IMPLEMENTATION-REFERENCE.md](./mcp/IMPLEMENTATION-REFERENCE.md)
 
 **"I'm working on the orchestrator"**  
-→ [orchestrator-implementation-briefing.md](./orchestrator-implementation-briefing.md)  
-→ [orchestrator-parallelism.md](./orchestrator-parallelism.md)
+→ [orchestrator/orchestrator-implementation-briefing.md](./orchestrator/orchestrator-implementation-briefing.md)  
+→ [orchestrator/orchestrator-parallelism.md](./orchestrator/orchestrator-parallelism.md)
 
 **"Something broke, help!"**  
-→ [mcp-auth-fix-summary.md](./mcp-auth-fix-summary.md)  
-→ [database-safety-guide.md](./database-safety-guide.md)
+→ [guides/mcp-auth-fix-summary.md](./guides/mcp-auth-fix-summary.md)  
+→ [database/database-safety-guide.md](./database/database-safety-guide.md)
 
 ---
 
@@ -259,6 +256,6 @@ When adding new documentation:
 
 ## 📬 Questions?
 
-- Check the [SETUP_GUIDE.md](./SETUP_GUIDE.md) for common setup issues
-- Review [MCP/tools-reference.md](./MCP/tools-reference.md) for MCP usage
+- Check the [guides/setup-guide.md](./guides/setup-guide.md) for common setup issues
+- Review [mcp/tools-reference.md](./mcp/tools-reference.md) for MCP usage
 - See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines

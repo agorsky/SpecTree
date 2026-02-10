@@ -75,7 +75,7 @@ This means the application must handle cleanup in the correct order when deletin
 
 ## Initial Azure SQL Setup
 
-See [Azure Deployment Guide](./azure-deployment-guide.md) for full deployment instructions.
+See [Azure Deployment Guide](../deployment/azure-deployment-guide.md) for full deployment instructions.
 
 ### Quick Migration Steps
 

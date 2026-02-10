@@ -707,9 +707,9 @@ These documents contain additional context (already in the codebase):
 | Document | Location | Content |
 |----------|----------|---------|
 | SpecTree README | `/README.md` | Full project documentation |
-| MCP Tools Reference | `/docs/MCP/tools-reference.md` | All 60+ MCP tools |
-| Execution Metadata | `/docs/MCP/execution-metadata.md` | Parallel execution details |
-| Session Handoff | `/docs/MCP/session-handoff.md` | Session management |
+| MCP Tools Reference | `/docs/mcp/tools-reference.md` | All 60+ MCP tools |
+| Execution Metadata | `/docs/mcp/execution-metadata.md` | Parallel execution details |
+| Session Handoff | `/docs/mcp/session-handoff.md` | Session management |
 | Copilot SDK Analysis | `/docs/archive/analysis/analysis-spectree-mcp-vs-copilot-sdk.md` | SDK capabilities (archived) |
 | Platform Analysis | `/docs/archive/analysis/platform-analysis-for-spectree-orchestrator.md` | Architecture decision (archived) |
 | Copilot Instructions | `/.github/copilot-instructions.md` | SpecTree conventions |

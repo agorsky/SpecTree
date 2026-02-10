@@ -442,7 +442,7 @@ SpecTree provides dedicated AI context fields on Features and Tasks for cross-se
 - `spectree__set_ai_context` - Set structured summary context  
 - `spectree__append_ai_note` - Log observations, decisions, blockers, next-steps
 
-See `docs/MCP/ai-session-context.md` for full documentation.
+See `docs/mcp/ai-session-context.md` for full documentation.
 
 ### Progress Summary (Dashboard)
 
@@ -460,7 +460,7 @@ const summary = await spectree__get_progress_summary({ epicId: "My Epic" });
 // summary.lastSession - Previous session context
 ```
 
-See `docs/MCP/progress-summary.md` for full documentation.
+See `docs/mcp/progress-summary.md` for full documentation.
 
 ### Session Handoff (Epics)
 
@@ -487,7 +487,7 @@ await spectree__end_session({
 });
 ```
 
-See `docs/MCP/session-handoff.md` for full documentation.
+See `docs/mcp/session-handoff.md` for full documentation.
 
 ### Structured Descriptions
 
@@ -502,7 +502,7 @@ Features and Tasks support rich, structured descriptions with AI-friendly sectio
 
 **Available sections:** `summary` (required), `aiInstructions`, `acceptanceCriteria`, `filesInvolved`, `functionsToModify`, `testingStrategy`, `testFiles`, `relatedItemIds`, `externalLinks`, `technicalNotes`, `riskLevel`, `estimatedEffort`
 
-See `docs/MCP/structured-descriptions.md` for full documentation.
+See `docs/mcp/structured-descriptions.md` for full documentation.
 
 ### Code Context (Codebase Integration)
 
@@ -520,7 +520,7 @@ Link features and tasks directly to code artifacts for instant code context:
 - Structured descriptions (`filesInvolved`) = files you *plan* to modify
 - Code context (`relatedFiles`) = files you *actually* modified
 
-See `docs/MCP/code-context.md` for full documentation.
+See `docs/mcp/code-context.md` for full documentation.
 
 ### Validation Checklists
 
@@ -534,7 +534,7 @@ Tasks can have executable validation checks that define "done" in a verifiable w
 - `spectree__remove_validation` - Remove a check
 - `spectree__reset_validations` - Reset all to pending
 
-See `docs/MCP/validation-checklists.md` for full documentation.
+See `docs/mcp/validation-checklists.md` for full documentation.
 
 ### Decision Log
 
@@ -565,7 +565,7 @@ await spectree__log_decision({
 });
 ```
 
-See `docs/MCP/decision-log.md` for full documentation.
+See `docs/mcp/decision-log.md` for full documentation.
 
 
 ---
@@ -655,7 +655,7 @@ All extend `AppError` with `statusCode`, `code`, and optional `details`.
 
 ## 🔴 CRITICAL: Git Workflow Safety
 
-This project follows the **Git Release Flow** strategy. Full documentation: `docs/GIT/`
+This project follows the **Git Release Flow** strategy. Full documentation: `docs/git/`
 
 ### Before Creating ANY Branch
 
@@ -725,9 +725,9 @@ git merge release/x.y
 
 ### Quick Reference
 
-- **Policy docs:** `docs/GIT/git-release-flow-strategy-final-with-definitions.md`
-- **Cheat sheet:** `docs/GIT/git-release-flow-cheat-sheet.md`
-- **PR template:** `docs/GIT/PULL_REQUEST_TEMPLATE.md`
+- **Policy docs:** `docs/git/git-release-flow-strategy-final-with-definitions.md`
+- **Cheat sheet:** `docs/git/git-release-flow-cheat-sheet.md`
+- **PR template:** `docs/git/PULL_REQUEST_TEMPLATE.md`
 
 ---
 

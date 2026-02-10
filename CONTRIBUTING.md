@@ -245,7 +245,7 @@ We use a **trunk-based development** workflow with continuous deployment from th
 - **Pull Requests**: All changes must go through PR review before merging to `main`
 - **Continuous Deployment**: Every merge to `main` triggers automated deployment to Azure
 
-> **🚀 Future Workflow**: As SpecTree matures into production with customer deployments, we will adopt a release train workflow with dedicated release branches for QA stabilization. See [`docs/GIT/git-release-flow-strategy-final-with-definitions.md`](./docs/GIT/git-release-flow-strategy-final-with-definitions.md) for the planned future workflow.
+> **🚀 Future Workflow**: As SpecTree matures into production with customer deployments, we will adopt a release train workflow with dedicated release branches for QA stabilization. See [`docs/git/git-release-flow-strategy-final-with-definitions.md`](./docs/git/git-release-flow-strategy-final-with-definitions.md) for the planned future workflow.
 
 ### Branch Naming
 
@@ -468,7 +468,7 @@ When contributing to SpecTree, follow these security guidelines:
 - [ ] API tokens validated in all protected routes
 - [ ] Sensitive data not logged
 
-For more details, see the [Security Architecture](./docs/MCP/security-architecture.md) documentation.
+For more details, see the [Security Architecture](./docs/mcp/security-architecture.md) documentation.
 
 ## Running Tests
 

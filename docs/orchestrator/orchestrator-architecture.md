@@ -769,8 +769,8 @@ packages/orchestrator/
 | Document | Path | Description |
 |----------|------|-------------|
 | Implementation Briefing | `/docs/orchestrator-implementation-briefing.md` | Full implementation spec |
-| MCP Tools Reference | `/docs/MCP/tools-reference.md` | All SpecTree MCP tools |
-| Session Handoff | `/docs/MCP/session-handoff.md` | Session management details |
+| MCP Tools Reference | `/docs/mcp/tools-reference.md` | All SpecTree MCP tools |
+| Session Handoff | `/docs/mcp/session-handoff.md` | Session management details |
 | Copilot SDK Analysis | `/docs/archive/analysis/analysis-spectree-mcp-vs-copilot-sdk.md` | SDK capabilities (archived) |
 | User Documentation | `/packages/orchestrator/README.md` | User guide |
 

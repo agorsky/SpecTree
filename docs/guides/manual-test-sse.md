@@ -369,7 +369,7 @@ All test cases must pass with the following criteria:
 
 ## Related Documentation
 
-- [SSE Implementation (ENG-56)](../packages/api/src/routes/events.ts)
-- [useEventSource Hook](../packages/web/src/hooks/useEventSource.ts)
-- [useLiveUpdates Hook](../packages/web/src/hooks/useLiveUpdates.ts)
-- [Event Emitter](../packages/api/src/events/emitter.ts)
+- [SSE Implementation (ENG-56)](../../packages/api/src/routes/events.ts)
+- [useEventSource Hook](../../packages/web/src/hooks/useEventSource.ts)
+- [useLiveUpdates Hook](../../packages/web/src/hooks/useLiveUpdates.ts)
+- [Event Emitter](../../packages/api/src/events/emitter.ts)
