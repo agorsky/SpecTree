@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useEpics } from "@/hooks/queries/use-epics";
 import { Button } from "@/components/ui/button";
 import { EpicForm } from "@/components/epics/epic-form";
 import { EpicCard } from "@/components/epics/epic-card";
+import { TeamSection } from "@/components/epics/team-section";
 import { Plus, Filter, Check } from "lucide-react";
 import {
   DropdownMenu,
@@ -10,6 +11,31 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { Epic } from "@/lib/api/types";
+
+/**
+ * Groups epics by team ID (stable identifier) and sorts groups alphabetically by team name.
+ * Epics without a team are grouped under a "no-team" key.
+ */
+function groupEpicsByTeam(epics: Epic[]): Map<string, { team: Epic['team']; epics: Epic[] }> {
+  const grouped = new Map<string, { team: Epic['team']; epics: Epic[] }>();
+
+  epics.forEach((epic) => {
+    const teamKey = epic.team?.id ?? "no-team";
+    if (!grouped.has(teamKey)) {
+      grouped.set(teamKey, { team: epic.team, epics: [] });
+    }
+    grouped.get(teamKey)!.epics.push(epic);
+  });
+
+  return new Map(
+    [...grouped.entries()].sort((a, b) => {
+      const aName = a[1].team?.name ?? "No Team";
+      const bName = b[1].team?.name ?? "No Team";
+      return aName.localeCompare(bName);
+    })
+  );
+}
 
 export function EpicsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -18,17 +44,20 @@ export function EpicsPage() {
     useEpics({ includeArchived: showArchived });
 
   const epics = data?.pages.flatMap((page) => page.data) ?? [];
+  
+  // Group epics by team with memoization for performance
+  const groupedEpics = useMemo(() => groupEpicsByTeam(epics), [epics]);
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Epics</h1>
+    <div className="p-4 max-w-screen-2xl mx-auto sm:p-6">
+      <div className="flex items-center justify-between mb-6 gap-3 sm:mb-8">
+        <h1 className="text-2xl font-bold sm:text-3xl">Epics</h1>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                {showArchived ? "All epics" : "Active"}
+                <Filter className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{showArchived ? "All epics" : "Active"}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -43,8 +72,8 @@ export function EpicsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
           <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Epic
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">New Epic</span>
           </Button>
         </div>
       </div>
@@ -72,13 +101,21 @@ export function EpicsPage() {
         </div>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {epics.map((epic) => (
-              <EpicCard key={epic.id} epic={epic} />
+          <div className="space-y-6 sm:space-y-8">
+            {Array.from(groupedEpics.entries()).map(([teamKey, { team, epics: teamEpics }]) => (
+              <TeamSection 
+                key={teamKey} 
+                teamName={team?.name ?? "No Team"} 
+                epicCount={teamEpics.length}
+              >
+                {teamEpics.map((epic) => (
+                  <EpicCard key={epic.id} epic={epic} />
+                ))}
+              </TeamSection>
             ))}
           </div>
           {hasNextPage && (
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center sm:mt-8">
               <Button
                 variant="outline"
                 onClick={() => fetchNextPage()}

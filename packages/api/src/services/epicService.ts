@@ -40,6 +40,11 @@ export interface EpicWithCount extends Epic {
   _count: {
     features: number;
   };
+  team?: {
+    id: string;
+    name: string;
+    key: string;
+  } | null;
 }
 
 export interface PaginatedResult<T> {
@@ -116,7 +121,10 @@ export async function listEpics(
     ...(options.cursor ? { cursor: { id: options.cursor } } : {}),
     where: whereClause,
     orderBy,
-    include: { _count: { select: { features: true } } },
+    include: { 
+      _count: { select: { features: true } },
+      team: true 
+    },
   }) as EpicWithCount[];
 
   const hasMore = epics.length > limit;
@@ -165,7 +173,10 @@ export async function getEpicById(
   
   return prisma.epic.findFirst({
     where: whereClause,
-    include: { _count: { select: { features: true } } },
+    include: {
+      _count: { select: { features: true } },
+      team: { select: { id: true, name: true, key: true } },
+    },
   }) as Promise<EpicWithCount | null>;
 }
 

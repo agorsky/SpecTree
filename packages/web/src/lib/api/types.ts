@@ -47,6 +47,11 @@ export interface Epic {
   description?: string;
   structuredDesc?: StructuredDescription | null;
   teamId: string;
+  team?: {
+    id: string;
+    name: string;
+    key: string;
+  } | null;
   isArchived?: boolean;
   createdAt: string;
   updatedAt: string;
