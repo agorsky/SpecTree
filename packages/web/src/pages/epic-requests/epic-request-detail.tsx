@@ -89,7 +89,7 @@ export function EpicRequestDetailPage() {
 
   // Get reaction counts
   const getReactionCount = (type: ReactionType): number => {
-    const reaction = request.reactionCounts.find((r) => r.reactionType === type);
+    const reaction = request.reactionCounts?.find((r) => r.reactionType === type);
     return reaction?.count ?? 0;
   };
 

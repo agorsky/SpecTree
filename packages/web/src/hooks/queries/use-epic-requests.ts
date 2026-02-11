@@ -114,7 +114,7 @@ export function useApproveEpicRequest() {
     mutationFn: (id: string) => epicRequestsApi.approve(id),
     onSuccess: (response) => {
       void queryClient.invalidateQueries({ queryKey: epicRequestKeys.lists() });
-      queryClient.setQueryData(epicRequestKeys.detail(response.data.id), response);
+      void queryClient.invalidateQueries({ queryKey: epicRequestKeys.detail(response.data.id) });
     },
   });
 }
@@ -129,7 +129,7 @@ export function useRejectEpicRequest() {
     mutationFn: (id: string) => epicRequestsApi.reject(id),
     onSuccess: (response) => {
       void queryClient.invalidateQueries({ queryKey: epicRequestKeys.lists() });
-      queryClient.setQueryData(epicRequestKeys.detail(response.data.id), response);
+      void queryClient.invalidateQueries({ queryKey: epicRequestKeys.detail(response.data.id) });
     },
   });
 }
