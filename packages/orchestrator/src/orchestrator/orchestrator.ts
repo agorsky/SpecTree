@@ -56,6 +56,7 @@ import { PhaseExecutor, type PhaseResult, type TaskProgressEvent } from "./phase
 import { AgentPool } from "./agent-pool.js";
 import { BranchManager } from "../git/branch-manager.js";
 import { MergeCoordinator } from "../git/merge-coordinator.js";
+import { SessionEventType } from "@spectree/shared";
 
 // =============================================================================
 // Types and Interfaces
@@ -296,6 +297,18 @@ export class Orchestrator extends EventEmitter {
       const sessionResponse = await this.startSpectreeSession(epicId, options?.sessionId);
       this.spectreeSession = sessionResponse.session;
 
+      // Emit SESSION_STARTED event
+      await this.client.emitSessionEvent({
+        epicId,
+        sessionId: this.spectreeSession.id,
+        timestamp: new Date().toISOString(),
+        eventType: SessionEventType.SESSION_STARTED,
+        payload: {
+          ...(options?.sessionId ? { externalId: options.sessionId } : {}),
+          status: "active" as const,
+        },
+      });
+
       // TODO: Use handoff context from previous session for resumption
       // const handoffContext = sessionResponse.previousSession
       //   ? this.buildHandoffContext(sessionResponse.previousSession)
@@ -328,6 +341,20 @@ export class Orchestrator extends EventEmitter {
       const duration = Date.now() - startTime;
       const success = this.failedItems.length === 0 && !mergeConflict;
 
+      // Emit SESSION_ENDED event
+      if (this.spectreeSession) {
+        await this.client.emitSessionEvent({
+          epicId,
+          sessionId: this.spectreeSession.id,
+          timestamp: new Date().toISOString(),
+          eventType: SessionEventType.SESSION_ENDED,
+          payload: {
+            status: success ? "completed" : "abandoned",
+            summary: this.buildSessionSummary(this.completedItems, this.failedItems, mergeConflict),
+          },
+        });
+      }
+
       const result: RunResult = {
         success,
         completedItems: this.completedItems,
@@ -348,6 +375,21 @@ export class Orchestrator extends EventEmitter {
         // End session with conflict info
         try {
           await this.endSpectreeSession(epicId, this.completedItems, this.failedItems, error);
+          
+          // Emit SESSION_ENDED event for merge conflict
+          if (this.spectreeSession) {
+            await this.client.emitSessionEvent({
+              epicId,
+              sessionId: this.spectreeSession.id,
+              timestamp: new Date().toISOString(),
+              eventType: SessionEventType.SESSION_ENDED,
+              payload: {
+                status: "abandoned",
+                summary: this.buildSessionSummary(this.completedItems, this.failedItems, error),
+                blockers: [this.formatError(error)],
+              },
+            });
+          }
         } catch {
           // Ignore cleanup errors
         }
@@ -367,6 +409,21 @@ export class Orchestrator extends EventEmitter {
       // Ensure session is ended on error
       try {
         await this.endSpectreeSession(epicId, this.completedItems, this.failedItems, error);
+        
+        // Emit SESSION_ENDED event for general error
+        if (this.spectreeSession) {
+          await this.client.emitSessionEvent({
+            epicId,
+            sessionId: this.spectreeSession.id,
+            timestamp: new Date().toISOString(),
+            eventType: SessionEventType.SESSION_ENDED,
+            payload: {
+              status: "abandoned",
+              summary: this.buildSessionSummary(this.completedItems, this.failedItems, error),
+              blockers: [this.formatError(error)],
+            },
+          });
+        }
       } catch {
         // Ignore cleanup errors
       }
@@ -437,7 +494,24 @@ export class Orchestrator extends EventEmitter {
 
     // Process each phase
     for (const phase of phases) {
-      // Emit phase start
+      // Emit SESSION_PHASE_STARTED event
+      if (this.spectreeSession) {
+        await this.client.emitSessionEvent({
+          epicId: this.spectreeSession.epicId,
+          sessionId: this.spectreeSession.id,
+          timestamp: new Date().toISOString(),
+          eventType: SessionEventType.SESSION_PHASE_STARTED,
+          payload: {
+            phaseNumber: phase.order,
+            totalPhases: phases.length,
+            featureIds: phase.items.map(item => item.id),
+            featureCount: phase.items.length,
+            canParallelize: phase.canRunInParallel,
+          },
+        });
+      }
+
+      // Emit phase start (for local UI)
       this.emit("phase:start", {
         type: "phase:start" as const,
         phase,
@@ -452,7 +526,24 @@ export class Orchestrator extends EventEmitter {
       this.completedItems.push(...phaseResult.completedItems);
       this.failedItems.push(...phaseResult.failedItems);
 
-      // Emit phase complete
+      // Emit SESSION_PHASE_COMPLETED event
+      if (this.spectreeSession) {
+        await this.client.emitSessionEvent({
+          epicId: this.spectreeSession.epicId,
+          sessionId: this.spectreeSession.id,
+          timestamp: new Date().toISOString(),
+          eventType: SessionEventType.SESSION_PHASE_COMPLETED,
+          payload: {
+            phaseNumber: phase.order,
+            totalPhases: phases.length,
+            featureIds: phase.items.map(item => item.id),
+            featureCount: phase.items.length,
+            canParallelize: phase.canRunInParallel,
+          },
+        });
+      }
+
+      // Emit phase complete (for local UI)
       this.emit("phase:complete", {
         type: "phase:complete" as const,
         phase,

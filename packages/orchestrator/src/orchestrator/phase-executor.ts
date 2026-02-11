@@ -42,6 +42,7 @@ import type {
   Task,
 } from "../spectree/api-client.js";
 import { AgentError, OrchestratorError, wrapError } from "../errors.js";
+import { SessionEventType } from "@spectree/shared";
 
 // =============================================================================
 // Types and Interfaces
@@ -517,6 +518,9 @@ export class PhaseExecutor extends EventEmitter {
     startTime: number
   ): Promise<ItemResult> {
     try {
+      // Emit SESSION_FEATURE_STARTED event
+      await this.emitFeatureStartedEvent(feature);
+
       // 1. Fetch tasks for this feature
       const tasksResponse = await this.specTreeClient.listTasks({ featureId: feature.id, limit: 100 });
       const tasks = tasksResponse.data;
@@ -557,7 +561,7 @@ export class PhaseExecutor extends EventEmitter {
             // Check for failures
             const failed = groupResults.find(r => !r.success);
             if (failed) {
-              return this.buildFeatureResult(feature, taskResults, startTime, branch);
+              return await this.buildFeatureResult(feature, taskResults, startTime, branch);
             }
           }
 
@@ -573,7 +577,7 @@ export class PhaseExecutor extends EventEmitter {
             taskResults.push(result);
             
             if (!result.success) {
-              return this.buildFeatureResult(feature, taskResults, startTime, branch);
+              return await this.buildFeatureResult(feature, taskResults, startTime, branch);
             }
           }
         }
@@ -585,7 +589,7 @@ export class PhaseExecutor extends EventEmitter {
         }
       }
 
-      return this.buildFeatureResult(feature, taskResults, startTime, branch);
+      return await this.buildFeatureResult(feature, taskResults, startTime, branch);
 
     } catch (error) {
       const itemError = wrapError(error, `Failed to execute feature ${feature.identifier} with task-level agents`);
@@ -604,12 +608,12 @@ export class PhaseExecutor extends EventEmitter {
   /**
    * Build feature result from task results.
    */
-  private buildFeatureResult(
+  private async buildFeatureResult(
     feature: ExecutionItem,
     taskResults: { task: Task; success: boolean; error?: Error }[],
     startTime: number,
     branch: string
-  ): ItemResult {
+  ): Promise<ItemResult> {
     const allSucceeded = taskResults.every(r => r.success);
     const completedTasks = taskResults.filter(r => r.success).map(r => r.task.identifier);
     const failedTasks = taskResults.filter(r => !r.success).map(r => r.task.identifier);
@@ -632,6 +636,10 @@ export class PhaseExecutor extends EventEmitter {
         result.error = firstError;
       }
     }
+
+    // Emit SESSION_FEATURE_COMPLETED event
+    const completedTaskCount = taskResults.filter(r => r.success).length;
+    await this.emitFeatureCompletedEvent(feature, startTime, completedTaskCount);
 
     return result;
   }
@@ -669,6 +677,9 @@ export class PhaseExecutor extends EventEmitter {
       // Mark task as started in SpecTree
       await this.markTaskStarted(task);
 
+      // Emit SESSION_TASK_STARTED event
+      await this.emitTaskStartedEvent(task, feature);
+
       // Convert Task to ExecutionItem format for agent pool
       const taskItem: ExecutionItem = {
         type: "task",
@@ -699,6 +710,10 @@ export class PhaseExecutor extends EventEmitter {
       // Mark task as completed in SpecTree
       if (agentResult.success) {
         await this.markTaskCompleted(task, agentResult.summary);
+        
+        // Emit SESSION_TASK_COMPLETED event
+        await this.emitTaskCompletedEvent(task, feature, taskStartTime, true);
+        
         this.emit("task:complete", task, feature, true);
         console.log(`    ✅ Task ${task.identifier} completed (${((Date.now() - taskStartTime) / 1000).toFixed(1)}s)`);
       } else {
@@ -894,6 +909,159 @@ noteTypes: observation, decision, blocker, next-steps, context
   }
 
   /**
+   * Emit SESSION_FEATURE_STARTED event.
+   */
+  private async emitFeatureStartedEvent(feature: ExecutionItem): Promise<void> {
+    if (!this.sessionId || !feature.epicId) {
+      return;
+    }
+
+    try {
+      // Fetch feature details for complete event data
+      const featureDetails = await this.specTreeClient.getFeature(feature.id);
+      const taskCount = featureDetails.tasks?.length ?? 0;
+
+      await this.specTreeClient.emitSessionEvent({
+        eventType: SessionEventType.SESSION_FEATURE_STARTED,
+        sessionId: this.sessionId,
+        epicId: feature.epicId,
+        timestamp: new Date().toISOString(),
+        payload: {
+          featureId: feature.id,
+          identifier: feature.identifier,
+          title: feature.title,
+          ...(feature.statusId ? { statusId: feature.statusId } : {}),
+          ...(featureDetails.status?.name ? { statusName: featureDetails.status.name } : {}),
+          ...(taskCount > 0 ? { taskCount } : {}),
+        },
+      });
+    } catch (error) {
+      console.warn(
+        `Failed to emit SESSION_FEATURE_STARTED for ${feature.identifier}:`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  /**
+   * Emit SESSION_FEATURE_COMPLETED event.
+   */
+  private async emitFeatureCompletedEvent(
+    feature: ExecutionItem,
+    startTime: number,
+    completedTaskCount?: number
+  ): Promise<void> {
+    if (!this.sessionId || !feature.epicId) {
+      return;
+    }
+
+    try {
+      // Fetch updated feature details
+      const featureDetails = await this.specTreeClient.getFeature(feature.id);
+      const taskCount = featureDetails.tasks?.length ?? 0;
+
+      await this.specTreeClient.emitSessionEvent({
+        eventType: SessionEventType.SESSION_FEATURE_COMPLETED,
+        sessionId: this.sessionId,
+        epicId: feature.epicId,
+        timestamp: new Date().toISOString(),
+        payload: {
+          featureId: feature.id,
+          identifier: feature.identifier,
+          title: feature.title,
+          ...(feature.statusId ? { statusId: feature.statusId } : {}),
+          ...(featureDetails.status?.name ? { statusName: featureDetails.status.name } : {}),
+          ...(taskCount > 0 ? { taskCount } : {}),
+          ...(completedTaskCount !== undefined ? { completedTaskCount } : {}),
+          durationMs: Date.now() - startTime,
+        },
+      });
+    } catch (error) {
+      console.warn(
+        `Failed to emit SESSION_FEATURE_COMPLETED for ${feature.identifier}:`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  /**
+   * Emit SESSION_TASK_STARTED event.
+   */
+  private async emitTaskStartedEvent(task: Task, feature: ExecutionItem): Promise<void> {
+    if (!this.sessionId || !feature.epicId) {
+      return;
+    }
+
+    try {
+      // Fetch task details
+      const taskDetails = await this.specTreeClient.getTask(task.id);
+
+      await this.specTreeClient.emitSessionEvent({
+        eventType: SessionEventType.SESSION_TASK_STARTED,
+        sessionId: this.sessionId,
+        epicId: feature.epicId,
+        timestamp: new Date().toISOString(),
+        payload: {
+          taskId: task.id,
+          identifier: task.identifier,
+          title: task.title,
+          featureId: feature.id,
+          featureIdentifier: feature.identifier,
+          ...(task.statusId ? { statusId: task.statusId } : {}),
+          ...(taskDetails.status?.name ? { statusName: taskDetails.status.name } : {}),
+        },
+      });
+    } catch (error) {
+      console.warn(
+        `Failed to emit SESSION_TASK_STARTED for ${task.identifier}:`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  /**
+   * Emit SESSION_TASK_COMPLETED event.
+   */
+  private async emitTaskCompletedEvent(
+    task: Task,
+    feature: ExecutionItem,
+    startTime: number,
+    validationsPassed?: boolean
+  ): Promise<void> {
+    if (!this.sessionId || !feature.epicId) {
+      return;
+    }
+
+    try {
+      // Fetch updated task details
+      const taskDetails = await this.specTreeClient.getTask(task.id);
+
+      await this.specTreeClient.emitSessionEvent({
+        eventType: SessionEventType.SESSION_TASK_COMPLETED,
+        sessionId: this.sessionId,
+        epicId: feature.epicId,
+        timestamp: new Date().toISOString(),
+        payload: {
+          taskId: task.id,
+          identifier: task.identifier,
+          title: task.title,
+          featureId: feature.id,
+          featureIdentifier: feature.identifier,
+          ...(task.statusId ? { statusId: task.statusId } : {}),
+          ...(taskDetails.status?.name ? { statusName: taskDetails.status.name } : {}),
+          ...(validationsPassed !== undefined ? { validationsPassed } : {}),
+          durationMs: Date.now() - startTime,
+        },
+      });
+    } catch (error) {
+      console.warn(
+        `Failed to emit SESSION_TASK_COMPLETED for ${task.identifier}:`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  /**
    * Execute item directly with a single agent (original behavior).
    */
   private async executeSingleItemDirectly(
@@ -965,6 +1133,11 @@ noteTypes: observation, decision, blocker, next-steps, context
     try {
       const input = this.sessionId ? { sessionId: this.sessionId } : undefined;
       await this.specTreeClient.startWork(item.type, item.id, input);
+      
+      // Emit SESSION_FEATURE_STARTED event for features
+      if (item.type === "feature") {
+        await this.emitFeatureStartedEvent(item);
+      }
     } catch (error) {
       // Log but don't fail on SpecTree tracking errors
       // The actual work is more important than tracking

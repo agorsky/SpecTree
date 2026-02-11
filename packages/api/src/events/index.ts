@@ -5,10 +5,12 @@ export {
   emitEntityUpdated,
   emitEntityDeleted,
   emitProgressLogged,
+  emitSessionEvent,
   onEntityCreated,
   onEntityUpdated,
   onEntityDeleted,
   onProgressLogged,
+  onSessionEvent,
 } from "./emitter.js";
 export {
   emitStatusChanged,

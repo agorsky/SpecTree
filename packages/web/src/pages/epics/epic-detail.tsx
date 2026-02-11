@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useEpic, useUpdateEpic, useDeleteEpic, useArchiveEpic, useUnarchiveEpic } from "@/hooks/queries/use-epics";
 import { IssuesList } from "@/components/issues/issues-list";
 import { FeatureForm } from "@/components/features/feature-form";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Plus, Trash2, Check, X, MoreHorizontal, ChevronDown, ChevronRight, Archive, ArchiveRestore, FileText, ExternalLink, AlertTriangle, Clock } from "lucide-react";
 import { PlanView } from "@/components/execution-plan";
 import { DetailTabs, TabsContent } from "@/components/detail-tabs/detail-tabs";
+import { SessionMonitor } from "@/components/session";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 export function EpicDetailPage() {
   const { epicId } = useParams<{ epicId: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: epic, isLoading } = useEpic(epicId ?? "");
   const updateEpic = useUpdateEpic();
   const deleteEpic = useDeleteEpic();
@@ -41,7 +43,25 @@ export function EpicDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'plan'>('overview');
+  
+  // Initialize active tab from URL params or default to 'overview'
+  const initialTab = (searchParams.get('tab') as 'overview' | 'plan' | 'monitor') || 'overview';
+  const [activeTab, setActiveTab] = useState<'overview' | 'plan' | 'monitor'>(initialTab);
+
+  // Update URL when tab changes (for deep linking and persistence)
+  useEffect(() => {
+    const currentTab = searchParams.get('tab');
+    if (currentTab !== activeTab) {
+      const newParams = new URLSearchParams(searchParams);
+      if (activeTab === 'overview') {
+        // Remove tab param for overview (default)
+        newParams.delete('tab');
+      } else {
+        newParams.set('tab', activeTab);
+      }
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [activeTab, searchParams, setSearchParams]);
 
   if (isLoading) {
     return (
@@ -322,11 +342,12 @@ export function EpicDetailPage() {
         <DetailTabs
           tabs={[
             { id: 'overview', label: 'Overview' },
-            { id: 'plan', label: 'Plan' }
+            { id: 'plan', label: 'Plan' },
+            { id: 'monitor', label: 'Session Monitor' }
           ]}
           activeTab={activeTab}
           onTabChange={(tab) => {
-            setActiveTab(tab as 'overview' | 'plan');
+            setActiveTab(tab as 'overview' | 'plan' | 'monitor');
           }}
         >
           <TabsContent value="overview" className="h-full">
@@ -335,6 +356,10 @@ export function EpicDetailPage() {
           
           <TabsContent value="plan" className="h-full">
             {epicId && <PlanView epicId={epicId} />}
+          </TabsContent>
+
+          <TabsContent value="monitor" className="h-full">
+            {epicId && <SessionMonitor epicId={epicId} />}
           </TabsContent>
         </DetailTabs>
       </div>

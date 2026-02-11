@@ -10,10 +10,18 @@ import {
   EVENT_ENTITY_UPDATED,
   EVENT_ENTITY_DELETED,
   EVENT_PROGRESS_LOGGED,
+  EVENT_SESSION,
 } from "./types.js";
+import type { SessionEvent } from "@spectree/shared";
+import { sessionEventThrottler } from "../services/eventThrottler.js";
 
 // Singleton event emitter for the application
 export const eventEmitter = new EventEmitter();
+
+// Forward throttled session events to main event emitter
+sessionEventThrottler.on("event", (event: SessionEvent) => {
+  eventEmitter.emit(Events.SESSION_EVENT, event);
+});
 
 // Event names as constants
 export const Events = {
@@ -22,6 +30,7 @@ export const Events = {
   ENTITY_UPDATED: EVENT_ENTITY_UPDATED,
   ENTITY_DELETED: EVENT_ENTITY_DELETED,
   PROGRESS_LOGGED: EVENT_PROGRESS_LOGGED,
+  SESSION_EVENT: EVENT_SESSION,
 } as const;
 
 /**
@@ -90,4 +99,22 @@ export function onProgressLogged(
   handler: (payload: ProgressLoggedEvent) => void
 ): void {
   eventEmitter.on(Events.PROGRESS_LOGGED, handler);
+}
+
+/**
+ * Emit a session event
+ */
+export function emitSessionEvent(payload: SessionEvent): void {
+  console.log(`[Event] ${Events.SESSION_EVENT}:`, JSON.stringify(payload));
+  // Use throttler instead of direct emission
+  sessionEventThrottler.enqueue(payload);
+}
+
+/**
+ * Subscribe to session events
+ */
+export function onSessionEvent(
+  handler: (payload: SessionEvent) => void
+): void {
+  eventEmitter.on(Events.SESSION_EVENT, handler);
 }

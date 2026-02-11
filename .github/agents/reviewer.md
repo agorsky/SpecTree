@@ -127,7 +127,31 @@ When reviewing all features in an epic:
 
 2. For each completed feature, run the full review workflow above
 
-3. Present a consolidated report with per-feature verdicts
+3. **Status Reconciliation Check** — verify that SpecTree status matches reality:
+
+   For each feature in the epic:
+   ```
+   spectree__get_feature({ id: "<feature-identifier>" })
+   ```
+   
+   Flag these status mismatches:
+   - **Feature marked Done but has tasks NOT in Done** — either tasks were skipped (should be noted) or the feature was prematurely completed
+   - **Tasks marked Done but no code changes linked** — work may not have been performed, or files were not tracked
+   - **Feature NOT marked Done but all tasks are Done** — feature-worker likely forgot to mark the parent feature complete
+   - **Tasks marked Done that have no AI notes or progress logged** — suspicious, may indicate bulk status changes without actual implementation
+   - **Skipped/deferred tasks incorrectly marked Done** — any task with notes like "deferred", "skipped", "not applicable" but status is Done
+   
+   Report mismatches in a dedicated section:
+   ```markdown
+   ### Status Reconciliation
+   
+   | Item | Issue | Recommended Action |
+   |------|-------|--------------------|
+   | ENG-42 | Feature Done but ENG-42-3 still in Backlog | Verify if task was deferred intentionally |
+   | ENG-43-5 | Marked Done but AI notes say "skipped" | Revert to Backlog |
+   ```
+
+4. Present a consolidated report with per-feature verdicts
 
 ---
 
@@ -137,5 +161,7 @@ When reviewing all features in an epic:
 2. **ALWAYS** run `spectree__run_all_validations` — never skip automated checks
 3. **ALWAYS** check actual code, not just validation results — validations may not cover everything
 4. **ALWAYS** report findings in the structured format above
-5. **NEVER** approve work that has failing validations without explicit user consent
-6. **NEVER** modify code during review — only report findings
+5. **ALWAYS** run status reconciliation checks when reviewing an entire epic — flag any mismatches between task/feature status and actual work performed
+6. **NEVER** approve work that has failing validations without explicit user consent
+7. **NEVER** modify code during review — only report findings
+8. **NEVER** assume a task was completed just because its status is Done — verify against AI notes, code context, and linked files

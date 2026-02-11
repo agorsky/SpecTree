@@ -16,6 +16,7 @@ import {
   ErrorCode,
 } from "../errors.js";
 import { getApiUrl } from "../config/index.js";
+import type { SessionEvent } from "@spectree/shared";
 
 // =============================================================================
 // Types and Interfaces
@@ -1122,6 +1123,23 @@ export class SpecTreeClient {
       handoff
     );
     return response.data;
+  }
+
+  /**
+   * Emit a session event to be broadcast via SSE.
+   * Does not throw on error - logs and continues.
+   */
+  async emitSessionEvent(event: SessionEvent): Promise<void> {
+    try {
+      await this.request<void>(
+        "POST",
+        "/sessions/emit-event",
+        event
+      );
+    } catch (error) {
+      // Log but don't throw - event emission failures shouldn't break orchestration
+      console.warn("Failed to emit session event:", error);
+    }
   }
 
   /**

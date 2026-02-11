@@ -7,6 +7,8 @@
 
 import { prisma } from "../lib/db.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
+import { emitSessionEvent } from "../events/index.js";
+import { SessionEventType } from "@spectree/shared";
 import type {
   StartSessionInput,
   EndSessionInput,
@@ -150,6 +152,18 @@ export async function startSession(
     },
   });
 
+  // Emit session started event
+  emitSessionEvent({
+    eventType: SessionEventType.SESSION_STARTED,
+    sessionId: newSession.id,
+    epicId: epic.id,
+    timestamp: newSession.startedAt.toISOString(),
+    payload: {
+      ...(newSession.externalId != null ? { externalId: newSession.externalId } : {}),
+      status: "active",
+    },
+  });
+
   // Calculate epic progress
   let completedFeatures = 0;
   let inProgressFeatures = 0;
@@ -230,6 +244,28 @@ export async function endSession(
       blockers: input.blockers ? JSON.stringify(input.blockers) : null,
       decisions: input.decisions ? JSON.stringify(input.decisions) : null,
       contextBlob: input.contextBlob ?? null,
+    },
+  });
+
+  // Emit session ended event
+  emitSessionEvent({
+    eventType: SessionEventType.SESSION_ENDED,
+    sessionId: updatedSession.id,
+    epicId: epic.id,
+    timestamp: updatedSession.endedAt?.toISOString() ?? new Date().toISOString(),
+    payload: {
+      status: "completed" as const,
+      ...(input.summary ? { summary: input.summary } : {}),
+      ...(input.nextSteps ? { nextSteps: input.nextSteps } : {}),
+      ...(input.blockers ? { blockers: input.blockers } : {}),
+      ...(input.decisions 
+        ? { 
+            decisions: input.decisions.map(d => ({
+              decision: d.decision,
+              ...(d.rationale ? { rationale: d.rationale } : {})
+            }))
+          } 
+        : {}),
     },
   });
 
@@ -408,6 +444,71 @@ export async function logSessionWork(
     },
   });
 
+  // Emit session event for completed items
+  if (input.action === "completed") {
+    if (input.itemType === "task") {
+      // Fetch task details for complete event
+      const task = await prisma.task.findUnique({
+        where: { id: input.itemId },
+        include: {
+          feature: true,
+          status: true,
+        },
+      });
+
+      if (task) {
+        emitSessionEvent({
+          eventType: SessionEventType.SESSION_TASK_COMPLETED,
+          sessionId: activeSession.id,
+          epicId: epic.id,
+          timestamp: newItem.timestamp,
+          payload: {
+            taskId: task.id,
+            identifier: task.identifier,
+            title: task.title,
+            featureId: task.featureId,
+            featureIdentifier: task.feature.identifier,
+            ...(task.statusId != null ? { statusId: task.statusId } : {}),
+            ...(task.status?.name != null ? { statusName: task.status.name } : {}),
+            ...(task.durationMinutes != null ? { durationMs: task.durationMinutes * 60 * 1000 } : {}),
+          },
+        });
+      }
+    } else {
+      // Fetch feature details for complete event
+      const feature = await prisma.feature.findUnique({
+        where: { id: input.itemId },
+        include: {
+          status: true,
+          tasks: true,
+        },
+      });
+
+      if (feature) {
+        const completedTaskCount = feature.tasks.filter(
+          (t) => t.completedAt !== null
+        ).length;
+
+        emitSessionEvent({
+          eventType: SessionEventType.SESSION_FEATURE_COMPLETED,
+          sessionId: activeSession.id,
+          epicId: epic.id,
+          timestamp: newItem.timestamp,
+          payload: {
+            featureId: feature.id,
+            identifier: feature.identifier,
+            title: feature.title,
+            ...(feature.statusId != null ? { statusId: feature.statusId } : {}),
+            ...(feature.status?.name != null ? { statusName: feature.status.name } : {}),
+            taskCount: feature.tasks.length,
+            completedTaskCount,
+            ...(feature.durationMinutes != null ? { durationMs: feature.durationMinutes * 60 * 1000 } : {}),
+          },
+        });
+      }
+    }
+  }
+
   return transformSession(updatedSession);
 }
 
@@ -458,6 +559,17 @@ export async function abandonSession(sessionId: string): Promise<SessionResponse
     data: {
       status: "abandoned",
       endedAt: new Date(),
+    },
+  });
+
+  // Emit session abandoned event
+  emitSessionEvent({
+    eventType: SessionEventType.SESSION_ENDED,
+    sessionId: updatedSession.id,
+    epicId: session.epicId,
+    timestamp: updatedSession.endedAt?.toISOString() ?? new Date().toISOString(),
+    payload: {
+      status: "abandoned",
     },
   });
 

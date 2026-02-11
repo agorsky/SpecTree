@@ -68,3 +68,4 @@ export const EVENT_ENTITY_CREATED = "entity:created";
 export const EVENT_ENTITY_UPDATED = "entity:updated";
 export const EVENT_ENTITY_DELETED = "entity:deleted";
 export const EVENT_PROGRESS_LOGGED = "progress:logged";
+export const EVENT_SESSION = "session:event";

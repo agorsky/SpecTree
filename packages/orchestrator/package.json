@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@github/copilot-sdk": "^0.1.0",
+    "@spectree/shared": "workspace:^",
     "chalk": "^5.3.0",
     "commander": "^12.1.0",
     "conf": "^13.0.1",

@@ -222,3 +222,25 @@ export {
   type EntityIdParam,
   type EpicIdParam,
 } from "./changelog.js";
+
+// Session Event schemas
+export {
+  sessionEventBaseSchema,
+  sessionLifecyclePayloadSchema,
+  sessionLifecycleEventSchema,
+  sessionPhasePayloadSchema,
+  sessionPhaseEventSchema,
+  sessionFeaturePayloadSchema,
+  sessionFeatureEventSchema,
+  sessionTaskPayloadSchema,
+  sessionTaskEventSchema,
+  sessionErrorPayloadSchema,
+  sessionErrorEventSchema,
+  sessionEventSchema,
+  type SessionLifecycleEventInput,
+  type SessionPhaseEventInput,
+  type SessionFeatureEventInput,
+  type SessionTaskEventInput,
+  type SessionErrorEventInput,
+  type SessionEventInput,
+} from "./session-events.js";

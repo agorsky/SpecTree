@@ -9,6 +9,7 @@ import {
   logSessionWork,
   abandonSession,
 } from "../services/sessionService.js";
+import { emitSessionEvent } from "../events/index.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { validateBody } from "../middleware/validate.js";
 import {
@@ -19,6 +20,7 @@ import {
   type EndSessionInput,
   type LogSessionWorkInput,
 } from "../schemas/session.js";
+import type { SessionEvent } from "@spectree/shared";
 
 // =============================================================================
 // Request Type Definitions
@@ -165,5 +167,17 @@ export default async function sessionRoutes(
   }>("/by-id/:id/abandon", async (request, reply) => {
     const result = await abandonSession(request.params.id);
     return reply.send({ data: result });
+  });
+
+  // ---------------------------------------------------------------------------
+  // POST /api/v1/sessions/emit-event - Emit a session event
+  // ---------------------------------------------------------------------------
+  fastify.post<{
+    Body: SessionEvent;
+  }>("/emit-event", async (request, reply) => {
+    // Emit the session event through the event emitter
+    // This will be picked up by SSE clients listening to the events endpoint
+    emitSessionEvent(request.body);
+    return reply.status(204).send();
   });
 }

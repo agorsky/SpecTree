@@ -210,8 +210,48 @@ After all phases are complete:
    🏁 All phases complete. Final status: X/Y features done, X blocked, X failed.
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    ```
-2. Call `spectree__get_progress_summary` to confirm everything is done
-3. **End the AI session** with handoff data:
+
+2. 🔴 **MANDATORY: Reconciliation Sweep**
+
+   Before ending the session, run a full reconciliation pass over ALL features and tasks in the epic. This catches status mismatches caused by feature-workers forgetting to mark features Done, tasks being implicitly completed inside other tasks, or SpecTree tool failures.
+
+   ```
+   // a) Get full progress summary
+   spectree__get_progress_summary({ epicId: "<epic-id>" })
+   ```
+
+   **For each feature in the epic:**
+   ```
+   // b) Get the feature with its tasks
+   const feature = spectree__get_feature({ id: "<feature-identifier>" })
+
+   // c) Check each task
+   for each task in feature.tasks:
+     if task.status.category !== "completed" AND task was actually implemented:
+       spectree__complete_work({ type: "task", id: task.identifier, summary: "Completed during execution — status updated in reconciliation sweep" })
+     else if task.status.category !== "completed" AND task was NOT performed:
+       // Leave it as-is (Backlog) — NEVER mark unperformed work as Done
+       spectree__append_ai_note({ type: "task", id: task.identifier, noteType: "context", content: "Task not performed during this execution. Left in Backlog." })
+
+   // d) Check the feature itself
+   if feature.status.category !== "completed" AND all performed tasks are done:
+     spectree__complete_work({ type: "feature", id: feature.identifier, summary: "Completed during execution — status updated in reconciliation sweep" })
+   ```
+
+   **Log reconciliation results:**
+   ```
+   spectree__append_ai_note({
+     type: "epic",
+     id: "<epic-id>",
+     noteType: "observation",
+     content: "🔄 Reconciliation sweep: X status corrections applied (Y tasks, Z features). W items intentionally left in Backlog."
+   })
+   ```
+
+   > ⚠️ **Key rule**: Only mark items Done if the work was actually performed and verified. If a task was skipped or deferred, leave it in Backlog and document why. Dishonestly marking skipped work as Done corrupts the project record.
+
+3. Call `spectree__get_progress_summary` to confirm final state after reconciliation
+4. **End the AI session** with handoff data:
    ```
    spectree__end_session({
      epicId: "<epic-id>",
@@ -356,16 +396,18 @@ If the user requests a dry run (e.g., "show me the plan without executing"):
 2. **ALWAYS** call `spectree__start_session` before executing any phases — this tracks the session on the dashboard
 3. **ALWAYS** call `spectree__end_session` after all phases complete — this records handoff data for future sessions
 4. **ALWAYS** inject full SpecTree context into sub-agent prompts — never spawn workers without context
-3. **ALWAYS** call `spectree__start_work` for each feature BEFORE spawning its feature-worker
-4. **ALWAYS** log AI notes and set AI context for each feature AFTER it completes
-5. **ALWAYS** update SpecTree progress after each feature completes
-6. **ALWAYS** invoke the reviewer agent after each phase
-7. **ALWAYS** run post-phase verification (Step 8) to catch missed SpecTree updates
-8. **NEVER** implement features yourself — delegate to feature-worker sub-agents
-9. **NEVER** continue to the next phase if the current phase has unresolved blockers (unless the user explicitly approves)
-10. **ALWAYS** emit progress announcements at every milestone listed in Steps 1.5, 2, and 3 — the user has zero visibility otherwise
-11. **ALWAYS** log to SpecTree at the epic level at execution start, after each phase, and at execution end
-12. **ALWAYS** update the epic description with a full execution summary (phase results, metrics, files) via `spectree__update_epic` after all phases complete — this is the permanent record of work done
+5. **ALWAYS** call `spectree__start_work` for each feature BEFORE spawning its feature-worker
+6. **ALWAYS** log AI notes and set AI context for each feature AFTER it completes
+7. **ALWAYS** update SpecTree progress after each feature completes
+8. **ALWAYS** invoke the reviewer agent after each phase
+9. **ALWAYS** run post-phase verification (Step 8) to catch missed SpecTree updates
+10. **ALWAYS** run the reconciliation sweep (Step 3.2) before ending the session — this is the safety net that catches all status mismatches
+11. **NEVER** implement features yourself — delegate to feature-worker sub-agents
+12. **NEVER** continue to the next phase if the current phase has unresolved blockers (unless the user explicitly approves)
+13. **NEVER** mark skipped or deferred tasks as Done — leave them in Backlog with a note explaining why
+14. **ALWAYS** emit progress announcements at every milestone listed in Steps 1.5, 2, and 3 — the user has zero visibility otherwise
+15. **ALWAYS** log to SpecTree at the epic level at execution start, after each phase, and at execution end
+16. **ALWAYS** update the epic description with a full execution summary (phase results, metrics, files) via `spectree__update_epic` after all phases complete — this is the permanent record of work done
 
 ---
 

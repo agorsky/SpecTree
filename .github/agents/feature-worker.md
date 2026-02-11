@@ -147,7 +147,16 @@ Before moving to the next task, verify ALL of these:
 
 Once all tasks in the feature are complete:
 
-1. Leave an AI note summarizing the work done:
+1. **Mark the parent feature as Done** — this is the most commonly missed step. The orchestrator expects features to be marked Done by the worker:
+   ```
+   spectree__complete_work({
+     type: "feature",
+     id: "<feature-identifier>",   // e.g., "ENG-42"
+     summary: "Implemented all 3 tasks: API routes, database model, frontend page. All tests passing."
+   })
+   ```
+
+2. Leave an AI note summarizing the work done:
    ```
    spectree__append_ai_note({
      type: "feature",
@@ -157,7 +166,17 @@ Once all tasks in the feature are complete:
    })
    ```
 
-2. Ensure every modified file has been linked via `spectree__link_code_file`.
+3. Ensure every modified file has been linked via `spectree__link_code_file`.
+
+4. **If any task was NOT performed** (e.g., skipped, deferred, blocked), leave it in its current status (Backlog/Blocked) — **NEVER mark unperformed work as Done**. Instead, log why it was skipped:
+   ```
+   spectree__append_ai_note({
+     type: "task",
+     id: "<skipped-task-identifier>",
+     noteType: "context",
+     content: "Task deferred: <reason>. No work was performed."
+   })
+   ```
 
 ---
 
@@ -189,6 +208,8 @@ Example summary when SpecTree calls failed:
 4. **MUST** link ALL created or modified files via `spectree__link_code_file`
 5. **MUST** log decisions with rationale — future sessions depend on this context
 6. **MUST** leave an AI note after completing the feature
-7. **Do NOT** modify files outside the task's scope (check `filesInvolved`)
-8. **Do NOT** skip acceptance criteria — verify each one is met
-9. **Do NOT** proceed to the next task if the current task's validations fail
+7. **MUST** call `spectree__complete_work` on the parent feature after all tasks are done — the orchestrator depends on this to track phase completion
+8. **Do NOT** modify files outside the task's scope (check `filesInvolved`)
+9. **Do NOT** skip acceptance criteria — verify each one is met
+10. **Do NOT** proceed to the next task if the current task's validations fail
+11. **NEVER** mark a task or feature as Done if the work was not actually performed — use Backlog for deferred work and log the reason
