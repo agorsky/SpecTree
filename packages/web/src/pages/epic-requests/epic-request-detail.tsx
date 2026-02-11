@@ -63,6 +63,38 @@ export function EpicRequestDetailPage() {
   const [editingContent, setEditingContent] = useState('');
   const [copied, setCopied] = useState(false);
 
+  const handleCopyCommand = useCallback(async (command: string) => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopied(true);
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch {
+      const textArea = document.createElement('textarea');
+      textArea.value = command;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+
+      try {
+        textArea.select();
+        // eslint-disable-next-line deprecation/deprecation
+        const successful = document.execCommand('copy');
+        if (successful) {
+          setCopied(true);
+          setTimeout(() => {
+            setCopied(false);
+          }, 2000);
+        }
+      } catch {
+        // Swallow copy fallback errors to avoid unhandled promise rejections
+      } finally {
+        document.body.removeChild(textArea);
+      }
+    }
+  }, []);
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-4">
@@ -201,26 +233,6 @@ export function EpicRequestDetailPage() {
 
   const plannerCommand = `@planner --from-request "${request.title}"`;
 
-  const handleCopyCommand = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(plannerCommand);
-      setCopied(true);
-      setTimeout(() => { setCopied(false); }, 2000);
-    } catch {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = plannerCommand;
-      textArea.style.position = 'fixed';
-      textArea.style.opacity = '0';
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setCopied(true);
-      setTimeout(() => { setCopied(false); }, 2000);
-    }
-  }, [plannerCommand]);
-
   // Determine permissions
   const isAdmin = user?.isGlobalAdmin ?? false;
   const isCreator = user?.id === request.requestedById;
@@ -329,7 +341,7 @@ export function EpicRequestDetailPage() {
                 variant="outline"
                 size="icon"
                 className="h-9 w-9 shrink-0"
-                onClick={() => { void handleCopyCommand(); }}
+                onClick={() => { void handleCopyCommand(plannerCommand); }}
               >
                 {copied ? (
                   <Check className="h-4 w-4 text-green-600" />
