@@ -21,6 +21,7 @@ export interface UpdateUserInput {
   password?: string;
   avatarUrl?: string;
   isActive?: boolean;
+  timeZone?: string | null;
 }
 
 export const usersApi = {

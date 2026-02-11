@@ -9,6 +9,7 @@ export interface UserActivityQuerystring {
   interval: ActivityInterval;
   page?: number;
   limit?: number;
+  timeZone?: string;
 }
 
 /**
@@ -35,7 +36,7 @@ export default function userActivityRoutes(
       },
     },
     async (request) => {
-      const { interval = "week", page, limit } = request.query;
+      const { interval = "week", page, limit, timeZone } = request.query;
       const userId = request.user!.id;
 
       const parsedPage = Number(page) || 1;
@@ -48,6 +49,7 @@ export default function userActivityRoutes(
         interval,
         page: clampedPage,
         limit: clampedLimit,
+        ...(timeZone ? { timeZone } : {}),
       });
     }
   );

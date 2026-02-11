@@ -32,6 +32,7 @@ interface UpdateUserBody {
   password?: string;
   avatarUrl?: string | null;
   isActive?: boolean;
+  timeZone?: string | null;
 }
 
 /**
@@ -122,7 +123,7 @@ export default function usersRoutes(
     { preHandler: [authenticate] },
     async (request, reply) => {
       const { id } = request.params;
-      const { email, name, password, avatarUrl, isActive } = request.body;
+      const { email, name, password, avatarUrl, isActive, timeZone } = request.body;
 
       // Check if user exists
       const existingUser = await getUserById(id);
@@ -149,6 +150,7 @@ export default function usersRoutes(
         password?: string;
         avatarUrl?: string | null;
         isActive?: boolean;
+        timeZone?: string | null;
       } = {};
       if (email !== undefined) {
         updateInput.email = email;
@@ -164,6 +166,9 @@ export default function usersRoutes(
       }
       if (isActive !== undefined) {
         updateInput.isActive = isActive;
+      }
+      if (timeZone !== undefined) {
+        updateInput.timeZone = timeZone;
       }
 
       const user = await updateUser(id, updateInput);

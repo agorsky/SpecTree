@@ -13,6 +13,7 @@ const userSelectFields = {
   name: true,
   avatarUrl: true,
   isActive: true,
+  timeZone: true,
   createdAt: true,
   updatedAt: true,
   passwordHash: false,
@@ -24,6 +25,7 @@ export interface UserResponse {
   name: string;
   avatarUrl: string | null;
   isActive: boolean;
+  timeZone: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +43,7 @@ export interface UpdateUserInput {
   password?: string;
   avatarUrl?: string | null;
   isActive?: boolean;
+  timeZone?: string | null;
 }
 
 export interface PaginationParams {
@@ -174,6 +177,7 @@ export async function updateUser(
     passwordHash?: string;
     avatarUrl?: string | null;
     isActive?: boolean;
+    timeZone?: string | null;
   } = {};
 
   if (input.email !== undefined) {
@@ -190,6 +194,9 @@ export async function updateUser(
   }
   if (input.isActive !== undefined) {
     updateData.isActive = input.isActive;
+  }
+  if (input.timeZone !== undefined) {
+    updateData.timeZone = input.timeZone;
   }
 
   try {

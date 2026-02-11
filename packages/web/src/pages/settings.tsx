@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTheme } from "@/hooks/use-theme";
 import { useTokens, useRevokeToken } from "@/hooks/queries/use-tokens";
+import { usersApi } from "@/lib/api/users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,10 +24,34 @@ import {
 import { ApiKeyList } from "@/components/settings/api-key-list";
 import { CreateApiKeyDialog } from "@/components/settings/create-api-key-dialog";
 
+/** Common IANA timezone identifiers. Uses the runtime's full list when available. */
+const TIMEZONE_OPTIONS: string[] =
+  typeof (Intl as Record<string, unknown>).supportedValuesOf === "function"
+    ? (Intl as unknown as { supportedValuesOf(key: string): string[] }).supportedValuesOf("timeZone")
+    : [
+        "UTC",
+        "America/New_York",
+        "America/Chicago",
+        "America/Denver",
+        "America/Los_Angeles",
+        "America/Anchorage",
+        "Pacific/Honolulu",
+        "Europe/London",
+        "Europe/Berlin",
+        "Europe/Paris",
+        "Asia/Tokyo",
+        "Asia/Shanghai",
+        "Asia/Kolkata",
+        "Australia/Sydney",
+      ];
+
+const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 export function SettingsPage() {
   const { user, logout } = useAuthStore();
   const { theme, setTheme } = useTheme();
   const [name, setName] = useState(user?.name ?? "");
+  const [timeZone, setTimeZone] = useState(user?.timeZone ?? browserTimeZone);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreateKeyDialogOpen, setIsCreateKeyDialogOpen] = useState(false);
 
@@ -34,11 +59,17 @@ export function SettingsPage() {
   const { data: tokens, isLoading: isLoadingTokens } = useTokens();
   const revokeToken = useRevokeToken();
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
+    if (!user) return;
     setIsSaving(true);
-    // TODO: Implement profile update API
-    console.log("Save profile:", { name });
-    setTimeout(() => { setIsSaving(false); }, 500);
+    try {
+      const res = await usersApi.update(user.id, { name, timeZone });
+      useAuthStore.setState({ user: res.data });
+    } catch (e) {
+      console.error("Failed to save profile:", e);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -95,6 +126,29 @@ export function SettingsPage() {
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium">Timezone</div>
+              <div className="text-sm text-muted-foreground">
+                Used for activity dashboard and date display
+              </div>
+            </div>
+            <Select value={timeZone} onValueChange={setTimeZone}>
+              <SelectTrigger className="w-64">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {TIMEZONE_OPTIONS.map((tz) => (
+                  <SelectItem key={tz} value={tz}>
+                    {tz.replace(/_/g, " ")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={() => { handleSaveProfile(); }} disabled={isSaving} size="sm">
+            {isSaving ? "Saving..." : "Save Preferences"}
+          </Button>
         </CardContent>
       </Card>
 

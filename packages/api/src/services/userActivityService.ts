@@ -24,6 +24,7 @@ export interface UserActivityQuery {
   interval: ActivityInterval;
   page: number;
   limit: number;
+  timeZone?: string;
 }
 
 export interface UserActivityResponse {
@@ -35,77 +36,148 @@ export interface UserActivityResponse {
 }
 
 /**
- * Returns the start of the interval bucket for a given date (in UTC).
+ * Returns the UTC timestamp for the start of the calendar day in the given
+ * timezone.  Falls back to pure-UTC when no timezone is supplied.
  */
-function getIntervalStart(date: Date, interval: ActivityInterval): Date {
+function startOfDayInTz(date: Date, timeZone?: string): Date {
+  if (!timeZone) {
+    const d = new Date(date);
+    d.setUTCHours(0, 0, 0, 0);
+    return d;
+  }
+
+  // Get the calendar date (YYYY-MM-DD) the user sees in their timezone
+  const localDateStr = date.toLocaleDateString("sv-SE", { timeZone });
+
+  // Find the UTC instant that corresponds to midnight of that local date.
+  // 1. Start with midnight-UTC of the same calendar date as an approximation.
+  const midnightUtc = new Date(localDateStr + "T00:00:00.000Z");
+
+  // 2. Compute the offset between UTC and the target timezone at that instant
+  //    by formatting the same instant in both zones and comparing.
+  const utcRepr = new Date(
+    midnightUtc.toLocaleString("en-US", { timeZone: "UTC" })
+  );
+  const tzRepr = new Date(
+    midnightUtc.toLocaleString("en-US", { timeZone })
+  );
+  const offsetMs = tzRepr.getTime() - utcRepr.getTime();
+
+  // 3. Shift: midnight-local(UTC) = midnight-UTC − offset
+  return new Date(midnightUtc.getTime() - offsetMs);
+}
+
+/**
+ * Returns the start of the interval bucket for a given date, respecting the
+ * user's timezone when provided.
+ */
+function getIntervalStart(
+  date: Date,
+  interval: ActivityInterval,
+  timeZone?: string
+): Date {
+  if (interval === "day") {
+    return startOfDayInTz(date, timeZone);
+  }
+
+  if (interval === "week") {
+    const dayStart = startOfDayInTz(date, timeZone);
+    // Determine the weekday in the user's timezone (or UTC)
+    const weekday = timeZone
+      ? new Date(
+          dayStart.toLocaleString("en-US", { timeZone })
+        ).getDay()
+      : dayStart.getUTCDay();
+    // Walk back to Sunday
+    return new Date(dayStart.getTime() - weekday * 86_400_000);
+  }
+
+  // month
+  if (timeZone) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    const year = parts.find((p) => p.type === "year")!.value;
+    const month = parts.find((p) => p.type === "month")!.value;
+    return startOfDayInTz(
+      new Date(`${year}-${month}-01T12:00:00.000Z`),
+      timeZone
+    );
+  }
+
   const d = new Date(date);
-  if (interval === "day") {
-    d.setUTCHours(0, 0, 0, 0);
-  } else if (interval === "week") {
-    const day = d.getUTCDay();
-    d.setUTCDate(d.getUTCDate() - day);
-    d.setUTCHours(0, 0, 0, 0);
-  } else {
-    d.setUTCDate(1);
-    d.setUTCHours(0, 0, 0, 0);
-  }
+  d.setUTCDate(1);
+  d.setUTCHours(0, 0, 0, 0);
   return d;
 }
 
 /**
- * Returns the end of the interval bucket (start of next bucket, in UTC).
+ * Returns the end of the interval bucket (start of next bucket).
  */
-function getIntervalEnd(start: Date, interval: ActivityInterval): Date {
-  const d = new Date(start);
+function getIntervalEnd(
+  start: Date,
+  interval: ActivityInterval,
+  timeZone?: string
+): Date {
   if (interval === "day") {
-    d.setUTCDate(d.getUTCDate() + 1);
-  } else if (interval === "week") {
-    d.setUTCDate(d.getUTCDate() + 7);
-  } else {
-    d.setUTCMonth(d.getUTCMonth() + 1);
+    // Add ~25 h then snap to start-of-day to handle DST safely
+    return startOfDayInTz(
+      new Date(start.getTime() + 25 * 3_600_000),
+      timeZone
+    );
   }
-  return d;
+  if (interval === "week") {
+    return startOfDayInTz(
+      new Date(start.getTime() + 7.5 * 86_400_000),
+      timeZone
+    );
+  }
+  // month – jump into the next month then snap
+  const ref = new Date(start.getTime() + 32 * 86_400_000);
+  return getIntervalStart(ref, "month", timeZone);
 }
 
 /**
- * Generates an array of interval buckets going backwards from now (in UTC).
+ * Generates an array of interval buckets going backwards from now,
+ * aligned to the user's timezone when provided.
  */
 function generateBuckets(
   interval: ActivityInterval,
   page: number,
-  limit: number
+  limit: number,
+  timeZone?: string
 ): Array<{ start: Date; end: Date }> {
   const now = new Date();
-  const currentStart = getIntervalStart(now, interval);
+  const currentStart = getIntervalStart(now, interval, timeZone);
   const buckets: Array<{ start: Date; end: Date }> = [];
 
   // Walk backwards from current interval
   const totalSkip = (page - 1) * limit;
-  const startBucket = new Date(currentStart);
+  let cursor = new Date(currentStart);
 
   // Move back by totalSkip intervals
   for (let i = 0; i < totalSkip; i++) {
-    if (interval === "day") {
-      startBucket.setUTCDate(startBucket.getUTCDate() - 1);
-    } else if (interval === "week") {
-      startBucket.setUTCDate(startBucket.getUTCDate() - 7);
-    } else {
-      startBucket.setUTCMonth(startBucket.getUTCMonth() - 1);
-    }
+    // Step back one interval by going to just before current cursor
+    cursor = getIntervalStart(
+      new Date(cursor.getTime() - 1),
+      interval,
+      timeZone
+    );
   }
 
   // Generate `limit` buckets going backwards
-  const cursor = new Date(startBucket);
   for (let i = 0; i < limit; i++) {
-    const end = getIntervalEnd(cursor, interval);
+    const end = getIntervalEnd(cursor, interval, timeZone);
     buckets.push({ start: new Date(cursor), end });
-    if (interval === "day") {
-      cursor.setUTCDate(cursor.getUTCDate() - 1);
-    } else if (interval === "week") {
-      cursor.setUTCDate(cursor.getUTCDate() - 7);
-    } else {
-      cursor.setUTCMonth(cursor.getUTCMonth() - 1);
-    }
+    // Step back one interval
+    cursor = getIntervalStart(
+      new Date(cursor.getTime() - 1),
+      interval,
+      timeZone
+    );
   }
 
   return buckets;
@@ -154,7 +226,7 @@ function countInRange<T extends { [key: string]: unknown }>(
 export async function getUserActivity(
   query: UserActivityQuery
 ): Promise<UserActivityResponse> {
-  const { userId, interval, page, limit } = query;
+  const { userId, interval, page, limit, timeZone } = query;
 
   // Find epics accessible to this user (via team memberships)
   const memberships = await prisma.membership.findMany({
@@ -180,8 +252,18 @@ export async function getUserActivity(
     await prisma.epic.findMany({ where: epicWhere, select: { id: true } })
   ).map((e) => e.id);
 
-  // Generate time buckets
-  const buckets = generateBuckets(interval, page, limit);
+  // Generate time buckets (aligned to user's timezone when provided)
+  const validTz = timeZone
+    ? (() => {
+        try {
+          Intl.DateTimeFormat(undefined, { timeZone });
+          return timeZone;
+        } catch {
+          return undefined;
+        }
+      })()
+    : undefined;
+  const buckets = generateBuckets(interval, page, limit, validTz);
 
   if (buckets.length === 0 || epicIds.length === 0) {
     return { data: [], page, limit, total: 0, hasMore: false };

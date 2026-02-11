@@ -54,6 +54,7 @@ model User {
   avatarUrl    String?  @map("avatar_url")
   isActive      Boolean  @default(true) @map("is_active")
   isGlobalAdmin Boolean  @default(false) @map("is_global_admin")
+  timeZone      String?  @map("time_zone")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

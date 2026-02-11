@@ -7,6 +7,7 @@ export interface User {
   isActive: boolean;
   isGlobalAdmin: boolean;
   avatarUrl?: string;
+  timeZone?: string | null;
   createdAt: string;
   updatedAt: string;
 }
