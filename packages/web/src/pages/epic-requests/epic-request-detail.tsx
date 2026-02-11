@@ -12,12 +12,13 @@ import {
   useApproveEpicRequest,
   useRejectEpicRequest,
   useDeleteEpicRequest,
+  useUpdateEpicRequest,
 } from '@/hooks/queries/use-epic-requests';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { MarkdownRenderer } from '@/components/common/markdown-renderer';
-import { ArrowLeft, ThumbsUp, Flame, ThumbsDown, Edit, Trash2, Send, Check, X, Copy, Terminal } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, Flame, ThumbsDown, Edit, Trash2, Send, Check, CheckCircle, X, Copy, Terminal } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { EpicRequestStatus, ReactionType, EpicRequestComment } from '@/lib/api/epic-requests';
@@ -56,6 +57,7 @@ export function EpicRequestDetailPage() {
   const approveMutation = useApproveEpicRequest();
   const rejectMutation = useRejectEpicRequest();
   const deleteRequestMutation = useDeleteEpicRequest();
+  const updateRequestMutation = useUpdateEpicRequest();
 
   // Comment form state
   const [newCommentContent, setNewCommentContent] = useState('');
@@ -226,6 +228,14 @@ export function EpicRequestDetailPage() {
     }
   };
 
+  const handleMarkImplemented = async () => {
+    if (!requestId) return;
+    await updateRequestMutation.mutateAsync({
+      id: requestId,
+      input: { status: 'converted' },
+    });
+  };
+
   const handleEdit = () => {
     // Navigate to edit page (not yet implemented, placeholder)
     void navigate(`/epic-requests/${requestId ?? ''}/edit`);
@@ -291,6 +301,20 @@ export function EpicRequestDetailPage() {
                 Reject
               </Button>
             </>
+          )}
+
+          {/* Mark Implemented Button - visible for admins when approved */}
+          {isAdmin && request.status === 'approved' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { void handleMarkImplemented(); }}
+              disabled={updateRequestMutation.isPending}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Mark Implemented
+            </Button>
           )}
 
           {/* Delete Button - visible for admins only */}

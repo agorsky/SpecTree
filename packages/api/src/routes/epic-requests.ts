@@ -203,7 +203,7 @@ export default function epicRequestsRoutes(
         input.status = request.body.status;
       }
 
-      const epicRequest = await updateEpicRequest(id, input, request.user!.id);
+      const epicRequest = await updateEpicRequest(id, input, request.user!.id, request.user!.isGlobalAdmin);
       return reply.send({ data: epicRequest });
     }
   );

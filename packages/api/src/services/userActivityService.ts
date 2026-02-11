@@ -6,8 +6,10 @@
  */
 
 import { prisma } from "../lib/db.js";
+import { NotFoundError } from "../errors/index.js";
 
 export type ActivityInterval = "day" | "week" | "month";
+export type ActivityScope = "self" | "all" | "team" | "user";
 
 export interface UserActivityDataPoint {
   intervalStart: string;
@@ -25,6 +27,8 @@ export interface UserActivityQuery {
   page: number;
   limit: number;
   timeZone?: string;
+  scope: ActivityScope;
+  scopeId?: string;
 }
 
 export interface UserActivityResponse {
@@ -221,36 +225,136 @@ function countInRange<T extends { [key: string]: unknown }>(
 }
 
 /**
+ * Get epic IDs based on the specified scope.
+ * 
+ * @param scope - The scope type: 'self', 'all', 'team', or 'user'
+ * @param userId - The requesting user's ID (for 'self' scope)
+ * @param scopeId - The team/user ID (for 'team'/'user' scopes)
+ * @returns Array of epic IDs accessible in the specified scope
+ */
+async function getEpicsByScope(
+  scope: ActivityScope,
+  userId: string,
+  scopeId?: string
+): Promise<string[]> {
+  if (scope === "self") {
+    // Use existing team membership resolution logic (zero change)
+    const memberships = await prisma.membership.findMany({
+      where: { userId },
+      select: { teamId: true },
+    });
+    const teamIds = memberships.map((m) => m.teamId);
+
+    // Also include personal scope epics
+    const personalScope = await prisma.personalScope.findFirst({
+      where: { userId },
+      select: { id: true },
+    });
+
+    const epicWhere = {
+      OR: [
+        { teamId: { in: teamIds } },
+        ...(personalScope ? [{ personalScopeId: personalScope.id }] : []),
+      ],
+    };
+
+    const epicIds = (
+      await prisma.epic.findMany({ where: epicWhere, select: { id: true } })
+    ).map((e) => e.id);
+
+    return epicIds;
+  }
+
+  if (scope === "all") {
+    // Return all epic IDs in the database
+    const epicIds = (
+      await prisma.epic.findMany({ select: { id: true } })
+    ).map((e) => e.id);
+
+    return epicIds;
+  }
+
+  if (scope === "team") {
+    // Return epics where teamId matches scopeId
+    if (!scopeId) {
+      return [];
+    }
+
+    // Validate team existence
+    const team = await prisma.team.findUnique({
+      where: { id: scopeId },
+      select: { id: true },
+    });
+
+    if (!team) {
+      throw new NotFoundError(`Team with ID '${scopeId}' not found`);
+    }
+
+    const epicIds = (
+      await prisma.epic.findMany({
+        where: { teamId: scopeId },
+        select: { id: true },
+      })
+    ).map((e) => e.id);
+
+    return epicIds;
+  }
+
+  if (scope === "user") {
+    // Return epics accessible to specified user via team memberships
+    if (!scopeId) {
+      return [];
+    }
+
+    // Validate user existence
+    const user = await prisma.user.findUnique({
+      where: { id: scopeId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new NotFoundError(`User with ID '${scopeId}' not found`);
+    }
+
+    const memberships = await prisma.membership.findMany({
+      where: { userId: scopeId },
+      select: { teamId: true },
+    });
+    const teamIds = memberships.map((m) => m.teamId);
+
+    // Also include personal scope epics for the target user
+    const personalScope = await prisma.personalScope.findFirst({
+      where: { userId: scopeId },
+      select: { id: true },
+    });
+
+    const epicWhere = {
+      OR: [
+        { teamId: { in: teamIds } },
+        ...(personalScope ? [{ personalScopeId: personalScope.id }] : []),
+      ],
+    };
+
+    const epicIds = (
+      await prisma.epic.findMany({ where: epicWhere, select: { id: true } })
+    ).map((e) => e.id);
+
+    return epicIds;
+  }
+
+  return [];
+}
+
+/**
  * Get aggregated user activity data.
  */
 export async function getUserActivity(
   query: UserActivityQuery
 ): Promise<UserActivityResponse> {
-  const { userId, interval, page, limit, timeZone } = query;
+  const { userId, interval, page, limit, timeZone, scope, scopeId } = query;
 
-  // Find epics accessible to this user (via team memberships)
-  const memberships = await prisma.membership.findMany({
-    where: { userId },
-    select: { teamId: true },
-  });
-  const teamIds = memberships.map((m) => m.teamId);
-
-  // Also include personal scope epics
-  const personalScope = await prisma.personalScope.findFirst({
-    where: { userId },
-    select: { id: true },
-  });
-
-  const epicWhere = {
-    OR: [
-      { teamId: { in: teamIds } },
-      ...(personalScope ? [{ personalScopeId: personalScope.id }] : []),
-    ],
-  };
-
-  const epicIds = (
-    await prisma.epic.findMany({ where: epicWhere, select: { id: true } })
-  ).map((e) => e.id);
+  // Get epic IDs based on scope
+  const epicIds = await getEpicsByScope(scope, userId, scopeId);
 
   // Generate time buckets (aligned to user's timezone when provided)
   const validTz = timeZone

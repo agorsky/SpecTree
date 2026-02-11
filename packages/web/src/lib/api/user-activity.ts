@@ -1,6 +1,7 @@
 import { api } from './client';
 
 export type ActivityInterval = 'day' | 'week' | 'month';
+export type ActivityScope = 'self' | 'all' | 'team' | 'user';
 
 export interface UserActivityDataPoint {
   intervalStart: string;
@@ -25,6 +26,8 @@ export interface UserActivityParams {
   page?: number;
   limit?: number;
   timeZone?: string;
+  scope?: ActivityScope;
+  scopeId?: string;
 }
 
 /** Browser-detected timezone, used as fallback when user has no saved preference. */
@@ -46,6 +49,8 @@ export const userActivityApi = {
     if (params.page) searchParams.append('page', String(params.page));
     if (params.limit) searchParams.append('limit', String(params.limit));
     searchParams.append('timeZone', params.timeZone ?? browserTimeZone);
+    if (params.scope) searchParams.append('scope', params.scope);
+    if (params.scopeId) searchParams.append('scopeId', params.scopeId);
     const qs = searchParams.toString();
     return api.get<UserActivityResponse>(`/user-activity${qs ? `?${qs}` : ''}`);
   },

@@ -1,22 +1,41 @@
 import { useState } from 'react';
 import { useUserActivity } from '@/hooks/queries/use-user-activity';
-import type { ActivityInterval } from '@/lib/api/user-activity';
+import type { ActivityInterval, ActivityScope } from '@/lib/api/user-activity';
 import { IntervalSelector } from '@/components/dashboard/interval-selector';
+import { ScopeSelector } from '@/components/dashboard/scope-selector';
 import { ActivityChart } from '@/components/dashboard/activity-chart';
 import { ActivityTable } from '@/components/dashboard/activity-table';
 import { ExportMenu } from '@/components/dashboard/export-menu';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { useAuthStore } from '@/stores/auth-store';
 
 export function DashboardPage() {
   const [interval, setInterval] = useState<ActivityInterval>('week');
   const [page, setPage] = useState(1);
+  const [scope, setScope] = useState<ActivityScope>('self');
+  const [scopeId, setScopeId] = useState<string | undefined>(undefined);
 
-  const { data, isLoading, isError, dataUpdatedAt, isFetching } = useUserActivity(interval, page, 14);
+  const isGlobalAdmin = useAuthStore((s) => s.user?.isGlobalAdmin ?? false);
+
+  const { data, isLoading, isError, dataUpdatedAt, isFetching } = useUserActivity(
+    interval,
+    page,
+    14,
+    scope,
+    scopeId
+  );
 
   // Reset page when interval changes
   const handleIntervalChange = (newInterval: ActivityInterval) => {
     setInterval(newInterval);
+    setPage(1);
+  };
+
+  // Reset page when scope changes
+  const handleScopeChange = (newScope: ActivityScope, newScopeId?: string) => {
+    setScope(newScope);
+    setScopeId(newScopeId);
     setPage(1);
   };
 
@@ -40,6 +59,13 @@ export function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           {data && <ExportMenu data={data.data} interval={interval} />}
+          {isGlobalAdmin && (
+            <ScopeSelector
+              scope={scope}
+              {...(scopeId !== undefined && { scopeId })}
+              onScopeChange={handleScopeChange}
+            />
+          )}
           <IntervalSelector value={interval} onChange={handleIntervalChange} />
         </div>
       </div>

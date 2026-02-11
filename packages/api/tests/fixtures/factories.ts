@@ -31,6 +31,7 @@ export interface UserInput {
   passwordHash: string;
   avatarUrl?: string | null;
   isActive?: boolean;
+  isGlobalAdmin?: boolean;
 }
 
 export interface TeamInput {
@@ -147,6 +148,7 @@ export async function createTestUser(
     passwordHash: "$2b$10$hashedpasswordfortesting123456789", // Mock bcrypt hash
     avatarUrl: null,
     isActive: true,
+    isGlobalAdmin: false,
   };
 
   const data = { ...defaults, ...overrides };

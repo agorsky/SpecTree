@@ -232,7 +232,8 @@ export async function createEpicRequest(
 export async function updateEpicRequest(
   id: string,
   input: UpdateEpicRequestInput,
-  userId: string
+  userId: string,
+  isGlobalAdmin: boolean = false
 ): Promise<EpicRequest> {
   // Fetch existing request
   const existing = await prisma.epicRequest.findUnique({
@@ -243,13 +244,22 @@ export async function updateEpicRequest(
     throw new NotFoundError(`Epic request with id '${id}' not found`);
   }
 
-  // Ownership check: only creator can edit
-  if (existing.requestedById !== userId) {
+  // Admin converting approved → converted is allowed without ownership check
+  const isAdminConverting =
+    isGlobalAdmin &&
+    input.status === "converted" &&
+    existing.status === "approved";
+
+  // Ownership check: only creator can edit (admins can convert)
+  if (!isAdminConverting && existing.requestedById !== userId) {
     throw new ForbiddenError("Only the creator can edit this epic request");
   }
 
-  // Status check: cannot edit if approved or converted
-  if (existing.status === "approved" || existing.status === "converted") {
+  // Status check: cannot edit if approved or converted (admins can convert)
+  if (
+    !isAdminConverting &&
+    (existing.status === "approved" || existing.status === "converted")
+  ) {
     throw new ValidationError(
       `Cannot edit epic request with status '${existing.status}'`
     );
@@ -262,9 +272,9 @@ export async function updateEpicRequest(
 
   // Validate status transition if status is being updated
   if (input.status !== undefined && input.status !== existing.status) {
-    // Only allow rejected -> pending transition
-    // All other status changes must go through approve/reject endpoints
-    if (existing.status === "rejected" && input.status === "pending") {
+    if (isAdminConverting) {
+      // Allowed: admin marking approved request as converted/implemented
+    } else if (existing.status === "rejected" && input.status === "pending") {
       // Allowed: reopening a rejected request
     } else {
       throw new ValidationError(

@@ -42,7 +42,7 @@ export function EpicDetailPage() {
   const [editedName, setEditedName] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   
   // Initialize active tab from URL params or default to 'overview'
   const initialTab = (searchParams.get('tab') as 'overview' | 'plan' | 'monitor') || 'overview';
@@ -246,6 +246,11 @@ export function EpicDetailPage() {
               </Badge>
             )}
           </button>
+          {!isDescriptionExpanded && epic.structuredDesc?.summary && (
+            <div className="px-4 pb-3">
+              <p className="text-sm text-muted-foreground line-clamp-2">{epic.structuredDesc.summary}</p>
+            </div>
+          )}
           {isDescriptionExpanded && (
             <div className="px-4 pb-4 space-y-3">
               {/* Description */}
