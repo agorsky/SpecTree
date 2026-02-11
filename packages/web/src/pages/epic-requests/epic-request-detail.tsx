@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth-store';
 import {
@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { MarkdownRenderer } from '@/components/common/markdown-renderer';
-import { ArrowLeft, ThumbsUp, Flame, ThumbsDown, Edit, Trash2, Send, Check, X, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, Flame, ThumbsDown, Edit, Trash2, Send, Check, X, Copy, Terminal } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { EpicRequestStatus, ReactionType, EpicRequestComment } from '@/lib/api/epic-requests';
@@ -61,6 +61,7 @@ export function EpicRequestDetailPage() {
   const [newCommentContent, setNewCommentContent] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
+  const [copied, setCopied] = useState(false);
 
   if (isLoading) {
     return (
@@ -198,10 +199,27 @@ export function EpicRequestDetailPage() {
     void navigate(`/epic-requests/${requestId ?? ''}/edit`);
   };
 
-  const handleConvertToEpic = () => {
-    // For now, navigate to create epic page - in future, this could pre-populate with request data
-    void navigate('/epics/new');
-  };
+  const plannerCommand = `@planner --from-request "${request.title}"`;
+
+  const handleCopyCommand = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(plannerCommand);
+      setCopied(true);
+      setTimeout(() => { setCopied(false); }, 2000);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = plannerCommand;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => { setCopied(false); }, 2000);
+    }
+  }, [plannerCommand]);
 
   // Determine permissions
   const isAdmin = user?.isGlobalAdmin ?? false;
@@ -209,7 +227,6 @@ export function EpicRequestDetailPage() {
   const canEdit = isCreator && request.status !== 'approved' && request.status !== 'converted';
   const canDelete = isAdmin;
   const canApproveReject = isAdmin;
-  const canConvert = isAdmin && request.status === 'approved';
 
   return (
     <div className="h-full flex flex-col">
@@ -235,14 +252,6 @@ export function EpicRequestDetailPage() {
             <Button variant="outline" size="sm" onClick={() => { handleEdit(); }}>
               <Edit className="h-4 w-4 mr-2" />
               Edit
-            </Button>
-          )}
-
-          {/* Convert to Epic Button - visible for admins when approved */}
-          {canConvert && (
-            <Button variant="default" size="sm" onClick={() => { handleConvertToEpic(); }}>
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Convert to Epic
             </Button>
           )}
 
@@ -304,6 +313,33 @@ export function EpicRequestDetailPage() {
               addSuffix: true,
             })}
           </div>
+
+          {/* Planner Command - only shown for approved requests */}
+          {request.status === 'approved' && (
+          <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Terminal className="h-4 w-4" />
+              <span>Create Epic from this Request</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 rounded bg-background px-3 py-2 text-sm font-mono border select-all">
+                {plannerCommand}
+              </code>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={() => { void handleCopyCommand(); }}
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+          )}
 
           {/* Description */}
           {request.description && (

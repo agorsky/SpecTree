@@ -58,6 +58,43 @@ Parse the user's invocation to determine gate behavior:
 
 If fewer than 5 modes are specified, remaining stages default to `review`.
 
+### `--from-request` Flag (Epic Request Mode)
+
+When the user provides `--from-request`, the planner uses an existing **Epic Request** as the requirements source instead of free-form text. The value can be the request title or UUID.
+
+```
+@planner --from-request "My Epic Request Title"
+@planner --from-request "My Epic Request Title" --gates=auto
+@planner --from-request 550e8400-e29b-41d4-a716-446655440000
+```
+
+**How to resolve the epic request:**
+
+1. If the value looks like a UUID, call `spectree__get_epic_request({ id: "<uuid>" })` directly.
+2. If the value is a title, you MUST search across ALL statuses. Call `spectree__list_epic_requests()` with **no status filter** and find the request whose `title` matches (case-insensitive). The request may be in any status (pending, approved, rejected, or converted). If the first page doesn't contain a match, paginate using the `cursor` parameter until you find it or exhaust all pages. If no match or multiple matches, stop and ask the user to clarify.
+3. After resolving the request, fetch comments: `spectree__list_epic_request_comments({ id: "<resolved-uuid>" })` — these contain reviewer feedback and additional requirements.
+4. **IMPORTANT:** Once the epic request is resolved, print its title, status, and a summary of its structured description fields so the user can confirm it's the right request before proceeding.
+
+If the epic request cannot be found, stop and tell the user: "Could not find epic request '<value>'. Use `spectree__list_epic_requests()` to see available requests."
+
+**Field mapping — how epic request data feeds the planning pipeline:**
+
+| Epic Request Field | Used By Planner For |
+|---|---|
+| `title` | Basis for the epic name |
+| `structuredDesc.problemStatement` | Scope understanding — what problem we're solving |
+| `structuredDesc.proposedSolution` | Approach direction, hints for feature decomposition |
+| `structuredDesc.impactAssessment` | Priority context, why this matters |
+| `structuredDesc.alternatives` | Approaches already considered & rejected — do NOT re-propose these |
+| `structuredDesc.dependencies` | External constraints to respect |
+| `structuredDesc.successMetrics` | Seed for acceptance criteria |
+| `structuredDesc.estimatedEffort` | Complexity estimation input |
+| `structuredDesc.targetAudience` | Context for UI/UX and design decisions |
+| `description` | Rendered markdown overview — additional context |
+| Comments | Reviewer feedback, clarifications, additional requirements |
+
+When `--from-request` is active, the epic request data replaces the need for the user to explain what they want. The planner should treat the structured description fields as **authoritative requirements** — do not ask the user to re-explain what is already captured in the request.
+
 ### At Each Review Gate
 
 When a stage completes and its gate mode is `review`:
@@ -79,6 +116,35 @@ Stage 4 (EVALUATE) is **always interactive** regardless of gate configuration. E
 ## Stage 1: ANALYZE
 
 **Goal:** Understand what needs to be built and what already exists.
+
+### When `--from-request` is active (Epic Request Mode)
+
+The epic request provides the **requirements**. Your job in this stage is to combine those requirements with **codebase analysis** to produce a scope assessment.
+
+1. Present the epic request data to the user:
+   - Show the title, problem statement, and proposed solution
+   - Note any alternatives that were already considered (these are off the table)
+   - Note any dependencies or constraints from the request
+   - Include any reviewer comments as additional context
+2. Analyze the codebase for technical context (this is NOT in the request):
+   - Use `read` and `search` tools to identify affected packages, modules, and files
+   - Find existing patterns, conventions, and abstractions to follow
+   - Note technical constraints (TypeScript strict mode, database schema, API patterns)
+3. Check for existing SpecTree context:
+   - Call `spectree__search` with keywords from the request title and problem statement
+   - Call `spectree__list_epics` to see what work already exists
+4. Output a **scope assessment** that merges request data + codebase analysis:
+   - **Source:** "Epic Request: '<title>'"
+   - **Problem:** Summarize from `problemStatement`
+   - **Proposed approach:** Summarize from `proposedSolution`
+   - **Affected packages and modules** (from codebase analysis)
+   - **Key files** that will be created or modified (from codebase analysis)
+   - **Technical constraints** discovered (from codebase analysis)
+   - **External dependencies** (from `dependencies` field)
+   - **Estimated complexity** (informed by `estimatedEffort` field + codebase analysis)
+   - **Risk areas**
+
+### Standard mode (no `--from-request`)
 
 1. Read relevant codebase files using `read` and `search` tools:
    - Identify the packages, modules, and files affected by the request
@@ -115,8 +181,30 @@ Stage 4 (EVALUATE) is **always interactive** regardless of gate configuration. E
    - Set execution ordering: which features must come first?
    - Identify features that can run in parallel (don't share files)
    - Assign parallel groups to features that can run concurrently
+   - When `--from-request` is active: use the `proposedSolution` and `successMetrics` from the epic request to guide feature decomposition. The `alternatives` field lists approaches that were already rejected — do not design features around those approaches.
 
 3. Create the epic atomically using `spectree__create_epic_complete`:
+
+   **When `--from-request` is active:**
+   - Use the epic request `title` as the basis for the epic name
+   - The epic `description` MUST include a "Source" section referencing the epic request:
+     ```markdown
+     ## Source
+     
+     This epic was created from Epic Request: "<request title>"
+     
+     ### Problem Statement
+     <from structuredDesc.problemStatement>
+     
+     ### Proposed Solution  
+     <from structuredDesc.proposedSolution>
+     
+     ### Impact Assessment
+     <from structuredDesc.impactAssessment>
+     ```
+   - Include any additional sections from the request (targetAudience, successMetrics, alternatives, dependencies) if they were provided
+
+   **Epic creation call:**
    ```
    spectree__create_epic_complete({
      name: "Epic Title",

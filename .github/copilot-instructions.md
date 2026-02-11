@@ -743,9 +743,13 @@ Creates structured SpecTree epics from natural language descriptions. Runs a 5-s
 Usage: @planner "Build a user activity dashboard"
        @planner --gates=auto "Build a user preferences API"
        @planner --gates=auto,auto,review,review,review "Build a CSV export feature"
+       @planner --from-request "My Epic Request Title"
+       @planner --from-request "My Epic Request Title" --gates=auto
 ```
 
 The planner reads the codebase to understand scope, creates the epic with `spectree__create_epic_complete`, sets structured descriptions on every feature and task, evaluates quality, and verifies the execution plan.
+
+**`--from-request` flag:** When provided, the planner fetches an existing Epic Request (by title or UUID) and uses its structured description (problem statement, proposed solution, impact assessment, etc.) as the requirements source. This avoids re-explaining what was already captured during the request-formulator interview. The planner still performs codebase analysis for technical context.
 
 ### @request-formulator - AI-Assisted Epic Request Creation
 
@@ -828,6 +832,7 @@ Or use the planner agent directly in a Copilot CLI session:
 
 ```
 @planner "Build a user activity dashboard"
+@planner --from-request "My Epic Request Title"
 ```
 
 The planning pipeline produces an epic with features, tasks, structured descriptions (AI instructions, acceptance criteria, files involved), execution ordering, and a validated execution plan.
