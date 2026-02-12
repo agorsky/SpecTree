@@ -6,6 +6,8 @@ export interface TaskFilters {
   epicId?: string | undefined;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
+  createdAt?: string | undefined;
+  updatedAt?: string | undefined;
   cursor?: string | undefined;
   limit?: number | undefined;
 }

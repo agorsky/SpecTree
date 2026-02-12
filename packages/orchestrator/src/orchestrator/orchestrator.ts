@@ -298,6 +298,12 @@ export class Orchestrator extends EventEmitter {
       this.spectreeSession = sessionResponse.session;
 
       // Emit SESSION_STARTED event
+      const executionPlan = this.executionPlan
+        ? this.executionPlan.phases.map((p) => ({
+            phase: p.order,
+            featureIds: p.items.map((i) => i.id),
+          }))
+        : undefined;
       await this.client.emitSessionEvent({
         epicId,
         sessionId: this.spectreeSession.id,
@@ -306,6 +312,9 @@ export class Orchestrator extends EventEmitter {
         payload: {
           ...(options?.sessionId ? { externalId: options.sessionId } : {}),
           status: "active" as const,
+          totalFeatures: sessionResponse.epicProgress.totalFeatures,
+          totalTasks: sessionResponse.epicProgress.totalTasks,
+          ...(executionPlan ? { executionPlan } : {}),
         },
       });
 

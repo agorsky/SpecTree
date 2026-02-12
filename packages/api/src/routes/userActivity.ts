@@ -3,8 +3,10 @@ import { authenticate } from "../middleware/authenticate.js";
 import { ForbiddenError, ValidationError } from "../errors/index.js";
 import {
   getUserActivity,
+  getActivityDetails,
   type ActivityInterval,
   type ActivityScope,
+  type MetricType,
 } from "../services/userActivityService.js";
 
 export interface UserActivityQuerystring {
@@ -99,6 +101,92 @@ export default function userActivityRoutes(
         scope,
         ...(scopeId != null ? { scopeId } : {}),
         ...(timeZone ? { timeZone } : {}),
+      });
+    }
+  );
+
+  /**
+   * GET /api/v1/user-activity/details
+   * Returns detailed item records for a specific metric type
+   */
+  fastify.get<{
+    Querystring: {
+      metricType: MetricType;
+      interval?: ActivityInterval;
+      page?: number;
+      scope?: ActivityScope;
+      scopeId?: string;
+      timeZone?: string;
+      limit?: number;
+      cursor?: string;
+    };
+  }>(
+    "/details",
+    {
+      preHandler: [authenticate],
+      config: {
+        rateLimit: {
+          max: 20,
+          timeWindow: "1 minute",
+        },
+      },
+    },
+    async (request) => {
+      const {
+        metricType,
+        interval = "week",
+        page,
+        scope = "self",
+        scopeId,
+        timeZone,
+        limit,
+        cursor,
+      } = request.query;
+
+      const userId = request.user!.id;
+      const isAdmin = request.user!.isGlobalAdmin;
+
+      // Validate metricType
+      const validMetrics: MetricType[] = ["features", "tasks", "decisions", "sessions"];
+      if (!validMetrics.includes(metricType)) {
+        throw new ValidationError(
+          `Invalid metricType. Must be one of: ${validMetrics.join(", ")}`
+        );
+      }
+
+      // Validate scope
+      const validScopes: ActivityScope[] = ["self", "all", "team", "user"];
+      if (!validScopes.includes(scope)) {
+        throw new ValidationError(
+          `Invalid scope. Must be one of: ${validScopes.join(", ")}`
+        );
+      }
+
+      if (scope !== "self" && !isAdmin) {
+        throw new ForbiddenError(
+          "Global admin access required to view activity for other scopes"
+        );
+      }
+
+      if ((scope === "team" || scope === "user") && !scopeId) {
+        throw new ValidationError(
+          `scopeId is required when scope is '${scope}'`
+        );
+      }
+
+      const parsedPage = Number(page) || 1;
+      const parsedLimit = Number(limit) || 50;
+
+      return getActivityDetails({
+        userId,
+        metricType,
+        interval,
+        page: parsedPage,
+        scope,
+        ...(scopeId != null ? { scopeId } : {}),
+        ...(timeZone ? { timeZone } : {}),
+        limit: Math.min(Math.max(parsedLimit, 1), 100),
+        ...(cursor ? { cursor } : {}),
       });
     }
   );

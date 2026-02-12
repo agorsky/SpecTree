@@ -21,6 +21,9 @@ export interface DecisionFilters {
   taskId?: string;
   category?: Decision['category'];
   impact?: Decision['impact'];
+  createdAt?: string;
+  cursor?: string;
+  limit?: number;
 }
 
 export interface GetDecisionsResponse {

@@ -2,7 +2,8 @@ import { SessionSummaryPane } from "./SessionSummaryPane";
 import { SessionActivityStream } from "./SessionActivityStream";
 import { useSessionProgress } from "@/hooks/useSessionProgress";
 import { cn } from "@/lib/utils";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 /**
  * Props for SessionMonitor component
@@ -30,7 +31,7 @@ export interface SessionMonitorProps {
  * - SSE connection errors with retry
  */
 export function SessionMonitor({ epicId, className }: SessionMonitorProps) {
-  const { sessionState } = useSessionProgress({
+  const { sessionState, retry } = useSessionProgress({
     epicId,
     enabled: true,
   });
@@ -47,8 +48,8 @@ export function SessionMonitor({ epicId, className }: SessionMonitorProps) {
     );
   }
 
-  // Show error state if connection failed after retries
-  if (sessionState.connectionStatus === "error" && sessionState.error) {
+  // Show error state only if no events have been received yet
+  if (sessionState.connectionStatus === "error" && sessionState.error && sessionState.events.length === 0) {
     return (
       <div className={cn("flex items-center justify-center h-full p-8", className)}>
         <div className="flex flex-col items-center gap-3 text-destructive max-w-md">
@@ -57,9 +58,10 @@ export function SessionMonitor({ epicId, className }: SessionMonitorProps) {
           <p className="text-xs text-muted-foreground text-center">
             {sessionState.error.message}
           </p>
-          <p className="text-xs text-muted-foreground text-center">
-            The server-sent events (SSE) endpoint may be unavailable. Try refreshing the page.
-          </p>
+          <Button variant="outline" size="sm" onClick={retry} className="mt-2">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
         </div>
       </div>
     );
@@ -88,6 +90,17 @@ export function SessionMonitor({ epicId, className }: SessionMonitorProps) {
         className
       )}
     >
+      {/* Connection lost banner — shown when events exist but connection dropped */}
+      {sessionState.connectionStatus === "error" && sessionState.events.length > 0 && (
+        <div className="absolute top-0 left-0 right-0 bg-destructive/10 border-b border-destructive/20 px-4 py-2 flex items-center justify-between z-10">
+          <span className="text-xs text-destructive">Connection lost</span>
+          <Button variant="outline" size="sm" onClick={retry} className="h-6 text-xs">
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Reconnect
+          </Button>
+        </div>
+      )}
+
       {/* Summary Pane - 30% on desktop, full width on mobile */}
       <div className="w-full md:w-[30%] flex-shrink-0">
         <SessionSummaryPane sessionState={sessionState} />

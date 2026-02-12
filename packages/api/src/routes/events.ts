@@ -93,16 +93,19 @@ export default function eventsRoutes(
    * Query params:
    * - epicId (optional): Filter events to only include entities from this epic
    * - eventTypes (optional): Comma-separated list of event types to filter (e.g., "SESSION_STARTED,SESSION_ENDED")
+   * - lastEventId (optional): Resume from this event ID (replays missed events from buffer)
    * 
    * Headers:
    * - Last-Event-ID (optional): Resume from this event ID (replays missed events from buffer)
    */
-  fastify.get<{ Querystring: { epicId?: string; eventTypes?: string } }>(
+  fastify.get<{ Querystring: { epicId?: string; eventTypes?: string; lastEventId?: string } }>(
     "/",
     { preHandler: [authenticate] },
     async (request, reply) => {
       const { epicId, eventTypes } = request.query;
-      const lastEventId = request.headers['last-event-id'] as string | undefined;
+      // Support Last-Event-ID via header (browser auto-reconnect) or query param (manual reconnect)
+      const lastEventId = request.headers['last-event-id'] as string | undefined
+        || request.query.lastEventId;
 
       // Parse eventTypes filter
       const eventTypesFilter = eventTypes
@@ -122,10 +125,14 @@ export default function eventsRoutes(
         return;
       }
 
-      // Replay missed events from circular buffer if Last-Event-ID is provided
-      if (epicId && lastEventId) {
+      // Replay buffered events on connect:
+      // - If lastEventId is provided, replay events after that ID (catchup)
+      // - If no lastEventId, replay all buffered events (initial load / tab switch)
+      if (epicId) {
         try {
-          const bufferedEvents = eventHistory.getEventsAfter(epicId, lastEventId);
+          const bufferedEvents = lastEventId
+            ? eventHistory.getEventsAfter(epicId, lastEventId)
+            : eventHistory.getEvents(epicId);
           for (const event of bufferedEvents) {
             // Apply eventTypes filter if specified
             if (eventTypesFilter && event.type === "session.event") {

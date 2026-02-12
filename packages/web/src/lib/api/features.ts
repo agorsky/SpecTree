@@ -9,6 +9,8 @@ export interface FeatureFilters {
   status?: string | undefined;
   statusCategory?: string | undefined;
   query?: string | undefined;
+  createdAt?: string | undefined;
+  updatedAt?: string | undefined;
   cursor?: string | undefined;
   limit?: number | undefined;
 }

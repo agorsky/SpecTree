@@ -6,15 +6,43 @@ import { ScopeSelector } from '@/components/dashboard/scope-selector';
 import { ActivityChart } from '@/components/dashboard/activity-chart';
 import { ActivityTable } from '@/components/dashboard/activity-table';
 import { ExportMenu } from '@/components/dashboard/export-menu';
+import { MetricDetailSheet } from '@/components/dashboard/metric-detail-sheet';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
+
+export type MetricType = 'features' | 'tasks' | 'decisions' | 'sessions';
+
+/**
+ * Compute the date range (earliest start to latest end) from activity data points.
+ * Returns null if data array is empty.
+ */
+export function computeDateRange(
+  data: import('@/lib/api/user-activity').UserActivityDataPoint[]
+): { startDate: string; endDate: string } | null {
+  if (data.length === 0) return null;
+
+  const dates = data.flatMap((d) => [
+    new Date(d.intervalStart).getTime(),
+    new Date(d.intervalEnd).getTime(),
+  ]);
+
+  const minDate = Math.min(...dates);
+  const maxDate = Math.max(...dates);
+
+  return {
+    startDate: new Date(minDate).toISOString(),
+    endDate: new Date(maxDate).toISOString(),
+  };
+}
 
 export function DashboardPage() {
   const [interval, setInterval] = useState<ActivityInterval>('week');
   const [page, setPage] = useState(1);
   const [scope, setScope] = useState<ActivityScope>('self');
   const [scopeId, setScopeId] = useState<string | undefined>(undefined);
+  // State for tracking which metric detail view is open (used by future drill-down feature)
+  const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null);
 
   const isGlobalAdmin = useAuthStore((s) => s.user?.isGlobalAdmin ?? false);
 
@@ -37,6 +65,19 @@ export function DashboardPage() {
     setScope(newScope);
     setScopeId(newScopeId);
     setPage(1);
+  };
+
+  // Handle metric card click for drill-down
+  const handleMetricClick = (metric: MetricType, count: number) => {
+    // Don't open sheet for zero-count metrics
+    if (count === 0) return;
+    setSelectedMetric(metric);
+  };
+
+  // Close drill-down view
+  const handleCloseDrillDown = () => {
+    setSelectedMetric(null);
+    // TODO: Future feature will use this to close detail views
   };
 
   return (
@@ -89,7 +130,10 @@ export function DashboardPage() {
       {data && !isLoading && (
         <>
           {/* Summary cards */}
-          <SummaryCards data={data.data} />
+          <SummaryCards 
+            data={data.data}
+            onCardClick={handleMetricClick}
+          />
 
           {/* Chart */}
           <ActivityChart data={data.data} interval={interval} />
@@ -125,11 +169,33 @@ export function DashboardPage() {
           </div>
         </>
       )}
+
+      {/* Metric Detail Sheet */}
+      {selectedMetric && (
+        <MetricDetailSheet
+          metricType={selectedMetric}
+          open={selectedMetric !== null}
+          onOpenChange={(open) => !open && handleCloseDrillDown()}
+          interval={interval}
+          page={page}
+          scope={scope}
+          {...(scopeId !== undefined && { scopeId })}
+          timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
+        />
+      )}
     </div>
   );
 }
 
-function SummaryCards({ data }: { data: import('@/lib/api/user-activity').UserActivityDataPoint[] }) {
+function SummaryCards({ 
+  data,
+  onCardClick
+}: { 
+  data: import('@/lib/api/user-activity').UserActivityDataPoint[];
+  onCardClick?: (metric: MetricType, count: number) => void;
+}) {
+  const [hoveredCard, setHoveredCard] = useState<MetricType | null>(null);
+  
   const totals = data.reduce(
     (acc, d) => ({
       features: acc.features + d.featuresCreated,
@@ -141,25 +207,63 @@ function SummaryCards({ data }: { data: import('@/lib/api/user-activity').UserAc
   );
 
   const cards = [
-    { label: 'Features Created', value: totals.features, color: 'text-blue-600' },
-    { label: 'Tasks Completed', value: totals.tasks, color: 'text-green-600' },
-    { label: 'Decisions Logged', value: totals.decisions, color: 'text-amber-600' },
-    { label: 'AI Sessions', value: totals.sessions, color: 'text-purple-600' },
+    { label: 'Features Created', value: totals.features, color: 'text-blue-600', metric: 'features' as MetricType },
+    { label: 'Tasks Completed', value: totals.tasks, color: 'text-green-600', metric: 'tasks' as MetricType },
+    { label: 'Decisions Logged', value: totals.decisions, color: 'text-amber-600', metric: 'decisions' as MetricType },
+    { label: 'AI Sessions', value: totals.sessions, color: 'text-purple-600', metric: 'sessions' as MetricType },
   ];
+
+  const handleCardClick = (metric: MetricType, value: number) => {
+    onCardClick?.(metric, value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, metric: MetricType, value: number) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleCardClick(metric, value);
+    }
+  };
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {cards.map((card) => (
-        <div
-          key={card.label}
-          className="rounded-lg border bg-card p-4 text-center"
-        >
-          <p className={`text-2xl font-bold tabular-nums ${card.color}`}>
-            {card.value}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">{card.label}</p>
-        </div>
-      ))}
+      {cards.map((card) => {
+        const isZero = card.value === 0;
+        const isHovered = hoveredCard === card.metric;
+        
+        return (
+          <div
+            key={card.label}
+            className={`rounded-lg border bg-card p-4 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+              isZero 
+                ? 'opacity-60 cursor-not-allowed' 
+                : 'cursor-pointer hover:shadow-md hover:border-primary/50'
+            }`}
+            onClick={() => handleCardClick(card.metric, card.value)}
+            onKeyDown={(e) => handleKeyDown(e, card.metric, card.value)}
+            onMouseEnter={() => !isZero && setHoveredCard(card.metric)}
+            onMouseLeave={() => setHoveredCard(null)}
+            role="button"
+            tabIndex={isZero ? -1 : 0}
+            aria-label={isZero ? `${card.label}: ${card.value} (no data to view)` : `View ${card.label} details: ${card.value} items`}
+            aria-disabled={isZero}
+          >
+            <p className={`text-2xl font-bold tabular-nums ${card.color}`}>
+              {card.value}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">{card.label}</p>
+            {isHovered && !isZero && (
+              <p className="text-xs text-primary mt-2 font-medium">
+                View details →
+              </p>
+            )}
+            {isZero && (
+              <p className="text-xs text-muted-foreground/70 mt-2">
+                No data
+              </p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

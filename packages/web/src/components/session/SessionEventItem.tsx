@@ -1,10 +1,12 @@
 import { SessionEvent, SessionEventType } from "@spectree/shared";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Check, Play, AlertCircle, Activity } from "lucide-react";
+import { Check, Play, AlertCircle, Activity, MessageSquare } from "lucide-react";
+import type { ActivityEvent } from "@/hooks/useSessionProgress";
+import { isProgressLoggedEvent } from "@/hooks/useSessionProgress";
 
 export interface SessionEventItemProps {
-  event: SessionEvent;
+  event: ActivityEvent;
 }
 
 /**
@@ -174,6 +176,30 @@ function formatDuration(ms: number): string {
 }
 
 export function SessionEventItem({ event }: SessionEventItemProps) {
+  // Render progress logged events with compact styling
+  if (isProgressLoggedEvent(event)) {
+    const timestamp = formatTimestamp(event.timestamp);
+    const percentText = event.percentComplete != null ? ` (${event.percentComplete}%)` : "";
+    return (
+      <div className="flex items-start gap-2 px-3 py-1.5 rounded-md border-l-2 border-l-purple-400/50 bg-purple-50/50 dark:bg-purple-950/10">
+        <div className="flex-shrink-0 mt-0.5 text-purple-500">
+          <MessageSquare className="h-3.5 w-3.5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-foreground/80 break-words">
+              {event.message}{percentText}
+            </span>
+            <span className="text-[10px] text-muted-foreground font-mono ml-auto flex-shrink-0">
+              {timestamp}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render standard session events
   const timestamp = formatTimestamp(event.timestamp);
   const badgeVariant = getEventBadgeVariant(event.eventType);
   const eventLabel = getEventTypeLabel(event.eventType);

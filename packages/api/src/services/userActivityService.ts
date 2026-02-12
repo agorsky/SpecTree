@@ -469,3 +469,237 @@ export async function getUserActivity(
     hasMore: page * limit < total,
   };
 }
+
+// ─── Activity Details (drill-down) ───────────────────────────────────────────
+
+export type MetricType = "features" | "tasks" | "decisions" | "sessions";
+
+export interface ActivityDetailsQuery {
+  userId: string;
+  metricType: MetricType;
+  interval: ActivityInterval;
+  page: number;
+  scope: ActivityScope;
+  scopeId?: string;
+  timeZone?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface ActivityDetailsResponse {
+  data: unknown[];
+  meta: { cursor?: string; hasMore: boolean };
+}
+
+/**
+ * Returns detailed item records for a specific metric type within the
+ * computed time range (same bucketing logic as the aggregate endpoint).
+ */
+export async function getActivityDetails(
+  query: ActivityDetailsQuery
+): Promise<ActivityDetailsResponse> {
+  const {
+    userId,
+    metricType,
+    interval,
+    page,
+    scope,
+    scopeId,
+    timeZone,
+    limit = 50,
+    cursor,
+  } = query;
+
+  const epicIds = await getEpicsByScope(scope, userId, scopeId);
+  if (epicIds.length === 0) {
+    return { data: [], meta: { hasMore: false } };
+  }
+
+  // Compute the visible time window (same as aggregate)
+  const validTz = timeZone
+    ? (() => {
+        try {
+          Intl.DateTimeFormat(undefined, { timeZone });
+          return timeZone;
+        } catch {
+          return undefined;
+        }
+      })()
+    : undefined;
+
+  // Page in the dashboard is 1-indexed; we need the visible buckets
+  const dashPage = Math.max(page, 1);
+  const buckets = generateBuckets(interval, dashPage, 30, validTz);
+  if (buckets.length === 0) {
+    return { data: [], meta: { hasMore: false } };
+  }
+
+  const earliest = buckets[buckets.length - 1]!.start;
+  const latest = buckets[0]!.end;
+
+  const take = Math.min(Math.max(limit, 1), 100);
+
+  switch (metricType) {
+    case "features": {
+      const items = await prisma.feature.findMany({
+        where: {
+          epicId: { in: epicIds },
+          createdAt: { gte: earliest, lt: latest },
+          ...(cursor ? { id: { lt: cursor } } : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        take: take + 1,
+        select: {
+          id: true,
+          identifier: true,
+          title: true,
+          createdAt: true,
+          assignee: { select: { name: true } },
+          status: { select: { name: true, color: true } },
+          epic: { select: { name: true } },
+        },
+      });
+
+      const hasMore = items.length > take;
+      const page_items = hasMore ? items.slice(0, take) : items;
+      return {
+        data: page_items.map((f) => ({
+          id: f.id,
+          identifier: f.identifier,
+          title: f.title,
+          epicName: f.epic.name,
+          statusName: f.status?.name ?? "No status",
+          statusColor: f.status?.color ?? undefined,
+          assigneeName: f.assignee?.name ?? undefined,
+          createdAt: f.createdAt.toISOString(),
+        })),
+        meta: {
+          ...(page_items.length > 0 && { cursor: page_items[page_items.length - 1]!.id }),
+          hasMore,
+        },
+      };
+    }
+
+    case "tasks": {
+      const items = await prisma.task.findMany({
+        where: {
+          feature: { epicId: { in: epicIds } },
+          completedAt: { gte: earliest, lt: latest },
+          ...(cursor ? { id: { lt: cursor } } : {}),
+        },
+        orderBy: { completedAt: "desc" },
+        take: take + 1,
+        select: {
+          id: true,
+          identifier: true,
+          title: true,
+          completedAt: true,
+          status: { select: { name: true } },
+          feature: { select: { identifier: true, title: true } },
+        },
+      });
+
+      const hasMore = items.length > take;
+      const page_items = hasMore ? items.slice(0, take) : items;
+      return {
+        data: page_items.map((t) => ({
+          id: t.id,
+          identifier: t.identifier,
+          title: t.title,
+          featureIdentifier: t.feature.identifier,
+          featureTitle: t.feature.title,
+          statusName: t.status?.name ?? "No status",
+          completedAt: t.completedAt?.toISOString() ?? "",
+        })),
+        meta: {
+          ...(page_items.length > 0 && { cursor: page_items[page_items.length - 1]!.id }),
+          hasMore,
+        },
+      };
+    }
+
+    case "decisions": {
+      const items = await prisma.decision.findMany({
+        where: {
+          epicId: { in: epicIds },
+          createdAt: { gte: earliest, lt: latest },
+          ...(cursor ? { id: { lt: cursor } } : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        take: take + 1,
+        select: {
+          id: true,
+          question: true,
+          decision: true,
+          rationale: true,
+          category: true,
+          impact: true,
+          madeBy: true,
+          createdAt: true,
+          epic: { select: { name: true } },
+          feature: { select: { identifier: true } },
+        },
+      });
+
+      const hasMore = items.length > take;
+      const page_items = hasMore ? items.slice(0, take) : items;
+      return {
+        data: page_items.map((d) => ({
+          id: d.id,
+          question: d.question,
+          decision: d.decision,
+          rationale: d.rationale ?? undefined,
+          category: d.category ?? "uncategorized",
+          impact: d.impact ?? "medium",
+          madeBy: d.madeBy,
+          epicName: d.epic.name,
+          featureIdentifier: d.feature?.identifier ?? undefined,
+          createdAt: d.createdAt.toISOString(),
+        })),
+        meta: {
+          ...(page_items.length > 0 && { cursor: page_items[page_items.length - 1]!.id }),
+          hasMore,
+        },
+      };
+    }
+
+    case "sessions": {
+      const items = await prisma.aiSession.findMany({
+        where: {
+          epicId: { in: epicIds },
+          startedAt: { gte: earliest, lt: latest },
+          ...(cursor ? { id: { lt: cursor } } : {}),
+        },
+        orderBy: { startedAt: "desc" },
+        take: take + 1,
+        select: {
+          id: true,
+          epicId: true,
+          startedAt: true,
+          endedAt: true,
+          status: true,
+          summary: true,
+          epic: { select: { name: true } },
+        },
+      });
+
+      const hasMore = items.length > take;
+      const page_items = hasMore ? items.slice(0, take) : items;
+      return {
+        data: page_items.map((s) => ({
+          id: s.id,
+          epicId: s.epicId,
+          epicName: s.epic.name,
+          startedAt: s.startedAt.toISOString(),
+          endedAt: s.endedAt?.toISOString() ?? undefined,
+          status: s.status,
+          summary: s.summary ?? undefined,
+        })),
+        meta: {
+          ...(page_items.length > 0 && { cursor: page_items[page_items.length - 1]!.id }),
+          hasMore,
+        },
+      };
+    }
+  }
+}

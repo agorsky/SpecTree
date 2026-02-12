@@ -84,9 +84,9 @@ export function SessionSummaryPane({
 
   // Calculate session duration based on SESSION_STARTED timestamp
   useEffect(() => {
-    // Find the SESSION_STARTED event
+    // Find the SESSION_STARTED event (skip progress logged events)
     const sessionStartEvent = sessionState.events.find(
-      (event) => event.eventType === SessionEventType.SESSION_STARTED
+      (event) => "eventType" in event && event.eventType === SessionEventType.SESSION_STARTED
     );
 
     if (!sessionStartEvent) {
@@ -181,6 +181,15 @@ export function SessionSummaryPane({
           {sessionState.progress.currentPhase !== null ? (
             <>
               Phase {sessionState.progress.currentPhase}
+              {sessionState.progress.totalPhases !== null && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  of {sessionState.progress.totalPhases}
+                </span>
+              )}
+            </>
+          ) : sessionState.progress.lastCompletedPhase !== null ? (
+            <>
+              <span className="text-muted-foreground">Phase {sessionState.progress.lastCompletedPhase} completed</span>
               {sessionState.progress.totalPhases !== null && (
                 <span className="text-sm font-normal text-muted-foreground ml-2">
                   of {sessionState.progress.totalPhases}

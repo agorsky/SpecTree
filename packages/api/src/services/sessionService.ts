@@ -49,6 +49,55 @@ function parseJsonObject<T>(json: string | null): T | null {
 }
 
 /**
+ * Build feature-level execution phases from feature metadata.
+ * Groups features by executionOrder, respecting dependencies via topological ordering.
+ * Returns a lightweight phase array for the SESSION_STARTED event.
+ */
+function buildFeaturePhases(
+  features: Array<{
+    id: string;
+    executionOrder: number | null;
+    dependencies: string | null;
+  }>
+): Array<{ phase: number; featureIds: string[] }> {
+  if (features.length === 0) return [];
+
+  // Parse dependencies for each feature
+  const featureDeps = new Map<string, string[]>();
+  for (const f of features) {
+    const deps = f.dependencies ? (JSON.parse(f.dependencies) as string[]) : [];
+    featureDeps.set(f.id, deps);
+  }
+
+  const completed = new Set<string>();
+  const phases: Array<{ phase: number; featureIds: string[] }> = [];
+  let remaining = features.map((f) => f.id);
+  let phaseNum = 1;
+
+  while (remaining.length > 0) {
+    // Find features whose dependencies are all completed
+    const ready = remaining.filter((id) => {
+      const deps = featureDeps.get(id) ?? [];
+      return deps.every((d) => completed.has(d) || !featureDeps.has(d));
+    });
+
+    if (ready.length === 0) {
+      // Circular dependency — put all remaining in one phase
+      phases.push({ phase: phaseNum, featureIds: remaining });
+      break;
+    }
+
+    phases.push({ phase: phaseNum++, featureIds: ready });
+    for (const id of ready) {
+      completed.add(id);
+    }
+    remaining = remaining.filter((id) => !completed.has(id));
+  }
+
+  return phases;
+}
+
+/**
  * Transform database session to response format
  */
 function transformSession(session: {
@@ -152,6 +201,9 @@ export async function startSession(
     },
   });
 
+  // Build lightweight execution plan phases from feature execution metadata
+  const executionPlan = buildFeaturePhases(epic.features);
+
   // Emit session started event
   emitSessionEvent({
     eventType: SessionEventType.SESSION_STARTED,
@@ -161,6 +213,9 @@ export async function startSession(
     payload: {
       ...(newSession.externalId != null ? { externalId: newSession.externalId } : {}),
       status: "active",
+      totalFeatures: epic.features.length,
+      totalTasks: epic.features.reduce((sum, f) => sum + f.tasks.length, 0),
+      executionPlan,
     },
   });
 

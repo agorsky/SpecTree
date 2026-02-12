@@ -74,6 +74,20 @@ export interface SessionLifecycleEvent extends SessionEventBase {
     /** Session status: active, completed, abandoned */
     status?: "active" | "completed" | "abandoned";
     
+    /** Total features in the epic (for SESSION_STARTED) */
+    totalFeatures?: number;
+    
+    /** Total tasks across all features in the epic (for SESSION_STARTED) */
+    totalTasks?: number;
+    
+    /** Execution plan phases mapping feature IDs to phase numbers (for SESSION_STARTED) */
+    executionPlan?: Array<{
+      /** Phase number (1-indexed) */
+      phase: number;
+      /** Feature IDs in this phase */
+      featureIds: string[];
+    }>;
+    
     /** Summary of work completed (for SESSION_ENDED) */
     summary?: string;
     

@@ -41,6 +41,12 @@ export const sessionEventBaseSchema = z.object({
 export const sessionLifecyclePayloadSchema = z.object({
   externalId: z.string().optional().describe("External session ID from AI agent"),
   status: z.enum(["active", "completed", "abandoned"]).optional().describe("Session status"),
+  totalFeatures: z.number().int().nonnegative().optional().describe("Total features in the epic (for SESSION_STARTED)"),
+  totalTasks: z.number().int().nonnegative().optional().describe("Total tasks across all features (for SESSION_STARTED)"),
+  executionPlan: z.array(z.object({
+    phase: z.number().int().positive().describe("Phase number (1-indexed)"),
+    featureIds: z.array(z.string()).describe("Feature IDs in this phase"),
+  })).optional().describe("Execution plan phases (for SESSION_STARTED)"),
   summary: z.string().optional().describe("Summary of work completed (for SESSION_ENDED)"),
   nextSteps: z.array(z.string()).optional().describe("Recommended next steps (for SESSION_ENDED)"),
   blockers: z.array(z.string()).optional().describe("Blockers encountered (for SESSION_ENDED)"),

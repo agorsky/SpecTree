@@ -1,4 +1,4 @@
-import { SessionEvent, isSessionFeatureEvent, isSessionTaskEvent, isSessionPhaseEvent, isSessionLifecycleEvent, isSessionErrorEvent } from "@spectree/shared";
+import { isSessionFeatureEvent, isSessionTaskEvent, isSessionPhaseEvent, isSessionLifecycleEvent, isSessionErrorEvent } from "@spectree/shared";
 import { SessionEventItem } from "./SessionEventItem";
 import { cn } from "@/lib/utils";
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowDown, X } from "lucide-react";
 import { List, ListImperativeAPI } from "react-window";
+import type { ActivityEvent } from "@/hooks/useSessionProgress";
+import { isProgressLoggedEvent } from "@/hooks/useSessionProgress";
 
 export interface SessionActivityStreamProps {
-  /** Array of session events to display */
-  events: SessionEvent[];
+  /** Array of activity events to display */
+  events: ActivityEvent[];
   /** Additional CSS classes */
   className?: string;
 }
@@ -18,7 +20,7 @@ export interface SessionActivityStreamProps {
 /**
  * Event filter categories
  */
-type EventFilterCategory = "all" | "lifecycle" | "phases" | "features" | "tasks" | "errors";
+type EventFilterCategory = "all" | "lifecycle" | "phases" | "features" | "tasks" | "errors" | "progress";
 
 /**
  * Threshold for using virtualization (events count)
@@ -33,10 +35,15 @@ const EVENT_ITEM_HEIGHT = 80;
 /**
  * Filter events by category
  */
-function filterEventsByCategory(events: SessionEvent[], category: EventFilterCategory): SessionEvent[] {
+function filterEventsByCategory(events: ActivityEvent[], category: EventFilterCategory): ActivityEvent[] {
   if (category === "all") return events;
 
   return events.filter((event) => {
+    // Handle progress events separately
+    if (isProgressLoggedEvent(event)) {
+      return category === "progress";
+    }
+
     switch (category) {
       case "lifecycle":
         return isSessionLifecycleEvent(event);
@@ -48,6 +55,8 @@ function filterEventsByCategory(events: SessionEvent[], category: EventFilterCat
         return isSessionTaskEvent(event);
       case "errors":
         return isSessionErrorEvent(event);
+      case "progress":
+        return false; // session events aren't progress
       default:
         return true;
     }
@@ -57,12 +66,17 @@ function filterEventsByCategory(events: SessionEvent[], category: EventFilterCat
 /**
  * Filter events by search query
  */
-function filterEventsBySearch(events: SessionEvent[], query: string): SessionEvent[] {
+function filterEventsBySearch(events: ActivityEvent[], query: string): ActivityEvent[] {
   if (!query.trim()) return events;
 
   const lowerQuery = query.toLowerCase();
 
   return events.filter((event) => {
+    // Search in progress event messages
+    if (isProgressLoggedEvent(event)) {
+      return event.message.toLowerCase().includes(lowerQuery);
+    }
+
     // Search in feature/task titles
     if (isSessionFeatureEvent(event) || isSessionTaskEvent(event)) {
       const title = event.payload.title?.toLowerCase() || "";
@@ -291,6 +305,7 @@ export function SessionActivityStream({
               <SelectItem value="features">Features</SelectItem>
               <SelectItem value="tasks">Tasks</SelectItem>
               <SelectItem value="errors">Errors</SelectItem>
+              <SelectItem value="progress">Progress Updates</SelectItem>
             </SelectContent>
           </Select>
 
@@ -365,14 +380,19 @@ export function SessionActivityStream({
             className="overflow-y-auto max-h-[600px] border rounded-lg p-4 bg-background"
           >
             <div className="space-y-2">
-              {sortedEvents.map((event, index) => (
+              {sortedEvents.map((event, index) => {
+                const key = isProgressLoggedEvent(event)
+                  ? `progress-${event.entityId}-${event.timestamp}-${index}`
+                  : `${event.epicId}-${event.sessionId}-${event.timestamp}-${index}`;
+                return (
                 <div
-                  key={`${event.epicId}-${event.sessionId}-${event.timestamp}-${index}`}
+                  key={key}
                   ref={index === sortedEvents.length - 1 ? lastEventRef : undefined}
                 >
                   <SessionEventItem event={event} />
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
