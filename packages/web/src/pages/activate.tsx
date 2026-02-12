@@ -67,8 +67,9 @@ export function ActivatePage() {
         void navigate("/");
       } catch (err: unknown) {
         if (err && typeof err === "object" && "data" in err) {
-          const data = (err as { data: { message?: string } }).data;
-          setError(data.message ?? "Activation failed");
+          const data = err as { data?: { error?: { message?: string }; message?: string } };
+          const message = data.data?.error?.message ?? data.data?.message;
+          setError(message ?? "Activation failed");
         } else {
           setError("Activation failed. Please check your invitation code.");
         }

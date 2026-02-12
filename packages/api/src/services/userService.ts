@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../lib/db.js";
-import { createPersonalScope } from "./personalScopeService.js";
+import { createPersonalScopeInTransaction } from "./personalScopeService.js";
 import { getTeamsWhereUserIsLastAdmin } from "./membershipService.js";
 import { ForbiddenError } from "../errors/index.js";
 
@@ -143,22 +143,23 @@ export async function emailExists(email: string, excludeId?: string): Promise<bo
 export async function createUser(input: CreateUserInput): Promise<UserResponse> {
   const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
 
-  // Create user
-  const user = await prisma.user.create({
-    data: {
-      email: input.email,
-      name: input.name,
-      passwordHash,
-      avatarUrl: input.avatarUrl ?? null,
-    },
-    select: {
-      ...userSelectFields,
-      id: true,
-    },
-  });
+  // Create user and PersonalScope atomically
+  const user = await prisma.$transaction(async (tx) => {
+    const newUser = await tx.user.create({
+      data: {
+        email: input.email,
+        name: input.name,
+        passwordHash,
+        avatarUrl: input.avatarUrl ?? null,
+      },
+      select: userSelectFields,
+    });
 
-  // Create PersonalScope for the new user (with default statuses)
-  await createPersonalScope(user.id);
+    // Create PersonalScope inside the same transaction
+    await createPersonalScopeInTransaction(tx, newUser.id);
+
+    return newUser;
+  });
 
   return user;
 }

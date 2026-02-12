@@ -1,6 +1,8 @@
 import { prisma } from "../lib/db.js";
-import type { PersonalScope, Status } from "../generated/prisma/index.js";
+import type { PersonalScope, Status, Prisma } from "../generated/prisma/index.js";
 import { NotFoundError, ConflictError } from "../errors/index.js";
+
+type TransactionClient = Prisma.TransactionClient;
 
 // Valid StatusCategory values (same as statusService)
 const VALID_CATEGORIES = ["backlog", "unstarted", "started", "completed", "canceled"] as const;
@@ -97,24 +99,34 @@ export async function createPersonalScope(userId: string): Promise<PersonalScope
 
   // Create PersonalScope and default statuses in a transaction
   return prisma.$transaction(async (tx) => {
-    const personalScope = await tx.personalScope.create({
-      data: { userId },
-    });
-
-    // Create default statuses for the personal scope
-    for (const statusConfig of DEFAULT_PERSONAL_STATUSES) {
-      await tx.status.create({
-        data: {
-          name: statusConfig.name,
-          personalScopeId: personalScope.id,
-          category: statusConfig.category,
-          position: statusConfig.position,
-        },
-      });
-    }
-
-    return personalScope;
+    return createPersonalScopeInTransaction(tx, userId);
   });
+}
+
+/**
+ * Create a PersonalScope within an existing Prisma transaction.
+ * Used by createUser to ensure user + personal scope are created atomically.
+ */
+export async function createPersonalScopeInTransaction(
+  tx: TransactionClient,
+  userId: string
+): Promise<PersonalScope> {
+  const personalScope = await tx.personalScope.create({
+    data: { userId },
+  });
+
+  for (const statusConfig of DEFAULT_PERSONAL_STATUSES) {
+    await tx.status.create({
+      data: {
+        name: statusConfig.name,
+        personalScopeId: personalScope.id,
+        category: statusConfig.category,
+        position: statusConfig.position,
+      },
+    });
+  }
+
+  return personalScope;
 }
 
 /**

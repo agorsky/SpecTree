@@ -10,7 +10,7 @@ vi.mock('bcrypt', () => ({
 
 // Mock personalScopeService
 vi.mock('../../src/services/personalScopeService.js', () => ({
-  createPersonalScope: vi.fn().mockResolvedValue({ id: 'scope-123', userId: 'user-123' }),
+  createPersonalScopeInTransaction: vi.fn().mockResolvedValue({ id: 'scope-123', userId: 'user-123' }),
 }));
 
 // Mock membershipService
@@ -19,8 +19,8 @@ vi.mock('../../src/services/membershipService.js', () => ({
 }));
 
 // Mock the db module
-vi.mock('../../src/lib/db.js', () => ({
-  prisma: {
+vi.mock('../../src/lib/db.js', () => {
+  const mockPrisma = {
     user: {
       create: vi.fn(),
       findUnique: vi.fn(),
@@ -36,12 +36,16 @@ vi.mock('../../src/lib/db.js', () => ({
       createMany: vi.fn(),
       findMany: vi.fn(),
     },
-  },
-}));
+    $transaction: vi.fn(),
+  };
+  // $transaction executes the callback with the mock prisma as the tx client
+  mockPrisma.$transaction.mockImplementation((fn: any) => fn(mockPrisma));
+  return { prisma: mockPrisma };
+});
 
 import bcrypt from 'bcrypt';
 import { prisma } from '../../src/lib/db.js';
-import { createPersonalScope } from '../../src/services/personalScopeService.js';
+import { createPersonalScopeInTransaction } from '../../src/services/personalScopeService.js';
 import { getTeamsWhereUserIsLastAdmin } from '../../src/services/membershipService.js';
 import {
   getUsers,
@@ -276,8 +280,8 @@ describe('userService', () => {
         },
         select: expect.objectContaining({ id: true, passwordHash: false }),
       });
-      // Verify PersonalScope is created
-      expect(createPersonalScope).toHaveBeenCalledWith('user-123');
+      // Verify PersonalScope is created inside the transaction
+      expect(createPersonalScopeInTransaction).toHaveBeenCalledWith(expect.anything(), 'user-123');
     });
 
     it('should create user with avatar URL', async () => {
@@ -325,9 +329,9 @@ describe('userService', () => {
         password: 'password123',
       });
 
-      // createPersonalScope creates the scope AND default statuses
-      expect(createPersonalScope).toHaveBeenCalledWith('user-456');
-      expect(createPersonalScope).toHaveBeenCalledTimes(1);
+      // createPersonalScopeInTransaction creates the scope AND default statuses
+      expect(createPersonalScopeInTransaction).toHaveBeenCalledWith(expect.anything(), 'user-456');
+      expect(createPersonalScopeInTransaction).toHaveBeenCalledTimes(1);
     });
   });
 
