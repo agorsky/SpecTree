@@ -34,15 +34,15 @@ Review gates control how the pipeline pauses between stages. Each gate can be in
 
 | Mode | Behavior |
 |------|----------|
-| **auto** | Proceed to next stage without pausing. Output a brief summary but don't wait. |
-| **review** (default) | Present results, then ask: "Continue to next stage? (yes / no / modify)" |
+| **auto** (default) | Proceed to next stage without pausing. Output a brief summary but don't wait. |
+| **review** | Present results, then ask: "Continue to next stage? (yes / no / modify)" |
 | **stop** | Halt the pipeline entirely. The user must re-invoke to continue. |
 
 ### Gate Configuration
 
 Parse the user's invocation to determine gate behavior:
 
-- **Default (no flags):** All stages use `review`
+- **Default (no flags):** All stages use `auto`
   ```
   @planner "Build a user preferences API"
   ```
@@ -56,7 +56,7 @@ Parse the user's invocation to determine gate behavior:
   ```
   This auto-advances through ANALYZE and DECOMPOSE, then pauses for review at DETAIL, EVALUATE, and VERIFY.
 
-If fewer than 5 modes are specified, remaining stages default to `review`.
+If fewer than 5 modes are specified, remaining stages default to `auto`.
 
 ### `--from-request` Flag (Epic Request Mode)
 
