@@ -54,6 +54,7 @@ interface ListEpicsQuery {
   limit?: string;
   teamId?: string;
   includeArchived?: string;
+  createdBy?: string;
 }
 
 interface EpicIdParams {
@@ -101,7 +102,7 @@ export default function epicsRoutes(
     "/",
     { preHandler: [authenticate] },
     async (request, reply) => {
-      const options: { cursor?: string; limit?: number; teamId?: string; currentUserId?: string; includeArchived?: boolean } = {};
+      const options: { cursor?: string; limit?: number; teamId?: string; currentUserId?: string; includeArchived?: boolean; createdBy?: string } = {};
       if (request.query.cursor) {
         options.cursor = request.query.cursor;
       }
@@ -113,6 +114,17 @@ export default function epicsRoutes(
       }
       if (request.query.includeArchived === "true") {
         options.includeArchived = true;
+      }
+      if (request.query.createdBy) {
+        // Validate that createdBy is a valid UUID
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!UUID_REGEX.test(request.query.createdBy)) {
+          return reply.status(400).send({
+            error: "Bad Request",
+            message: "createdBy must be a valid UUID",
+          });
+        }
+        options.createdBy = request.query.createdBy;
       }
       // Always pass currentUserId for scope-based filtering
       if (request.user?.id) {

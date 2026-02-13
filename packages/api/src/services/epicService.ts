@@ -35,6 +35,8 @@ export interface ListEpicsOptions {
   includeArchived?: boolean | undefined;
   /** Current user ID - when provided, filters to only show epics in accessible scopes */
   currentUserId?: string | undefined;
+  /** Filter by epic creator user ID */
+  createdBy?: string | undefined;
 }
 
 export interface EpicWithCount extends Epic {
@@ -70,11 +72,17 @@ export async function listEpics(
   const whereClause: {
     isArchived?: boolean;
     teamId?: string;
+    createdBy?: string;
     OR?: Array<{ teamId?: { in: string[] }; personalScopeId?: string | { in: string[] } }>;
   } = {};
   
   if (!options.includeArchived) {
     whereClause.isArchived = false;
+  }
+
+  // Apply createdBy filter if provided
+  if (options.createdBy !== undefined) {
+    whereClause.createdBy = options.createdBy;
   }
 
   // Apply scope-based filtering when currentUserId is provided

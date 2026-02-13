@@ -1,10 +1,13 @@
 import { useState, useMemo } from "react";
 import { useEpics } from "@/hooks/queries/use-epics";
+import { useAuthStore } from "@/stores/auth-store";
 import { Button } from "@/components/ui/button";
 import { EpicForm } from "@/components/epics/epic-form";
 import { EpicCard } from "@/components/epics/epic-card";
 import { TeamSection } from "@/components/epics/team-section";
-import { Plus, Filter, Check } from "lucide-react";
+import { EpicsScopeFilter } from "@/components/epics/epics-scope-filter";
+import type { ScopeMode } from "@/components/common/scope-selector";
+import { Plus, Filter, Check, Folder } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,8 +43,48 @@ function groupEpicsByTeam(epics: Epic[]): Map<string, { team: Epic['team']; epic
 export function EpicsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  
+  // Initialize scope from localStorage with 'my' as default for first-time users
+  const [scope, setScope] = useState<ScopeMode>(() => {
+    const stored = localStorage.getItem('epicsScope');
+    return (stored as ScopeMode) || 'my';
+  });
+  
+  const [scopeId, setScopeId] = useState<string | undefined>(() => {
+    const stored = localStorage.getItem('epicsScopeId');
+    return stored || undefined;
+  });
+  
+  const currentUser = useAuthStore((state) => state.user);
+  
+  const handleScopeChange = (newScope: ScopeMode, newScopeId?: string) => {
+    setScope(newScope);
+    setScopeId(newScopeId);
+    
+    // Persist to localStorage
+    localStorage.setItem('epicsScope', newScope);
+    localStorage.setItem('epicsScopeId', newScopeId || '');
+  };
+  
+  // Build filter parameters based on scope
+  const epicFilters = useMemo(() => {
+    const filters: { includeArchived: boolean; teamId?: string; createdBy?: string } = {
+      includeArchived: showArchived,
+    };
+    
+    if (scope === 'my' && currentUser?.id) {
+      filters.createdBy = currentUser.id;
+    } else if (scope === 'team' && scopeId) {
+      filters.teamId = scopeId;
+    } else if (scope === 'user' && scopeId) {
+      filters.createdBy = scopeId;
+    }
+    
+    return filters;
+  }, [scope, scopeId, showArchived, currentUser?.id]);
+  
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useEpics({ includeArchived: showArchived });
+    useEpics(epicFilters);
 
   const epics = data?.pages.flatMap((page) => page.data) ?? [];
   
@@ -53,6 +96,11 @@ export function EpicsPage() {
       <div className="flex items-center justify-between mb-6 gap-3 sm:mb-8">
         <h1 className="text-2xl font-bold sm:text-3xl">Epics</h1>
         <div className="flex items-center gap-2">
+          <EpicsScopeFilter
+            scope={scope}
+            {...(scopeId !== undefined && { scopeId })}
+            onScopeChange={handleScopeChange}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -89,15 +137,18 @@ export function EpicsPage() {
         </div>
       ) : epics.length === 0 ? (
         <div className="text-center py-12">
+          <div className="flex justify-center mb-4">
+            <Folder className="h-16 w-16 text-muted-foreground/50" />
+          </div>
           <p className="text-muted-foreground mb-4">
-            {showArchived ? "No epics found" : "No epics yet"}
+            {scope !== 'all' 
+              ? "No epics found for this filter. Try changing your filter selection or creating a new epic."
+              : showArchived ? "No epics found" : "No epics yet"}
           </p>
-          {!showArchived && (
-            <Button onClick={() => setIsFormOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create your first epic
-            </Button>
-          )}
+          <Button onClick={() => setIsFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {scope !== 'all' ? "Create Epic" : "Create your first epic"}
+          </Button>
         </div>
       ) : (
         <>

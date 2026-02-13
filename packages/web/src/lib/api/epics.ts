@@ -3,6 +3,7 @@ import type { Epic, PaginatedResponse, StructuredDescription } from './types';
 
 export interface EpicFilters {
   teamId?: string | undefined;
+  createdBy?: string | undefined;
   cursor?: string | undefined;
   limit?: number | undefined;
   includeArchived?: boolean | undefined;
