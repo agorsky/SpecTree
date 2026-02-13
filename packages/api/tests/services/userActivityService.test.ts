@@ -67,6 +67,7 @@ function buildQuery(overrides?: Partial<UserActivityQuery>): UserActivityQuery {
     interval: "day",
     page: 1,
     limit: 7,
+    scope: "self",
     ...overrides,
   };
 }
@@ -917,12 +918,12 @@ describe("userActivityService", () => {
   // ===========================================================================
 
   describe("Prisma query construction", () => {
-    it("should query features by epicId and date range (no user filter)", async () => {
+    it("should query features by epicId, date range, and createdBy for 'self' scope", async () => {
       setupAccessMocks({ epicIds: ["epic-1", "epic-2"] });
       setupEmptyRecords();
 
       await getUserActivity(
-        buildQuery({ userId: "user-1", interval: "day", limit: 2, page: 1 })
+        buildQuery({ userId: "user-1", interval: "day", limit: 2, page: 1, scope: "self" })
       );
 
       expect(prisma.feature.findMany).toHaveBeenCalledWith(
@@ -933,20 +934,18 @@ describe("userActivityService", () => {
               gte: expect.any(Date),
               lt: expect.any(Date),
             },
+            createdBy: "user-1",
           }),
-          select: { createdAt: true },
+          select: { createdAt: true, createdBy: true },
         })
       );
-
-      const callArgs = vi.mocked(prisma.feature.findMany).mock.calls[0][0];
-      expect((callArgs as any).where).not.toHaveProperty("assigneeId");
     });
 
-    it("should query tasks by feature.epicId and completedAt range (no user filter)", async () => {
+    it("should query tasks by feature.epicId, completedAt range, and implementedBy for 'self' scope", async () => {
       setupAccessMocks();
       setupEmptyRecords();
 
-      await getUserActivity(buildQuery({ userId: "user-1" }));
+      await getUserActivity(buildQuery({ userId: "user-1", scope: "self" }));
 
       expect(prisma.task.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -956,13 +955,11 @@ describe("userActivityService", () => {
               gte: expect.any(Date),
               lt: expect.any(Date),
             },
+            implementedBy: "user-1",
           }),
-          select: { completedAt: true },
+          select: { completedAt: true, implementedBy: true },
         })
       );
-
-      const callArgs = vi.mocked(prisma.task.findMany).mock.calls[0][0];
-      expect((callArgs as any).where).not.toHaveProperty("assigneeId");
     });
 
     it("should query decisions by epicId and date range (no user filter)", async () => {
@@ -1010,6 +1007,21 @@ describe("userActivityService", () => {
       // AI sessions should NOT filter by userId
       const callArgs = vi.mocked(prisma.aiSession.findMany).mock.calls[0][0];
       expect((callArgs as any).where).not.toHaveProperty("userId");
+    });
+
+    it("should NOT filter by user for 'all' scope", async () => {
+      setupAccessMocks();
+      setupEmptyRecords();
+
+      await getUserActivity(buildQuery({ userId: "user-1", scope: "all" }));
+
+      // Features should NOT have createdBy filter
+      const featureCall = vi.mocked(prisma.feature.findMany).mock.calls[0][0];
+      expect((featureCall as any).where).not.toHaveProperty("createdBy");
+
+      // Tasks should NOT have implementedBy filter
+      const taskCall = vi.mocked(prisma.task.findMany).mock.calls[0][0];
+      expect((taskCall as any).where).not.toHaveProperty("implementedBy");
     });
 
     it("should query a date range spanning all requested buckets", async () => {

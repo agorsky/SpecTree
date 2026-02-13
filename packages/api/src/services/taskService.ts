@@ -13,7 +13,7 @@ import {
   getStatusIdsByCategory,
   getDefaultBacklogStatus,
 } from "./statusService.js";
-import { emitStatusChanged, emitEntityCreated, emitEntityUpdated, emitEntityDeleted } from "../events/index.js";
+import { emitStatusChanged, emitEntityCreated, emitEntityUpdated, emitEntityDeleted, type StatusChangedPayload } from "../events/index.js";
 import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
 import * as changelogService from "./changelogService.js";
 
@@ -21,6 +21,7 @@ import * as changelogService from "./changelogService.js";
 export interface CreateTaskInput {
   title: string;
   featureId: string;
+  userId: string; // The authenticated user ID - auto-populates createdBy
   description?: string | undefined;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
@@ -307,6 +308,8 @@ export async function listTasks(
     include: {
       status: true,
       assignee: true,
+      creator: { select: { id: true, name: true, email: true } },
+      implementer: { select: { id: true, name: true, email: true } },
       feature: {
         select: {
           id: true,
@@ -353,6 +356,8 @@ export async function getTaskById(idOrIdentifier: string): Promise<Task | null> 
     include: {
       status: true,
       assignee: true,
+      creator: { select: { id: true, name: true, email: true } },
+      implementer: { select: { id: true, name: true, email: true } },
       feature: {
         select: {
           id: true,
@@ -456,6 +461,7 @@ export async function createTask(input: CreateTaskInput, userId?: string): Promi
         featureId: string;
         identifier: string;
         sortOrder: number;
+        createdBy: string;
         description?: string;
         statusId?: string;
         assigneeId?: string;
@@ -469,6 +475,7 @@ export async function createTask(input: CreateTaskInput, userId?: string): Promi
         featureId: input.featureId,
         identifier,
         sortOrder,
+        createdBy: input.userId,
       };
 
       if (input.description !== undefined) {
@@ -686,13 +693,17 @@ export async function updateTask(
 
   // Emit status changed event if status was updated
   if (input.statusId !== undefined && input.statusId !== oldStatusId) {
-    emitStatusChanged({
+    const payload: StatusChangedPayload = {
       entityType: "task",
       entityId: id,
       oldStatusId,
       newStatusId: input.statusId,
       timestamp: new Date(),
-    });
+    };
+    if (userId) {
+      payload.changedBy = userId;
+    }
+    emitStatusChanged(payload);
   }
 
   // Record changes in changelog using diffAndRecord (never fails the parent operation)

@@ -10,6 +10,7 @@ import { emitEntityCreated, emitEntityUpdated, emitEntityDeleted } from "../even
 export interface CreateEpicInput {
   name: string;
   teamId: string;
+  userId: string; // The authenticated user ID - auto-populates createdBy
   description?: string | undefined;
   icon?: string | undefined;
   color?: string | undefined;
@@ -123,7 +124,9 @@ export async function listEpics(
     orderBy,
     include: { 
       _count: { select: { features: true } },
-      team: true 
+      team: true,
+      creator: { select: { id: true, name: true, email: true } },
+      implementer: { select: { id: true, name: true, email: true } },
     },
   }) as EpicWithCount[];
 
@@ -176,6 +179,8 @@ export async function getEpicById(
     include: {
       _count: { select: { features: true } },
       team: { select: { id: true, name: true, key: true } },
+      creator: { select: { id: true, name: true, email: true } },
+      implementer: { select: { id: true, name: true, email: true } },
     },
   }) as Promise<EpicWithCount | null>;
 }
@@ -218,6 +223,7 @@ export async function createEpic(input: CreateEpicInput, userId?: string): Promi
     name: string;
     teamId: string;
     sortOrder: number;
+    createdBy: string;
     description?: string;
     icon?: string;
     color?: string;
@@ -225,6 +231,7 @@ export async function createEpic(input: CreateEpicInput, userId?: string): Promi
     name: input.name.trim(),
     teamId: input.teamId,
     sortOrder,
+    createdBy: input.userId,
   };
 
   if (input.description !== undefined) {
@@ -494,7 +501,8 @@ import { structuredDescToMarkdown } from "./structuredDescriptionService.js";
  * transaction is rolled back.
  */
 export async function createEpicComplete(
-  input: CreateEpicCompleteInput
+  input: CreateEpicCompleteInput,
+  userId: string
 ): Promise<CreateEpicCompleteResponse> {
   // Validate input against schema
   const validationResult = createEpicCompleteInputSchema.safeParse(input);
@@ -558,6 +566,7 @@ export async function createEpicComplete(
       name: string;
       teamId: string;
       sortOrder: number;
+      createdBy: string;
       description?: string | null;
       icon?: string | null;
       color?: string | null;
@@ -566,6 +575,7 @@ export async function createEpicComplete(
       name: validatedInput.name.trim(),
       teamId: team.id,
       sortOrder: epicSortOrder,
+      createdBy: userId,
     };
     if (validatedInput.description !== undefined) {
       epicData.description = validatedInput.description.trim();
@@ -657,6 +667,7 @@ export async function createEpicComplete(
         epicId: string;
         identifier: string;
         sortOrder: number;
+        createdBy: string;
         description?: string | null;
         statusId?: string | null;
         executionOrder?: number | null;
@@ -671,6 +682,7 @@ export async function createEpicComplete(
         identifier: featureIdentifier,
         sortOrder: featureSortOrder,
         canParallelize: featureInput.canParallelize ?? false,
+        createdBy: userId,
       };
       if (backlogStatus?.id !== undefined) {
         featureData.statusId = backlogStatus.id;
@@ -737,6 +749,7 @@ export async function createEpicComplete(
           featureId: string;
           identifier: string;
           sortOrder: number;
+          createdBy: string;
           description?: string | null;
           statusId?: string | null;
           executionOrder?: number | null;
@@ -747,6 +760,7 @@ export async function createEpicComplete(
           featureId: feature.id,
           identifier: taskIdentifier,
           sortOrder: taskSortOrder,
+          createdBy: userId,
         };
         if (backlogStatus?.id !== undefined) {
           taskData.statusId = backlogStatus.id;

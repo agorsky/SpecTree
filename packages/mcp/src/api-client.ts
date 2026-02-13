@@ -40,6 +40,13 @@ export interface Team {
   key: string;
 }
 
+/** User information for attribution fields */
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
 // -----------------------------------------------------------------------------
 // Epic Types
 // -----------------------------------------------------------------------------
@@ -59,6 +66,12 @@ export interface Epic {
   team?: Team;
   createdAt: string;
   updatedAt: string;
+  // Attribution fields
+  createdBy: string | null;
+  creator?: User | null;
+  implementedBy: string | null;
+  implementer?: User | null;
+  implementedDate: string | null;
   _count?: { features: number };
 }
 
@@ -195,6 +208,12 @@ export interface Feature {
   parallelGroup: string | null;
   dependencies: string | null; // JSON array of feature IDs
   estimatedComplexity: EstimatedComplexity | null;
+  // Attribution fields
+  createdBy: string | null;
+  creator?: User | null;
+  implementedBy: string | null;
+  implementer?: User | null;
+  implementedDate: string | null;
   tasks?: Task[];
   _count?: { tasks: number };
 }
@@ -267,6 +286,12 @@ export interface Task {
   parallelGroup: string | null;
   dependencies: string | null; // JSON array of task IDs
   estimatedComplexity: EstimatedComplexity | null;
+  // Attribution fields
+  createdBy: string | null;
+  creator?: User | null;
+  implementedBy: string | null;
+  implementer?: User | null;
+  implementedDate: string | null;
 }
 
 export interface ListTasksParams {
@@ -360,6 +385,12 @@ export interface PersonalEpic {
   teamId: null;
   createdAt: string;
   updatedAt: string;
+  // Attribution fields
+  createdBy: string | null;
+  creator?: User | null;
+  implementedBy: string | null;
+  implementer?: User | null;
+  implementedDate: string | null;
   _count?: { features: number };
 }
 

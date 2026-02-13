@@ -15,6 +15,7 @@ import { TeamsPage } from "@/pages/teams/index";
 import { TeamDetailPage } from "@/pages/teams/team-detail";
 import { SettingsPage } from "@/pages/settings";
 import { DashboardPage } from "@/pages/dashboard";
+import { WhatsNewPage } from "@/pages/whats-new";
 import { AdminGuard } from "@/components/guards/AdminGuard";
 import { AdminUsersPage } from "@/pages/admin/UsersPage";
 
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: "inbox", element: <InboxPage /> },
       { path: "dashboard", element: <DashboardPage /> },
+      { path: "whats-new", element: <WhatsNewPage /> },
       { path: "epic-requests", element: <EpicRequestsPage /> },
       { path: "epic-requests/new", element: <NewEpicRequestPage /> },
       { path: "epic-requests/:requestId", element: <EpicRequestDetailPage /> },

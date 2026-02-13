@@ -53,6 +53,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate What's New Entry
+        run: bash scripts/validate-whats-new.sh
+
       - name: Azure Login
         uses: azure/login@v2
         with:

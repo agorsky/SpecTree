@@ -17,6 +17,30 @@
 
 ---
 
+## Versioning
+
+### Version Source of Truth
+- **Location**: `package.json` in the repository root
+- **Field**: `version` field (e.g., `"version": "0.1.0"`)
+- **Format**: Semantic versioning (MAJOR.MINOR.PATCH)
+- **Authority**: This is the single source of truth for the application version
+
+### Version Management
+- All version changes MUST be made in `package.json`
+- Version updates should follow semantic versioning principles:
+  - **MAJOR**: Breaking changes or incompatible API changes
+  - **MINOR**: New features in a backwards-compatible manner
+  - **PATCH**: Backwards-compatible bug fixes
+- Release notes are maintained in `docs/whats-new/` (see What's New documentation)
+
+### Rationale
+- **Single source of truth**: Eliminates version conflicts across different files
+- **Standard location**: `package.json` is the standard for Node.js projects
+- **Tooling compatibility**: Build tools, CI/CD, and package managers expect version in `package.json`
+- **Git tagging**: Version tags should match the `package.json` version
+
+---
+
 ## Folder Structure
 
 The `docs/` directory is organized by topic area:

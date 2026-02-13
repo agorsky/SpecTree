@@ -52,6 +52,17 @@ export interface Epic {
     name: string;
     key: string;
   } | null;
+  creator?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  implementer?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  implementedDate?: string | null;
   isArchived?: boolean;
   createdAt: string;
   updatedAt: string;

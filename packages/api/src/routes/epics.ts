@@ -158,6 +158,7 @@ export default function epicsRoutes(
       const input: {
         name: string;
         teamId: string;
+        userId: string;
         description?: string;
         icon?: string;
         color?: string;
@@ -165,6 +166,7 @@ export default function epicsRoutes(
       } = {
         name,
         teamId,
+        userId: request.user!.id, // Authenticated user ID
       };
       if (description !== undefined) input.description = description;
       if (icon !== undefined) input.icon = icon;
@@ -359,7 +361,7 @@ export default function epicsRoutes(
     "/complete",
     { preHandler: [authenticate, requireTeamAccess("body.team"), requireRole("member")] },
     async (request, reply) => {
-      const result = await createEpicComplete(request.body);
+      const result = await createEpicComplete(request.body, request.user!.id);
       return reply.status(201).send({ data: result });
     }
   );

@@ -1,10 +1,12 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
 
 interface DropdownMenuContextValue {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  triggerRef: React.RefObject<HTMLElement | null>;
 }
 
 const DropdownMenuContext = React.createContext<DropdownMenuContextValue | null>(null);
@@ -19,9 +21,10 @@ function useDropdownMenu() {
 
 const DropdownMenu = ({ children }: { children: React.ReactNode }) => {
   const [open, setOpen] = React.useState(false);
+  const triggerRef = React.useRef<HTMLElement | null>(null);
 
   return (
-    <DropdownMenuContext.Provider value={{ open, setOpen }}>
+    <DropdownMenuContext.Provider value={{ open, setOpen, triggerRef }}>
       <div className="relative inline-block text-left">{children}</div>
     </DropdownMenuContext.Provider>
   );
@@ -36,15 +39,30 @@ const DropdownMenuTrigger = React.forwardRef<
   HTMLButtonElement,
   DropdownMenuTriggerProps & React.ButtonHTMLAttributes<HTMLButtonElement>
 >(({ asChild, children, onClick, ...props }, ref) => {
-  const { open, setOpen } = useDropdownMenu();
+  const { open, setOpen, triggerRef } = useDropdownMenu();
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     setOpen(!open);
     onClick?.(e);
   };
 
+  const setRefs = React.useCallback(
+    (node: HTMLButtonElement | null) => {
+      triggerRef.current = node;
+      if (typeof ref === "function") {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
+    },
+    [ref, triggerRef]
+  );
+
   if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(children as React.ReactElement<{ onClick?: () => void }>, {
+    return React.cloneElement(children as React.ReactElement<{ onClick?: () => void; ref?: React.Ref<HTMLElement> }>, {
+      ref: (node: HTMLElement | null) => {
+        triggerRef.current = node;
+      },
       onClick: () => {
         setOpen(!open);
       },
@@ -52,7 +70,7 @@ const DropdownMenuTrigger = React.forwardRef<
   }
 
   return (
-    <button ref={ref} onClick={handleClick} {...props}>
+    <button ref={setRefs} onClick={handleClick} {...props}>
       {children}
     </button>
   );
@@ -66,12 +84,41 @@ interface DropdownMenuContentProps extends React.HTMLAttributes<HTMLDivElement> 
 
 const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContentProps>(
   ({ className, align = "center", side = "bottom", children, ...props }, ref) => {
-    const { open, setOpen } = useDropdownMenu();
+    const { open, setOpen, triggerRef } = useDropdownMenu();
     const contentRef = React.useRef<HTMLDivElement>(null);
+    const [position, setPosition] = React.useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
+    React.useEffect(() => {
+      if (open && triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        let top: number;
+        let left: number;
+
+        if (side === "top") {
+          top = rect.top + window.scrollY;
+        } else {
+          top = rect.bottom + window.scrollY + 4;
+        }
+
+        if (align === "end") {
+          left = rect.right + window.scrollX;
+        } else if (align === "start") {
+          left = rect.left + window.scrollX;
+        } else {
+          left = rect.left + window.scrollX + rect.width / 2;
+        }
+
+        setPosition({ top, left });
+      }
+    }, [open, align, side, triggerRef]);
 
     React.useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-        if (contentRef.current && !contentRef.current.contains(event.target as Node)) {
+        if (
+          contentRef.current &&
+          !contentRef.current.contains(event.target as Node) &&
+          !triggerRef.current?.contains(event.target as Node)
+        ) {
           setOpen(false);
         }
       };
@@ -83,11 +130,11 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
       return () => {
         document.removeEventListener("mousedown", handleClickOutside);
       };
-    }, [open, setOpen]);
+    }, [open, setOpen, triggerRef]);
 
     if (!open) return null;
 
-    return (
+    return createPortal(
       <div
         ref={(node) => {
           contentRef.current = node;
@@ -97,20 +144,25 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
             ref.current = node;
           }
         }}
+        style={{
+          position: "absolute",
+          top: position.top,
+          left: position.left,
+          transform: [
+            side === "top" ? "translateY(-100%)" : undefined,
+            align === "end" ? "translateX(-100%)" : align === "center" ? "translateX(-50%)" : undefined,
+          ].filter(Boolean).join(" ") || undefined,
+        }}
         className={cn(
-          "absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+          "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
           "animate-in fade-in-0 zoom-in-95",
-          align === "start" && "left-0",
-          align === "center" && "left-1/2 -translate-x-1/2",
-          align === "end" && "right-0",
-          side === "top" && "bottom-full mb-1",
-          side === "bottom" && "top-full mt-1",
           className
         )}
         {...props}
       >
         {children}
-      </div>
+      </div>,
+      document.body
     );
   }
 );

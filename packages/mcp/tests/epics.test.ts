@@ -170,4 +170,78 @@ describe("MCP Epics Tools", () => {
       expect(registeredTools.has("spectree__create_epic")).toBe(true);
     });
   });
+
+  describe("attribution fields", () => {
+    it("should include attribution fields when present", async () => {
+      const mockEpicWithAttribution = {
+        id: "epic-1",
+        name: "Epic with Attribution",
+        createdAt: "2026-01-10T00:00:00Z",
+        updatedAt: "2026-01-10T00:00:00Z",
+        createdBy: "user-123",
+        creator: { id: "user-123", name: "John Doe", email: "john@example.com" },
+        implementedBy: "user-456",
+        implementer: { id: "user-456", name: "Jane Smith", email: "jane@example.com" },
+        implementedDate: "2026-01-15T00:00:00Z",
+      };
+
+      mockApiClient.listEpics.mockResolvedValue({
+        data: [mockEpicWithAttribution],
+        meta: { cursor: null, hasMore: false },
+      });
+
+      mockApiClient.listPersonalEpics.mockResolvedValue({
+        data: [],
+        meta: { cursor: null, hasMore: false },
+      });
+
+      const handler = registeredTools.get("spectree__list_epics")?.handler;
+      const result = await handler!({ scope: "team" });
+
+      expect(result.isError).toBeUndefined();
+      const data = JSON.parse(result.content[0]?.text || "{}");
+      expect(data.epics).toHaveLength(1);
+      expect(data.epics[0].createdBy).toBe("user-123");
+      expect(data.epics[0].creator).toEqual({ id: "user-123", name: "John Doe", email: "john@example.com" });
+      expect(data.epics[0].implementedBy).toBe("user-456");
+      expect(data.epics[0].implementer).toEqual({ id: "user-456", name: "Jane Smith", email: "jane@example.com" });
+      expect(data.epics[0].implementedDate).toBe("2026-01-15T00:00:00Z");
+    });
+
+    it("should handle null attribution fields gracefully", async () => {
+      const mockEpicWithoutAttribution = {
+        id: "epic-2",
+        name: "Epic without Attribution",
+        createdAt: "2026-01-10T00:00:00Z",
+        updatedAt: "2026-01-10T00:00:00Z",
+        createdBy: null,
+        creator: null,
+        implementedBy: null,
+        implementer: null,
+        implementedDate: null,
+      };
+
+      mockApiClient.listEpics.mockResolvedValue({
+        data: [mockEpicWithoutAttribution],
+        meta: { cursor: null, hasMore: false },
+      });
+
+      mockApiClient.listPersonalEpics.mockResolvedValue({
+        data: [],
+        meta: { cursor: null, hasMore: false },
+      });
+
+      const handler = registeredTools.get("spectree__list_epics")?.handler;
+      const result = await handler!({ scope: "team" });
+
+      expect(result.isError).toBeUndefined();
+      const data = JSON.parse(result.content[0]?.text || "{}");
+      expect(data.epics).toHaveLength(1);
+      expect(data.epics[0].createdBy).toBeNull();
+      expect(data.epics[0].creator).toBeNull();
+      expect(data.epics[0].implementedBy).toBeNull();
+      expect(data.epics[0].implementer).toBeNull();
+      expect(data.epics[0].implementedDate).toBeNull();
+    });
+  });
 });

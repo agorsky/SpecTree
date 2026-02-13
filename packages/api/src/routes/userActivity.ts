@@ -30,11 +30,15 @@ export default function userActivityRoutes(
    * GET /api/v1/user-activity
    * Returns aggregated user activity data for the authenticated user
    * 
+   * Activity is attributed as follows:
+   * - Features: counted for the user who created them (createdBy)
+   * - Tasks: counted for the user who implemented them (implementedBy)
+   * 
    * Admin users can specify scope to view activity for:
-   * - 'self' (default): User's own activity
-   * - 'all': All activity in the system
-   * - 'team': Activity for a specific team (requires scopeId)
-   * - 'user': Activity for a specific user (requires scopeId)
+   * - 'self' (default): User's own activity (items created/implemented by them)
+   * - 'all': All activity in the system (no user filtering)
+   * - 'team': Activity for a specific team (requires scopeId, no user filtering)
+   * - 'user': Activity for a specific user (requires scopeId, filtered by that user's created/implemented items)
    */
   fastify.get<{ Querystring: UserActivityQuerystring }>(
     "/",
@@ -108,6 +112,10 @@ export default function userActivityRoutes(
   /**
    * GET /api/v1/user-activity/details
    * Returns detailed item records for a specific metric type
+   * 
+   * Respects attribution fields:
+   * - Features are filtered by createdBy when scope is 'self' or 'user'
+   * - Tasks are filtered by implementedBy when scope is 'self' or 'user'
    */
   fastify.get<{
     Querystring: {

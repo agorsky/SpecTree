@@ -288,6 +288,7 @@ export default function tasksRoutes(
       const input: {
         title: string;
         featureId: string;
+        userId: string;
         description?: string;
         statusId?: string;
         assigneeId?: string;
@@ -295,6 +296,7 @@ export default function tasksRoutes(
       } = {
         title,
         featureId,
+        userId: request.user!.id, // Authenticated user ID
       };
 
       if (description !== undefined) input.description = description;

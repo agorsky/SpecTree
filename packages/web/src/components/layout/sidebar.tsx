@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 const navItems = [
   { href: "/inbox", label: "Inbox", icon: Inbox },
@@ -23,6 +24,8 @@ const navItems = [
 const adminNavItems = [
   { href: "/admin/users", label: "User Management", icon: Shield },
 ];
+
+const VERSION = "0.1.0";
 
 export function Sidebar() {
   const location = useLocation();
@@ -110,6 +113,18 @@ export function Sidebar() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        
+        {/* Version Badge */}
+        <div className="flex justify-center mt-2">
+          <Link to="/whats-new">
+            <Badge 
+              variant="secondary" 
+              className="text-xs cursor-pointer transition-colors hover:bg-secondary/80"
+            >
+              v{VERSION}
+            </Badge>
+          </Link>
+        </div>
       </div>
     </div>
   );

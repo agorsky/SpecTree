@@ -68,6 +68,15 @@ model User {
   epicRequests     EpicRequest[]
   epicRequestReactions EpicRequestReaction[]
   epicRequestComments  EpicRequestComment[]
+  
+  // User tracking relations
+  createdEpics     Epic[]       @relation("EpicCreatedBy")
+  implementedEpics Epic[]       @relation("EpicImplementedBy")
+  createdFeatures  Feature[]    @relation("FeatureCreatedBy")
+  implementedFeatures Feature[] @relation("FeatureImplementedBy")
+  createdTasks     Task[]       @relation("TaskCreatedBy")
+  implementedTasks Task[]       @relation("TaskImplementedBy")
+  
   @@index([email])
   @@map("users")
 }
@@ -131,6 +140,12 @@ model Epic {
   scopeType       String   @default("team") @map("scope_type") // 'team' or 'personal'
   teamId          String?  @map("team_id")
   personalScopeId String?  @map("personal_scope_id")
+  
+  // User tracking fields
+  createdBy       String?   @map("created_by")
+  implementedBy   String?   @map("implemented_by")
+  implementedDate DateTime? @map("implemented_date")
+  
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -145,6 +160,8 @@ model Epic {
 
   team          Team?          @relation(fields: [teamId], references: [id], onDelete: Cascade)
   personalScope PersonalScope? @relation(fields: [personalScopeId], references: [id], onDelete: Cascade)
+  creator       User?          @relation("EpicCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  implementer   User?          @relation("EpicImplementedBy", fields: [implementedBy], references: [id], onDelete: SetNull)
   features      Feature[]
   aiSessions    AiSession[]
   decisions     Decision[]
@@ -153,6 +170,8 @@ model Epic {
   @@index([teamId])
   @@index([teamId, sortOrder])
   @@index([personalScopeId])
+  @@index([createdBy])
+  @@index([implementedBy])
   @@map("epics")
 }
 
@@ -188,6 +207,12 @@ model Feature {
   statusId    String?  @map("status_id")
   assigneeId  String?  @map("assignee_id")
   sortOrder   Float    @default(0) @map("sort_order")
+  
+  // User tracking fields
+  createdBy       String?   @map("created_by")
+  implementedBy   String?   @map("implemented_by")
+  implementedDate DateTime? @map("implemented_date")
+  
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -225,6 +250,8 @@ model Feature {
   epic      Epic       @relation(fields: [epicId], references: [id], onDelete: Cascade)
   status    Status?    @relation(fields: [statusId], references: [id], onDelete: SetNull)
   assignee  User?      @relation("AssignedFeatures", fields: [assigneeId], references: [id], onDelete: SetNull)
+  creator   User?      @relation("FeatureCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  implementer User?    @relation("FeatureImplementedBy", fields: [implementedBy], references: [id], onDelete: SetNull)
   tasks     Task[]
   decisions Decision[]
 
@@ -234,6 +261,8 @@ model Feature {
   @@index([epicId, sortOrder])
   @@index([epicId, statusId])
   @@index([assigneeId, statusId])
+  @@index([createdBy])
+  @@index([implementedBy])
   @@map("features")
 }
 
@@ -246,6 +275,12 @@ model Task {
   statusId    String?  @map("status_id")
   assigneeId  String?  @map("assignee_id")
   sortOrder   Float    @default(0) @map("sort_order")
+  
+  // User tracking fields
+  createdBy       String?   @map("created_by")
+  implementedBy   String?   @map("implemented_by")
+  implementedDate DateTime? @map("implemented_date")
+  
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -286,6 +321,8 @@ model Task {
   feature   Feature    @relation(fields: [featureId], references: [id], onDelete: Cascade)
   status    Status?    @relation(fields: [statusId], references: [id], onDelete: SetNull)
   assignee  User?      @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
+  creator   User?      @relation("TaskCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  implementer User?    @relation("TaskImplementedBy", fields: [implementedBy], references: [id], onDelete: SetNull)
   decisions Decision[]
 
   @@index([featureId])
@@ -293,6 +330,8 @@ model Task {
   @@index([assigneeId])
   @@index([featureId, sortOrder])
   @@index([assigneeId, statusId])
+  @@index([createdBy])
+  @@index([implementedBy])
   @@map("tasks")
 }
 

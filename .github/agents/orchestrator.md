@@ -16,6 +16,19 @@ You execute SpecTree epics by reading execution plans and delegating feature imp
 
 Before doing anything, call `spectree__list_teams` to verify SpecTree MCP is connected. If this fails, stop and tell the user: "SpecTree MCP is not connected. Cannot proceed."
 
+## 🔴 DATABASE SAFETY — ABSOLUTE RULES
+
+**Ensure ALL feature-workers follow these rules. NEVER run:**
+- ❌ `prisma migrate dev` — wipes and recreates the database
+- ❌ `prisma migrate reset` — deletes all data
+- ❌ `prisma db push --force-reset` — deletes all data
+
+**Safe alternatives for schema changes:**
+- ✅ `npx prisma db push` — applies schema changes without data loss
+- ✅ `npx prisma generate` — regenerates the Prisma client
+
+Include this warning in EVERY feature-worker prompt that involves schema or database changes.
+
 ## Execution Workflow
 
 ### Step 1: Read the Execution Plan

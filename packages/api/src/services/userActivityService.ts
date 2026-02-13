@@ -356,6 +356,12 @@ export async function getUserActivity(
   // Get epic IDs based on scope
   const epicIds = await getEpicsByScope(scope, userId, scopeId);
 
+  // Determine the target user ID for attribution filtering
+  // For 'self' scope, use the requesting userId
+  // For 'user' scope, use the scopeId (target user)
+  // For 'all' and 'team' scopes, don't filter by user attribution
+  const targetUserId = scope === "self" ? userId : scope === "user" ? scopeId : undefined;
+
   // Generate time buckets (aligned to user's timezone when provided)
   const validTz = timeZone
     ? (() => {
@@ -392,23 +398,29 @@ export async function getUserActivity(
     },
     interval,
     bucketsCount: buckets.length,
+    scope,
+    targetUserId,
   });
 
   // Fetch all relevant records in the date range (parallel queries)
+  // For features: filter by createdBy (who created the feature)
+  // For tasks: filter by implementedBy (who implemented/completed the task)
   const [features, tasks, decisions, aiSessions] = await Promise.all([
     prisma.feature.findMany({
       where: {
         epicId: { in: epicIds },
         createdAt: { gte: earliest, lt: latest },
+        ...(targetUserId ? { createdBy: targetUserId } : {}),
       },
-      select: { createdAt: true },
+      select: { createdAt: true, createdBy: true },
     }),
     prisma.task.findMany({
       where: {
         feature: { epicId: { in: epicIds } },
         completedAt: { gte: earliest, lt: latest },
+        ...(targetUserId ? { implementedBy: targetUserId } : {}),
       },
-      select: { completedAt: true },
+      select: { completedAt: true, implementedBy: true },
     }),
     prisma.decision.findMany({
       where: {
@@ -432,9 +444,13 @@ export async function getUserActivity(
     tasksCount: tasks.length,
     decisionsCount: decisions.length,
     aiSessionsCount: aiSessions.length,
-    aiSessionsSample: aiSessions.slice(0, 3).map(s => ({
-      startedAt: s.startedAt.toISOString(),
-      epicId: s.epicId,
+    featuresSample: features.slice(0, 3).map(f => ({
+      createdAt: f.createdAt instanceof Date ? f.createdAt.toISOString() : f.createdAt,
+      createdBy: f.createdBy,
+    })),
+    tasksSample: tasks.slice(0, 3).map(t => ({
+      completedAt: t.completedAt instanceof Date ? t.completedAt.toISOString() : t.completedAt,
+      implementedBy: t.implementedBy,
     })),
   });
 
@@ -539,12 +555,16 @@ export async function getActivityDetails(
 
   const take = Math.min(Math.max(limit, 1), 100);
 
+  // Determine the target user ID for attribution filtering
+  const targetUserId = scope === "self" ? userId : scope === "user" ? scopeId : undefined;
+
   switch (metricType) {
     case "features": {
       const items = await prisma.feature.findMany({
         where: {
           epicId: { in: epicIds },
           createdAt: { gte: earliest, lt: latest },
+          ...(targetUserId ? { createdBy: targetUserId } : {}),
           ...(cursor ? { id: { lt: cursor } } : {}),
         },
         orderBy: { createdAt: "desc" },
@@ -585,6 +605,7 @@ export async function getActivityDetails(
         where: {
           feature: { epicId: { in: epicIds } },
           completedAt: { gte: earliest, lt: latest },
+          ...(targetUserId ? { implementedBy: targetUserId } : {}),
           ...(cursor ? { id: { lt: cursor } } : {}),
         },
         orderBy: { completedAt: "desc" },

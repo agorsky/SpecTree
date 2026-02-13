@@ -108,6 +108,12 @@ export function registerEpicTools(server: McpServer): void {
             featureCount: e._count?.features ?? 0,
             createdAt: e.createdAt,
             updatedAt: e.updatedAt,
+            // Attribution fields
+            createdBy: e.createdBy ?? null,
+            creator: e.creator ?? null,
+            implementedBy: e.implementedBy ?? null,
+            implementer: e.implementer ?? null,
+            implementedDate: e.implementedDate ?? null,
           }));
 
           return createResponse({
@@ -147,6 +153,12 @@ export function registerEpicTools(server: McpServer): void {
           featureCount: e._count?.features ?? 0,
           createdAt: e.createdAt,
           updatedAt: e.updatedAt,
+          // Attribution fields
+          createdBy: e.createdBy ?? null,
+          creator: e.creator ?? null,
+          implementedBy: e.implementedBy ?? null,
+          implementer: e.implementer ?? null,
+          implementedDate: e.implementedDate ?? null,
         }));
 
         // For team-only scope, return just team epics
@@ -178,6 +190,12 @@ export function registerEpicTools(server: McpServer): void {
           featureCount: e._count?.features ?? 0,
           createdAt: e.createdAt,
           updatedAt: e.updatedAt,
+          // Attribution fields
+          createdBy: e.createdBy ?? null,
+          creator: e.creator ?? null,
+          implementedBy: e.implementedBy ?? null,
+          implementer: e.implementer ?? null,
+          implementedDate: e.implementedDate ?? null,
         }));
 
         // Combine and sort by creation date
@@ -258,6 +276,12 @@ export function registerEpicTools(server: McpServer): void {
           })),
           createdAt: epic.createdAt,
           updatedAt: epic.updatedAt,
+          // Attribution fields
+          createdBy: epic.createdBy ?? null,
+          creator: epic.creator ?? null,
+          implementedBy: epic.implementedBy ?? null,
+          implementer: epic.implementer ?? null,
+          implementedDate: epic.implementedDate ?? null,
         };
 
         return createResponse(result);
@@ -349,6 +373,12 @@ export function registerEpicTools(server: McpServer): void {
           featureCount: 0,
           createdAt: epic.createdAt,
           updatedAt: epic.updatedAt,
+          // Attribution fields
+          createdBy: epic.createdBy ?? null,
+          creator: epic.creator ?? null,
+          implementedBy: epic.implementedBy ?? null,
+          implementer: epic.implementer ?? null,
+          implementedDate: epic.implementedDate ?? null,
         };
 
         return createResponse(result);
@@ -446,6 +476,12 @@ export function registerEpicTools(server: McpServer): void {
           team: epic.team,
           createdAt: epic.createdAt,
           updatedAt: epic.updatedAt,
+          // Attribution fields
+          createdBy: epic.createdBy ?? null,
+          creator: epic.creator ?? null,
+          implementedBy: epic.implementedBy ?? null,
+          implementer: epic.implementer ?? null,
+          implementedDate: epic.implementedDate ?? null,
         };
 
         return createResponse(result);

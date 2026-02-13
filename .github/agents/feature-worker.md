@@ -23,6 +23,20 @@ The orchestrator provides you with:
 
 Read this context carefully before starting implementation.
 
+## 🔴 DATABASE SAFETY — ABSOLUTE RULES
+
+**NEVER run these commands. They DESTROY all data:**
+- ❌ `prisma migrate dev` — wipes and recreates the database
+- ❌ `prisma migrate reset` — deletes all data
+- ❌ `prisma db push --force-reset` — deletes all data
+
+**Safe alternatives:**
+- ✅ `npx prisma db push` — applies schema changes without data loss
+- ✅ `pnpm --filter api run db:push` — same, via npm script
+- ✅ `npx prisma migrate deploy` — applies existing migrations in production
+
+If a task requires schema changes, use `npx prisma db push` and `npx prisma generate`. NEVER use `prisma migrate dev` under ANY circumstances.
+
 ## 🔴 CRITICAL REQUIREMENTS
 
 You **MUST** call these SpecTree MCP tools during execution. These calls are **NOT optional**. If you skip them, the SpecTree dashboard will show no progress, no activity, and features will remain in Backlog.

@@ -259,6 +259,7 @@ export default function featuresRoutes(
       const input: {
         title: string;
         epicId: string;
+        userId: string;
         description?: string;
         statusId?: string;
         assigneeId?: string;
@@ -266,6 +267,7 @@ export default function featuresRoutes(
       } = {
         title,
         epicId,
+        userId: request.user!.id, // Authenticated user ID
       };
 
       if (description !== undefined) input.description = description;

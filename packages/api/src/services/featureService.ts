@@ -13,7 +13,7 @@ import {
   isAssigneeNone,
   isAssigneeInvalid,
 } from "../utils/assignee.js";
-import { emitStatusChanged, emitEntityCreated, emitEntityUpdated, emitEntityDeleted } from "../events/index.js";
+import { emitStatusChanged, emitEntityCreated, emitEntityUpdated, emitEntityDeleted, type StatusChangedPayload } from "../events/index.js";
 import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
 import * as changelogService from "./changelogService.js";
 
@@ -21,6 +21,7 @@ import * as changelogService from "./changelogService.js";
 export interface CreateFeatureInput {
   title: string;
   epicId: string;
+  userId: string; // The authenticated user ID - auto-populates createdBy
   description?: string | undefined;
   statusId?: string | undefined;
   assigneeId?: string | undefined;
@@ -326,6 +327,8 @@ export async function listFeatures(
       _count: { select: { tasks: true } },
       status: true,
       assignee: true,
+      creator: { select: { id: true, name: true, email: true } },
+      implementer: { select: { id: true, name: true, email: true } },
     },
   });
 
@@ -406,6 +409,8 @@ export async function getFeatureById(idOrIdentifierOrTitle: string): Promise<Fea
           teamId: true,
         },
       },
+      creator: { select: { id: true, name: true, email: true } },
+      implementer: { select: { id: true, name: true, email: true } },
     },
   }) as Promise<FeatureWithTasks | null>;
 }
@@ -483,6 +488,7 @@ export async function createFeature(input: CreateFeatureInput, userId?: string):
     epicId: string;
     identifier: string;
     sortOrder: number;
+    createdBy: string;
     description?: string;
     statusId?: string;
     assigneeId?: string;
@@ -496,6 +502,7 @@ export async function createFeature(input: CreateFeatureInput, userId?: string):
     epicId: input.epicId,
     identifier,
     sortOrder,
+    createdBy: input.userId,
   };
 
   if (input.description !== undefined) {
@@ -693,13 +700,17 @@ export async function updateFeature(
 
   // Emit status changed event if status was updated
   if (input.statusId !== undefined && input.statusId !== oldStatusId) {
-    emitStatusChanged({
+    const payload: StatusChangedPayload = {
       entityType: "feature",
       entityId: id,
       oldStatusId,
       newStatusId: input.statusId,
       timestamp: new Date(),
-    });
+    };
+    if (userId) {
+      payload.changedBy = userId;
+    }
+    emitStatusChanged(payload);
   }
 
   // Record changes in changelog using diffAndRecord (never fails the parent operation)

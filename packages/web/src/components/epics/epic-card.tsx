@@ -4,6 +4,7 @@ import type { Epic } from "@/lib/api/types";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,10 +28,23 @@ import {
 import { Folder, MoreVertical, Trash2, Pencil, Archive, ArchiveRestore } from "lucide-react";
 import { useDeleteEpic, useArchiveEpic, useUnarchiveEpic } from "@/hooks/queries/use-epics";
 import { ApiError } from "@/lib/api/client";
+import { formatDistanceToNow } from "date-fns";
 
 interface EpicCardProps {
   epic: Epic;
   onEdit?: (epic: Epic) => void;
+}
+
+/**
+ * Get user initials for avatar fallback
+ */
+function getUserInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 export function EpicCard({ epic, onEdit }: EpicCardProps) {
@@ -117,6 +131,22 @@ export function EpicCard({ epic, onEdit }: EpicCardProps) {
                     </TooltipContent>
                   </Tooltip>
                 )}
+                {/* Creator attribution and creation date */}
+                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                  {epic.creator && (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-5 w-5">
+                        <AvatarFallback className="text-xs bg-muted">
+                          {getUserInitials(epic.creator.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{epic.creator.name}</span>
+                    </div>
+                  )}
+                  <span>
+                    Created {formatDistanceToNow(new Date(epic.createdAt), { addSuffix: true })}
+                  </span>
+                </div>
               </div>
             </div>
           </CardHeader>

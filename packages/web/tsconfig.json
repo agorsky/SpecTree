@@ -12,7 +12,8 @@
     "verbatimModuleSyntax": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@docs/*": ["../../docs/*"]
     }
   },
   "include": ["src/**/*"],
