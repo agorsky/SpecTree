@@ -31,6 +31,7 @@
     "db:restore": "echo 'Usage: cp backups/<backup-file>.db prisma/data/spectree.db'",
     "db:generate:sqlserver": "prisma generate --schema=prisma/schema.sqlserver.prisma",
     "db:push:sqlserver": "prisma db push --schema=prisma/schema.sqlserver.prisma",
+    "db:push:sqlserver:indexes": "prisma db execute --schema=prisma/schema.sqlserver.prisma --file=prisma/sqlserver-post-push.sql",
     "db:migrate:deploy:sqlserver": "prisma migrate deploy --schema=prisma/schema.sqlserver.prisma",
     "db:studio:sqlserver": "prisma studio --schema=prisma/schema.sqlserver.prisma"
   },

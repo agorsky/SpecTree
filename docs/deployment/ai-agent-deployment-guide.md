@@ -173,7 +173,6 @@ pnpm install --filter @spectree/api
 # Push schema to Azure SQL
 cd packages/api
 npx prisma db push --schema=prisma/schema.sqlserver.prisma --accept-data-loss
-cd ../..
 ```
 
 **Expected output**:
@@ -190,6 +189,17 @@ If you see `Column already has a DEFAULT bound to it` errors, you need to drop t
 # Then drop them and retry prisma db push
 # See docs/deployment/azure-manual-deployment-runbook.md "Troubleshooting" section
 ```
+
+### 4b.1: Apply Filtered Unique Indexes
+
+**⚠️ MUST run after every `prisma db push`.** SQL Server requires filtered unique indexes for nullable columns. Prisma cannot express these natively, so they are maintained in a separate SQL script. This script is idempotent.
+
+```bash
+npx prisma db execute --schema=prisma/schema.sqlserver.prisma --file=prisma/sqlserver-post-push.sql
+cd ../..
+```
+
+**Expected**: `Script executed successfully.`
 
 ### 4c: Remove Firewall Rule
 

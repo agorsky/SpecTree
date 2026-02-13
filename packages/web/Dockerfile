@@ -16,6 +16,7 @@ RUN pnpm install --frozen-lockfile
 
 # Copy source
 COPY tsconfig.base.json ./
+COPY docs/whats-new ./docs/whats-new
 COPY packages/shared ./packages/shared
 COPY packages/web ./packages/web
 

@@ -108,7 +108,8 @@ export function registerErrorHandler(fastify: FastifyInstance): void {
       else if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
           statusCode = 409;
-          const target = (error.meta?.target as string[])?.join(", ") ?? "unknown field";
+          const rawTarget = error.meta?.target;
+          const target = Array.isArray(rawTarget) ? rawTarget.join(", ") : (rawTarget as string) ?? "unknown field";
           response = {
             error: {
               code: "CONFLICT",

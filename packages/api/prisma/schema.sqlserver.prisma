@@ -205,8 +205,11 @@ model Status {
   features      Feature[]
   tasks         Task[]
 
-  @@unique([teamId, name])
-  @@unique([personalScopeId, name])
+  // Note: teamId+name and personalScopeId+name uniqueness enforced via filtered indexes in SQL Server
+  // (SQL Server treats multiple NULLs as duplicates in UNIQUE constraints)
+  // Filtered unique indexes created via raw SQL:
+  //   CREATE UNIQUE INDEX statuses_team_id_name_key ON statuses(team_id, name) WHERE team_id IS NOT NULL
+  //   CREATE UNIQUE INDEX statuses_personal_scope_id_name_key ON statuses(personal_scope_id, name) WHERE personal_scope_id IS NOT NULL
   @@index([teamId])
   @@index([teamId, position])
   @@index([personalScopeId])
