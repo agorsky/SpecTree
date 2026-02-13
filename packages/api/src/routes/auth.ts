@@ -1,19 +1,15 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import bcrypt from "bcrypt";
 import {
-  getUserByEmail,
-  createUser,
   getUserByEmailWithPassword,
+  activateAccount,
 } from "../services/userService.js";
-import {
-  validateAndUseInvitation,
-} from "../services/invitationService.js";
 import {
   generateAccessToken,
   generateRefreshToken,
   verifyTokenWithType,
 } from "../utils/jwt.js";
-import { UnauthorizedError, ForbiddenError, ConflictError, ValidationError } from "../errors/index.js";
+import { UnauthorizedError, ForbiddenError, ValidationError } from "../errors/index.js";
 import {
   loginSchema,
   refreshSchema,
@@ -180,29 +176,17 @@ export default function authRoutes(
 
       const { email, code, name, password } = parseResult.data;
 
-      // 1. Validate and consume invitation
-      const invitation = await validateAndUseInvitation(email, code);
+      // All steps (validate invitation, create user, provision personal scope)
+      // run in a single transaction for atomicity
+      const { user, invitationId } = await activateAccount({ email, code, name, password });
 
-      // 2. Check email not already taken (race condition protection)
-      const existingUser = await getUserByEmail(email);
-      if (existingUser) {
-        throw new ConflictError("An account with this email already exists");
-      }
-
-      // 3. Create user
-      const user = await createUser({
-        email,
-        name,
-        password,
-      });
-
-      // 4. Generate tokens
+      // Generate tokens (outside transaction - no DB writes)
       const accessToken = generateAccessToken(user.id);
       const refreshToken = generateRefreshToken(user.id);
 
-      // 5. Log activation event
+      // Log activation event
       request.log.info(
-        { email, userId: user.id, invitationId: invitation.id },
+        { email, userId: user.id, invitationId },
         "Account activated"
       );
 

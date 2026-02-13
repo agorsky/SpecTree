@@ -536,38 +536,11 @@ az containerapp logs show \
   --follow
 ```
 
-### Step 7: Run Database Migrations
+### Step 7: Database Schema (Automated)
 
-Since the application uses Prisma, you need to run migrations against Azure SQL:
+> **Note**: Schema migration is handled automatically by the CI/CD pipeline. When changes to `packages/api/prisma/` are detected, the pipeline runs `prisma db push` against Azure SQL Server before deploying new container images. See [CI/CD Pipeline Setup](#cicd-pipeline-setup) for details.
 
-```bash
-# Option 1: Run from local machine with temporary firewall rule
-# (Only for initial setup - not recommended for production)
-
-# Add your IP to SQL firewall temporarily
-MY_IP=$(curl -s ifconfig.me)
-az sql server firewall-rule create \
-  --resource-group $RESOURCE_GROUP \
-  --server sql-spectree-dev \
-  --name "TempDevAccess" \
-  --start-ip-address $MY_IP \
-  --end-ip-address $MY_IP
-
-# Set SQLSERVER_DATABASE_URL for Azure SQL
-# ⚠️ NOTE: For production deployments, this should be stored as a Container App secret.
-# See "Security Best Practices > Container App Secrets" section below.
-export SQLSERVER_DATABASE_URL="sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=<PASSWORD>;encrypt=true"
-
-# Run Prisma migrations
-cd packages/api
-npx prisma db push --schema=prisma/schema.sqlserver.prisma
-
-# Remove firewall rule
-az sql server firewall-rule delete \
-  --resource-group $RESOURCE_GROUP \
-  --server sql-spectree-dev \
-  --name "TempDevAccess"
-```
+For initial setup or emergency manual deployment, use the [Azure Manual Deployment Runbook](azure-manual-deployment-runbook.md) Step 4.
 
 ### Step 8: Verify Deployment
 
@@ -864,72 +837,142 @@ az postgres flexible-server create \
 
 ### GitHub Actions Workflow
 
-Create `.github/workflows/azure-deploy.yml`:
+The CI/CD pipeline is defined in `.github/workflows/azure-deploy.yml`. It handles testing, building, **automated schema migration**, and deployment.
+
+**Key features:**
+- Runs tests, lint, and type checks on every push and PR
+- On merge to `main`: builds Docker images, pushes to ACR, deploys schema changes, and updates Container Apps
+- Schema migration is **automatic** — detects changes to `packages/api/prisma/` and runs `prisma db push` against Azure SQL Server
+- Temporary firewall rules are created and cleaned up automatically for schema deployment
 
 ```yaml
-name: Deploy to Azure
+name: Build and Deploy to Azure
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
-  AZURE_RESOURCE_GROUP: rg-spectree-dev
-  AZURE_CONTAINER_APP: ca-spectree-dev
   ACR_NAME: acrspectreedev
+  RESOURCE_GROUP: rg-spectree-dev
+  API_CONTAINER_APP: ca-spectree-dev
+  WEB_CONTAINER_APP: ca-spectree-web-dev
+  SQL_SERVER: sql-spectree-dev
 
 jobs:
-  build-and-deploy:
+  test:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 9
-        
-    - name: Install dependencies
-      run: pnpm install
-      
-    - name: Build
-      run: pnpm build
-      
-    - name: Run tests
-      run: pnpm test
-      
-    - name: Azure Login (OIDC)
-      uses: azure/login@v2
-      with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        
-    - name: Login to ACR
-      run: az acr login --name ${{ env.ACR_NAME }}
-      
-    - name: Build and push API image
-      run: |
-        docker build -t ${{ env.ACR_NAME }}.azurecr.io/spectree-api:${{ github.sha }} -f packages/api/Dockerfile.azure .
-        docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-api:${{ github.sha }}
-        
-    - name: Deploy to Container Apps
-      run: |
-        az containerapp update \
-          --name ${{ env.AZURE_CONTAINER_APP }} \
-          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-          --image ${{ env.ACR_NAME }}.azurecr.io/spectree-api:${{ github.sha }}
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  build-and-deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for schema changes
+        id: schema-check
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q 'packages/api/prisma/'; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Node/pnpm setup (conditional — only when schema changes need deployment)
+      - uses: pnpm/action-setup@v2
+        if: steps.schema-check.outputs.changed == 'true'
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        if: steps.schema-check.outputs.changed == 'true'
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Install dependencies (for schema migration)
+        if: steps.schema-check.outputs.changed == 'true'
+        run: pnpm install --filter @spectree/api
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push images
+        run: |
+          az acr login --name $ACR_NAME
+          docker build -t $ACR_NAME.azurecr.io/spectree-api:${{ github.sha }} -f packages/api/Dockerfile.azure .
+          docker push $ACR_NAME.azurecr.io/spectree-api:${{ github.sha }}
+          # ... (web image build/push)
+
+      - name: Deploy schema to Azure SQL
+        if: steps.schema-check.outputs.changed == 'true'
+        env:
+          SQLSERVER_DATABASE_URL: ${{ secrets.SQLSERVER_DATABASE_URL }}
+        run: |
+          RUNNER_IP=$(curl -s https://ifconfig.me)
+          RULE_NAME="GitHubActions-${GITHUB_RUN_ID}"
+          az sql server firewall-rule create \
+            --resource-group $RESOURCE_GROUP --server $SQL_SERVER \
+            --name "$RULE_NAME" --start-ip-address "$RUNNER_IP" --end-ip-address "$RUNNER_IP"
+          cd packages/api
+          npx prisma db push --schema=prisma/schema.sqlserver.prisma --accept-data-loss
+          cd ../..
+          az sql server firewall-rule delete \
+            --resource-group $RESOURCE_GROUP --server $SQL_SERVER --name "$RULE_NAME" || true
+
+      - name: Deploy API to Container Apps
+        run: |
+          az containerapp update --name $API_CONTAINER_APP \
+            --resource-group $RESOURCE_GROUP \
+            --image $ACR_NAME.azurecr.io/spectree-api:${{ github.sha }}
 ```
+
+#### Deployment Order
+
+The pipeline enforces the correct deployment order:
+
+1. **Build images** — Docker images are built and pushed to ACR
+2. **Deploy schema** — If Prisma schema files changed, `prisma db push` runs against Azure SQL (with automatic firewall rule management)
+3. **Deploy containers** — Container Apps are updated with the new images
+
+This ensures the database schema is always updated **before** the new application code starts running, preventing runtime errors from schema mismatches.
+
+#### Required GitHub Secrets
+
+| Secret | Description | Example |
+|--------|-------------|---------|
+| `AZURE_CLIENT_ID` | Service principal app ID for OIDC auth | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
+| `AZURE_TENANT_ID` | Azure AD tenant ID | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
+| `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
+| `SQLSERVER_DATABASE_URL` | SQL Server connection string (sqladmin) | `sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=<PASSWORD>;encrypt=true` |
+| `API_URL` | Public API URL for web build | `https://ca-spectree-dev.azurecontainerapps.io` |
+
+> **⚠️ Important**: The `SQLSERVER_DATABASE_URL` secret must use the `sqladmin` account (not `spectree_app`) because schema changes require ALTER TABLE permissions.
 
 ### Configure GitHub OIDC Authentication
 

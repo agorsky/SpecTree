@@ -17,6 +17,7 @@ env:
   RESOURCE_GROUP: rg-spectree-dev
   API_CONTAINER_APP: ca-spectree-dev
   WEB_CONTAINER_APP: ca-spectree-web-dev
+  SQL_SERVER: sql-spectree-dev
 
 jobs:
   test:
@@ -52,9 +53,37 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for schema changes
+        id: schema-check
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q 'packages/api/prisma/'; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Schema changes detected"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No schema changes"
+          fi
 
       - name: Validate What's New Entry
         run: bash scripts/validate-whats-new.sh
+
+      - uses: pnpm/action-setup@v2
+        if: steps.schema-check.outputs.changed == 'true'
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        if: steps.schema-check.outputs.changed == 'true'
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies (for schema migration)
+        if: steps.schema-check.outputs.changed == 'true'
+        run: pnpm install --filter @spectree/api
 
       - name: Azure Login
         uses: azure/login@v2
@@ -88,6 +117,46 @@ jobs:
 
           docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-web:$VERSION
           docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-web:latest
+
+      - name: Deploy schema to Azure SQL
+        if: steps.schema-check.outputs.changed == 'true'
+        env:
+          SQLSERVER_DATABASE_URL: ${{ secrets.SQLSERVER_DATABASE_URL }}
+        run: |
+          echo "Schema changes detected — deploying to Azure SQL..."
+
+          # Add temporary firewall rule for GitHub Actions runner
+          RUNNER_IP=$(curl -s https://ifconfig.me)
+          RULE_NAME="GitHubActions-${GITHUB_RUN_ID}"
+
+          az sql server firewall-rule create \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server ${{ env.SQL_SERVER }} \
+            --name "$RULE_NAME" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP"
+
+          # Run schema push using the SQL Server schema
+          cd packages/api
+          npx prisma db push --schema=prisma/schema.sqlserver.prisma --accept-data-loss
+
+          # Clean up firewall rule (always, even if push fails)
+          cd ../..
+          az sql server firewall-rule delete \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server ${{ env.SQL_SERVER }} \
+            --name "$RULE_NAME" || true
+
+          echo "Schema deployment complete"
+
+      - name: Clean up SQL firewall rule on failure
+        if: failure() && steps.schema-check.outputs.changed == 'true'
+        run: |
+          RULE_NAME="GitHubActions-${GITHUB_RUN_ID}"
+          az sql server firewall-rule delete \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server ${{ env.SQL_SERVER }} \
+            --name "$RULE_NAME" 2>/dev/null || true
 
       - name: Deploy API to Container Apps
         run: |

@@ -135,7 +135,7 @@ export function EpicDetailPage() {
     await unarchiveEpic.mutateAsync(epic.id);
   };
 
-  const orchestratorCommand = `@orchestrator execute epic "${epic.name}"`;
+  const orchestratorCommand = `\\orchestrator execute epic "${epic.name}"`;
 
   return (
     <div className="h-full flex flex-col">

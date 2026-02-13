@@ -192,6 +192,7 @@ model Status {
   tasks         Task[]
 
   @@unique([teamId, name])
+  @@unique([personalScopeId, name])
   @@index([teamId])
   @@index([teamId, position])
   @@index([personalScopeId])

@@ -81,6 +81,14 @@ model User {
   epicRequestReactions EpicRequestReaction[]
   epicRequestComments  EpicRequestComment[]
 
+  // User tracking relations
+  createdEpics     Epic[]       @relation("EpicCreatedBy")
+  implementedEpics Epic[]       @relation("EpicImplementedBy")
+  createdFeatures  Feature[]    @relation("FeatureCreatedBy")
+  implementedFeatures Feature[] @relation("FeatureImplementedBy")
+  createdTasks     Task[]       @relation("TaskCreatedBy")
+  implementedTasks Task[]       @relation("TaskImplementedBy")
+
   @@index([email])
   @@map("users")
 }
@@ -144,6 +152,12 @@ model Epic {
   scopeType       String   @default("team") @map("scope_type") // 'team' or 'personal'
   teamId          String?  @map("team_id")
   personalScopeId String?  @map("personal_scope_id")
+  
+  // User tracking fields
+  createdBy       String?   @map("created_by")
+  implementedBy   String?   @map("implemented_by")
+  implementedDate DateTime? @map("implemented_date")
+  
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -158,6 +172,8 @@ model Epic {
 
   team          Team?          @relation(fields: [teamId], references: [id], onDelete: Cascade)
   personalScope PersonalScope? @relation(fields: [personalScopeId], references: [id], onDelete: Cascade)
+  creator       User?          @relation("EpicCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  implementer   User?          @relation("EpicImplementedBy", fields: [implementedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   features      Feature[]
   aiSessions    AiSession[]
   decisions     Decision[]
@@ -166,6 +182,8 @@ model Epic {
   @@index([teamId])
   @@index([teamId, sortOrder])
   @@index([personalScopeId])
+  @@index([createdBy])
+  @@index([implementedBy])
   @@map("epics")
 }
 
@@ -188,6 +206,7 @@ model Status {
   tasks         Task[]
 
   @@unique([teamId, name])
+  @@unique([personalScopeId, name])
   @@index([teamId])
   @@index([teamId, position])
   @@index([personalScopeId])
@@ -203,6 +222,12 @@ model Feature {
   statusId    String?  @map("status_id")
   assigneeId  String?  @map("assignee_id")
   sortOrder   Float    @default(0) @map("sort_order")
+  
+  // User tracking fields
+  createdBy       String?   @map("created_by")
+  implementedBy   String?   @map("implemented_by")
+  implementedDate DateTime? @map("implemented_date")
+  
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -242,6 +267,8 @@ model Feature {
   epic      Epic       @relation(fields: [epicId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   status    Status?    @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignee  User?      @relation("AssignedFeatures", fields: [assigneeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  creator   User?      @relation("FeatureCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  implementer User?    @relation("FeatureImplementedBy", fields: [implementedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tasks     Task[]
   decisions Decision[]
 
@@ -251,6 +278,8 @@ model Feature {
   @@index([epicId, sortOrder])
   @@index([epicId, statusId])
   @@index([assigneeId, statusId])
+  @@index([createdBy])
+  @@index([implementedBy])
   @@map("features")
 }
 
@@ -263,6 +292,12 @@ model Task {
   statusId    String?  @map("status_id")
   assigneeId  String?  @map("assignee_id")
   sortOrder   Float    @default(0) @map("sort_order")
+  
+  // User tracking fields
+  createdBy       String?   @map("created_by")
+  implementedBy   String?   @map("implemented_by")
+  implementedDate DateTime? @map("implemented_date")
+  
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -304,6 +339,8 @@ model Task {
   feature   Feature    @relation(fields: [featureId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   status    Status?    @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignee  User?      @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  creator   User?      @relation("TaskCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  implementer User?    @relation("TaskImplementedBy", fields: [implementedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   decisions Decision[]
 
   @@index([featureId])
@@ -311,6 +348,8 @@ model Task {
   @@index([assigneeId])
   @@index([featureId, sortOrder])
   @@index([assigneeId, statusId])
+  @@index([createdBy])
+  @@index([implementedBy])
   @@map("tasks")
 }
 
@@ -467,7 +506,7 @@ model EpicRequest {
   structuredDesc   String?  @db.NVarChar(Max) @map("structured_desc") // JSON: StructuredDescription object
   status           String   @default("pending") // pending | approved | rejected | converted
   requestedById    String   @map("requested_by_id")
-  convertedEpicId  String?  @unique @map("converted_epic_id")
+  convertedEpicId  String?  @map("converted_epic_id") // @unique removed: SQL Server treats multiple NULLs as duplicates; filtered unique index created via raw SQL
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 

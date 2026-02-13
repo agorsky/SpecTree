@@ -1,8 +1,9 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../lib/db.js";
 import { createPersonalScopeInTransaction } from "./personalScopeService.js";
+import { validateAndUseInvitationInTransaction } from "./invitationService.js";
 import { getTeamsWhereUserIsLastAdmin } from "./membershipService.js";
-import { ForbiddenError } from "../errors/index.js";
+import { ForbiddenError, ConflictError } from "../errors/index.js";
 
 const SALT_ROUNDS = 10;
 
@@ -162,6 +163,44 @@ export async function createUser(input: CreateUserInput): Promise<UserResponse> 
   });
 
   return user;
+}
+
+/**
+ * Activate a new account: validate invitation, create user, and provision personal scope
+ * all within a single transaction. If any step fails, nothing is committed.
+ */
+export async function activateAccount(input: CreateUserInput & { code: string }): Promise<{ user: UserResponse; invitationId: string }> {
+  const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
+
+  return prisma.$transaction(async (tx) => {
+    // 1. Validate and consume invitation (inside transaction)
+    const invitation = await validateAndUseInvitationInTransaction(tx, input.email, input.code);
+
+    // 2. Check email not already taken (race condition protection)
+    const existingUser = await tx.user.findUnique({
+      where: { email: input.email.toLowerCase() },
+      select: { id: true },
+    });
+    if (existingUser) {
+      throw new ConflictError("An account with this email already exists");
+    }
+
+    // 3. Create user
+    const newUser = await tx.user.create({
+      data: {
+        email: input.email.toLowerCase(),
+        name: input.name,
+        passwordHash,
+        avatarUrl: input.avatarUrl ?? null,
+      },
+      select: userSelectFields,
+    });
+
+    // 4. Create PersonalScope and default statuses
+    await createPersonalScopeInTransaction(tx, newUser.id);
+
+    return { user: newUser, invitationId: invitation.id };
+  });
 }
 
 /**

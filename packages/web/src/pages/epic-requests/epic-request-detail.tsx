@@ -241,7 +241,7 @@ export function EpicRequestDetailPage() {
     void navigate(`/epic-requests/${requestId ?? ''}/edit`);
   };
 
-  const plannerCommand = `@planner --from-request "${request.title}"`;
+  const plannerCommand = `\\planner --from-request "${request.title}"`;
 
   // Determine permissions
   const isAdmin = user?.isGlobalAdmin ?? false;

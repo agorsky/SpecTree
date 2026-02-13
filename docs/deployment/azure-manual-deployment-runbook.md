@@ -282,6 +282,8 @@ az acr repository show-tags \
 
 ### Step 4: Deploy Schema to Azure SQL Database
 
+> **Note**: Schema deployment is now **automated** in the CI/CD pipeline. The `azure-deploy.yml` workflow detects changes to `packages/api/prisma/` and runs `prisma db push` automatically before deploying containers. Use this manual step only for initial setup or if the CI/CD pipeline is unavailable.
+
 Before updating the container app, ensure the database schema is up to date.
 
 **⚠️ Critical**: This step requires adding a temporary firewall rule to Azure SQL Server. See [SQL Firewall Management](#sql-firewall-management) section for details.

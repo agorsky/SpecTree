@@ -4,6 +4,7 @@
  */
 
 import type { FastifyInstance, FastifyError, FastifyRequest, FastifyReply } from "fastify";
+import { Prisma } from "../generated/prisma/index.js";
 import { AppError } from "../errors/index.js";
 
 interface ErrorResponse {
@@ -102,6 +103,29 @@ export function registerErrorHandler(fastify: FastifyInstance): void {
             message: error.message,
           },
         };
+      }
+      // Handle Prisma known request errors (e.g., unique constraint violations)
+      else if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          statusCode = 409;
+          const target = (error.meta?.target as string[])?.join(", ") ?? "unknown field";
+          response = {
+            error: {
+              code: "CONFLICT",
+              message: `Unique constraint violation on: ${target}`,
+            },
+          };
+        } else {
+          statusCode = 500;
+          response = {
+            error: {
+              code: "DATABASE_ERROR",
+              message: isProduction()
+                ? "A database error occurred"
+                : error.message,
+            },
+          };
+        }
       }
       // Handle unexpected errors
       else {

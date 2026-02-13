@@ -84,6 +84,61 @@ describe("POST /api/v1/auth/activate", () => {
       expect(personalScope).not.toBeNull();
     });
 
+    it("activates multiple accounts without unique constraint collision", async () => {
+      const admin = await createTestUser({
+        email: "admin-multi@toro.com",
+        name: "Admin",
+      });
+
+      // Create two invitations
+      const invitation1 = await createInvitation("user1@toro.com", admin.id);
+      const invitation2 = await createInvitation("user2@toro.com", admin.id);
+
+      // Activate first user
+      const response1 = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/activate",
+        payload: {
+          email: invitation1.email,
+          code: invitation1.code,
+          name: "User One",
+          password: "SecureP@ss1",
+        },
+      });
+      expect(response1.statusCode).toBe(201);
+
+      // Activate second user — this previously failed on SQL Server
+      // due to @@unique([teamId, name]) treating NULL teamId as duplicate
+      const response2 = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/activate",
+        payload: {
+          email: invitation2.email,
+          code: invitation2.code,
+          name: "User Two",
+          password: "SecureP@ss2",
+        },
+      });
+      expect(response2.statusCode).toBe(201);
+
+      // Verify both users have personal scopes with statuses
+      const user1 = await prisma.user.findUnique({ where: { email: "user1@toro.com" } });
+      const user2 = await prisma.user.findUnique({ where: { email: "user2@toro.com" } });
+      expect(user1).not.toBeNull();
+      expect(user2).not.toBeNull();
+
+      const scope1 = await prisma.personalScope.findFirst({ where: { userId: user1!.id } });
+      const scope2 = await prisma.personalScope.findFirst({ where: { userId: user2!.id } });
+      expect(scope1).not.toBeNull();
+      expect(scope2).not.toBeNull();
+
+      // Verify each scope has its own statuses
+      const statuses1 = await prisma.status.findMany({ where: { personalScopeId: scope1!.id } });
+      const statuses2 = await prisma.status.findMany({ where: { personalScopeId: scope2!.id } });
+      expect(statuses1.length).toBe(5);
+      expect(statuses2.length).toBe(5);
+    });
+
     it("normalizes email to lowercase", async () => {
       const admin = await createTestUser({
         email: "admin2@toro.com",
@@ -400,6 +455,13 @@ describe("POST /api/v1/auth/activate", () => {
       expect(response.statusCode).toBe(409);
       const body = response.json();
       expect(body.message).toContain("already exists");
+
+      // Verify invitation was NOT consumed (atomicity)
+      const inv = await prisma.userInvitation.findUnique({
+        where: { id: invitation.id },
+      });
+      expect(inv).not.toBeNull();
+      expect(inv!.usedAt).toBeNull();
     });
   });
 });

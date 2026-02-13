@@ -262,10 +262,23 @@ export async function revokeInvitation(id: string): Promise<void> {
  * @throws ValidationError if invitation is already used or expired
  */
 export async function validateAndUseInvitation(email: string, code: string) {
+  return validateAndUseInvitationInTransaction(prisma, email, code);
+}
+
+/**
+ * Validates an invitation code and marks it as used within an existing transaction.
+ * Used by the activation route to ensure invitation consumption and user creation
+ * are atomic — if user creation fails, the invitation is not consumed.
+ */
+export async function validateAndUseInvitationInTransaction(
+  tx: { userInvitation: typeof prisma.userInvitation },
+  email: string,
+  code: string
+) {
   const normalizedEmail = email.toLowerCase();
   const normalizedCode = code.toUpperCase();
 
-  const invitation = await prisma.userInvitation.findFirst({
+  const invitation = await tx.userInvitation.findFirst({
     where: { email: normalizedEmail, code: normalizedCode },
   });
 
@@ -282,7 +295,7 @@ export async function validateAndUseInvitation(email: string, code: string) {
   }
 
   // Mark as used
-  return prisma.userInvitation.update({
+  return tx.userInvitation.update({
     where: { id: invitation.id },
     data: { usedAt: new Date() },
   });
