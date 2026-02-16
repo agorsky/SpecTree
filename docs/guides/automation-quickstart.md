@@ -52,8 +52,8 @@ If you don't have it installed, follow the [GitHub Copilot CLI setup guide](http
 
 The automation tool uses custom agents and skills defined in:
 
-- `.github/agents/` — planner, orchestrator, feature-worker, reviewer
-- `.github/skills/` — spectree-planning, spectree-session, spectree-validation
+- `.github/agents/` — planner, orchestrator, feature-worker, reviewer, request-formulator, plan-reviewer
+- `.github/skills/` — spectree-planning, spectree-session, spectree-validation, spectree-plan-review
 
 These files are already committed to the repository. No setup required.
 

@@ -733,7 +733,7 @@ git merge release/x.y
 
 ## Custom Agents
 
-Five custom agents are defined in `.github/agents/`. Four are user-invokable; `feature-worker` is a sub-agent only.
+Six custom agents are defined in `.github/agents/`. Five are user-invokable; `feature-worker` is a sub-agent only.
 
 ### @planner - SpecTree Planning Pipeline
 
@@ -796,6 +796,16 @@ Usage: @reviewer "Review feature ENG-42-1"
 
 The reviewer reads acceptance criteria from structured descriptions, runs `spectree__run_all_validations`, reviews code changes, and presents a structured review report with per-criterion PASS/FAIL/PARTIAL verdicts.
 
+### @plan-reviewer - Epic Quality Review
+
+Reviews SpecTree epics, features, and tasks for completeness and quality before implementation begins. Evaluates epic descriptions, structured descriptions, acceptance criteria, AI instructions, and execution plans against quality standards.
+
+```
+Usage: @plan-reviewer "Review epic ENG-42"
+```
+
+The plan-reviewer loads the epic and all features/tasks, evaluates them against the `spectree-plan-review` skill rubrics, scores each dimension, and produces a structured readiness report with an overall READY/NOT READY verdict.
+
 ### feature-worker (Sub-Agent Only)
 
 Implements all tasks within a single SpecTree feature. **Not user-invokable** — only spawned by the orchestrator as a sub-agent. Receives full context from the orchestrator including requirements, acceptance criteria, and code context. Follows a strict per-task workflow: `spectree__start_work` → implement → `spectree__link_code_file` → `spectree__log_progress` → `spectree__complete_task_with_validation`.
@@ -804,13 +814,14 @@ Implements all tasks within a single SpecTree feature. **Not user-invokable** �
 
 ## Custom Skills
 
-Three reusable procedure skills are available in `.github/skills/`. Skills are step-by-step procedures that any agent can reference — they complement agents by providing the "how" while agents provide the "who".
+Four reusable procedure skills are available in `.github/skills/`. Skills are step-by-step procedures that any agent can reference — they complement agents by providing the "how" while agents provide the "who".
 
 | Skill | Location | Purpose |
 |-------|----------|---------|
 | **spectree-planning** | `.github/skills/spectree-planning/SKILL.md` | 5-stage planning pipeline procedure with quality heuristics, review gates, and task scoping guidelines |
 | **spectree-session** | `.github/skills/spectree-session/SKILL.md` | Session start/during/end protocol for SpecTree context continuity across AI sessions |
 | **spectree-validation** | `.github/skills/spectree-validation/SKILL.md` | Validation run/interpret/complete workflow for verifying acceptance criteria with automated checks |
+| **spectree-plan-review** | `.github/skills/spectree-plan-review/SKILL.md` | Quality rubrics, scoring methodology, and review process for evaluating epic readiness before orchestrator execution |
 
 ---
 

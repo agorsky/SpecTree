@@ -76,6 +76,12 @@
 |----------|-------------|
 | [guides/manual-test-sse.md](./guides/manual-test-sse.md) | Manual testing procedures for Server-Sent Events (SSE) |
 
+### AI Automation
+
+| Document | Description |
+|----------|-------------|
+| [guides/ai-framework-packaging-strategy.md](./guides/ai-framework-packaging-strategy.md) | Analysis of current Copilot/agent/skill usage and recommended packaging model for team reuse |
+
 ---
 
 ## 🤖 MCP Server

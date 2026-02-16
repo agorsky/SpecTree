@@ -50,8 +50,7 @@ For each acceptance criterion:
 Call `spectree__run_all_validations` to run automated checks:
 ```
 spectree__run_all_validations({
-  type: "feature",     // or "task"
-  id: "<identifier>"
+  taskId: "<task-identifier>"   // e.g., "COM-123-1"
 })
 ```
 
