@@ -162,17 +162,21 @@ export async function cleanupTestDatabase(): Promise<void> {
 
   // Delete in order to respect foreign key constraints:
   // 1. ApiTokens (depends on User)
-  // 2. Tasks (depends on Feature, Status, User)
-  // 3. Features (depends on Epic, Status, User)
-  // 4. Epics (depends on Team or PersonalScope)
-  // 5. Statuses (depends on Team or PersonalScope)
-  // 6. Memberships (depends on Team, User)
-  // 7. Teams
-  // 8. PersonalScopes (depends on User)
-  // 9. Users
-  // 10. HealthCheck (no dependencies)
+  // 2. SessionEvents (depends on Epic, AiSession)
+  // 3. AiSessions (depends on Epic, User)
+  // 4. Tasks (depends on Feature, Status, User)
+  // 5. Features (depends on Epic, Status, User)
+  // 6. Epics (depends on Team or PersonalScope)
+  // 7. Statuses (depends on Team or PersonalScope)
+  // 8. Memberships (depends on Team, User)
+  // 9. Teams
+  // 10. PersonalScopes (depends on User)
+  // 11. Users
+  // 12. HealthCheck (no dependencies)
 
   await prisma.apiToken.deleteMany();
+  await prisma.sessionEvent.deleteMany();
+  await prisma.aiSession.deleteMany();
   await prisma.task.deleteMany();
   await prisma.feature.deleteMany();
   await prisma.epic.deleteMany();

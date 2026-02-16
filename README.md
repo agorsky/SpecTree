@@ -5,6 +5,7 @@ Project Management & Issue Tracking Platform
 ## Table of Contents
 
 - [Overview](#overview)
+- [What's New (v0.2.0)](#whats-new-v020)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
@@ -30,6 +31,18 @@ SpecTree is a Linear-inspired project management tool with support for:
 - **Validation checklists** — Executable acceptance criteria that verify work is truly "done"
 - **Implementation plan templates** — Reusable templates for creating standardized work structures
 - **AI integration** — Full MCP server support for AI assistants like Claude
+
+## What's New (v0.2.0)
+
+Version `0.2.0` introduces reliability and accuracy improvements across AI session monitoring and activity analytics:
+
+- **Session event reliability** — Added dedicated session event service/API support with stronger shared typing and frontend event hooks.
+- **Activity Dashboard accuracy** — Improved timezone/DST bucketing logic for day/week/month metrics.
+- **Task metric correctness** — Fixed "Tasks Completed" self-scope attribution by propagating user attribution and supporting legacy fallback records.
+- **Drill-down navigation fixes** — Task rows now link to task pages, and epic-level decisions link to epic pages.
+- **Null-safe task completion rendering** — Dashboard task details now handle incomplete tasks cleanly (`Not completed`).
+
+Full release notes: [`docs/whats-new/v0.2.0.md`](./docs/whats-new/v0.2.0.md)
 
 ### Identity & Collaboration Model
 

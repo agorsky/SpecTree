@@ -62,11 +62,24 @@ function DecisionDetailItem({ item }: { item: DecisionDetail }) {
     </div>
   );
 
-  // If decision is linked to a feature, make it clickable
+  // If decision is linked to a feature, link to feature page
   if (item.featureIdentifier) {
     return (
       <Link
         to={`/features/${item.featureIdentifier}`}
+        className="block border-b py-3 px-3 sm:px-4 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        aria-label={ariaLabel}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  // If decision is linked to an epic (but not a feature), link to epic page
+  if (item.epicId) {
+    return (
+      <Link
+        to={`/epics/${item.epicId}`}
         className="block border-b py-3 px-3 sm:px-4 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
         aria-label={ariaLabel}
       >

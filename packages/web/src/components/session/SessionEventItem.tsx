@@ -1,12 +1,10 @@
 import { SessionEvent, SessionEventType } from "@spectree/shared";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Check, Play, AlertCircle, Activity, MessageSquare } from "lucide-react";
-import type { ActivityEvent } from "@/hooks/useSessionProgress";
-import { isProgressLoggedEvent } from "@/hooks/useSessionProgress";
+import { Check, Play, AlertCircle, Activity } from "lucide-react";
 
 export interface SessionEventItemProps {
-  event: ActivityEvent;
+  event: SessionEvent;
 }
 
 /**
@@ -51,6 +49,8 @@ function getEventIcon(eventType: SessionEventType) {
     case SessionEventType.SESSION_TASK_STARTED:
     case SessionEventType.SESSION_PHASE_STARTED:
       return Play;
+    case SessionEventType.SESSION_TASK_PROGRESS:
+      return Activity;
     case SessionEventType.SESSION_ERROR:
       return AlertCircle;
     default:
@@ -72,6 +72,8 @@ function getEventBadgeVariant(
     case SessionEventType.SESSION_TASK_STARTED:
     case SessionEventType.SESSION_PHASE_STARTED:
       return "secondary"; // Blue
+    case SessionEventType.SESSION_TASK_PROGRESS:
+      return "outline"; // Subtle
     case SessionEventType.SESSION_ERROR:
       return "destructive"; // Red
     default:
@@ -91,6 +93,8 @@ function getIconColorClass(eventType: SessionEventType): string {
     case SessionEventType.SESSION_TASK_STARTED:
     case SessionEventType.SESSION_PHASE_STARTED:
       return "text-blue-500";
+    case SessionEventType.SESSION_TASK_PROGRESS:
+      return "text-yellow-500";
     case SessionEventType.SESSION_ERROR:
       return "text-red-500";
     default:
@@ -119,6 +123,8 @@ function getEventTypeLabel(eventType: SessionEventType): string {
       return "Task Started";
     case SessionEventType.SESSION_TASK_COMPLETED:
       return "Task Completed";
+    case SessionEventType.SESSION_TASK_PROGRESS:
+      return "Task Progress";
     case SessionEventType.SESSION_ERROR:
       return "Error";
     default:
@@ -151,6 +157,12 @@ function getEventDescription(event: SessionEvent): string {
         : "";
       return `${event.payload.identifier}: ${event.payload.title}${duration}`;
     }
+    case SessionEventType.SESSION_TASK_PROGRESS: {
+      const pct = event.payload.percentComplete !== undefined
+        ? ` (${event.payload.percentComplete}%)`
+        : "";
+      return `${event.payload.identifier}: ${event.payload.message}${pct}`;
+    }
     case SessionEventType.SESSION_ERROR:
       return event.payload.errorMessage;
     default:
@@ -176,30 +188,7 @@ function formatDuration(ms: number): string {
 }
 
 export function SessionEventItem({ event }: SessionEventItemProps) {
-  // Render progress logged events with compact styling
-  if (isProgressLoggedEvent(event)) {
-    const timestamp = formatTimestamp(event.timestamp);
-    const percentText = event.percentComplete != null ? ` (${event.percentComplete}%)` : "";
-    return (
-      <div className="flex items-start gap-2 px-3 py-1.5 rounded-md border-l-2 border-l-purple-400/50 bg-purple-50/50 dark:bg-purple-950/10">
-        <div className="flex-shrink-0 mt-0.5 text-purple-500">
-          <MessageSquare className="h-3.5 w-3.5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-foreground/80 break-words">
-              {event.message}{percentText}
-            </span>
-            <span className="text-[10px] text-muted-foreground font-mono ml-auto flex-shrink-0">
-              {timestamp}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Render standard session events
+  // Render session events
   const timestamp = formatTimestamp(event.timestamp);
   const badgeVariant = getEventBadgeVariant(event.eventType);
   const eventLabel = getEventTypeLabel(event.eventType);
@@ -221,6 +210,8 @@ export function SessionEventItem({ event }: SessionEventItemProps) {
             event.eventType === SessionEventType.SESSION_PHASE_STARTED,
           "border-l-red-500 bg-red-50 dark:bg-red-950/20":
             event.eventType === SessionEventType.SESSION_ERROR,
+          "border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20":
+            event.eventType === SessionEventType.SESSION_TASK_PROGRESS,
           "border-l-gray-400 bg-gray-50 dark:bg-gray-950/20":
             event.eventType === SessionEventType.SESSION_STARTED ||
             event.eventType === SessionEventType.SESSION_ENDED ||

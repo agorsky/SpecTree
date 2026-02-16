@@ -164,6 +164,7 @@ model Epic {
   implementer   User?          @relation("EpicImplementedBy", fields: [implementedBy], references: [id], onDelete: SetNull)
   features      Feature[]
   aiSessions    AiSession[]
+  sessionEvents SessionEvent[]
   decisions     Decision[]
   convertedFromRequests EpicRequest[]
 
@@ -392,12 +393,35 @@ model AiSession {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  epic Epic @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  epic         Epic           @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  sessionEvents SessionEvent[]
 
   @@index([epicId])
   @@index([epicId, status])
   @@index([startedAt])
   @@map("ai_sessions")
+}
+
+// =============================================================================
+// SessionEvent Model
+// Tracks detailed events within AI sessions for monitoring and debugging
+// =============================================================================
+
+model SessionEvent {
+  id          String    @id @default(uuid())
+  epicId      String    @map("epic_id")
+  sessionId   String?   @map("session_id")
+  eventType   String    @map("event_type")  // session_start | session_end | task_start | task_complete | error | etc.
+  payload     String    // JSON string with event-specific data
+  timestamp   DateTime  @default(now())
+
+  epic    Epic       @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  session AiSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([epicId, timestamp])
+  @@index([epicId, sessionId])
+  @@index([eventType])
+  @@map("session_events")
 }
 
 // =============================================================================

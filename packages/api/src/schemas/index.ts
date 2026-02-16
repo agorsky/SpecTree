@@ -234,6 +234,8 @@ export {
   sessionFeatureEventSchema,
   sessionTaskPayloadSchema,
   sessionTaskEventSchema,
+  sessionTaskProgressPayloadSchema,
+  sessionTaskProgressEventSchema,
   sessionErrorPayloadSchema,
   sessionErrorEventSchema,
   sessionEventSchema,
@@ -241,6 +243,7 @@ export {
   type SessionPhaseEventInput,
   type SessionFeatureEventInput,
   type SessionTaskEventInput,
+  type SessionTaskProgressEventInput,
   type SessionErrorEventInput,
   type SessionEventInput,
 } from "./session-events.js";

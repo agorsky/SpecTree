@@ -9,7 +9,6 @@ import {
   type EntityDeletedEvent,
   type ProgressLoggedEvent,
 } from "../events/index.js";
-import type { SessionEvent } from "@spectree/shared";
 import { eventHistory } from "../events/eventHistory.js";
 
 /**
@@ -92,25 +91,19 @@ export default function eventsRoutes(
    * 
    * Query params:
    * - epicId (optional): Filter events to only include entities from this epic
-   * - eventTypes (optional): Comma-separated list of event types to filter (e.g., "SESSION_STARTED,SESSION_ENDED")
    * - lastEventId (optional): Resume from this event ID (replays missed events from buffer)
    * 
    * Headers:
    * - Last-Event-ID (optional): Resume from this event ID (replays missed events from buffer)
    */
-  fastify.get<{ Querystring: { epicId?: string; eventTypes?: string; lastEventId?: string } }>(
+  fastify.get<{ Querystring: { epicId?: string; lastEventId?: string } }>(
     "/",
     { preHandler: [authenticate] },
     async (request, reply) => {
-      const { epicId, eventTypes } = request.query;
+      const { epicId } = request.query;
       // Support Last-Event-ID via header (browser auto-reconnect) or query param (manual reconnect)
       const lastEventId = request.headers['last-event-id'] as string | undefined
         || request.query.lastEventId;
-
-      // Parse eventTypes filter
-      const eventTypesFilter = eventTypes
-        ? eventTypes.split(",").map((t) => t.trim())
-        : null;
 
       // Set SSE headers
       reply.raw.setHeader("Content-Type", "text/event-stream");
@@ -134,14 +127,6 @@ export default function eventsRoutes(
             ? eventHistory.getEventsAfter(epicId, lastEventId)
             : eventHistory.getEvents(epicId);
           for (const event of bufferedEvents) {
-            // Apply eventTypes filter if specified
-            if (eventTypesFilter && event.type === "session.event") {
-              const sessionEvent = event.data as SessionEvent;
-              if (!eventTypesFilter.includes(sessionEvent.eventType.toString())) {
-                continue;
-              }
-            }
-            
             // Send buffered event in SSE format with id field
             reply.raw.write(`id: ${event.id}\ndata: ${JSON.stringify({ type: event.type, data: event.data })}\n\n`);
           }
@@ -281,40 +266,11 @@ export default function eventsRoutes(
         }
       };
 
-      const handleSessionEvent = async (event: SessionEvent) => {
-        try {
-          // If epicId filter is set, check if event belongs to that epic
-          if (epicId && event.epicId !== epicId) {
-            return;
-          }
-
-          // If eventTypes filter is set, check if this event type should be included
-          // Convert event.eventType (enum value) to string for comparison
-          if (eventTypesFilter && !eventTypesFilter.includes(event.eventType.toString())) {
-            return;
-          }
-
-          // Store in circular buffer and get event ID
-          const eventId = eventHistory.addEvent(event.epicId, "session.event", event);
-          
-          const data = JSON.stringify({
-            type: "session.event",
-            data: event,
-          });
-          
-          // Send in SSE format: id field on separate line, then data
-          reply.raw.write(`id: ${eventId}\ndata: ${data}\n\n`);
-        } catch (error) {
-          fastify.log.error(error, "Error handling session.event");
-        }
-      };
-
       // Register event listeners
       eventEmitter.on(Events.ENTITY_CREATED, handleEntityCreated);
       eventEmitter.on(Events.ENTITY_UPDATED, handleEntityUpdated);
       eventEmitter.on(Events.ENTITY_DELETED, handleEntityDeleted);
       eventEmitter.on(Events.PROGRESS_LOGGED, handleProgressLogged);
-      eventEmitter.on(Events.SESSION_EVENT, handleSessionEvent);
 
       // Cleanup on client disconnect
       const cleanup = () => {
@@ -324,7 +280,6 @@ export default function eventsRoutes(
           eventEmitter.off(Events.ENTITY_UPDATED, handleEntityUpdated);
           eventEmitter.off(Events.ENTITY_DELETED, handleEntityDeleted);
           eventEmitter.off(Events.PROGRESS_LOGGED, handleProgressLogged);
-          eventEmitter.off(Events.SESSION_EVENT, handleSessionEvent);
           fastify.log.info("SSE connection cleaned up");
         } catch (error) {
           fastify.log.error(error, "Error during SSE cleanup");

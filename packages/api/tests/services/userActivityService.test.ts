@@ -941,7 +941,7 @@ describe("userActivityService", () => {
       );
     });
 
-    it("should query tasks by feature.epicId, completedAt range, and implementedBy for 'self' scope", async () => {
+    it("should query tasks by feature.epicId, completedAt range, and attribution fallback for 'self' scope", async () => {
       setupAccessMocks();
       setupEmptyRecords();
 
@@ -955,7 +955,10 @@ describe("userActivityService", () => {
               gte: expect.any(Date),
               lt: expect.any(Date),
             },
-            implementedBy: "user-1",
+            OR: [
+              { implementedBy: "user-1" },
+              { implementedBy: null, createdBy: "user-1" },
+            ],
           }),
           select: { completedAt: true, implementedBy: true },
         })

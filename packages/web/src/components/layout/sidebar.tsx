@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
-import { Inbox, Folder, Users, Settings, LogOut, Shield, BarChart3, Lightbulb } from "lucide-react";
+import { Folder, Users, Settings, LogOut, Shield, BarChart3, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,7 +14,6 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
 const navItems = [
-  { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/epic-requests", label: "Requests", icon: Lightbulb },
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/epics", label: "Epics", icon: Folder },
@@ -25,7 +24,7 @@ const adminNavItems = [
   { href: "/admin/users", label: "User Management", icon: Shield },
 ];
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 export function Sidebar() {
   const location = useLocation();
@@ -34,11 +33,8 @@ export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col border-r bg-muted/40">
       {/* Header */}
-      <div className="flex h-14 items-center justify-between border-b px-4">
+      <div className="flex h-14 items-center border-b px-4">
         <span className="font-semibold">SpecTree</span>
-        <kbd className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-          ⌘K
-        </kbd>
       </div>
 
       {/* Navigation */}

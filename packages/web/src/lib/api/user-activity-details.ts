@@ -30,7 +30,7 @@ export interface TaskDetail {
   featureIdentifier: string;
   featureTitle: string;
   statusName: string;
-  completedAt: string;
+  completedAt: string | null;
 }
 
 export interface DecisionDetail {
@@ -42,6 +42,7 @@ export interface DecisionDetail {
   impact: string;
   madeBy: string;
   epicName: string;
+  epicId: string;
   featureIdentifier?: string;
   createdAt: string;
 }

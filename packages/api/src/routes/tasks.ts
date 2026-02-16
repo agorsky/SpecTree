@@ -601,7 +601,10 @@ export default function tasksRoutes(
     },
     async (request, reply) => {
       const { id } = request.params;
-      const result = await startWork("task", id, request.body);
+      const result = await startWork("task", id, {
+        ...request.body,
+        ...(request.user?.id ? { userId: request.user.id } : {}),
+      });
       return reply.send({
         data: {
           ...result,
@@ -623,7 +626,10 @@ export default function tasksRoutes(
     },
     async (request, reply) => {
       const { id } = request.params;
-      const result = await completeWork("task", id, request.body);
+      const result = await completeWork("task", id, {
+        ...request.body,
+        ...(request.user?.id ? { userId: request.user.id } : {}),
+      });
       return reply.send({
         data: {
           ...result,

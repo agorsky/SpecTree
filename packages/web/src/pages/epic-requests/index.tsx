@@ -5,14 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Search, ThumbsUp, Flame, ThumbsDown, Plus } from 'lucide-react';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Search, ThumbsUp, Flame, ThumbsDown, Plus, ChevronDown } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { EpicRequestStatus, EpicRequestWithReactionCounts } from '@/lib/api/epic-requests';
@@ -24,6 +23,9 @@ const statusColors: Record<EpicRequestStatus, string> = {
   rejected: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
   converted: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
 };
+
+// Status order for grouping
+const statusOrder: EpicRequestStatus[] = ['pending', 'approved', 'converted', 'rejected'];
 
 // Helper to get reaction count for a specific type
 function getReactionCount(
@@ -103,23 +105,37 @@ function RequestCard({ request, onClick }: RequestCardProps) {
 export function EpicRequestsPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedStatuses, setSelectedStatuses] = useState<EpicRequestStatus[]>(['pending', 'approved']);
 
-  // Build filters for the query
-  const filters = {
-    ...(statusFilter !== 'all' && { status: statusFilter as EpicRequestStatus }),
-  };
-
+  // Fetch all requests (no API-level filtering since API only supports single status)
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useEpicRequests(filters);
+    useEpicRequests({});
 
-  // Flatten pages and apply client-side search (since API doesn't have search yet)
+  // Flatten pages and apply client-side filtering (status + search)
   const allRequests = data?.pages.flatMap((page) => page.data) ?? [];
+  
+  // Filter by selected statuses (if any selected)
+  const statusFilteredRequests = selectedStatuses.length > 0
+    ? allRequests.filter((req) => selectedStatuses.includes(req.status))
+    : allRequests;
+  
+  // Then filter by search query
   const filteredRequests = searchQuery
-    ? allRequests.filter((req) =>
+    ? statusFilteredRequests.filter((req) =>
         req.title.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : allRequests;
+    : statusFilteredRequests;
+
+  // Group requests by status
+  const groupedRequests = filteredRequests.reduce<Partial<Record<EpicRequestStatus, EpicRequestWithReactionCounts[]>>>(
+    (acc, request) => {
+      const group = acc[request.status] ?? [];
+      group.push(request);
+      acc[request.status] = group;
+      return acc;
+    },
+    {}
+  );
 
   return (
     <div className="p-6">
@@ -146,19 +162,48 @@ export function EpicRequestsPage() {
           />
         </div>
 
-        {/* Status filter */}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="converted">Converted</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Status filter - Multi-select */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              className="w-[220px] justify-between font-normal"
+            >
+              {selectedStatuses.length === 0
+                ? 'All statuses'
+                : selectedStatuses.length === 1 && selectedStatuses[0]
+                ? `${selectedStatuses[0].charAt(0).toUpperCase()}${selectedStatuses[0].slice(1)}`
+                : `${String(selectedStatuses.length)} statuses selected`}
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-[220px] p-3" align="start">
+            <div className="space-y-2" onClick={(e) => { e.stopPropagation(); }}>
+              {(['pending', 'approved', 'converted', 'rejected'] as EpicRequestStatus[]).map((status) => (
+                <label
+                  key={status}
+                  className="flex items-center space-x-2 cursor-pointer hover:bg-accent p-2 rounded-md"
+                  onClick={(e) => { e.stopPropagation(); }}
+                >
+                  <Checkbox
+                    checked={selectedStatuses.includes(status)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedStatuses([...selectedStatuses, status]);
+                      } else {
+                        setSelectedStatuses(selectedStatuses.filter((s) => s !== status));
+                      }
+                    }}
+                  />
+                  <span className="text-sm capitalize">
+                    {status}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Request list */}
@@ -187,14 +232,46 @@ export function EpicRequestsPage() {
         </div>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredRequests.map((request) => (
-              <RequestCard
-                key={request.id}
-                request={request}
-                onClick={() => { void navigate(`/epic-requests/${request.id}`); }}
-              />
-            ))}
+          {/* Grouped by status */}
+          <div className="space-y-8">
+            {statusOrder.map((status) => {
+              const requestsInGroup = groupedRequests[status] ?? [];
+              
+              // Skip empty groups
+              if (requestsInGroup.length === 0) {
+                return null;
+              }
+
+              return (
+                <div key={status}>
+                  {/* Group header with status badge and count */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <Badge
+                      className={cn(
+                        'text-xs font-medium',
+                        statusColors[status]
+                      )}
+                    >
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      ({requestsInGroup.length})
+                    </span>
+                  </div>
+
+                  {/* Grid of cards for this status group */}
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {requestsInGroup.map((request) => (
+                      <RequestCard
+                        key={request.id}
+                        request={request}
+                        onClick={() => { void navigate(`/epic-requests/${request.id}`); }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Load more button */}

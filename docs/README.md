@@ -1,6 +1,6 @@
 # SpecTree Documentation Index
 
-> **Last Updated:** February 10, 2026  
+> **Last Updated:** February 2026 (v0.2.0)  
 > **Purpose:** Central index for all SpecTree documentation
 
 ---
@@ -8,6 +8,7 @@
 ## 📖 Quick Navigation
 
 - [Getting Started](#getting-started)
+- [What's New](#whats-new)
 - [Architecture & Design](#architecture--design)
 - [Developer Guides](#developer-guides)
 - [MCP Server](#mcp-server)
@@ -26,6 +27,15 @@
 | [guides/setup-guide.md](./guides/setup-guide.md) | Complete setup instructions for local development | New developers |
 | [guides/automation-quickstart.md](./guides/automation-quickstart.md) | Quick start guide for using SpecTree automation | AI/automation users |
 | [guides/mcp-auth-fix-summary.md](./guides/mcp-auth-fix-summary.md) | Troubleshooting MCP authentication issues | Developers |
+
+---
+
+## 🆕 What's New
+
+| Document | Description |
+|----------|-------------|
+| [whats-new/v0.2.0.md](./whats-new/v0.2.0.md) | Current release notes for v0.2.0 |
+| [whats-new/README.md](./whats-new/README.md) | What's New documentation conventions and version index |
 
 ---
 

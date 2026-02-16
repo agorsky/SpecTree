@@ -156,7 +156,7 @@ Group related changes together under meaningful headings:
 The application version is always defined in `package.json` at the repository root:
 ```json
 {
-  "version": "0.1.0"
+  "version": "0.2.0"
 }
 ```
 
@@ -164,9 +164,10 @@ Release notes MUST match the version in `package.json`. See `docs/CONVENTIONS.md
 
 ## Available Versions
 
+- [v0.2.0](v0.2.0.md) — Reliability & Activity Dashboard update (February 2026)
 - [v0.1.0](v0.1.0.md) — Initial release (February 2026)
 
 ---
 
-*Last updated: February 2026*
+*Last updated: February 2026 (v0.2.0)*
 *Maintained by: SpecTree Engineering Team*

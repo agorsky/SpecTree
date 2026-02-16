@@ -30,11 +30,14 @@ export function TaskDetailList({ items }: TaskDetailListProps) {
 }
 
 function TaskDetailItem({ item }: { item: TaskDetail }) {
-  const ariaLabel = `Task ${item.identifier}: ${item.title}. Feature ${item.featureIdentifier}. Status: ${item.statusName}. Completed ${formatDistanceToNow(new Date(item.completedAt), { addSuffix: true })}`;
+  const completedText = item.completedAt
+    ? formatDistanceToNow(new Date(item.completedAt), { addSuffix: true })
+    : 'Not completed';
+  const ariaLabel = `Task ${item.identifier}: ${item.title}. Feature ${item.featureIdentifier}. Status: ${item.statusName}. ${item.completedAt ? `Completed ${completedText}` : completedText}`;
   
   return (
     <Link
-      to={`/features/${item.featureIdentifier}`}
+      to={`/tasks/${item.identifier}`}
       className="block border-b py-3 px-3 sm:px-4 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
       aria-label={ariaLabel}
     >
@@ -61,7 +64,7 @@ function TaskDetailItem({ item }: { item: TaskDetail }) {
             <span className="whitespace-nowrap">{item.statusName}</span>
           </div>
           <span className="hidden sm:inline">•</span>
-          <span className="whitespace-nowrap">{formatDistanceToNow(new Date(item.completedAt), { addSuffix: true })}</span>
+          <span className="whitespace-nowrap">{completedText}</span>
         </div>
       </div>
     </Link>

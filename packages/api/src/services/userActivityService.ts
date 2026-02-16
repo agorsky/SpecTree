@@ -40,8 +40,58 @@ export interface UserActivityResponse {
 }
 
 /**
+ * Calculates the timezone offset in milliseconds for a given date and timezone.
+ * 
+ * This uses Intl.DateTimeFormat to get the UTC offset at a specific instant,
+ * which properly handles DST transitions. The approach:
+ * 1. Format the date in the target timezone to get local components
+ * 2. Construct a UTC date from those components
+ * 3. Calculate the difference between the original UTC timestamp and the constructed one
+ * 
+ * @param date - The date to calculate the offset for
+ * @param timeZone - IANA timezone string (e.g., 'America/New_York')
+ * @returns Offset in milliseconds (positive for ahead of UTC, negative for behind)
+ */
+function getTimezoneOffsetMs(date: Date, timeZone: string): number {
+  // Get the date components as they appear in the target timezone
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  
+  const parts = formatter.formatToParts(date);
+  const year = parseInt(parts.find((p) => p.type === "year")!.value, 10);
+  const month = parseInt(parts.find((p) => p.type === "month")!.value, 10);
+  const day = parseInt(parts.find((p) => p.type === "day")!.value, 10);
+  const hour = parseInt(parts.find((p) => p.type === "hour")!.value, 10);
+  const minute = parseInt(parts.find((p) => p.type === "minute")!.value, 10);
+  const second = parseInt(parts.find((p) => p.type === "second")!.value, 10);
+  
+  // Construct a UTC date from these local components
+  const localAsUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+  
+  // The offset is the difference between the original UTC time and the local time interpreted as UTC
+  return date.getTime() - localAsUtc;
+}
+
+/**
  * Returns the UTC timestamp for the start of the calendar day in the given
- * timezone.  Falls back to pure-UTC when no timezone is supplied.
+ * timezone. Falls back to pure-UTC when no timezone is supplied.
+ * 
+ * This correctly handles DST transitions by:
+ * 1. Getting the calendar date string in the target timezone
+ * 2. Constructing a UTC date representing midnight of that calendar date
+ * 3. Applying the timezone offset to get the actual UTC instant
+ * 
+ * @param date - Reference date
+ * @param timeZone - Optional IANA timezone string
+ * @returns UTC Date object representing midnight in the target timezone
  */
 function startOfDayInTz(date: Date, timeZone?: string): Date {
   if (!timeZone) {
@@ -53,27 +103,44 @@ function startOfDayInTz(date: Date, timeZone?: string): Date {
   // Get the calendar date (YYYY-MM-DD) the user sees in their timezone
   const localDateStr = date.toLocaleDateString("sv-SE", { timeZone });
 
-  // Find the UTC instant that corresponds to midnight of that local date.
-  // 1. Start with midnight-UTC of the same calendar date as an approximation.
-  const midnightUtc = new Date(localDateStr + "T00:00:00.000Z");
-
-  // 2. Compute the offset between UTC and the target timezone at that instant
-  //    by formatting the same instant in both zones and comparing.
-  const utcRepr = new Date(
-    midnightUtc.toLocaleString("en-US", { timeZone: "UTC" })
-  );
-  const tzRepr = new Date(
-    midnightUtc.toLocaleString("en-US", { timeZone })
-  );
-  const offsetMs = tzRepr.getTime() - utcRepr.getTime();
-
-  // 3. Shift: midnight-local(UTC) = midnight-UTC − offset
-  return new Date(midnightUtc.getTime() - offsetMs);
+  // Create a UTC date representing midnight of that calendar date
+  // Use 12:00 UTC to avoid DST ambiguity, then we'll find true midnight
+  const approxMidnight = new Date(localDateStr + "T12:00:00.000Z");
+  
+  // Get the year, month, day components in the target timezone
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = formatter.formatToParts(approxMidnight);
+  const year = parseInt(parts.find((p) => p.type === "year")!.value, 10);
+  const month = parseInt(parts.find((p) => p.type === "month")!.value, 10);
+  const day = parseInt(parts.find((p) => p.type === "day")!.value, 10);
+  
+  // Construct midnight in the local timezone as a UTC timestamp
+  // We need to find the UTC instant that corresponds to midnight local time
+  const midnightLocalAsUtc = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
+  
+  // Get the offset at midnight local time
+  const testDate = new Date(midnightLocalAsUtc);
+  const offset = getTimezoneOffsetMs(testDate, timeZone);
+  
+  // Apply the offset to get the true UTC instant of midnight in the target timezone
+  return new Date(midnightLocalAsUtc + offset);
 }
 
 /**
  * Returns the start of the interval bucket for a given date, respecting the
  * user's timezone when provided.
+ * 
+ * For day intervals: Returns midnight in the target timezone
+ * For week intervals: Returns midnight on Sunday of the week (in target timezone)
+ * For month intervals: Returns midnight on the 1st of the month (in target timezone)
+ * 
+ * All calculations use proper Date arithmetic and timezone offset calculations
+ * to correctly handle DST transitions.
  */
 function getIntervalStart(
   date: Date,
@@ -86,32 +153,47 @@ function getIntervalStart(
 
   if (interval === "week") {
     const dayStart = startOfDayInTz(date, timeZone);
-    // Determine the weekday in the user's timezone (or UTC)
-    const weekday = timeZone
-      ? new Date(
-          dayStart.toLocaleString("en-US", { timeZone })
-        ).getDay()
-      : dayStart.getUTCDay();
-    // Walk back to Sunday
+    
+    // Get the weekday by examining the date in the target timezone
+    let weekday: number;
+    if (timeZone) {
+      // Format the date to get the day-of-week in the target timezone
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        weekday: "short", // This gives us Sun, Mon, etc.
+      });
+      const dayName = formatter.format(dayStart);
+      const dayMap: { [key: string]: number } = {
+        Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+      };
+      weekday = dayMap[dayName] ?? 0;
+    } else {
+      weekday = dayStart.getUTCDay();
+    }
+    
+    // Walk back to Sunday (weekday 0)
     return new Date(dayStart.getTime() - weekday * 86_400_000);
   }
 
-  // month
+  // month interval
   if (timeZone) {
+    // Get the year and month in the target timezone
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone,
       year: "numeric",
       month: "2-digit",
-      day: "2-digit",
     }).formatToParts(date);
-    const year = parts.find((p) => p.type === "year")!.value;
-    const month = parts.find((p) => p.type === "month")!.value;
-    return startOfDayInTz(
-      new Date(`${year}-${month}-01T12:00:00.000Z`),
-      timeZone
-    );
+    const year = parseInt(parts.find((p) => p.type === "year")!.value, 10);
+    const month = parseInt(parts.find((p) => p.type === "month")!.value, 10);
+    
+    // Create a date representing the 1st of that month in UTC
+    const firstOfMonth = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+    
+    // Get midnight of that date in the target timezone
+    return startOfDayInTz(firstOfMonth, timeZone);
   }
 
+  // No timezone: use pure UTC
   const d = new Date(date);
   d.setUTCDate(1);
   d.setUTCHours(0, 0, 0, 0);
@@ -202,24 +284,6 @@ function countInRange<T extends { [key: string]: unknown }>(
     const d = val instanceof Date ? val : new Date(val as string);
     return d >= start && d < end;
   });
-  
-  // Debug logging for countInRange
-  if (records.length > 0) {
-    console.log('[UserActivity] countInRange:', {
-      field: String(dateField),
-      totalRecords: records.length,
-      filteredCount: filtered.length,
-      range: {
-        start: start.toISOString(),
-        end: end.toISOString(),
-      },
-      sampleRecord: records[0] ? {
-        timestamp: records[0][dateField] instanceof Date 
-          ? (records[0][dateField] as Date).toISOString()
-          : String(records[0][dateField]),
-      } : null,
-    });
-  }
   
   return filtered.length;
 }
@@ -388,23 +452,10 @@ export async function getUserActivity(
   const earliest = firstBucket.start;
   const latest = lastBucket.end;
 
-  // Debug logging: Query parameters
-  console.log('[UserActivity] Query parameters:', {
-    epicIds: epicIds.length > 0 ? epicIds : 'none',
-    epicIdsSample: epicIds.slice(0, 3),
-    dateRange: {
-      earliest: earliest.toISOString(),
-      latest: latest.toISOString(),
-    },
-    interval,
-    bucketsCount: buckets.length,
-    scope,
-    targetUserId,
-  });
-
   // Fetch all relevant records in the date range (parallel queries)
   // For features: filter by createdBy (who created the feature)
-  // For tasks: filter by implementedBy (who implemented/completed the task)
+  // For tasks: primarily filter by implementedBy (who completed the task), with
+  // fallback to createdBy when legacy records are missing implementedBy.
   const [features, tasks, decisions, aiSessions] = await Promise.all([
     prisma.feature.findMany({
       where: {
@@ -418,7 +469,14 @@ export async function getUserActivity(
       where: {
         feature: { epicId: { in: epicIds } },
         completedAt: { gte: earliest, lt: latest },
-        ...(targetUserId ? { implementedBy: targetUserId } : {}),
+        ...(targetUserId
+          ? {
+              OR: [
+                { implementedBy: targetUserId },
+                { implementedBy: null, createdBy: targetUserId },
+              ],
+            }
+          : {}),
       },
       select: { completedAt: true, implementedBy: true },
     }),
@@ -437,22 +495,6 @@ export async function getUserActivity(
       select: { startedAt: true, epicId: true },
     }),
   ]);
-
-  // Debug logging: Query results
-  console.log('[UserActivity] Query results:', {
-    featuresCount: features.length,
-    tasksCount: tasks.length,
-    decisionsCount: decisions.length,
-    aiSessionsCount: aiSessions.length,
-    featuresSample: features.slice(0, 3).map(f => ({
-      createdAt: f.createdAt instanceof Date ? f.createdAt.toISOString() : f.createdAt,
-      createdBy: f.createdBy,
-    })),
-    tasksSample: tasks.slice(0, 3).map(t => ({
-      completedAt: t.completedAt instanceof Date ? t.completedAt.toISOString() : t.completedAt,
-      implementedBy: t.implementedBy,
-    })),
-  });
 
   // Aggregate into buckets
   const data: UserActivityDataPoint[] = buckets.map(({ start, end }) => {
@@ -605,7 +647,14 @@ export async function getActivityDetails(
         where: {
           feature: { epicId: { in: epicIds } },
           completedAt: { gte: earliest, lt: latest },
-          ...(targetUserId ? { implementedBy: targetUserId } : {}),
+          ...(targetUserId
+            ? {
+                OR: [
+                  { implementedBy: targetUserId },
+                  { implementedBy: null, createdBy: targetUserId },
+                ],
+              }
+            : {}),
           ...(cursor ? { id: { lt: cursor } } : {}),
         },
         orderBy: { completedAt: "desc" },
@@ -630,7 +679,7 @@ export async function getActivityDetails(
           featureIdentifier: t.feature.identifier,
           featureTitle: t.feature.title,
           statusName: t.status?.name ?? "No status",
-          completedAt: t.completedAt?.toISOString() ?? "",
+          completedAt: t.completedAt?.toISOString() ?? null,
         })),
         meta: {
           ...(page_items.length > 0 && { cursor: page_items[page_items.length - 1]!.id }),
@@ -657,7 +706,7 @@ export async function getActivityDetails(
           impact: true,
           madeBy: true,
           createdAt: true,
-          epic: { select: { name: true } },
+          epic: { select: { id: true, name: true } },
           feature: { select: { identifier: true } },
         },
       });
@@ -674,6 +723,7 @@ export async function getActivityDetails(
           impact: d.impact ?? "medium",
           madeBy: d.madeBy,
           epicName: d.epic.name,
+          epicId: d.epic.id,
           featureIdentifier: d.feature?.identifier ?? undefined,
           createdAt: d.createdAt.toISOString(),
         })),

@@ -9,9 +9,14 @@ import {
   logSessionWork,
   abandonSession,
 } from "../services/sessionService.js";
+import {
+  getSessionEvents,
+  computeProgressState,
+  derivePhaseFromDatabase,
+} from "../services/sessionEventService.js";
 import { emitSessionEvent } from "../events/index.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { validateBody } from "../middleware/validate.js";
+import { validateBody, validateQuery, validateParams } from "../middleware/validate.js";
 import {
   startSessionSchema,
   endSessionSchema,
@@ -20,6 +25,12 @@ import {
   type EndSessionInput,
   type LogSessionWorkInput,
 } from "../schemas/session.js";
+import {
+  epicIdParamSchema,
+  sessionEventsQuerySchema,
+  type EpicIdParam,
+  type SessionEventsQuery,
+} from "../schemas/session-events.js";
 import type { SessionEvent } from "@spectree/shared";
 
 // =============================================================================
@@ -62,6 +73,78 @@ export default async function sessionRoutes(
     async (request, reply) => {
       const result = await startSession(request.body);
       return reply.status(201).send({ data: result });
+    }
+  );
+
+  // ---------------------------------------------------------------------------
+  // GET /api/v1/sessions/:epicId/events - Query session events for an epic
+  // ---------------------------------------------------------------------------
+  fastify.get<{
+    Params: EpicIdParam;
+    Querystring: SessionEventsQuery;
+  }>(
+    "/:epicId/events",
+    {
+      preValidation: [
+        validateParams(epicIdParamSchema),
+        validateQuery(sessionEventsQuerySchema),
+      ],
+    },
+    async (request, reply) => {
+      const { epicId } = request.params;
+      const { since, sessionId, eventTypes, limit, cursor } = request.query;
+      
+      // Build options object with only defined values
+      const queryOptions: {
+        since?: string;
+        sessionId?: string;
+        eventTypes?: string[];
+        limit?: number;
+        cursor?: string;
+      } = {};
+      
+      if (since) queryOptions.since = since;
+      if (sessionId) queryOptions.sessionId = sessionId;
+      if (eventTypes) queryOptions.eventTypes = eventTypes;
+      if (limit !== undefined) queryOptions.limit = limit;
+      if (cursor) queryOptions.cursor = cursor;
+      
+      // Query events from service
+      const result = await getSessionEvents(epicId, queryOptions);
+      
+      // Compute progress state from all events (not just the paginated result)
+      // For polling clients, we need to compute from the full event history
+      const progressQueryOptions: {
+        sessionId?: string;
+        limit: number;
+      } = {
+        limit: 1000, // Get more events for accurate progress computation
+      };
+      
+      if (sessionId) {
+        progressQueryOptions.sessionId = sessionId;
+      }
+      
+      const allEventsForProgress = await getSessionEvents(epicId, progressQueryOptions);
+      
+      const progressState = computeProgressState(allEventsForProgress.events);
+      
+      // If no phase data from events, derive from database feature statuses
+      if (progressState.totalPhases === null) {
+        const dbPhase = await derivePhaseFromDatabase(epicId);
+        progressState.currentPhase = dbPhase.currentPhase;
+        progressState.lastCompletedPhase = dbPhase.lastCompletedPhase;
+        progressState.totalPhases = dbPhase.totalPhases;
+      }
+      
+      return reply.send({
+        data: {
+          events: result.events,
+          nextCursor: result.nextCursor,
+          totalCount: result.totalCount,
+          progress: progressState,
+        },
+      });
     }
   );
 

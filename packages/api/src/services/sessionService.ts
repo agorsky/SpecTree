@@ -499,6 +499,62 @@ export async function logSessionWork(
     },
   });
 
+  // Emit session event for started items
+  if (input.action === "started") {
+    if (input.itemType === "task") {
+      const task = await prisma.task.findUnique({
+        where: { id: input.itemId },
+        include: {
+          feature: true,
+          status: true,
+        },
+      });
+
+      if (task) {
+        emitSessionEvent({
+          eventType: SessionEventType.SESSION_TASK_STARTED,
+          sessionId: activeSession.id,
+          epicId: epic.id,
+          timestamp: newItem.timestamp,
+          payload: {
+            taskId: task.id,
+            identifier: task.identifier,
+            title: task.title,
+            featureId: task.featureId,
+            featureIdentifier: task.feature.identifier,
+            ...(task.statusId != null ? { statusId: task.statusId } : {}),
+            ...(task.status?.name != null ? { statusName: task.status.name } : {}),
+          },
+        });
+      }
+    } else {
+      const feature = await prisma.feature.findUnique({
+        where: { id: input.itemId },
+        include: {
+          status: true,
+          tasks: true,
+        },
+      });
+
+      if (feature) {
+        emitSessionEvent({
+          eventType: SessionEventType.SESSION_FEATURE_STARTED,
+          sessionId: activeSession.id,
+          epicId: epic.id,
+          timestamp: newItem.timestamp,
+          payload: {
+            featureId: feature.id,
+            identifier: feature.identifier,
+            title: feature.title,
+            ...(feature.statusId != null ? { statusId: feature.statusId } : {}),
+            ...(feature.status?.name != null ? { statusName: feature.status.name } : {}),
+            taskCount: feature.tasks.length,
+          },
+        });
+      }
+    }
+  }
+
   // Emit session event for completed items
   if (input.action === "completed") {
     if (input.itemType === "task") {
@@ -568,8 +624,61 @@ export async function logSessionWork(
 }
 
 /**
- * Find the epic ID for a feature or task (for session tracking)
+ * Emit a session progress event for a task.
+ * Called when progress is logged on a task during an active session.
  */
+export async function emitSessionProgressEvent(
+  epicId: string,
+  input: {
+    taskId: string;
+    identifier: string;
+    title: string;
+    featureId: string;
+    featureIdentifier: string;
+    message: string;
+    percentComplete?: number;
+  }
+): Promise<void> {
+  // Find the epic
+  const epic = await prisma.epic.findFirst({
+    where: {
+      OR: [
+        { id: epicId },
+        { name: epicId },
+      ],
+    },
+  });
+
+  if (!epic) return;
+
+  // Find active session
+  const activeSession = await prisma.aiSession.findFirst({
+    where: {
+      epicId: epic.id,
+      status: "active",
+    },
+  });
+
+  if (!activeSession) return;
+
+  emitSessionEvent({
+    eventType: SessionEventType.SESSION_TASK_PROGRESS,
+    sessionId: activeSession.id,
+    epicId: epic.id,
+    timestamp: new Date().toISOString(),
+    payload: {
+      taskId: input.taskId,
+      identifier: input.identifier,
+      title: input.title,
+      featureId: input.featureId,
+      featureIdentifier: input.featureIdentifier,
+      message: input.message,
+      ...(input.percentComplete !== undefined ? { percentComplete: input.percentComplete } : {}),
+    },
+  });
+}
+
+/**
 export async function findEpicIdForItem(
   itemId: string,
   itemType: "feature" | "task"

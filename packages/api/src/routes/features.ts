@@ -571,7 +571,10 @@ export default function featuresRoutes(
     },
     async (request, reply) => {
       const { id } = request.params;
-      const result = await startWork("feature", id, request.body);
+      const result = await startWork("feature", id, {
+        ...request.body,
+        ...(request.user?.id ? { userId: request.user.id } : {}),
+      });
       return reply.send({
         data: {
           ...result,
@@ -593,7 +596,10 @@ export default function featuresRoutes(
     },
     async (request, reply) => {
       const { id } = request.params;
-      const result = await completeWork("feature", id, request.body);
+      const result = await completeWork("feature", id, {
+        ...request.body,
+        ...(request.user?.id ? { userId: request.user.id } : {}),
+      });
       return reply.send({
         data: {
           ...result,

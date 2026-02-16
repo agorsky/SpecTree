@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import type { SessionProgressState } from "@/hooks/useSessionProgress";
-import { SessionEventType } from "@spectree/shared";
+import type { ServerProgressState } from "@/hooks/useSessionEvents";
+import { SessionEvent, SessionEventType } from "@spectree/shared";
 
 /**
  * Props for SessionSummaryPane component
  */
 export interface SessionSummaryPaneProps {
-  /** Session state from useSessionProgress hook */
-  sessionState: SessionProgressState;
+  /** Server-computed progress state from the API */
+  progress: ServerProgressState;
+  /** Session events for calculating session duration */
+  events: SessionEvent[];
   /** Optional additional className for styling */
   className?: string;
 }
@@ -49,33 +51,14 @@ function formatRelativeTime(timestamp: string): string {
 }
 
 /**
- * Get connection status display properties
- */
-function getConnectionStatusDisplay(status: string): {
-  dotColor: string;
-  text: string;
-} {
-  switch (status) {
-    case 'connected':
-      return { dotColor: 'bg-green-500', text: 'Connected' };
-    case 'connecting':
-      return { dotColor: 'bg-yellow-500', text: 'Connecting...' };
-    case 'error':
-      return { dotColor: 'bg-red-500', text: 'Error' };
-    case 'disconnected':
-    default:
-      return { dotColor: 'bg-gray-400', text: 'Disconnected' };
-  }
-}
-
-/**
  * SessionSummaryPane - Real-time session progress monitoring component
  * 
- * Displays epic progress, current phase, feature/task counts, and session health indicators.
- * Updates in real-time as session events arrive via SSE.
+ * Displays epic progress, current phase, feature/task counts using server-computed state.
+ * Updates via polling as new events arrive.
  */
 export function SessionSummaryPane({
-  sessionState,
+  progress,
+  events,
   className,
 }: SessionSummaryPaneProps) {
   const [sessionDuration, setSessionDuration] = useState<number>(0);
@@ -84,9 +67,9 @@ export function SessionSummaryPane({
 
   // Calculate session duration based on SESSION_STARTED timestamp
   useEffect(() => {
-    // Find the SESSION_STARTED event (skip progress logged events)
-    const sessionStartEvent = sessionState.events.find(
-      (event) => "eventType" in event && event.eventType === SessionEventType.SESSION_STARTED
+    // Find the SESSION_STARTED event
+    const sessionStartEvent = events.find(
+      (event) => event.eventType === SessionEventType.SESSION_STARTED
     );
 
     if (!sessionStartEvent) {
@@ -112,20 +95,22 @@ export function SessionSummaryPane({
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
-  }, [sessionState.events]);
+  }, [events]);
 
   // Update relative time for last event
   useEffect(() => {
-    if (!sessionState.lastEventTimestamp) {
+    if (events.length === 0) {
       setRelativeTime('-');
       setIsStale(false);
       return;
     }
 
+    const lastEvent = events[0]; // Events are sorted newest first
+    if (!lastEvent) return;
+
     // Update relative time every second
     const updateRelativeTime = () => {
-      const timestamp = sessionState.lastEventTimestamp;
-      if (!timestamp) return;
+      const timestamp = lastEvent.timestamp;
       
       const formatted = formatRelativeTime(timestamp);
       setRelativeTime(formatted);
@@ -142,9 +127,7 @@ export function SessionSummaryPane({
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
-  }, [sessionState.lastEventTimestamp]);
-
-  const statusDisplay = getConnectionStatusDisplay(sessionState.connectionStatus);
+  }, [events]);
 
   return (
     <div
@@ -163,11 +146,11 @@ export function SessionSummaryPane({
           <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500 ease-in-out"
-              style={{ width: `${sessionState.progress.progressPercentage}%` }}
+              style={{ width: `${progress.progressPercentage}%` }}
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            {sessionState.progress.progressPercentage}% complete
+            {progress.progressPercentage}% complete
           </p>
         </div>
       </div>
@@ -178,21 +161,21 @@ export function SessionSummaryPane({
           Current Phase
         </h3>
         <div className="text-lg font-semibold">
-          {sessionState.progress.currentPhase !== null ? (
+          {progress.currentPhase !== null ? (
             <>
-              Phase {sessionState.progress.currentPhase}
-              {sessionState.progress.totalPhases !== null && (
+              Phase {progress.currentPhase}
+              {progress.totalPhases !== null && (
                 <span className="text-sm font-normal text-muted-foreground ml-2">
-                  of {sessionState.progress.totalPhases}
+                  of {progress.totalPhases}
                 </span>
               )}
             </>
-          ) : sessionState.progress.lastCompletedPhase !== null ? (
+          ) : progress.lastCompletedPhase !== null ? (
             <>
-              <span className="text-muted-foreground">Phase {sessionState.progress.lastCompletedPhase} completed</span>
-              {sessionState.progress.totalPhases !== null && (
+              <span className="text-muted-foreground">Phase {progress.lastCompletedPhase} completed</span>
+              {progress.totalPhases !== null && (
                 <span className="text-sm font-normal text-muted-foreground ml-2">
-                  of {sessionState.progress.totalPhases}
+                  of {progress.totalPhases}
                 </span>
               )}
             </>
@@ -211,28 +194,24 @@ export function SessionSummaryPane({
           <div className="flex justify-between">
             <span>Features:</span>
             <span className="font-medium">
-              {sessionState.progress.completedFeatures}/{sessionState.progress.totalFeatures}
+              {progress.completedFeatures}/{progress.totalFeatures}
             </span>
           </div>
           <div className="flex justify-between">
             <span>Tasks:</span>
             <span className="font-medium">
-              {sessionState.progress.completedTasks}/{sessionState.progress.totalTasks}
+              {progress.completedTasks}/{progress.totalTasks}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Section 4: Health Indicators */}
+      {/* Section 4: Session Info */}
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-muted-foreground">
-          Connection Status
+          Session Info
         </h3>
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className={cn("w-2 h-2 rounded-full", statusDisplay.dotColor)} />
-            <span className="text-sm">{statusDisplay.text}</span>
-          </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>Last event: {relativeTime}</span>
             {isStale && (

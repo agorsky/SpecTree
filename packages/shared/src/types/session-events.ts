@@ -34,7 +34,10 @@ export enum SessionEventType {
   
   /** Emitted when a task is completed within a session */
   SESSION_TASK_COMPLETED = "SESSION_TASK_COMPLETED",
-  
+
+  /** Emitted when progress is logged on a task within a session */
+  SESSION_TASK_PROGRESS = "SESSION_TASK_PROGRESS",
+
   /** Emitted when an error occurs during session execution */
   SESSION_ERROR = "SESSION_ERROR",
 }
@@ -81,12 +84,12 @@ export interface SessionLifecycleEvent extends SessionEventBase {
     totalTasks?: number;
     
     /** Execution plan phases mapping feature IDs to phase numbers (for SESSION_STARTED) */
-    executionPlan?: Array<{
+    executionPlan?: {
       /** Phase number (1-indexed) */
       phase: number;
       /** Feature IDs in this phase */
       featureIds: string[];
-    }>;
+    }[];
     
     /** Summary of work completed (for SESSION_ENDED) */
     summary?: string;
@@ -98,10 +101,10 @@ export interface SessionLifecycleEvent extends SessionEventBase {
     blockers?: string[];
     
     /** Decisions made during session (for SESSION_ENDED) */
-    decisions?: Array<{
+    decisions?: {
       decision: string;
       rationale?: string | undefined;
-    }>;
+    }[];
   };
 }
 
@@ -211,6 +214,37 @@ export interface SessionTaskEvent extends SessionEventBase {
 }
 
 /**
+ * Task progress events
+ * Emitted when progress is logged on a task during a session
+ */
+export interface SessionTaskProgressEvent extends SessionEventBase {
+  eventType: SessionEventType.SESSION_TASK_PROGRESS;
+  
+  payload: {
+    /** ID of the task */
+    taskId: string;
+    
+    /** Human-readable identifier (e.g., ENG-42-1) */
+    identifier: string;
+    
+    /** Task title */
+    title: string;
+    
+    /** Parent feature ID */
+    featureId: string;
+    
+    /** Parent feature identifier (e.g., ENG-42) */
+    featureIdentifier: string;
+    
+    /** Progress message */
+    message: string;
+    
+    /** Percent complete (0-100) */
+    percentComplete?: number;
+  };
+}
+
+/**
  * Session error events
  * Emitted when errors occur during session execution
  */
@@ -253,6 +287,7 @@ export type SessionEvent =
   | SessionPhaseEvent
   | SessionFeatureEvent
   | SessionTaskEvent
+  | SessionTaskProgressEvent
   | SessionErrorEvent;
 
 /**
@@ -293,6 +328,13 @@ export function isSessionTaskEvent(event: SessionEvent): event is SessionTaskEve
     event.eventType === SessionEventType.SESSION_TASK_STARTED ||
     event.eventType === SessionEventType.SESSION_TASK_COMPLETED
   );
+}
+
+/**
+ * Type guard to check if an event is a task progress event
+ */
+export function isSessionTaskProgressEvent(event: SessionEvent): event is SessionTaskProgressEvent {
+  return event.eventType === SessionEventType.SESSION_TASK_PROGRESS;
 }
 
 /**

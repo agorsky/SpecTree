@@ -10,7 +10,7 @@ import type { Feature, Task } from "../generated/prisma/index.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
 import { appendFeatureAiNote, appendTaskAiNote } from "./aiContextService.js";
 import { emitStatusChanged, emitProgressLogged } from "../events/index.js";
-import { logSessionWork } from "./sessionService.js";
+import { logSessionWork, emitSessionProgressEvent } from "./sessionService.js";
 
 // Entity type for progress operations
 export type EntityType = "feature" | "task";
@@ -57,11 +57,13 @@ export interface ReportBlockerResult {
 // Input types
 export interface StartWorkInput {
   sessionId?: string | undefined;
+  userId?: string | undefined;
 }
 
 export interface CompleteWorkInput {
   summary?: string | undefined;
   sessionId?: string | undefined;
+  userId?: string | undefined;
 }
 
 export interface LogProgressInput {
@@ -176,7 +178,7 @@ async function getFeature(idOrIdentifier: string): Promise<Feature & { epic: { t
 /**
  * Get task by ID or identifier
  */
-async function getTask(idOrIdentifier: string): Promise<Task & { feature: { epicId: string; epic: { teamId: string | null; personalScopeId: string | null } } }> {
+async function getTask(idOrIdentifier: string): Promise<Task & { feature: { epicId: string; identifier: string; epic: { teamId: string | null; personalScopeId: string | null } } }> {
   const isUuid = UUID_REGEX.test(idOrIdentifier);
   const isIdentifier = TASK_IDENTIFIER_REGEX.test(idOrIdentifier);
 
@@ -192,6 +194,7 @@ async function getTask(idOrIdentifier: string): Promise<Task & { feature: { epic
       feature: {
         select: {
           epicId: true,
+          identifier: true,
           epic: {
             select: { teamId: true, personalScopeId: true },
           },
@@ -247,6 +250,7 @@ export async function startWork(
         entityId: feature.id,
         oldStatusId,
         newStatusId: inProgressStatusId,
+        ...(input.userId ? { changedBy: input.userId } : {}),
         timestamp: now,
       });
     }
@@ -297,6 +301,7 @@ export async function startWork(
         entityId: task.id,
         oldStatusId,
         newStatusId: inProgressStatusId,
+        ...(input.userId ? { changedBy: input.userId } : {}),
         timestamp: now,
       });
     }
@@ -362,6 +367,7 @@ export async function completeWork(
         entityId: feature.id,
         oldStatusId,
         newStatusId: doneStatusId,
+        ...(input.userId ? { changedBy: input.userId } : {}),
         timestamp: now,
       });
     }
@@ -422,6 +428,7 @@ export async function completeWork(
         entityId: task.id,
         oldStatusId,
         newStatusId: doneStatusId,
+        ...(input.userId ? { changedBy: input.userId } : {}),
         timestamp: now,
       });
     }
@@ -541,6 +548,17 @@ export async function logProgress(
       userId: input.userId ?? null,
       timestamp: new Date().toISOString(),
     });
+
+    // Emit session progress event (if active session exists)
+    emitSessionProgressEvent(task.feature.epicId, {
+      taskId: task.id,
+      identifier: updated.identifier,
+      title: updated.title,
+      featureId: task.featureId,
+      featureIdentifier: task.feature.identifier,
+      message: input.message,
+      ...(input.percentComplete !== undefined ? { percentComplete: input.percentComplete } : {}),
+    }).catch(() => {}); // fire-and-forget
 
     return {
       id: updated.id,

@@ -21,7 +21,7 @@
 
 ### Version Source of Truth
 - **Location**: `package.json` in the repository root
-- **Field**: `version` field (e.g., `"version": "0.1.0"`)
+- **Field**: `version` field (e.g., `"version": "0.2.0"`)
 - **Format**: Semantic versioning (MAJOR.MINOR.PATCH)
 - **Authority**: This is the single source of truth for the application version
 

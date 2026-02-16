@@ -14,6 +14,7 @@ import {
 } from "./types.js";
 import type { SessionEvent } from "@spectree/shared";
 import { sessionEventThrottler } from "../services/eventThrottler.js";
+import { persistSessionEvent } from "../services/sessionEventService.js";
 
 // Singleton event emitter for the application
 export const eventEmitter = new EventEmitter();
@@ -118,3 +119,16 @@ export function onSessionEvent(
 ): void {
   eventEmitter.on(Events.SESSION_EVENT, handler);
 }
+
+// =============================================================================
+// Session Event Persistence Integration
+// =============================================================================
+
+/**
+ * Listen for session events and persist them to the database
+ * This is decoupled from the emission flow - persistence failures don't disrupt emission
+ */
+onSessionEvent((event: SessionEvent) => {
+  // Fire-and-forget persistence (errors are logged but not thrown)
+  void persistSessionEvent(event);
+});

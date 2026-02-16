@@ -21,6 +21,7 @@ const sessionEventTypeValues = [
   SessionEventType.SESSION_FEATURE_COMPLETED,
   SessionEventType.SESSION_TASK_STARTED,
   SessionEventType.SESSION_TASK_COMPLETED,
+  SessionEventType.SESSION_TASK_PROGRESS,
   SessionEventType.SESSION_ERROR,
 ] as const;
 
@@ -132,6 +133,27 @@ export const sessionTaskEventSchema = sessionEventBaseSchema.extend({
 });
 
 /**
+ * Schema for task progress event payloads
+ */
+export const sessionTaskProgressPayloadSchema = z.object({
+  taskId: z.string().uuid().describe("ID of the task"),
+  identifier: z.string().describe("Human-readable identifier (e.g., ENG-42-1)"),
+  title: z.string().describe("Task title"),
+  featureId: z.string().uuid().describe("Parent feature ID"),
+  featureIdentifier: z.string().describe("Parent feature identifier (e.g., ENG-42)"),
+  message: z.string().describe("Progress message"),
+  percentComplete: z.number().int().min(0).max(100).optional().describe("Percent complete (0-100)"),
+});
+
+/**
+ * Schema for session task progress events
+ */
+export const sessionTaskProgressEventSchema = sessionEventBaseSchema.extend({
+  eventType: z.literal(SessionEventType.SESSION_TASK_PROGRESS),
+  payload: sessionTaskProgressPayloadSchema,
+});
+
+/**
  * Schema for error event payloads
  */
 export const sessionErrorPayloadSchema = z.object({
@@ -162,6 +184,7 @@ export const sessionEventSchema = z.discriminatedUnion("eventType", [
   sessionPhaseEventSchema,
   sessionFeatureEventSchema,
   sessionTaskEventSchema,
+  sessionTaskProgressEventSchema,
   sessionErrorEventSchema,
 ]);
 
@@ -172,5 +195,55 @@ export type SessionLifecycleEventInput = z.infer<typeof sessionLifecycleEventSch
 export type SessionPhaseEventInput = z.infer<typeof sessionPhaseEventSchema>;
 export type SessionFeatureEventInput = z.infer<typeof sessionFeatureEventSchema>;
 export type SessionTaskEventInput = z.infer<typeof sessionTaskEventSchema>;
+export type SessionTaskProgressEventInput = z.infer<typeof sessionTaskProgressEventSchema>;
 export type SessionErrorEventInput = z.infer<typeof sessionErrorEventSchema>;
 export type SessionEventInput = z.infer<typeof sessionEventSchema>;
+
+// =============================================================================
+// API Query Schemas
+// =============================================================================
+
+/**
+ * Schema for epic ID path parameter
+ */
+export const epicIdParamSchema = z.object({
+  epicId: z.string().uuid().describe("The epic ID to query events for"),
+});
+
+export type EpicIdParam = z.infer<typeof epicIdParamSchema>;
+
+/**
+ * Schema for session events query parameters
+ * Used by GET /api/v1/sessions/:epicId/events endpoint
+ */
+export const sessionEventsQuerySchema = z.object({
+  /** Filter events from this timestamp onwards (ISO 8601) */
+  since: z.string().datetime().optional().describe(
+    "Filter events from this timestamp onwards (ISO 8601 datetime)"
+  ),
+  
+  /** Filter events for a specific session ID */
+  sessionId: z.string().uuid().optional().describe(
+    "Filter events for a specific session ID"
+  ),
+  
+  /** Filter by event types (comma-separated list) */
+  eventTypes: z.string().optional().transform((val) => {
+    if (!val) return undefined;
+    return val.split(",").map(s => s.trim()).filter(Boolean);
+  }).describe(
+    "Filter by event types (comma-separated, e.g., 'SESSION_STARTED,SESSION_ENDED')"
+  ),
+  
+  /** Maximum number of events to return (default: 50, max: 200) */
+  limit: z.coerce.number().int().min(1).max(200).optional().default(50).describe(
+    "Maximum number of events to return (default: 50, max: 200)"
+  ),
+  
+  /** Cursor for pagination */
+  cursor: z.string().optional().describe(
+    "Pagination cursor from previous response"
+  ),
+});
+
+export type SessionEventsQuery = z.infer<typeof sessionEventsQuerySchema>;
