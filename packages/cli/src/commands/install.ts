@@ -8,6 +8,7 @@ import { TableFormatter } from '../utils/table-formatter.js';
 interface InstallOptions {
   version?: string;
   registry?: string;
+  token?: string;
 }
 
 export const installCommand = new Command('install')
@@ -15,12 +16,13 @@ export const installCommand = new Command('install')
   .argument('<pack-name>', 'Name of the pack to install (e.g., @spectree/pack-example)')
   .option('-v, --version <version>', 'Specific version to install (default: latest)')
   .option('--registry <url>', 'Custom registry URL')
+  .option('--token <token>', 'API token for authentication (or set SPECTREE_TOKEN env var)')
   .action(async (packName: string, options: InstallOptions) => {
     const spinner = ora('Installing Skill Pack...').start();
 
     try {
       // Initialize clients
-      const apiClient = new ApiClient(options.registry);
+      const apiClient = new ApiClient(options.registry, options.token);
       const fileManager = new FileManager();
 
       // Fetch pack manifest

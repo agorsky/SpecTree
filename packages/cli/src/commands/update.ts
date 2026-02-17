@@ -8,6 +8,7 @@ import { TableFormatter } from '../utils/table-formatter.js';
 
 interface UpdateOptions {
   registry?: string;
+  token?: string;
   yes?: boolean;
 }
 
@@ -15,13 +16,14 @@ export const updateCommand = new Command('update')
   .description('Update installed Skill Packs to the latest versions')
   .argument('[pack-name]', 'Name of a specific pack to update (optional)')
   .option('--registry <url>', 'Custom registry URL')
+  .option('--token <token>', 'API token for authentication (or set SPECTREE_TOKEN env var)')
   .option('-y, --yes', 'Auto-confirm updates without prompting')
   .action(async (packName?: string, options?: UpdateOptions) => {
     const spinner = ora('Checking for updates...').start();
 
     try {
       // Initialize clients
-      const apiClient = new ApiClient(options?.registry);
+      const apiClient = new ApiClient(options?.registry, options?.token);
       const fileManager = new FileManager();
 
       // Read local manifest

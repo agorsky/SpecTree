@@ -10,6 +10,7 @@ interface ListOptions {
   installed?: boolean;
   available?: boolean;
   registry?: string;
+  token?: string;
 }
 
 export const listCommand = new Command('list')
@@ -17,11 +18,12 @@ export const listCommand = new Command('list')
   .option('--installed', 'Show only installed packs')
   .option('--available', 'Show only available packs from registry')
   .option('--registry <url>', 'Custom registry URL')
+  .option('--token <token>', 'API token for authentication (or set SPECTREE_TOKEN env var)')
   .action(async (options: ListOptions) => {
     const spinner = ora('Loading packs...').start();
 
     try {
-      const apiClient = new ApiClient(options.registry);
+      const apiClient = new ApiClient(options.registry, options.token);
       const fileManager = new FileManager();
 
       // Determine what to show
