@@ -77,11 +77,12 @@ async function seedSkillPack(
     },
   });
 
+  let versionRecord = existingVersion;
   if (existingVersion) {
     console.log(`  ✓ Version ${manifest.version} already exists`);
   } else {
     // Create the version
-    await prisma.skillPackVersion.create({
+    versionRecord = await prisma.skillPackVersion.create({
       data: {
         skillPackId: skillPack.id,
         version: manifest.version,
@@ -91,6 +92,45 @@ async function seedSkillPack(
       },
     });
     console.log(`  ✓ Published version ${manifest.version}`);
+  }
+
+  // Seed SkillPackFile records from actual files in the repo
+  if (versionRecord) {
+    const repoRoot = path.resolve(__dirname, "../../..");
+    const allPaths: string[] = [];
+    for (const section of ["agents", "skills", "instructions"] as const) {
+      for (const item of manifest[section] ?? []) {
+        allPaths.push(item.path);
+      }
+    }
+
+    let filesCreated = 0;
+    let filesSkipped = 0;
+    for (const filePath of allPaths) {
+      const existing = await prisma.skillPackFile.findUnique({
+        where: { versionId_path: { versionId: versionRecord.id, path: filePath } },
+      });
+      if (existing) { filesSkipped++; continue; }
+
+      const absPath = path.join(repoRoot, filePath);
+      try {
+        const content = await fs.readFile(absPath, "utf-8");
+        const ext = path.extname(filePath).toLowerCase();
+        const mimeType = ext === ".md" ? "text/markdown" : ext === ".json" ? "application/json" : "text/plain";
+        await prisma.skillPackFile.create({
+          data: {
+            versionId: versionRecord.id,
+            path: filePath,
+            content,
+            mimeType,
+          },
+        });
+        filesCreated++;
+      } catch {
+        console.log(`  ⚠ File not found: ${filePath}`);
+      }
+    }
+    console.log(`  ✓ Seeded ${filesCreated} files (${filesSkipped} already existed)`);
   }
 }
 
