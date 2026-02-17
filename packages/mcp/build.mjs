@@ -1,5 +1,5 @@
 import * as esbuild from 'esbuild';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
@@ -16,3 +16,23 @@ await esbuild.build({
   outfile: 'dist/index.js',
   external,
 });
+
+// Write a clean package.json to dist/ for publishing
+// Removes workspace:* deps (bundled inline by esbuild)
+const publishPkg = {
+  name: pkg.name,
+  version: pkg.version,
+  description: pkg.description,
+  type: pkg.type,
+  bin: { 'spectree-mcp': './index.js' },
+  main: './index.js',
+  repository: pkg.repository,
+  publishConfig: pkg.publishConfig,
+  dependencies: Object.fromEntries(
+    Object.entries(pkg.dependencies || {})
+      .filter(([dep]) => !dep.startsWith('@spectree/'))
+  ),
+};
+
+mkdirSync('dist', { recursive: true });
+writeFileSync('dist/package.json', JSON.stringify(publishPkg, null, 2) + '\n');

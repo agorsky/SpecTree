@@ -1,6 +1,6 @@
 {
   "name": "@ttc-ggi/spectree-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "SpecTree MCP server - Uses HTTP API client (no direct database access)",
   "type": "module",
   "main": "./dist/index.js",

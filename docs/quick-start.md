@@ -9,14 +9,26 @@ Get up and running with SpecTree in under 5 minutes. This guide covers installat
 Before installing SpecTree, ensure you have:
 
 - **Node.js 20+** — Check with `node --version`
-- **pnpm 9+** — Install with `npm install -g pnpm` or `corepack enable`
+- **GitHub CLI (`gh`)** — Authenticated via SSO (`gh auth status` to verify)
 - **GitHub Copilot** — Required for AI agent integration ([Get Copilot](https://github.com/features/copilot))
 
 ---
 
 ## Installation
 
-### Step 1: Install SpecTree CLI
+### Step 1: Configure npm for internal packages (one-time)
+
+SpecTree is distributed via GitHub Packages. Run this once to configure npm:
+
+```bash
+npm config set @ttc-ggi:registry https://npm.pkg.github.com && npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
+```
+
+This uses your existing GitHub SSO session — no separate token needed.
+
+**Time:** ~10 seconds
+
+### Step 2: Install SpecTree CLI
 
 ```bash
 npx @ttc-ggi/spectree-cli install @spectree/full
@@ -30,7 +42,7 @@ This installs the full SpecTree Skill Pack suite including:
 
 **Time:** ~30 seconds
 
-### Step 2: Configure GitHub Copilot
+### Step 3: Configure GitHub Copilot
 
 Add the SpecTree MCP server to GitHub Copilot's settings:
 
@@ -61,7 +73,7 @@ Add the SpecTree MCP server to GitHub Copilot's settings:
 
 **Time:** ~2 minutes
 
-### Step 3: Verify Installation
+### Step 4: Verify Installation
 
 Open GitHub Copilot and test connectivity:
 
@@ -78,7 +90,7 @@ Open GitHub Copilot and test connectivity:
 
 **Time:** ~30 seconds
 
-### Step 4: Create Your First Epic
+### Step 5: Create Your First Epic
 
 Try the planner workflow from the cookbook:
 
@@ -99,6 +111,15 @@ The planner agent will:
 ---
 
 ## Quick Troubleshooting
+
+### "Unable to authenticate" or "401 Unauthorized" from npm
+
+**Cause:** npm not configured for GitHub Packages  
+**Solution:** Run the one-time setup from Step 1:
+```bash
+npm config set @ttc-ggi:registry https://npm.pkg.github.com && npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
+```
+Make sure you're logged into GitHub CLI first: `gh auth login`
 
 ### "Command not found: spectree"
 
@@ -140,4 +161,4 @@ The planner agent will:
 
 **Want to dive deeper?** Read the [Workflow Cookbook](./cookbook/README.md) for guided walkthroughs
 
-**Found a bug?** Open an issue at [GitHub Issues](https://github.com/your-org/spectree/issues)
+**Found a bug?** Open an issue at [GitHub Issues](https://github.com/TTC-GGI/SpecTree/issues)
