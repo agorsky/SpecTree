@@ -40,7 +40,7 @@ This reuses your existing `gh` CLI login — no need to manually create or manag
 ### Step 2: Install SpecTree Skill Packs
 
 ```bash
-npx @ttc-ggi/spectree-cli install @spectree/full --registry https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
+npx @ttc-ggi/spectree-cli install @spectree/full --registry https://ca-spectree-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
 ```
 
 This installs the full SpecTree Skill Pack suite including:
@@ -66,7 +66,7 @@ Add the SpecTree MCP server to GitHub Copilot's settings:
         "command": "npx",
         "args": ["@ttc-ggi/spectree-mcp"],
         "env": {
-          "SPECTREE_API_URL": "https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io",
+          "SPECTREE_API_URL": "https://ca-spectree-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io",
           "SPECTREE_TOKEN": "your-api-token-here"
         }
       }

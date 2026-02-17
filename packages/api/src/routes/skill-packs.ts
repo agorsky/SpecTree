@@ -106,15 +106,13 @@ export default function skillPacksRoutes(
    * GET /api/v1/skill-packs
    * List skill packs with cursor-based pagination
    * Optional query params: isOfficial, query (search)
-   * Requires authentication
+   * Public route - no authentication required
    */
   fastify.get<{
     Querystring: ListSkillPacksQuery;
   }>(
     "/",
-    {
-      preHandler: authenticate,
-    },
+    {},
     async (request, reply) => {
       const { cursor, limit, isOfficial, query } = request.query;
 
@@ -135,15 +133,13 @@ export default function skillPacksRoutes(
   /**
    * GET /api/v1/skill-packs/:id
    * Get a single skill pack by ID or name
-   * Requires authentication
+   * Public route - no authentication required
    */
   fastify.get<{
     Params: SkillPackIdParams;
   }>(
     "/:id",
-    {
-      preHandler: authenticate,
-    },
+    {},
     async (request, reply) => {
       const { id } = request.params;
 
@@ -160,15 +156,13 @@ export default function skillPacksRoutes(
   /**
    * GET /api/v1/skill-packs/:id/versions
    * Get a skill pack with all its versions
-   * Requires authentication
+   * Public route - no authentication required
    */
   fastify.get<{
     Params: SkillPackIdParams;
   }>(
     "/:id/versions",
-    {
-      preHandler: authenticate,
-    },
+    {},
     async (request, reply) => {
       const { id } = request.params;
 
@@ -185,15 +179,13 @@ export default function skillPacksRoutes(
   /**
    * GET /api/v1/skill-packs/:id/versions/:version
    * Get a specific version of a skill pack
-   * Requires authentication
+   * Public route - no authentication required
    */
   fastify.get<{
     Params: VersionParams;
   }>(
     "/:id/versions/:version",
-    {
-      preHandler: authenticate,
-    },
+    {},
     async (request, reply) => {
       const { id, version } = request.params;
 
@@ -216,15 +208,13 @@ export default function skillPacksRoutes(
   /**
    * GET /api/v1/skill-packs/:id/latest
    * Get the latest stable version of a skill pack
-   * Requires authentication
+   * Public route - no authentication required
    */
   fastify.get<{
     Params: SkillPackIdParams;
   }>(
     "/:id/latest",
-    {
-      preHandler: authenticate,
-    },
+    {},
     async (request, reply) => {
       const { id } = request.params;
 
@@ -247,15 +237,13 @@ export default function skillPacksRoutes(
   /**
    * GET /api/v1/skill-packs/:id/download
    * Download the latest version of a skill pack as a tarball
-   * Requires authentication
+   * Public route - no authentication required
    */
   fastify.get<{
     Params: SkillPackIdParams;
   }>(
     "/:id/download",
-    {
-      preHandler: authenticate,
-    },
+    {},
     async (request, reply) => {
       const { id } = request.params;
 
@@ -288,15 +276,13 @@ export default function skillPacksRoutes(
   /**
    * GET /api/v1/skill-packs/:id/versions/:version/download
    * Download a specific version of a skill pack as a tarball
-   * Requires authentication
+   * Public route - no authentication required
    */
   fastify.get<{
     Params: VersionParams;
   }>(
     "/:id/versions/:version/download",
-    {
-      preHandler: authenticate,
-    },
+    {},
     async (request, reply) => {
       const { id, version } = request.params;
 
@@ -415,13 +401,11 @@ export default function skillPacksRoutes(
   /**
    * GET /api/v1/skill-packs/installed
    * List all installed skill packs
-   * Requires authentication
+   * Public route - no authentication required
    */
   fastify.get(
     "/installed",
-    {
-      preHandler: authenticate,
-    },
+    {},
     async (_request, reply) => {
       const installations = await listInstalledSkillPacks();
 
