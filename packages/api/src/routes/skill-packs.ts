@@ -102,6 +102,23 @@ export default function skillPacksRoutes(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions
 ): void {
+  // Helper: resolve pack ID from params (handles both UUID and @scope/name)
+  function resolvePackId(params: { id: string; name?: string }): string {
+    if (params.name) {
+      return `@${params.id}/${params.name}`;
+    }
+    return params.id;
+  }
+
+  // Scoped package params: /@:scope/:name → "@scope/name"
+  interface ScopedParams {
+    id: string;
+    name: string;
+  }
+
+  interface ScopedVersionParams extends ScopedParams {
+    version: string;
+  }
   /**
    * GET /api/v1/skill-packs
    * List skill packs with cursor-based pagination
@@ -308,6 +325,87 @@ export default function skillPacksRoutes(
           "Content-Disposition",
           `attachment; filename="${skillPack.name.replace(/[@\/]/g, "-")}-${version}.tar.gz"`
         )
+        .send(tarball);
+    }
+  );
+
+  // ============================================================
+  // Scoped package routes: /@:id/:name/...
+  // Handles @scope/name format where / in name breaks /:id routes
+  // ============================================================
+
+  fastify.get<{ Params: ScopedParams }>(
+    "/@:id/:name", {},
+    async (request, reply) => {
+      const packName = resolvePackId(request.params);
+      const skillPack = await getSkillPack(packName);
+      if (!skillPack) throw new NotFoundError(`Skill pack '${packName}' not found`);
+      return reply.send(skillPack);
+    }
+  );
+
+  fastify.get<{ Params: ScopedParams }>(
+    "/@:id/:name/versions", {},
+    async (request, reply) => {
+      const packName = resolvePackId(request.params);
+      const skillPack = await getSkillPackWithVersions(packName);
+      if (!skillPack) throw new NotFoundError(`Skill pack '${packName}' not found`);
+      return reply.send(skillPack);
+    }
+  );
+
+  fastify.get<{ Params: ScopedVersionParams }>(
+    "/@:id/:name/versions/:version", {},
+    async (request, reply) => {
+      const packName = resolvePackId(request.params);
+      const skillPack = await getSkillPack(packName);
+      if (!skillPack) throw new NotFoundError(`Skill pack '${packName}' not found`);
+      const packVersion = await getSkillPackVersion(skillPack.id, request.params.version);
+      if (!packVersion) throw new NotFoundError(`Version '${request.params.version}' not found for '${packName}'`);
+      return reply.send(packVersion);
+    }
+  );
+
+  fastify.get<{ Params: ScopedParams }>(
+    "/@:id/:name/latest", {},
+    async (request, reply) => {
+      const packName = resolvePackId(request.params);
+      const skillPack = await getSkillPack(packName);
+      if (!skillPack) throw new NotFoundError(`Skill pack '${packName}' not found`);
+      const latestVersion = await getLatestVersion(skillPack.id);
+      if (!latestVersion) throw new NotFoundError(`No stable versions found for '${packName}'`);
+      return reply.send(latestVersion);
+    }
+  );
+
+  fastify.get<{ Params: ScopedParams }>(
+    "/@:id/:name/download", {},
+    async (request, reply) => {
+      const packName = resolvePackId(request.params);
+      const skillPack = await getSkillPack(packName);
+      if (!skillPack) throw new NotFoundError(`Skill pack '${packName}' not found`);
+      const latestVersion = await getLatestVersion(skillPack.id);
+      if (!latestVersion) throw new NotFoundError(`No stable versions found for '${packName}'`);
+      const tarball = await bundleVersionFiles(skillPack.id, latestVersion.version);
+      return reply
+        .header("Content-Type", "application/gzip")
+        .header("Content-Disposition", `attachment; filename="${skillPack.name.replace(/[@\/]/g, "-")}-${latestVersion.version}.tar.gz"`)
+        .send(tarball);
+    }
+  );
+
+  fastify.get<{ Params: ScopedVersionParams }>(
+    "/@:id/:name/versions/:version/download", {},
+    async (request, reply) => {
+      const packName = resolvePackId(request.params);
+      const skillPack = await getSkillPack(packName);
+      if (!skillPack) throw new NotFoundError(`Skill pack '${packName}' not found`);
+      const packVersion = await getSkillPackVersion(skillPack.id, request.params.version);
+      if (!packVersion) throw new NotFoundError(`Version '${request.params.version}' not found for '${packName}'`);
+      const tarball = await bundleVersionFiles(skillPack.id, request.params.version);
+      return reply
+        .header("Content-Type", "application/gzip")
+        .header("Content-Disposition", `attachment; filename="${skillPack.name.replace(/[@\/]/g, "-")}-${request.params.version}.tar.gz"`)
         .send(tarball);
     }
   );
