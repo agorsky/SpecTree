@@ -3,13 +3,11 @@ import * as path from 'path';
 import { existsSync } from 'fs';
 
 export interface LocalManifest {
-  installedPacks: {
-    [packName: string]: {
+  installedPacks: Record<string, {
       version: string;
       installedAt: string;
       files: string[];
-    };
-  };
+    }>;
 }
 
 export class FileManager {
@@ -18,7 +16,7 @@ export class FileManager {
   private spectreeDir: string;
 
   constructor(projectRoot?: string) {
-    const root = projectRoot || process.cwd();
+    const root = projectRoot ?? process.cwd();
     this.githubDir = path.join(root, '.github');
     this.spectreeDir = path.join(root, '.spectree');
     this.manifestPath = path.join(this.spectreeDir, 'manifest.json');
@@ -32,8 +30,8 @@ export class FileManager {
   async readManifest(): Promise<LocalManifest> {
     try {
       const content = await fs.readFile(this.manifestPath, 'utf-8');
-      return JSON.parse(content);
-    } catch (error) {
+      return JSON.parse(content) as LocalManifest;
+    } catch {
       // Return empty manifest if file doesn't exist
       return { installedPacks: {} };
     }
@@ -56,6 +54,7 @@ export class FileManager {
 
   async removePackFromManifest(packName: string): Promise<void> {
     const manifest = await this.readManifest();
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete manifest.installedPacks[packName];
     await this.writeManifest(manifest);
   }
@@ -132,7 +131,7 @@ export class FileManager {
     const fs = await import('fs/promises');
     const path = await import('path');
 
-    const base = baseDir || dir;
+    const base = baseDir ?? dir;
     const entries = await fs.readdir(dir, { withFileTypes: true });
     const files: string[] = [];
 
@@ -156,7 +155,7 @@ export class FileManager {
       try {
         const fullPath = path.join(this.githubDir, file);
         await fs.unlink(fullPath);
-      } catch (error) {
+      } catch {
         // Ignore errors if file doesn't exist
       }
     }
@@ -168,15 +167,15 @@ export class FileManager {
     let existingConfig: Record<string, unknown> = {};
     if (existsSync(mcpConfigPath)) {
       const content = await fs.readFile(mcpConfigPath, 'utf-8');
-      existingConfig = JSON.parse(content);
+      existingConfig = JSON.parse(content) as Record<string, unknown>;
     }
 
     // Merge configs - new tools are added, existing tools are preserved
     const mergedConfig = {
       ...existingConfig,
       mcpServers: {
-        ...(existingConfig.mcpServers as Record<string, unknown> || {}),
-        ...(newConfig.mcpServers as Record<string, unknown> || {}),
+        ...((existingConfig.mcpServers ?? {}) as Record<string, unknown>),
+        ...((newConfig.mcpServers ?? {}) as Record<string, unknown>),
       },
     };
 

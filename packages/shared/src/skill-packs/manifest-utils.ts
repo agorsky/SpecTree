@@ -330,10 +330,10 @@ export function summarizeManifest(manifest: SkillPackManifest): {
     version: manifest.version,
     displayName: manifest.displayName,
     description: manifest.description,
-    agentCount: manifest.agents?.length ?? 0,
-    skillCount: manifest.skills?.length ?? 0,
-    instructionCount: manifest.instructions?.length ?? 0,
-    mcpServerCount: manifest.mcpServers?.length ?? 0,
+    agentCount: manifest.agents.length,
+    skillCount: manifest.skills.length,
+    instructionCount: manifest.instructions.length,
+    mcpServerCount: manifest.mcpServers.length,
   };
   
   if (manifest.author) {

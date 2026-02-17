@@ -18,20 +18,29 @@ Before installing SpecTree, ensure you have:
 
 ### Step 1: Configure npm for internal packages (one-time)
 
-SpecTree is distributed via GitHub Packages. Run this once to configure npm:
+SpecTree is distributed via GitHub Packages. Run these commands once to configure npm:
 
 ```bash
-npm config set @ttc-ggi:registry https://npm.pkg.github.com && npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
+# Ensure your GitHub CLI session has package read access
+gh auth refresh -s read:packages
+
+# Tell npm to use GitHub Packages for @ttc-ggi packages
+npm config set @ttc-ggi:registry https://npm.pkg.github.com
+
+# Pass your GitHub CLI session token to npm (npm can't use SSO directly)
+npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
 ```
 
-This uses your existing GitHub SSO session — no separate token needed.
+This reuses your existing `gh` CLI login — no need to manually create or manage tokens.
+
+> **Note:** If you later run `gh auth login` or `gh auth refresh` for any reason, re-run the `npm config set .../:_authToken` command above to update the cached token.
 
 **Time:** ~10 seconds
 
-### Step 2: Install SpecTree CLI
+### Step 2: Install SpecTree Skill Packs
 
 ```bash
-npx @ttc-ggi/spectree-cli install @spectree/full
+npx @ttc-ggi/spectree-cli install @spectree/full --registry https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
 ```
 
 This installs the full SpecTree Skill Pack suite including:
@@ -57,7 +66,7 @@ Add the SpecTree MCP server to GitHub Copilot's settings:
         "command": "npx",
         "args": ["@ttc-ggi/spectree-mcp"],
         "env": {
-          "SPECTREE_API_URL": "http://localhost:3001",
+          "SPECTREE_API_URL": "https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io",
           "SPECTREE_TOKEN": "your-api-token-here"
         }
       }
@@ -117,9 +126,23 @@ The planner agent will:
 **Cause:** npm not configured for GitHub Packages  
 **Solution:** Run the one-time setup from Step 1:
 ```bash
-npm config set @ttc-ggi:registry https://npm.pkg.github.com && npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
+gh auth refresh -s read:packages
+npm config set @ttc-ggi:registry https://npm.pkg.github.com
+npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
 ```
 Make sure you're logged into GitHub CLI first: `gh auth login`
+
+### "403 Forbidden" when installing packages
+
+**Cause:** Your GitHub token is missing the `read:packages` scope  
+**Solution:**
+```bash
+# Add the packages scope to your token
+gh auth refresh -s read:packages
+
+# Re-set the npm token (important — the old cached token won't have the new scope)
+npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
+```
 
 ### "Command not found: spectree"
 

@@ -21,7 +21,7 @@ export interface CreateInvitationRequest {
   email: string;
 }
 
-export interface CreateInvitationResponse extends Invitation {}
+export type CreateInvitationResponse = Invitation;
 
 export interface ListInvitationsParams {
   status?: "pending" | "used" | "expired" | "all";

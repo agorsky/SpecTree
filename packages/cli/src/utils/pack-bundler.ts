@@ -17,16 +17,14 @@ export interface PackManifest {
 
 export interface BundledPack {
   manifest: PackManifest;
-  files: {
-    [filePath: string]: string;
-  };
+  files: Record<string, string>;
 }
 
 export class PackBundler {
   private packRoot: string;
 
   constructor(packRoot?: string) {
-    this.packRoot = packRoot || process.cwd();
+    this.packRoot = packRoot ?? process.cwd();
   }
 
   async readPackManifest(): Promise<PackManifest> {
@@ -37,7 +35,7 @@ export class PackBundler {
     }
 
     const content = await fs.readFile(manifestPath, 'utf-8');
-    const manifest = JSON.parse(content);
+    const manifest = JSON.parse(content) as PackManifest;
 
     // Validate required fields
     if (!manifest.name || !manifest.version || !manifest.description) {
@@ -58,7 +56,7 @@ export class PackBundler {
 
   async bundlePack(): Promise<BundledPack> {
     const manifest = await this.readPackManifest();
-    const files: { [filePath: string]: string } = {};
+    const files: Record<string, string> = {};
 
     const githubDir = path.join(this.packRoot, '.github');
 
@@ -114,7 +112,7 @@ export class PackBundler {
     };
   }
 
-  async validatePack(_dryRun: boolean = false): Promise<{
+  async validatePack(_dryRun = false): Promise<{
     valid: boolean;
     errors: string[];
     warnings: string[];
@@ -136,9 +134,9 @@ export class PackBundler {
 
       // Validate each file exists
       const allFiles = [
-        ...(manifest.files.agents?.map((f) => `agents/${f}`) || []),
-        ...(manifest.files.skills?.map((f) => `skills/${f}`) || []),
-        ...(manifest.files.instructions?.map((f) => `instructions/${f}`) || []),
+        ...(manifest.files.agents?.map((f) => `agents/${f}`) ?? []),
+        ...(manifest.files.skills?.map((f) => `skills/${f}`) ?? []),
+        ...(manifest.files.instructions?.map((f) => `instructions/${f}`) ?? []),
       ];
 
       if (manifest.files.mcpConfig) {

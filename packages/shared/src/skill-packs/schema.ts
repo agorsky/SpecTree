@@ -25,7 +25,7 @@ export const mcpServerConfigSchema = z.object({
     "URL for remote SSE-based MCP server"
   ),
 }).refine(
-  (data) => !!(data.command || data.url),
+  (data) => !!(data.command ?? data.url),
   {
     message: "Either 'command' or 'url' must be provided for MCP server configuration",
   }

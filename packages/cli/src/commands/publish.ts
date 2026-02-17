@@ -59,7 +59,7 @@ export const publishCommand = new Command('publish')
         if (bundled.manifest.author) {
           console.log(chalk.cyan(`  Author: ${bundled.manifest.author}`));
         }
-        console.log(chalk.cyan(`  Files: ${Object.keys(bundled.files).length}`));
+        console.log(chalk.cyan(`  Files: ${String(Object.keys(bundled.files).length)}`));
 
         console.log(chalk.bold('\nFile list:'));
         for (const filePath of Object.keys(bundled.files)) {
@@ -73,7 +73,7 @@ export const publishCommand = new Command('publish')
       }
 
       // Get authentication token
-      const token = options.token || process.env.SPECTREE_API_TOKEN;
+      const token = options.token ?? process.env.SPECTREE_API_TOKEN;
       if (!token) {
         spinner.fail(TableFormatter.error('Authentication required'));
         console.error(

@@ -9,6 +9,7 @@ export interface PackRow {
   updateAvailable?: string | undefined;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class TableFormatter {
   /**
    * Format installed packs table
@@ -36,7 +37,7 @@ export class TableFormatter {
       table.push([
         pack.name,
         pack.version,
-        pack.installedVersion || '-',
+        pack.installedVersion ?? '-',
         status,
       ]);
     }
@@ -65,7 +66,7 @@ export class TableFormatter {
       table.push([
         pack.name,
         pack.version,
-        pack.description || '-',
+        pack.description ?? '-',
       ]);
     }
 
@@ -102,7 +103,7 @@ export class TableFormatter {
 
       table.push([
         pack.name,
-        pack.installedVersion || chalk.gray('-'),
+        pack.installedVersion ?? chalk.gray('-'),
         pack.version,
         status,
       ]);

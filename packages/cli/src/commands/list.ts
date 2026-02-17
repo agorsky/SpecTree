@@ -25,8 +25,8 @@ export const listCommand = new Command('list')
       const fileManager = new FileManager();
 
       // Determine what to show
-      const showInstalled = options.installed || (!options.installed && !options.available);
-      const showAvailable = options.available || (!options.installed && !options.available);
+      const showInstalled = options.installed ?? !options.available;
+      const showAvailable = options.available ?? !options.installed;
 
       let installedPacks: Record<string, { version: string; installedAt: string }> = {};
       let availablePacks: PackInfo[] = [];
@@ -36,7 +36,7 @@ export const listCommand = new Command('list')
         try {
           const manifest = await fileManager.readManifest();
           installedPacks = manifest.installedPacks;
-        } catch (error) {
+        } catch {
           // No manifest yet - no packs installed
         }
       }
@@ -148,10 +148,10 @@ export const listCommand = new Command('list')
         const updatesAvailable = rows.filter((r) => r.updateAvailable).length;
 
         console.log('');
-        console.log(chalk.gray(`Installed: ${installedCount}`));
-        console.log(chalk.gray(`Available: ${availableCount}`));
+        console.log(chalk.gray(`Installed: ${String(installedCount)}`));
+        console.log(chalk.gray(`Available: ${String(availableCount)}`));
         if (updatesAvailable > 0) {
-          console.log(chalk.yellow(`Updates available: ${updatesAvailable}`));
+          console.log(chalk.yellow(`Updates available: ${String(updatesAvailable)}`));
           console.log(chalk.gray('\nRun: spectree update --yes'));
         }
       }

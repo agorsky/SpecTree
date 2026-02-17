@@ -64,7 +64,7 @@ export const updateCommand = new Command('update')
               latest: packInfo.version,
             };
           }
-        } catch (error) {
+        } catch {
           console.warn(chalk.yellow(`\nWarning: Could not check updates for ${name}`));
         }
       }
@@ -104,7 +104,7 @@ export const updateCommand = new Command('update')
           const packFiles = await apiClient.downloadPackFiles(name, latest);
           
           // Remove old files
-          const oldFiles = installedPacks[name]?.files || [];
+          const oldFiles = installedPacks[name]?.files ?? [];
           await fileManager.deletePackFiles(oldFiles);
 
           // Install new files

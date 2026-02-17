@@ -106,7 +106,7 @@ describe("safeParseManifest", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.details).toBeDefined();
-      expect(result.details!.length).toBeGreaterThan(0);
+      expect(result.details?.length).toBeGreaterThan(0);
     }
   });
 });
@@ -116,7 +116,7 @@ describe("loadManifestFromFile and safeLoadManifestFromFile", () => {
   let testFilePath: string;
 
   beforeEach(async () => {
-    testDir = join(tmpdir(), `spectree-test-${Date.now()}`);
+    testDir = join(tmpdir(), `spectree-test-${String(Date.now())}`);
     await mkdir(testDir, { recursive: true });
     testFilePath = join(testDir, "manifest.json");
   });

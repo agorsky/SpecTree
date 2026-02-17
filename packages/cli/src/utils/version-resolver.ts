@@ -7,6 +7,7 @@ export interface VersionInfo {
   updateAvailable?: string | undefined;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class VersionResolver {
   /**
    * Compare two versions and determine if an update is available
