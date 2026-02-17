@@ -115,12 +115,12 @@ export function registerChangelogTools(server: McpServer): void {
         // Format the changelog entries for AI consumption
         const formattedEntries = result.data.map((entry) => {
           // Parse old and new values (they're stored as JSON strings)
-          const oldValue = entry.oldValue ? JSON.parse(entry.oldValue) : null;
-          const newValue = entry.newValue ? JSON.parse(entry.newValue) : null;
+          const oldValue: unknown = entry.oldValue ? JSON.parse(entry.oldValue) : null;
+          const newValue: unknown = entry.newValue ? JSON.parse(entry.newValue) : null;
 
           // Format as readable "old → new"
-          const oldDisplay = oldValue === null ? "(empty)" : String(oldValue);
-          const newDisplay = newValue === null ? "(empty)" : String(newValue);
+          const oldDisplay = oldValue === null ? "(empty)" : JSON.stringify(oldValue);
+          const newDisplay = newValue === null ? "(empty)" : JSON.stringify(newValue);
 
           return {
             id: entry.id,

@@ -53,14 +53,16 @@ export interface ActionDefinition<T extends z.ZodRawShape> {
  * @param actions - Array of action definitions
  * @returns Zod discriminated union schema
  */
-export function buildCompositeSchema<
-  T extends readonly [ActionDefinition<any>, ...ActionDefinition<any>[]]
->(actions: T) {
+export function buildCompositeSchema(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  actions: readonly [ActionDefinition<any>, ...ActionDefinition<any>[]]
+) {
   // Convert action definitions to Zod objects with action literal
   const actionSchemas = actions.map((actionDef) =>
     actionDef.schema.extend({
       action: z.literal(actionDef.action).describe(actionDef.description),
     })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) as unknown as [z.ZodObject<any>, z.ZodObject<any>, ...z.ZodObject<any>[]];
 
   return z.discriminatedUnion("action", actionSchemas);
@@ -69,14 +71,14 @@ export function buildCompositeSchema<
 /**
  * Handler function for a specific action
  */
-export type ActionHandler<TInput = any, TOutput = any> = (
+export type ActionHandler<TInput = unknown, TOutput = unknown> = (
   input: TInput
 ) => Promise<TOutput> | TOutput;
 
 /**
  * Map of action names to handler functions
  */
-export type ActionHandlers<TInput = any, TOutput = any> = Record<
+export type ActionHandlers<TInput = unknown, TOutput = unknown> = Record<
   string,
   ActionHandler<TInput, TOutput>
 >;
@@ -116,18 +118,13 @@ export async function routeAction<TInput extends { action: string }, TOutput>(
     );
   }
 
-  try {
-    return await handler(input);
-  } catch (error) {
-    // Re-throw to let caller handle with createErrorResponse
-    throw error;
-  }
+  return await handler(input);
 }
 
 /**
  * Standard success response format
  */
-export interface CompositeResponse<T = any> {
+export interface CompositeResponse<T = unknown> {
   /** Success indicator */
   success: boolean;
   /** Human-readable message */
@@ -155,7 +152,7 @@ export interface CompositeResponse<T = any> {
  * @param options - Response options
  * @returns Formatted response object
  */
-export function formatCompositeResponse<T = any>(options: {
+export function formatCompositeResponse<T = unknown>(options: {
   message: string;
   data?: T;
   meta?: Record<string, unknown>;
@@ -186,7 +183,7 @@ export function formatCompositeResponse<T = any>(options: {
  * @param options - List response options
  * @returns Formatted list response
  */
-export function formatCompositeListResponse<T = any>(options: {
+export function formatCompositeListResponse<T = unknown>(options: {
   message: string;
   items: T[];
   total?: number;
@@ -231,7 +228,7 @@ export function formatCompositeListResponse<T = any>(options: {
  */
 export function buildActionDescription(
   intro: string,
-  actions: Array<Pick<ActionDefinition<any>, "action" | "description">>
+  actions: Pick<ActionDefinition<z.ZodRawShape>, "action" | "description">[]
 ): string {
   const actionList = actions
     .map((a) => `- '${a.action}': ${a.description}`)
@@ -254,13 +251,13 @@ export function hasAction(value: unknown): value is { action: string } {
     typeof value === "object" &&
     value !== null &&
     "action" in value &&
-    typeof (value as any).action === "string"
+    typeof (value as { action: unknown }).action === "string"
   );
 }
 
 /**
  * Extract action name from validated input (type-safe)
  */
-export function getAction<T extends { action: string }>(input: T): string {
+export function getAction(input: { action: string }): string {
   return input.action;
 }

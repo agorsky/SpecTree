@@ -268,7 +268,7 @@ export function registerCodeContextTools(server: McpServer): void {
                 input.prUrl
               );
               return createResponse({
-                message: `PR #${input.prNumber} linked to feature ${feature.identifier}`,
+                message: `PR #${String(input.prNumber)} linked to feature ${feature.identifier}`,
                 ...result,
               });
             } else {
@@ -279,7 +279,7 @@ export function registerCodeContextTools(server: McpServer): void {
                 input.prUrl
               );
               return createResponse({
-                message: `PR #${input.prNumber} linked to task ${task.identifier}`,
+                message: `PR #${String(input.prNumber)} linked to task ${task.identifier}`,
                 ...result,
               });
             }
@@ -288,7 +288,7 @@ export function registerCodeContextTools(server: McpServer): void {
           default:
             // TypeScript exhaustiveness check ensures this is unreachable
             return createErrorResponse(
-              new Error(`Unknown action: ${(input as any).action}`)
+              new Error(`Unknown action: ${(input as { action: string }).action}`)
             );
         }
       } catch (error) {
@@ -675,7 +675,7 @@ export function registerCodeContextTools(server: McpServer): void {
             input.prUrl
           );
           return createResponse({
-            message: `PR #${input.prNumber} linked to feature ${feature.identifier}`,
+            message: `PR #${String(input.prNumber)} linked to feature ${feature.identifier}`,
             ...result,
           });
         } else {
@@ -686,7 +686,7 @@ export function registerCodeContextTools(server: McpServer): void {
             input.prUrl
           );
           return createResponse({
-            message: `PR #${input.prNumber} linked to task ${task.identifier}`,
+            message: `PR #${String(input.prNumber)} linked to task ${task.identifier}`,
             ...result,
           });
         }

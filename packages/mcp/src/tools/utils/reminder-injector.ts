@@ -64,7 +64,7 @@ const REMINDER_RULES: Record<string, string> = {
  * @param result - The raw result object
  * @returns The result with reminder appended (if applicable)
  */
-export function injectReminder<T extends Record<string, unknown>>(
+export function injectReminder<T extends object>(
   toolName: string,
   result: T
 ): T {
@@ -80,10 +80,11 @@ export function injectReminder<T extends Record<string, unknown>>(
   }
   
   // Append reminder to the message field if it exists
-  if (typeof result.message === 'string') {
+  const rec = result as Record<string, unknown>;
+  if (typeof rec.message === 'string') {
     return {
       ...result,
-      message: `${result.message}\n\n> ${reminder}`
+      message: `${rec.message}\n\n> ${reminder}`
     };
   }
   
@@ -105,8 +106,8 @@ export function injectReminder<T extends Record<string, unknown>>(
  */
 export function injectReminderIntoMcpResponse(
   toolName: string,
-  response: { content: Array<{ type: string; text: string }> }
-): { content: Array<{ type: string; text: string }> } {
+  response: { content: { type: string; text: string }[] }
+): { content: { type: string; text: string }[] } {
   // Check if reminders are disabled
   if (process.env.SPECTREE_DISABLE_REMINDERS === 'true') {
     return response;
@@ -120,12 +121,12 @@ export function injectReminderIntoMcpResponse(
   
   // Parse the existing JSON response
   const firstContent = response.content[0];
-  if (!firstContent || firstContent.type !== 'text') {
+  if (firstContent?.type !== 'text') {
     return response;
   }
   
   try {
-    const data = JSON.parse(firstContent.text);
+    const data = JSON.parse(firstContent.text) as Record<string, unknown>;
     
     // Append reminder to message field
     const updatedData = injectReminder(toolName, data);
@@ -139,8 +140,7 @@ export function injectReminderIntoMcpResponse(
         }
       ]
     };
-  } catch (error) {
-    // If parsing fails, just append as markdown
+  } catch {
     return {
       content: [
         {

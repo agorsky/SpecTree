@@ -330,10 +330,14 @@ export function summarizeManifest(manifest: SkillPackManifest): {
     version: manifest.version,
     displayName: manifest.displayName,
     description: manifest.description,
-    agentCount: manifest.agents.length,
-    skillCount: manifest.skills.length,
-    instructionCount: manifest.instructions.length,
-    mcpServerCount: manifest.mcpServers.length,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- arrays may be undefined when called outside Zod validation
+    agentCount: manifest.agents?.length ?? 0,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    skillCount: manifest.skills?.length ?? 0,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    instructionCount: manifest.instructions?.length ?? 0,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    mcpServerCount: manifest.mcpServers?.length ?? 0,
   };
   
   if (manifest.author) {

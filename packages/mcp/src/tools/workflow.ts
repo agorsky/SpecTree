@@ -48,7 +48,21 @@ export function registerWorkflowTools(server: McpServer): void {
         const suggestions: NextAction[] = [];
 
         // Fetch item with all metadata
-        let item: any;
+        interface WorkItem {
+          executionOrder?: number | null;
+          estimatedComplexity?: string | null;
+          structuredDesc?: {
+            summary?: string;
+            acceptanceCriteria?: string[];
+            aiInstructions?: string;
+          } | string | null;
+          validationChecks?: { status: string }[];
+          status?: { name?: string; category?: string } | null;
+          startedAt?: string | null;
+          title?: string;
+          name?: string;
+        }
+        let item: WorkItem;
         if (input.itemType === "feature") {
           const { data } = await apiClient.getFeature(input.itemId);
           item = data;
@@ -88,7 +102,7 @@ export function registerWorkflowTools(server: McpServer): void {
               exampleParameters: {
                 id: input.itemId,
                 type: input.itemType,
-                executionOrder: item.executionOrder || 1,
+                executionOrder: item.executionOrder ?? 1,
                 estimatedComplexity: "moderate",
               },
             });
@@ -96,8 +110,9 @@ export function registerWorkflowTools(server: McpServer): void {
         }
 
         // 2. Check structured description
-        const structuredDesc = item.structuredDesc;
-        if (!structuredDesc || !structuredDesc.summary) {
+        const rawDesc = item.structuredDesc;
+        const structuredDesc = typeof rawDesc === 'string' ? null : rawDesc;
+        if (!structuredDesc?.summary) {
           suggestions.push({
             priority: 2,
             action: "Add structured description with summary",
@@ -122,7 +137,7 @@ export function registerWorkflowTools(server: McpServer): void {
             suggestions.push({
               priority: 2,
               action: "Add acceptance criteria",
-              reason: `Only ${criteriaCount} acceptance criteria defined. Minimum ${minCriteria} required for ${input.itemType}s.`,
+              reason: `Only ${String(criteriaCount)} acceptance criteria defined. Minimum ${String(minCriteria)} required for ${input.itemType}s.`,
               toolName: "spectree__manage_description",
               exampleParameters: {
                 action: "add_criterion",
@@ -173,8 +188,8 @@ export function registerWorkflowTools(server: McpServer): void {
         }
 
         // 4. Check work status and timing
-        const status = item.status || {};
-        const statusCategory = status.category || "backlog";
+        const status = item.status ?? {};
+        const statusCategory = status.category ?? "backlog";
 
         if (statusCategory === "backlog" || statusCategory === "unstarted") {
           suggestions.push({
@@ -202,9 +217,9 @@ export function registerWorkflowTools(server: McpServer): void {
 
         // 5. Check if all validations passed (for tasks)
         if (input.itemType === "task" && statusCategory === "started") {
-          const validationChecks = item.validationChecks || [];
+          const validationChecks = item.validationChecks ?? [];
           const allPassed = validationChecks.length > 0 && 
-            validationChecks.every((check: any) => check.status === "passed");
+            validationChecks.every((check) => check.status === "passed");
           
           if (allPassed) {
             suggestions.push({
@@ -219,7 +234,7 @@ export function registerWorkflowTools(server: McpServer): void {
               },
             });
           } else if (validationChecks.length > 0) {
-            const hasPending = validationChecks.some((check: any) => check.status === "pending");
+            const hasPending = validationChecks.some((check) => check.status === "pending");
             if (hasPending) {
               suggestions.push({
                 priority: 5,
@@ -240,12 +255,12 @@ export function registerWorkflowTools(server: McpServer): void {
         return createResponse({
           itemId: input.itemId,
           itemType: input.itemType,
-          itemTitle: item.title || item.name,
-          currentStatus: status.name || "Unknown",
+          itemTitle: item.title ?? item.name,
+          currentStatus: status.name ?? "Unknown",
           statusCategory,
           suggestions,
           message: suggestions.length > 0
-            ? `Found ${suggestions.length} suggested action(s) to maintain compliance`
+            ? `Found ${String(suggestions.length)} suggested action(s) to maintain compliance`
             : "No suggestions - item appears to be properly configured",
         });
       } catch (error) {

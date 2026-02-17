@@ -118,7 +118,7 @@ export function registerSkillPackTools(server: McpServer): void {
             const result = await apiClient.listSkillPacks(params);
 
             return createResponse({
-              message: `Found ${result.data.length} skill pack(s)`,
+              message: `Found ${String(result.data.length)} skill pack(s)`,
               packs: result.data.map((pack) => ({
                 id: pack.id,
                 name: pack.name,
@@ -142,7 +142,7 @@ export function registerSkillPackTools(server: McpServer): void {
               const { data: pack } = await apiClient.getSkillPackWithVersions(input.id);
 
               return createResponse({
-                message: `Retrieved skill pack '${pack.displayName}' with ${pack.versions.length} version(s)`,
+                message: `Retrieved skill pack '${pack.displayName}' with ${String(pack.versions.length)} version(s)`,
                 pack: {
                   id: pack.id,
                   name: pack.name,
@@ -237,7 +237,7 @@ export function registerSkillPackTools(server: McpServer): void {
             const { data: installations } = await apiClient.listInstalledSkillPacks();
 
             return createResponse({
-              message: `Found ${installations.length} installed skill pack(s)`,
+              message: `Found ${String(installations.length)} installed skill pack(s)`,
               installations: installations.map((inst) => ({
                 skillPackId: inst.skillPackId,
                 name: inst.skillPack?.name,
@@ -271,7 +271,7 @@ export function registerSkillPackTools(server: McpServer): void {
           if (error.status === 400) {
             const body = error.body as { error?: string };
             return createErrorResponse(
-              new Error(`Validation error: ${body.error || "Invalid input"}`)
+              new Error(`Validation error: ${body.error ?? "Invalid input"}`)
             );
           }
           if (error.status === 403) {

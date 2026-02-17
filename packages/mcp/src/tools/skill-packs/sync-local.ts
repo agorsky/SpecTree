@@ -17,13 +17,11 @@ import { createResponse, createErrorResponse } from "../utils.js";
 
 // Local manifest structure (matches CLI FileManager)
 interface LocalManifest {
-  installedPacks: {
-    [packName: string]: {
+  installedPacks: Record<string, {
       version: string;
       installedAt: string;
       files: string[];
-    };
-  };
+    }>;
 }
 
 // Register the sync local packs tool
@@ -60,7 +58,7 @@ export function registerSyncLocalPacksTool(server: McpServer): void {
         const apiClient = getApiClient();
 
         // Resolve paths
-        const root = input.projectRoot || process.cwd();
+        const root = input.projectRoot ?? process.cwd();
         const spectreeDir = path.join(root, ".spectree");
         const githubDir = path.join(root, ".github");
         const manifestPath = path.join(spectreeDir, "manifest.json");
@@ -94,7 +92,7 @@ export function registerSyncLocalPacksTool(server: McpServer): void {
         if (existsSync(manifestPath)) {
           try {
             const content = await fs.readFile(manifestPath, "utf-8");
-            localManifest = JSON.parse(content);
+            localManifest = JSON.parse(content) as LocalManifest;
           } catch (error) {
             return createErrorResponse(
               new Error(
@@ -109,7 +107,7 @@ export function registerSyncLocalPacksTool(server: McpServer): void {
           await apiClient.listInstalledSkillPacks();
         const registryMap = new Map(
           registryInstallations.map((inst) => [
-            inst.skillPack?.name || inst.skillPackId,
+            inst.skillPack?.name ?? inst.skillPackId,
             inst,
           ])
         );
@@ -124,8 +122,8 @@ export function registerSyncLocalPacksTool(server: McpServer): void {
             });
             localFiles = files
               .filter((f) => f.isFile())
-              .map((f) => path.relative(instructionsDir, path.join(f.path, f.name)));
-          } catch (error) {
+              .map((f) => path.relative(instructionsDir, path.join(f.parentPath, f.name)));
+          } catch {
             // Directory might not be readable, continue with empty list
             localFiles = [];
           }
@@ -134,20 +132,20 @@ export function registerSyncLocalPacksTool(server: McpServer): void {
         // Detect issues
         const issues = {
           untrackedFiles: [] as string[],
-          missingFiles: [] as Array<{ pack: string; file: string }>,
-          registryMismatches: [] as Array<{
+          missingFiles: [] as { pack: string; file: string }[],
+          registryMismatches: [] as {
             pack: string;
             inLocal: boolean;
             inRegistry: boolean;
             localVersion?: string;
             registryVersion?: string;
-          }>,
-          versionDifferences: [] as Array<{
+          }[],
+          versionDifferences: [] as {
             pack: string;
             installedVersion: string;
             latestVersion: string;
             source: "local" | "registry";
-          }>,
+          }[],
         };
 
         // Track which files are accounted for
@@ -244,7 +242,7 @@ export function registerSyncLocalPacksTool(server: McpServer): void {
 
         return createResponse({
           message: hasIssues
-            ? `Found ${issues.untrackedFiles.length + issues.missingFiles.length + issues.registryMismatches.length + issues.versionDifferences.length} issue(s)`
+            ? `Found ${String(issues.untrackedFiles.length + issues.missingFiles.length + issues.registryMismatches.length + issues.versionDifferences.length)} issue(s)`
             : "Local installations are in sync",
           status: hasIssues ? "drift-detected" : "in-sync",
           paths: {

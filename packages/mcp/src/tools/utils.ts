@@ -65,17 +65,17 @@ export function createErrorResponse(error: unknown) {
   if (error instanceof ApiError) {
     switch (error.status) {
       case 401:
-        if (message === `HTTP ${error.status}`) {
+        if (message === `HTTP ${String(error.status)}`) {
           enhancedMessage = "Authentication failed. Check that API_TOKEN is valid.";
         }
         break;
       case 403:
-        if (message === `HTTP ${error.status}`) {
+        if (message === `HTTP ${String(error.status)}`) {
           enhancedMessage = "Access denied. You may not have permission for this team/resource.";
         }
         break;
       case 404:
-        if (message === `HTTP ${error.status}`) {
+        if (message === `HTTP ${String(error.status)}`) {
           enhancedMessage = "Resource not found.";
         }
         break;

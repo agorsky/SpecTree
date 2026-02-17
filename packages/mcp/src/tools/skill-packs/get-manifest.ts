@@ -66,7 +66,7 @@ export function registerGetPackManifestTool(server: McpServer): void {
         // Parse the manifest JSON
         let manifest: SkillPackManifest;
         try {
-          manifest = JSON.parse(packVersion.manifest);
+          manifest = JSON.parse(packVersion.manifest) as SkillPackManifest;
         } catch (parseError) {
           return createErrorResponse(
             new Error(
@@ -131,7 +131,7 @@ export function registerGetPackManifestTool(server: McpServer): void {
           if (error.status === 400) {
             const body = error.body as { error?: string };
             return createErrorResponse(
-              new Error(`Validation error: ${body.error || "Invalid input"}`)
+              new Error(`Validation error: ${body.error ?? "Invalid input"}`)
             );
           }
         }

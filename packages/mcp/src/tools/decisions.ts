@@ -144,7 +144,7 @@ export function registerDecisionTools(server: McpServer): void {
           decision: input.decision,
           rationale: input.rationale,
           alternatives: input.alternatives,
-          madeBy: input.madeBy ?? "AI",
+          madeBy: input.madeBy,
           category: input.category,
           impact: input.impact,
         });
@@ -154,7 +154,7 @@ export function registerDecisionTools(server: McpServer): void {
           question: decision.question,
           decision: decision.decision,
           rationale: decision.rationale,
-          alternatives: decision.alternatives ? JSON.parse(decision.alternatives) : null,
+          alternatives: decision.alternatives ? JSON.parse(decision.alternatives) as unknown : null,
           category: decision.category,
           impact: decision.impact,
           madeBy: decision.madeBy,
@@ -250,7 +250,7 @@ export function registerDecisionTools(server: McpServer): void {
         // Parse alternatives JSON for each decision
         const decisions = result.data.map((d) => ({
           ...d,
-          alternatives: d.alternatives ? JSON.parse(d.alternatives) : null,
+          alternatives: d.alternatives ? JSON.parse(d.alternatives) as unknown : null,
         }));
 
         return createResponse({
@@ -319,7 +319,7 @@ export function registerDecisionTools(server: McpServer): void {
         // Parse alternatives JSON for each decision
         const decisions = result.data.map((d) => ({
           ...d,
-          alternatives: d.alternatives ? JSON.parse(d.alternatives) : null,
+          alternatives: d.alternatives ? JSON.parse(d.alternatives) as unknown : null,
         }));
 
         return createResponse({
@@ -387,7 +387,7 @@ export function registerDecisionTools(server: McpServer): void {
           const parseDecisions = (decisions: typeof context.taskDecisions) =>
             decisions.map((d) => ({
               ...d,
-              alternatives: d.alternatives ? JSON.parse(d.alternatives) : null,
+              alternatives: d.alternatives ? JSON.parse(d.alternatives) as unknown : null,
             }));
 
           return createResponse({
@@ -414,7 +414,7 @@ export function registerDecisionTools(server: McpServer): void {
           const parseDecisions = (decisions: typeof context.featureDecisions) =>
             decisions.map((d) => ({
               ...d,
-              alternatives: d.alternatives ? JSON.parse(d.alternatives) : null,
+              alternatives: d.alternatives ? JSON.parse(d.alternatives) as unknown : null,
             }));
 
           return createResponse({

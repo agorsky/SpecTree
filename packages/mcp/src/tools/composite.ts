@@ -48,7 +48,7 @@ function withTimeout<T>(
       },
       (error: unknown) => {
         clearTimeout(timer);
-        reject(error);
+        reject(error instanceof Error ? error : new Error(String(error)));
       }
     );
   });
@@ -260,7 +260,7 @@ export function registerCompositeTools(server: McpServer): void {
 
         // Format a helpful response
         const responseText = {
-          message: `Successfully created epic '${result.epic.name}' with ${result.summary.totalFeatures} features and ${result.summary.totalTasks} tasks.`,
+          message: `Successfully created epic '${result.epic.name}' with ${String(result.summary.totalFeatures)} features and ${String(result.summary.totalTasks)} tasks.`,
           epic: {
             id: result.epic.id,
             name: result.epic.name,
@@ -291,7 +291,7 @@ export function registerCompositeTools(server: McpServer): void {
           if (error.status === 400) {
             const body = error.body as { error?: string };
             return createErrorResponse(
-              new Error(`Validation error: ${body.error || "Invalid input"}`)
+              new Error(`Validation error: ${body.error ?? "Invalid input"}`)
             );
           }
         }
@@ -421,7 +421,7 @@ export function registerCompositeTools(server: McpServer): void {
           // Some validations failed - return details without completing
           const failedChecks = validationResult.results.filter((c) => !c.passed);
           return createResponse({
-            message: `Task '${task.identifier}' NOT completed. ${validationResult.failed} of ${validationResult.totalChecks} validations failed.`,
+            message: `Task '${task.identifier}' NOT completed. ${String(validationResult.failed)} of ${String(validationResult.totalChecks)} validations failed.`,
             completed: false,
             validationSummary: {
               total: validationResult.totalChecks,
@@ -451,7 +451,7 @@ export function registerCompositeTools(server: McpServer): void {
         });
 
         return createResponse({
-          message: `Task '${task.identifier}' completed. All ${validationResult.totalChecks} validations passed.`,
+          message: `Task '${task.identifier}' completed. All ${String(validationResult.totalChecks)} validations passed.`,
           completed: true,
           validationSummary: {
             total: validationResult.totalChecks,

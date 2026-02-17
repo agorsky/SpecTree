@@ -153,20 +153,20 @@ export function registerStructuredDescTools(server: McpServer): void {
         }
 
         // Execute action-specific logic
-        let result: any;
+        let result: Record<string, unknown> | undefined;
         let actionMessage: string | undefined;
 
         switch (input.action) {
           case "get": {
             if (input.type === "feature") {
               const { data } = await apiClient.getFeatureStructuredDesc(entityId);
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else if (input.type === "epic") {
               const { data } = await apiClient.getEpicStructuredDesc(entityId);
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else {
               const { data } = await apiClient.getTaskStructuredDesc(entityId);
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             }
             break;
           }
@@ -194,11 +194,11 @@ export function registerStructuredDescTools(server: McpServer): void {
               const criteriaCount = desc.acceptanceCriteria?.length ?? 0;
               if (input.type === "task" && criteriaCount < 2) {
                 validationErrors.push(
-                  `acceptanceCriteria must have at least 2 items for tasks (found ${criteriaCount})`
+                  `acceptanceCriteria must have at least 2 items for tasks (found ${String(criteriaCount)})`
                 );
               } else if (input.type === "feature" && criteriaCount < 3) {
                 validationErrors.push(
-                  `acceptanceCriteria must have at least 3 items for features (found ${criteriaCount})`
+                  `acceptanceCriteria must have at least 3 items for features (found ${String(criteriaCount)})`
                 );
               }
 
@@ -206,7 +206,7 @@ export function registerStructuredDescTools(server: McpServer): void {
               if (validationErrors.length > 0 || validationWarnings.length > 0) {
                 console.warn(
                   `[SpecTree Validation] ${input.type} ${entityId}: ` +
-                  `${validationErrors.length} errors, ${validationWarnings.length} warnings`
+                  `${String(validationErrors.length)} errors, ${String(validationWarnings.length)} warnings`
                 );
                 if (validationErrors.length > 0) {
                   console.warn(`  Errors: ${validationErrors.join(", ")}`);
@@ -234,19 +234,19 @@ export function registerStructuredDescTools(server: McpServer): void {
                 entityId,
                 input.structuredDesc as StructuredDescription
               );
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else if (input.type === "epic") {
               const { data } = await apiClient.setEpicStructuredDesc(
                 entityId,
                 input.structuredDesc as StructuredDescription
               );
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else {
               const { data } = await apiClient.setTaskStructuredDesc(
                 entityId,
                 input.structuredDesc as StructuredDescription
               );
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             }
             actionMessage = "Structured description set successfully";
             break;
@@ -259,21 +259,21 @@ export function registerStructuredDescTools(server: McpServer): void {
                 input.section as StructuredDescriptionSection,
                 input.value
               );
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else if (input.type === "epic") {
               const { data } = await apiClient.updateEpicSection(
                 entityId,
                 input.section as StructuredDescriptionSection,
                 input.value
               );
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else {
               const { data } = await apiClient.updateTaskSection(
                 entityId,
                 input.section as StructuredDescriptionSection,
                 input.value
               );
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             }
             actionMessage = `Section '${input.section}' updated successfully`;
             break;
@@ -285,38 +285,40 @@ export function registerStructuredDescTools(server: McpServer): void {
                 entityId,
                 input.criterion
               );
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else if (input.type === "epic") {
               const { data } = await apiClient.addEpicAcceptanceCriterion(
                 entityId,
                 input.criterion
               );
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else {
               const { data } = await apiClient.addTaskAcceptanceCriterion(
                 entityId,
                 input.criterion
               );
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             }
-            const totalCriteria = result.structuredDesc?.acceptanceCriteria?.length ?? 0;
-            actionMessage = `Added criterion. Total: ${totalCriteria}`;
+            const sd = result.structuredDesc as Record<string, unknown> | undefined;
+            const totalCriteria = (sd?.acceptanceCriteria as unknown[] | undefined)?.length ?? 0;
+            actionMessage = `Added criterion. Total: ${String(totalCriteria)}`;
             break;
           }
 
           case "link_file": {
             if (input.type === "feature") {
               const { data } = await apiClient.linkFeatureFile(entityId, input.filePath);
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else if (input.type === "epic") {
               const { data } = await apiClient.linkEpicFile(entityId, input.filePath);
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else {
               const { data } = await apiClient.linkTaskFile(entityId, input.filePath);
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             }
-            const totalFiles = result.structuredDesc?.filesInvolved?.length ?? 0;
-            actionMessage = `Linked file '${input.filePath}'. Total: ${totalFiles}`;
+            const sd2 = result.structuredDesc as Record<string, unknown> | undefined;
+            const totalFiles = (sd2?.filesInvolved as unknown[] | undefined)?.length ?? 0;
+            actionMessage = `Linked file '${input.filePath}'. Total: ${String(totalFiles)}`;
             break;
           }
 
@@ -324,22 +326,23 @@ export function registerStructuredDescTools(server: McpServer): void {
             const link = { url: input.url, title: input.title };
             if (input.type === "feature") {
               const { data } = await apiClient.addFeatureExternalLink(entityId, link);
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else if (input.type === "epic") {
               const { data } = await apiClient.addEpicExternalLink(entityId, link);
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             } else {
               const { data } = await apiClient.addTaskExternalLink(entityId, link);
-              result = data;
+              result = data as unknown as Record<string, unknown>;
             }
-            const totalLinks = result.structuredDesc?.externalLinks?.length ?? 0;
-            actionMessage = `Added link '${input.title}'. Total: ${totalLinks}`;
+            const sd3 = result.structuredDesc as Record<string, unknown> | undefined;
+            const totalLinks = (sd3?.externalLinks as unknown[] | undefined)?.length ?? 0;
+            actionMessage = `Added link '${input.title}'. Total: ${String(totalLinks)}`;
             break;
           }
         }
 
         // Build response
-        const response: any = {
+        const response: Record<string, unknown> = {
           entityType: input.type,
           entityId,
           action: input.action,

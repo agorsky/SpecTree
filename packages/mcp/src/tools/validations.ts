@@ -179,14 +179,15 @@ export function registerValidationTools(server: McpServer): void {
             const { data: result } = await apiClient.resetValidations(task.id);
             return createResponse({
               ...result,
-              message: `Reset ${result.summary.total} validation checks to pending`,
+              message: `Reset ${String(result.summary.total)} validation checks to pending`,
             });
           }
 
-          default:
+          default: {
             // TypeScript exhaustiveness check
             const _exhaustive: never = input;
-            return createErrorResponse(new Error(`Unknown action: ${(_exhaustive as any).action}`));
+            return createErrorResponse(new Error(`Unknown action: ${(_exhaustive as { action: string }).action}`));
+          }
         }
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
@@ -599,7 +600,7 @@ export function registerValidationTools(server: McpServer): void {
 
         return createResponse({
           ...result,
-          message: `Reset ${result.summary.total} validation checks to pending`,
+          message: `Reset ${String(result.summary.total)} validation checks to pending`,
         });
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {

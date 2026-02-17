@@ -533,17 +533,17 @@ export interface TemplatePreviewResult {
   epicDescription?: string;
   epicIcon?: string;
   epicColor?: string;
-  features: Array<{
+  features: {
     title: string;
     description?: string;
     executionOrder: number;
     canParallelize: boolean;
-    tasks: Array<{
+    tasks: {
       title: string;
       description?: string;
       executionOrder: number;
-    }>;
-  }>;
+    }[];
+  }[];
 }
 
 /** Result from creating epic/features/tasks from a template */
@@ -555,21 +555,21 @@ export interface CreateFromTemplateResult {
     icon: string | null;
     color: string | null;
   };
-  features: Array<{
+  features: {
     id: string;
     identifier: string;
     title: string;
     description: string | null;
     executionOrder: number | null;
     canParallelize: boolean;
-    tasks: Array<{
+    tasks: {
       id: string;
       identifier: string;
       title: string;
       description: string | null;
       executionOrder: number | null;
-    }>;
-  }>;
+    }[];
+  }[];
 }
 
 export interface ListTemplatesResponse {
@@ -1003,21 +1003,21 @@ export interface SkillPackManifest {
   name: string;
   version: string;
   description?: string;
-  agents?: Array<{
+  agents?: {
     name: string;
     path: string;
     description?: string;
-  }>;
-  skills?: Array<{
+  }[];
+  skills?: {
     name: string;
     path: string;
     description?: string;
-  }>;
-  instructions?: Array<{
+  }[];
+  instructions?: {
     name: string;
     path: string;
     description?: string;
-  }>;
+  }[];
   dependencies?: Record<string, string>;
 }
 
@@ -1175,11 +1175,11 @@ export interface BlockedSummaryItem {
 export interface BlockedSummaryResponse {
   items: BlockedSummaryItem[];
   totalBlocked: number;
-  byEpic: Array<{
+  byEpic: {
     epicId: string;
     epicName: string;
     count: number;
-  }>;
+  }[];
 }
 
 // -----------------------------------------------------------------------------
@@ -1326,10 +1326,10 @@ export interface EpicRequest {
 
 /** Epic Request with aggregated reaction counts */
 export interface EpicRequestWithReactionCounts extends EpicRequest {
-  reactionCounts: Array<{
+  reactionCounts: {
     reactionType: string;
     count: number;
-  }>;
+  }[];
   userReaction?: string | null;
 }
 
@@ -2616,7 +2616,7 @@ export class ApiClient {
         if (!parallelGroups.has(group)) {
           parallelGroups.set(group, []);
         }
-        parallelGroups.get(group)!.push(item);
+        parallelGroups.get(group)?.push(item);
       }
 
       // Create phases for each group
@@ -2780,7 +2780,7 @@ export class ApiClient {
    * Get session history for an epic.
    */
   async getSessionHistory(epicId: string, limit?: number): Promise<{ data: SessionHistoryResponse }> {
-    const query = limit ? `?limit=${limit}` : "";
+    const query = limit ? `?limit=${String(limit)}` : "";
     return this.request<{ data: SessionHistoryResponse }>(
       "GET",
       `/api/v1/sessions/${encodeURIComponent(epicId)}/history${query}`
@@ -3067,7 +3067,7 @@ export class ApiClient {
    * Remove a validation check from a task
    */
   async removeValidation(taskId: string, checkId: string): Promise<void> {
-    await this.request<void>(
+    await this.request<undefined>(
       "DELETE",
       `/api/v1/tasks/${encodeURIComponent(taskId)}/validations/${encodeURIComponent(checkId)}`
     );
@@ -3310,7 +3310,7 @@ export class ApiClient {
    * Only the creator or global admin can delete.
    */
   async deleteEpicRequest(id: string): Promise<void> {
-    await this.request<void>("DELETE", `/api/v1/epic-requests/${encodeURIComponent(id)}`);
+    await this.request<undefined>("DELETE", `/api/v1/epic-requests/${encodeURIComponent(id)}`);
   }
 
   /**
@@ -3329,7 +3329,7 @@ export class ApiClient {
    * Remove user's reaction from an epic request.
    */
   async removeEpicRequestReaction(id: string): Promise<void> {
-    await this.request<void>("DELETE", `/api/v1/epic-requests/${encodeURIComponent(id)}/reactions`);
+    await this.request<undefined>("DELETE", `/api/v1/epic-requests/${encodeURIComponent(id)}/reactions`);
   }
 
   /**
@@ -3380,7 +3380,7 @@ export class ApiClient {
    * Only the comment author or global admin can delete.
    */
   async deleteEpicRequestComment(epicRequestId: string, commentId: string): Promise<void> {
-    await this.request<void>(
+    await this.request<undefined>(
       "DELETE",
       `/api/v1/epic-requests/${encodeURIComponent(epicRequestId)}/comments/${encodeURIComponent(commentId)}`
     );
@@ -3471,7 +3471,7 @@ export class ApiClient {
    * Uninstall a skill pack
    */
   async uninstallSkillPack(idOrName: string): Promise<void> {
-    await this.request<void>(
+    await this.request<undefined>(
       "DELETE",
       `/api/v1/skill-packs/${encodeURIComponent(idOrName)}/install`
     );
