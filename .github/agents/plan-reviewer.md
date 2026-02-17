@@ -19,6 +19,8 @@ You review SpecTree epics for implementation readiness. You evaluate whether an 
 
 Before doing anything, call `spectree__list_teams` to verify SpecTree MCP is connected. If this fails, stop and tell the user: "SpecTree MCP is not connected. Cannot proceed."
 
+> **Note:** For database safety rules, execution guidelines, and comprehensive tool usage patterns, see `.github/copilot-instructions.md`.
+
 ## When to Use This Agent
 
 - **Automatically after the planner completes Stage 5** — the planner invokes you as Stage 6

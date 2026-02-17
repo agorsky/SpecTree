@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getApiClient, ApiError } from "../api-client.js";
 import { createResponse, createErrorResponse } from "./utils.js";
+import { injectReminder } from "./utils/reminder-injector.js";
 
 // Register all feature tools
 export function registerFeatureTools(server: McpServer): void {
@@ -151,7 +152,9 @@ export function registerFeatureTools(server: McpServer): void {
         "Create a new feature in an epic. Features are the primary work items in SpecTree. " +
         "Each feature is automatically assigned a unique identifier based on the epic's " +
         "team key (e.g., if the team key is 'COM', the feature might be 'COM-123'). " +
-        "Returns the created feature with all metadata including the generated identifier.",
+        "Returns the created feature with all metadata including the generated identifier.\n\n" +
+        "**REQUIRED FIELDS**: executionOrder and estimatedComplexity must be provided. " +
+        "These fields are mandatory for proper planning and execution tracking.",
       inputSchema: {
         title: z
           .string()
@@ -229,6 +232,22 @@ export function registerFeatureTools(server: McpServer): void {
       try {
         const apiClient = getApiClient();
 
+        // Validate required execution metadata
+        if (!input.executionOrder) {
+          return createErrorResponse(
+            new Error(
+              "executionOrder is required. Please provide a positive integer indicating the suggested execution order (1, 2, 3...)."
+            )
+          );
+        }
+        if (!input.estimatedComplexity) {
+          return createErrorResponse(
+            new Error(
+              "estimatedComplexity is required. Please provide one of: 'trivial' (<1hr), 'simple' (1-4hr), 'moderate' (1-3d), or 'complex' (>3d)."
+            )
+          );
+        }
+
         // Resolve epic to get epicId and teamId
         const { data: epic } = await apiClient.getEpic(input.epic);
 
@@ -251,7 +270,12 @@ export function registerFeatureTools(server: McpServer): void {
           estimatedComplexity: input.estimatedComplexity,
         });
 
-        return createResponse(feature);
+        const result = injectReminder('create_feature', {
+          ...feature,
+          message: `Feature '${feature.identifier}' created successfully`
+        });
+        
+        return createResponse(result);
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           return createErrorResponse(new Error(`Epic '${input.epic}' not found`));

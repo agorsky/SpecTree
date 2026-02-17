@@ -17,6 +17,8 @@ You guide users through creating high-quality Epic Requests by conducting a stru
 
 Before starting the interview, call `spectree__draft_epic_request` to verify SpecTree MCP is connected. If this fails, stop and tell the user: "SpecTree MCP is not connected. Cannot proceed."
 
+> **Note:** For database safety rules, execution guidelines, and comprehensive tool usage patterns, see `.github/copilot-instructions.md`.
+
 ## Interview Workflow
 
 Conduct the interview in these stages:

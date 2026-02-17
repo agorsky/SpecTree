@@ -1,0 +1,51 @@
+{
+  "name": "@ttc-ggi/spectree-cli",
+  "version": "0.1.0",
+  "description": "SpecTree CLI - Install, update, and manage Skill Packs",
+  "type": "module",
+  "bin": {
+    "spectree": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TTC-GGI/SpecTree.git",
+    "directory": "packages/cli"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:publish": "node build.mjs",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@spectree/shared": "workspace:*",
+    "axios": "^1.7.0",
+    "chalk": "^5.4.0",
+    "cli-table3": "^0.6.5",
+    "commander": "^12.1.0",
+    "form-data": "^4.0.0",
+    "ora": "^8.1.0",
+    "semver": "^7.7.4",
+    "tar": "^7.5.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/semver": "^7.7.1",
+    "esbuild": "^0.27.3",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "@spectree/orchestration",
+  "version": "1.0.0",
+  "description": "Orchestration and execution tools for implementing features across teams",
+  "agents": [
+    {
+      "name": "orchestrator",
+      "path": ".github/agents/orchestrator.md",
+      "description": "Coordinates feature implementation by spawning worker agents and managing execution flow"
+    },
+    {
+      "name": "feature-worker",
+      "path": ".github/agents/feature-worker.md",
+      "description": "Implements individual features by completing tasks in execution order"
+    }
+  ],
+  "skills": [
+    {
+      "name": "spectree-session",
+      "path": ".github/skills/spectree-session/SKILL.md",
+      "description": "Session management for AI agent handoffs and continuity"
+    },
+    {
+      "name": "spectree-validation",
+      "path": ".github/skills/spectree-validation/SKILL.md",
+      "description": "Validation and testing framework for verifying task completion"
+    }
+  ],
+  "instructions": [
+    {
+      "name": "agents",
+      "path": ".github/instructions/agents.instructions.md",
+      "description": "Guidelines for agent behavior and coordination"
+    },
+    {
+      "name": "database",
+      "path": ".github/instructions/database.instructions.md",
+      "description": "Database safety rules and migration guidelines"
+    },
+    {
+      "name": "api",
+      "path": ".github/instructions/api.instructions.md",
+      "description": "API development patterns and conventions"
+    }
+  ],
+  "dependencies": {}
+}

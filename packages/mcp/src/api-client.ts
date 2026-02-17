@@ -995,6 +995,95 @@ export interface ReorderParams {
 }
 
 // -----------------------------------------------------------------------------
+// Skill Pack Types
+// -----------------------------------------------------------------------------
+
+/** Skill pack manifest */
+export interface SkillPackManifest {
+  name: string;
+  version: string;
+  description?: string;
+  agents?: Array<{
+    name: string;
+    path: string;
+    description?: string;
+  }>;
+  skills?: Array<{
+    name: string;
+    path: string;
+    description?: string;
+  }>;
+  instructions?: Array<{
+    name: string;
+    path: string;
+    description?: string;
+  }>;
+  dependencies?: Record<string, string>;
+}
+
+/** Skill pack from registry */
+export interface SkillPack {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string | null;
+  authorName: string | null;
+  authorUrl: string | null;
+  homepageUrl: string | null;
+  latestVersion: string | null;
+  isOfficial: boolean;
+  isDeprecated: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Skill pack version */
+export interface SkillPackVersion {
+  id: string;
+  skillPackId: string;
+  version: string;
+  manifest: string; // JSON stringified SkillPackManifest
+  releaseNotes: string | null;
+  isPrerelease: boolean;
+  publishedAt: string;
+  downloads: number;
+}
+
+/** Installed skill pack */
+export interface InstalledSkillPack {
+  skillPackId: string;
+  installedVersion: string;
+  isEnabled: boolean;
+  installedAt: string;
+  lastUpdatedAt: string;
+  skillPack?: SkillPack;
+}
+
+/** List skill packs params */
+export interface ListSkillPacksParams {
+  cursor?: string | undefined;
+  limit?: number | undefined;
+  isOfficial?: boolean | undefined;
+  query?: string | undefined;
+}
+
+/** List skill packs response */
+export interface ListSkillPacksResponse {
+  data: SkillPack[];
+  meta: PaginationMeta;
+}
+
+/** Skill pack with versions */
+export interface SkillPackWithVersions extends SkillPack {
+  versions: SkillPackVersion[];
+}
+
+/** Install skill pack input */
+export interface InstallSkillPackInput {
+  version: string;
+}
+
+// -----------------------------------------------------------------------------
 // Summary Types
 // -----------------------------------------------------------------------------
 
@@ -2709,6 +2798,20 @@ export class ApiClient {
   }
 
   /**
+   * Get session state machine state and allowed transitions.
+   */
+  async getSessionState(sessionId: string): Promise<{ 
+    data: { currentState: string; allowedTransitions: string[] } 
+  }> {
+    return this.request<{ 
+      data: { currentState: string; allowedTransitions: string[] } 
+    }>(
+      "GET",
+      `/api/v1/sessions/by-id/${encodeURIComponent(sessionId)}/state`
+    );
+  }
+
+  /**
    * Log work done during a session.
    */
   async logSessionWork(epicId: string, input: LogSessionWorkInput): Promise<{ data: SessionResponse } | null> {
@@ -3280,6 +3383,111 @@ export class ApiClient {
     await this.request<void>(
       "DELETE",
       `/api/v1/epic-requests/${encodeURIComponent(epicRequestId)}/comments/${encodeURIComponent(commentId)}`
+    );
+  }
+
+  // ===========================================================================
+  // Skill Packs
+  // ===========================================================================
+
+  /**
+   * List skill packs with pagination and filtering
+   */
+  async listSkillPacks(params?: ListSkillPacksParams): Promise<ListSkillPacksResponse> {
+    const query = this.buildQueryString({
+      cursor: params?.cursor,
+      limit: params?.limit,
+      isOfficial: params?.isOfficial,
+      query: params?.query,
+    });
+    return this.request<ListSkillPacksResponse>("GET", `/api/v1/skill-packs${query}`);
+  }
+
+  /**
+   * Get a single skill pack by ID or name
+   */
+  async getSkillPack(idOrName: string): Promise<{ data: SkillPack }> {
+    return this.request<{ data: SkillPack }>(
+      "GET",
+      `/api/v1/skill-packs/${encodeURIComponent(idOrName)}`
+    );
+  }
+
+  /**
+   * Get a skill pack with all its versions
+   */
+  async getSkillPackWithVersions(idOrName: string): Promise<{ data: SkillPackWithVersions }> {
+    return this.request<{ data: SkillPackWithVersions }>(
+      "GET",
+      `/api/v1/skill-packs/${encodeURIComponent(idOrName)}/versions`
+    );
+  }
+
+  /**
+   * Get a specific version of a skill pack
+   */
+  async getSkillPackVersion(
+    idOrName: string,
+    version: string
+  ): Promise<{ data: SkillPackVersion }> {
+    return this.request<{ data: SkillPackVersion }>(
+      "GET",
+      `/api/v1/skill-packs/${encodeURIComponent(idOrName)}/versions/${encodeURIComponent(version)}`
+    );
+  }
+
+  /**
+   * Get the latest stable version of a skill pack
+   */
+  async getLatestSkillPackVersion(idOrName: string): Promise<{ data: SkillPackVersion }> {
+    return this.request<{ data: SkillPackVersion }>(
+      "GET",
+      `/api/v1/skill-packs/${encodeURIComponent(idOrName)}/latest`
+    );
+  }
+
+  /**
+   * List all installed skill packs
+   */
+  async listInstalledSkillPacks(): Promise<{ data: InstalledSkillPack[] }> {
+    return this.request<{ data: InstalledSkillPack[] }>("GET", "/api/v1/skill-packs/installed");
+  }
+
+  /**
+   * Install a skill pack
+   */
+  async installSkillPack(
+    idOrName: string,
+    input: InstallSkillPackInput
+  ): Promise<{ data: InstalledSkillPack }> {
+    return this.request<{ data: InstalledSkillPack }>(
+      "POST",
+      `/api/v1/skill-packs/${encodeURIComponent(idOrName)}/install`,
+      input
+    );
+  }
+
+  /**
+   * Uninstall a skill pack
+   */
+  async uninstallSkillPack(idOrName: string): Promise<void> {
+    await this.request<void>(
+      "DELETE",
+      `/api/v1/skill-packs/${encodeURIComponent(idOrName)}/install`
+    );
+  }
+
+  /**
+   * Enable or disable an installed skill pack
+   */
+  async setSkillPackEnabled(
+    idOrName: string,
+    isEnabled: boolean
+  ): Promise<{ data: InstalledSkillPack }> {
+    return this.request<{ data: InstalledSkillPack }>(
+      "PATCH",
+      `/api/v1/skill-packs/${encodeURIComponent(idOrName)}/enabled`,
+      { isEnabled }
     );
   }
 }

@@ -55,7 +55,7 @@ temp/
 *.local
 
 # Database backups (don't commit to git)
-backups/*.bak
+backups/*.db
 
 # SQLite database files
 packages/api/data/*.db
@@ -73,3 +73,14 @@ docs/copilot-cli-automation-strategy.md
 
 # Local docs (personal notes, not for repo)
 docs/local/
+
+# Root-level SQLite database
+spectree.db
+spectree.db-journal
+
+# Test artifacts
+**/test-output.txt
+
+# Backup files (*.bak, *.pre-restore)
+**/*.bak
+**/*.pre-restore

@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getApiClient, ApiError } from "../api-client.js";
 import { createResponse, createErrorResponse } from "./utils.js";
+import { injectReminder } from "./utils/reminder-injector.js";
 
 // Register all task tools
 export function registerTaskTools(server: McpServer): void {
@@ -135,7 +136,9 @@ export function registerTaskTools(server: McpServer): void {
         "into smaller, actionable work items. Each task is automatically assigned a unique " +
         "identifier based on its parent feature (e.g., if the feature is 'COM-123', the task " +
         "might be 'COM-123-1'). Returns the created task with all metadata including the " +
-        "generated identifier.",
+        "generated identifier.\n\n" +
+        "**REQUIRED FIELDS**: executionOrder and estimatedComplexity must be provided. " +
+        "These fields are mandatory for proper planning and execution tracking.",
       inputSchema: {
         title: z
           .string()
@@ -211,6 +214,22 @@ export function registerTaskTools(server: McpServer): void {
       try {
         const apiClient = getApiClient();
 
+        // Validate required execution metadata
+        if (!input.executionOrder) {
+          return createErrorResponse(
+            new Error(
+              "executionOrder is required. Please provide a positive integer indicating the suggested execution order (1, 2, 3...)."
+            )
+          );
+        }
+        if (!input.estimatedComplexity) {
+          return createErrorResponse(
+            new Error(
+              "estimatedComplexity is required. Please provide one of: 'trivial' (<1hr), 'simple' (1-4hr), 'moderate' (1-3d), or 'complex' (>3d)."
+            )
+          );
+        }
+
         // Resolve feature to get featureId
         const { data: feature } = await apiClient.getFeature(input.feature_id);
 
@@ -234,7 +253,12 @@ export function registerTaskTools(server: McpServer): void {
           estimatedComplexity: input.estimatedComplexity,
         });
 
-        return createResponse(task);
+        const result = injectReminder('create_task', {
+          ...task,
+          message: `Task '${task.identifier}' created successfully`
+        });
+        
+        return createResponse(result);
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           return createErrorResponse(new Error(`Feature '${input.feature_id}' not found`));

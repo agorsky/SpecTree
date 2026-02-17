@@ -380,6 +380,9 @@ model AiSession {
   endedAt        DateTime? @map("ended_at")
   status         String    @default("active") // active | completed | abandoned
   
+  // State machine tracking (opt-in feature)
+  stateMachineState String?  @map("state_machine_state") // STARTED | PLANNING | IMPLEMENTING | VALIDATING | COMPLETING
+  
   // Work tracking
   itemsWorkedOn  String?   @map("items_worked_on") // JSON array of {type, id, identifier, action}
   summary        String?   // AI-generated summary of session work
@@ -558,4 +561,99 @@ model EpicRequestComment {
   @@index([authorId])
   @@index([epicRequestId, createdAt])
   @@map("epic_request_comments")
+}
+
+// =============================================================================
+// Skill Pack Models
+// Central registry for installable Skill Packs with versioning
+// =============================================================================
+
+model SkillPack {
+  id          String   @id @default(uuid())
+  name        String   @unique // e.g., "@spectree/planning"
+  displayName String   @map("display_name") // e.g., "Planning & Scoping"
+  description String?
+  authorName  String?  @map("author_name")
+  authorUrl   String?  @map("author_url")
+  homepageUrl String?  @map("homepage_url")
+  
+  // Current published version tracking
+  latestVersion String?  @map("latest_version") // e.g., "1.2.3"
+  
+  // Metadata
+  isOfficial   Boolean  @default(false) @map("is_official") // Official @spectree packs
+  isDeprecated Boolean  @default(false) @map("is_deprecated")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  versions       SkillPackVersion[]
+  installations  InstalledSkillPack[]
+
+  @@index([name])
+  @@index([isOfficial])
+  @@map("skill_packs")
+}
+
+model SkillPackVersion {
+  id            String   @id @default(uuid())
+  skillPackId   String   @map("skill_pack_id")
+  version       String   // Semver version string, e.g., "1.2.3"
+  manifest      String   // JSON manifest: agents, skills, instructions, dependencies
+  
+  // Version metadata
+  releaseNotes  String?  @map("release_notes")
+  isPrerelease  Boolean  @default(false) @map("is_prerelease")
+  publishedAt   DateTime @default(now()) @map("published_at")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  skillPack SkillPack @relation(fields: [skillPackId], references: [id], onDelete: Cascade)
+  files     SkillPackFile[]
+
+  @@unique([skillPackId, version])
+  @@index([skillPackId])
+  @@index([skillPackId, publishedAt])
+  @@map("skill_pack_versions")
+}
+
+model SkillPackFile {
+  id        String   @id @default(uuid())
+  versionId String   @map("version_id")
+  path      String   // Relative path within the pack, e.g., "agents/planner.md"
+  content   String   // File content
+  mimeType  String?  @map("mime_type") // e.g., "text/markdown", "application/json"
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  version SkillPackVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, path]) // One file per path per version
+  @@index([versionId])
+  @@map("skill_pack_files")
+}
+
+model InstalledSkillPack {
+  id               String   @id @default(uuid())
+  skillPackId      String   @map("skill_pack_id")
+  installedVersion String   @map("installed_version") // Installed semver version
+  
+  // Installation tracking
+  installedAt DateTime @default(now()) @map("installed_at")
+  lastUpdatedAt DateTime @default(now()) @map("last_updated_at")
+  
+  // Status
+  isEnabled Boolean @default(true) @map("is_enabled")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  skillPack SkillPack @relation(fields: [skillPackId], references: [id], onDelete: Cascade)
+
+  @@unique([skillPackId]) // Only one installation per pack
+  @@index([skillPackId])
+  @@index([isEnabled])
+  @@map("installed_skill_packs")
 }

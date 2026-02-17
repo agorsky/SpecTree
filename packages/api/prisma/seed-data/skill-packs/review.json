@@ -1,0 +1,36 @@
+{
+  "name": "@spectree/review",
+  "version": "1.0.0",
+  "description": "Code review and quality assurance tools",
+  "agents": [
+    {
+      "name": "reviewer",
+      "path": ".github/agents/reviewer.md",
+      "description": "Reviews pull requests for code quality, patterns, and best practices"
+    }
+  ],
+  "skills": [],
+  "instructions": [
+    {
+      "name": "agents",
+      "path": ".github/instructions/agents.instructions.md",
+      "description": "Guidelines for agent behavior and coordination"
+    },
+    {
+      "name": "database",
+      "path": ".github/instructions/database.instructions.md",
+      "description": "Database safety rules and migration guidelines"
+    },
+    {
+      "name": "api",
+      "path": ".github/instructions/api.instructions.md",
+      "description": "API development patterns and conventions"
+    },
+    {
+      "name": "frontend",
+      "path": ".github/instructions/frontend.instructions.md",
+      "description": "Frontend development guidelines and React patterns"
+    }
+  ],
+  "dependencies": {}
+}

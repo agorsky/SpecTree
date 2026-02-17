@@ -23,6 +23,7 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean && rm -rf node_modules",
+    "audit:instructions": "tsx scripts/audit-instructions.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f"

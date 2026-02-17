@@ -1,0 +1,76 @@
+name: Publish Packages to GitHub Packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish'
+        required: true
+        type: choice
+        options:
+          - all
+          - cli
+          - mcp
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: cli
+            path: packages/cli
+          - name: mcp
+            path: packages/mcp
+    steps:
+      - name: Check if package should be published
+        id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]] || \
+             [[ "${{ inputs.package }}" == "all" ]] || \
+             [[ "${{ inputs.package }}" == "${{ matrix.name }}" ]]; then
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.should_publish == 'true'
+
+      - uses: pnpm/action-setup@v4
+        if: steps.check.outputs.should_publish == 'true'
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.should_publish == 'true'
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@ttc-ggi'
+
+      - name: Install dependencies
+        if: steps.check.outputs.should_publish == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared (dependency)
+        if: steps.check.outputs.should_publish == 'true'
+        run: pnpm --filter @spectree/shared build
+
+      - name: Build package for publish
+        if: steps.check.outputs.should_publish == 'true'
+        working-directory: ${{ matrix.path }}
+        run: node build.mjs
+
+      - name: Publish to GitHub Packages
+        if: steps.check.outputs.should_publish == 'true'
+        working-directory: ${{ matrix.path }}
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

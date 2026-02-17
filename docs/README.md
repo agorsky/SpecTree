@@ -24,6 +24,8 @@
 
 | Document | Description | For |
 |----------|-------------|-----|
+| [quick-start.md](./quick-start.md) | **⚡ Quick Start** — Install and verify SpecTree in <5 minutes | Everyone |
+| [troubleshooting.md](./troubleshooting.md) | **🔧 Troubleshooting** — Solutions for common installation and usage issues | Everyone |
 | [guides/setup-guide.md](./guides/setup-guide.md) | Complete setup instructions for local development | New developers |
 | [guides/automation-quickstart.md](./guides/automation-quickstart.md) | Quick start guide for using SpecTree automation | AI/automation users |
 | [guides/mcp-auth-fix-summary.md](./guides/mcp-auth-fix-summary.md) | Troubleshooting MCP authentication issues | Developers |
@@ -45,6 +47,7 @@
 
 | Document | Status | Notes |
 |----------|--------|-------|
+| [skill-packs.md](./architecture/skill-packs.md) | Current | **Skill Pack system architecture** — registry, CLI, MCP tools, versioning |
 | [spectree-user-team-epic-model.md](./architecture/spectree-user-team-epic-model.md) | Current |
 | [identity-collaboration-vnext-implementation-reference.md](./architecture/identity-collaboration-vnext-implementation-reference.md) | Implemented ✅ |
 | [user-invitation-system.md](./architecture/user-invitation-system.md) | Current |
@@ -60,6 +63,19 @@
 ---
 
 ## 👨‍💻 Developer Guides
+
+### Workflow Cookbook
+
+| Document | Description |
+|----------|-------------|
+| [cookbook/README.md](./cookbook/README.md) | **📚 Workflow Cookbook** — Step-by-step guides for common SpecTree workflows |
+| [cookbook/first-epic.md](./cookbook/first-epic.md) | Creating your first epic (~10 minutes) |
+| [cookbook/planner-agent.md](./cookbook/planner-agent.md) | Using the planner agent (~15 minutes) |
+| [cookbook/validation-checks.md](./cookbook/validation-checks.md) | Setting up validation checks (~10 minutes) |
+| [cookbook/orchestration.md](./cookbook/orchestration.md) | Running orchestrated implementation (~30 minutes) |
+| [cookbook/reviewer-agent.md](./cookbook/reviewer-agent.md) | Code review with reviewer agent (~15 minutes) |
+| [cookbook/update-packs.md](./cookbook/update-packs.md) | Updating skill packs (~5 minutes) |
+| [cookbook/custom-pack.md](./cookbook/custom-pack.md) | Creating a custom skill pack (~45 minutes) |
 
 ### Database
 
@@ -214,9 +230,12 @@ Located in [archive/analysis/](./archive/analysis/):
 ### By Use Case
 
 **"I need to set up SpecTree locally"**  
-→ [guides/setup-guide.md](./guides/setup-guide.md)
+→ [quick-start.md](./quick-start.md) (5 minute install)  
+→ [guides/setup-guide.md](./guides/setup-guide.md) (complete guide)
 
 **"I want to use AI automation"**  
+→ [quick-start.md](./quick-start.md) (5 minute install)  
+→ [cookbook/README.md](./cookbook/README.md) (workflow guides)  
 → [guides/automation-quickstart.md](./guides/automation-quickstart.md)  
 → [mcp/ai-native-epic-workflow-guide.md](./mcp/ai-native-epic-workflow-guide.md)
 
@@ -236,6 +255,7 @@ Located in [archive/analysis/](./archive/analysis/):
 → [orchestrator/orchestrator-parallelism.md](./orchestrator/orchestrator-parallelism.md)
 
 **"Something broke, help!"**  
+→ [troubleshooting.md](./troubleshooting.md) (comprehensive troubleshooting)  
 → [guides/mcp-auth-fix-summary.md](./guides/mcp-auth-fix-summary.md)  
 → [database/database-safety-guide.md](./database/database-safety-guide.md)
 

@@ -10,6 +10,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getApiClient, ApiError } from "../api-client.js";
 import { createResponse, createErrorResponse } from "./utils.js";
+import { injectReminder } from "./utils/reminder-injector.js";
 
 // Register all progress tracking tools
 export function registerProgressTools(server: McpServer): void {
@@ -72,13 +73,13 @@ export function registerProgressTools(server: McpServer): void {
               const { data: result } = await apiClient.startFeatureWork(feature.id, {
                 sessionId: input.sessionId,
               });
-              return createResponse(result);
+              return createResponse(injectReminder('start_work', result));
             } else {
               const { data: task } = await apiClient.getTask(input.id);
               const { data: result } = await apiClient.startTaskWork(task.id, {
                 sessionId: input.sessionId,
               });
-              return createResponse(result);
+              return createResponse(injectReminder('start_work', result));
             }
           }
 
@@ -89,14 +90,14 @@ export function registerProgressTools(server: McpServer): void {
                 summary: input.summary,
                 sessionId: input.sessionId,
               });
-              return createResponse(result);
+              return createResponse(injectReminder('complete_work', result));
             } else {
               const { data: task } = await apiClient.getTask(input.id);
               const { data: result } = await apiClient.completeTaskWork(task.id, {
                 summary: input.summary,
                 sessionId: input.sessionId,
               });
-              return createResponse(result);
+              return createResponse(injectReminder('complete_work', result));
             }
           }
 
@@ -108,7 +109,7 @@ export function registerProgressTools(server: McpServer): void {
                 percentComplete: input.percentComplete,
                 sessionId: input.sessionId,
               });
-              return createResponse(result);
+              return createResponse(injectReminder('log_progress', result));
             } else {
               const { data: task } = await apiClient.getTask(input.id);
               const { data: result } = await apiClient.logTaskProgress(task.id, {
@@ -116,7 +117,7 @@ export function registerProgressTools(server: McpServer): void {
                 percentComplete: input.percentComplete,
                 sessionId: input.sessionId,
               });
-              return createResponse(result);
+              return createResponse(injectReminder('log_progress', result));
             }
           }
 

@@ -32,10 +32,14 @@ import { registerSummaryTools } from "./summary.js";
 import { registerDecisionTools } from "./decisions.js";
 import { registerTeamTools } from "./teams.js";
 import { registerCompositeTools } from "./composite.js";
+import { registerWorkflowTools } from "./workflow.js";
 
 // Import changelog tools
 import { registerChangelogTools } from "./changelog.js";
 import { registerSessionTools } from "./sessions.js";
+
+// Import skill pack tools
+import { registerSkillPackTools } from "./skill-packs/manage.js";
 
 // Tool registration function type
 export type ToolRegistrar = (server: McpServer) => void;
@@ -65,6 +69,8 @@ const toolRegistrars: ToolRegistrar[] = [
   registerTemplateTools,     // Templates
   registerSessionTools,      // AI session lifecycle
   registerValidationTools,   // Validation checks
+  registerWorkflowTools,     // Workflow guidance
+  registerSkillPackTools,    // Skill pack management
 ];
 
 /**

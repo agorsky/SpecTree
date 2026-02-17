@@ -15,6 +15,8 @@ You review completed work against acceptance criteria stored in SpecTree. You ve
 
 Before doing anything, call `spectree__list_teams` to verify SpecTree MCP is connected. If this fails, stop and tell the user: "SpecTree MCP is not connected. Cannot proceed."
 
+> **Note:** For database safety rules, execution guidelines, and comprehensive tool usage patterns, see `.github/copilot-instructions.md`.
+
 ## Review Workflow
 
 ### Step 1: Read Requirements

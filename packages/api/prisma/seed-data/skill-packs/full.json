@@ -1,0 +1,87 @@
+{
+  "name": "@spectree/full",
+  "version": "1.0.0",
+  "description": "Complete SpecTree agent suite with all planning, orchestration, and review capabilities",
+  "agents": [
+    {
+      "name": "planner",
+      "path": ".github/agents/planner.md",
+      "description": "Creates detailed implementation plans with features, tasks, and structured descriptions"
+    },
+    {
+      "name": "plan-reviewer",
+      "path": ".github/agents/plan-reviewer.md",
+      "description": "Reviews implementation plans for completeness and quality"
+    },
+    {
+      "name": "request-formulator",
+      "path": ".github/agents/request-formulator.md",
+      "description": "Formulates epic requests from high-level ideas"
+    },
+    {
+      "name": "orchestrator",
+      "path": ".github/agents/orchestrator.md",
+      "description": "Coordinates feature implementation by spawning worker agents and managing execution flow"
+    },
+    {
+      "name": "feature-worker",
+      "path": ".github/agents/feature-worker.md",
+      "description": "Implements individual features by completing tasks in execution order"
+    },
+    {
+      "name": "reviewer",
+      "path": ".github/agents/reviewer.md",
+      "description": "Reviews pull requests for code quality, patterns, and best practices"
+    }
+  ],
+  "skills": [
+    {
+      "name": "spectree-planning",
+      "path": ".github/skills/spectree-planning/SKILL.md",
+      "description": "Core planning skill for creating structured implementation plans"
+    },
+    {
+      "name": "spectree-plan-review",
+      "path": ".github/skills/spectree-plan-review/SKILL.md",
+      "description": "Plan review skill for validating implementation plans"
+    },
+    {
+      "name": "spectree-session",
+      "path": ".github/skills/spectree-session/SKILL.md",
+      "description": "Session management for AI agent handoffs and continuity"
+    },
+    {
+      "name": "spectree-validation",
+      "path": ".github/skills/spectree-validation/SKILL.md",
+      "description": "Validation and testing framework for verifying task completion"
+    }
+  ],
+  "instructions": [
+    {
+      "name": "agents",
+      "path": ".github/instructions/agents.instructions.md",
+      "description": "Guidelines for agent behavior and coordination"
+    },
+    {
+      "name": "database",
+      "path": ".github/instructions/database.instructions.md",
+      "description": "Database safety rules and migration guidelines"
+    },
+    {
+      "name": "api",
+      "path": ".github/instructions/api.instructions.md",
+      "description": "API development patterns and conventions"
+    },
+    {
+      "name": "frontend",
+      "path": ".github/instructions/frontend.instructions.md",
+      "description": "Frontend development guidelines and React patterns"
+    },
+    {
+      "name": "mcp",
+      "path": ".github/instructions/mcp.instructions.md",
+      "description": "MCP server development guidelines"
+    }
+  ],
+  "dependencies": {}
+}

@@ -48,11 +48,15 @@
     "dotenv": "^17.2.3",
     "fastify": "^5.2.0",
     "jsonwebtoken": "^9.0.3",
+    "semver": "^7.7.4",
+    "tar": "^7.5.9",
     "zod": "^3.24.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/semver": "^7.7.1",
+    "@types/tar": "^6.1.13",
     "prisma": "^6.3.0",
     "tsx": "^4.19.0"
   }

@@ -10,6 +10,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getApiClient } from "../api-client.js";
 import { createResponse, createErrorResponse } from "./utils.js";
+import { injectReminder } from "./utils/reminder-injector.js";
 
 export function registerSessionTools(server: McpServer): void {
   // ==========================================================================
@@ -43,7 +44,7 @@ export function registerSessionTools(server: McpServer): void {
           epicId: input.epicId,
           externalId: input.externalId,
         });
-        return createResponse(result.data);
+        return createResponse(injectReminder('start_session', result.data));
       } catch (error) {
         return createErrorResponse(error);
       }
@@ -101,7 +102,7 @@ export function registerSessionTools(server: McpServer): void {
           decisions: input.decisions,
           contextBlob: input.contextBlob,
         });
-        return createResponse(result.data);
+        return createResponse(injectReminder('end_session', result.data));
       } catch (error) {
         return createErrorResponse(error);
       }

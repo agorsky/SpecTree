@@ -87,6 +87,9 @@ export function registerStructuredDescTools(server: McpServer): void {
             estimatedEffort: z.enum(["trivial", "small", "medium", "large", "xl"]).optional()
               .describe("Effort estimate: trivial (<1hr), small (1-4hr), medium (1-2d), large (3-5d), xl (>5d)"),
           }),
+          skipValidation: z.boolean().optional().describe(
+            "If true, bypasses validation requirements. Use with caution - validation ensures structured descriptions meet minimum quality standards."
+          ),
         }),
         // Action: update_section
         z.object({
@@ -169,6 +172,63 @@ export function registerStructuredDescTools(server: McpServer): void {
           }
 
           case "set": {
+            // Validation (unless explicitly skipped)
+            if (!input.skipValidation) {
+              const validationErrors: string[] = [];
+              const validationWarnings: string[] = [];
+              const desc = input.structuredDesc;
+
+              // 1. Summary is required (enforced by schema, double-check for empty)
+              if (!desc.summary || desc.summary.trim().length === 0) {
+                validationErrors.push("summary is required and must not be empty");
+              }
+
+              // 2. aiInstructions: required for tasks, recommended for features
+              if (input.type === "task" && !desc.aiInstructions) {
+                validationErrors.push("aiInstructions is required for tasks");
+              } else if (input.type === "feature" && !desc.aiInstructions) {
+                validationWarnings.push("aiInstructions is recommended for features (missing)");
+              }
+
+              // 3. acceptanceCriteria: >=2 for tasks, >=3 for features
+              const criteriaCount = desc.acceptanceCriteria?.length ?? 0;
+              if (input.type === "task" && criteriaCount < 2) {
+                validationErrors.push(
+                  `acceptanceCriteria must have at least 2 items for tasks (found ${criteriaCount})`
+                );
+              } else if (input.type === "feature" && criteriaCount < 3) {
+                validationErrors.push(
+                  `acceptanceCriteria must have at least 3 items for features (found ${criteriaCount})`
+                );
+              }
+
+              // Log validation failures for telemetry
+              if (validationErrors.length > 0 || validationWarnings.length > 0) {
+                console.warn(
+                  `[SpecTree Validation] ${input.type} ${entityId}: ` +
+                  `${validationErrors.length} errors, ${validationWarnings.length} warnings`
+                );
+                if (validationErrors.length > 0) {
+                  console.warn(`  Errors: ${validationErrors.join(", ")}`);
+                }
+                if (validationWarnings.length > 0) {
+                  console.warn(`  Warnings: ${validationWarnings.join(", ")}`);
+                }
+              }
+
+              // Return error if validation fails
+              if (validationErrors.length > 0) {
+                return createErrorResponse(
+                  new Error(
+                    `Structured description validation failed:\n${validationErrors.map(e => `  - ${e}`).join("\n")}\n\n` +
+                    `To bypass validation, set skipValidation: true. However, this is not recommended ` +
+                    `as validation ensures descriptions meet minimum quality standards.`
+                  )
+                );
+              }
+            }
+
+            // Proceed with setting the structured description
             if (input.type === "feature") {
               const { data } = await apiClient.setFeatureStructuredDesc(
                 entityId,

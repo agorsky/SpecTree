@@ -16,6 +16,8 @@ You create comprehensive SpecTree epics from natural language feature requests. 
 
 Before doing anything, call `spectree__list_teams` to verify SpecTree MCP is connected. If this fails, stop and tell the user: "SpecTree MCP is not connected. Cannot proceed."
 
+> **Note:** For database safety rules, execution guidelines, and comprehensive tool usage patterns, see `.github/copilot-instructions.md`. This file focuses on the planning pipeline.
+
 ## Pipeline Overview
 
 ```
@@ -187,22 +189,53 @@ The epic request provides the **requirements**. Your job in this stage is to com
 
    **When `--from-request` is active:**
    - Use the epic request `title` as the basis for the epic name
-   - The epic `description` MUST include a "Source" section referencing the epic request:
+   - The epic `description` MUST be a **comprehensive reference document** — not a reformatted copy of the epic request. The request provides *input*; the description is the *output*. You must synthesize request data with codebase analysis from Stage 1 into a rich, self-contained document.
+   - The description MUST include ALL of the following sections (this aligns with the Epic Description Rubric used by plan-reviewer):
+
+     **1. Overview** — What this epic is, why it matters, and the high-level approach. Should be 3-5 sentences minimum.
+
+     **2. Source** — Reference the epic request:
      ```markdown
      ## Source
-     
-     This epic was created from Epic Request: "<request title>"
-     
-     ### Problem Statement
-     <from structuredDesc.problemStatement>
-     
-     ### Proposed Solution  
-     <from structuredDesc.proposedSolution>
-     
-     ### Impact Assessment
-     <from structuredDesc.impactAssessment>
+     Created from Epic Request: "<request title>"
      ```
-   - Include any additional sections from the request (targetAudience, successMetrics, alternatives, dependencies) if they were provided
+
+     **3. Problem Statement** — Expand on `structuredDesc.problemStatement`. Don't just copy it — enrich with codebase evidence (current file counts, line counts, existing patterns that demonstrate the problem). Include "Current State" and "Impact" sub-sections.
+
+     **4. Goals** — A structured goals table with specific, measurable objectives. Derive from `successMetrics` but add implementation-level goals discovered during codebase analysis.
+     ```markdown
+     | Goal | Description | Metric |
+     |------|-------------|--------|
+     | ... | ... | ... |
+     ```
+
+     **5. Proposed Approach** — The most important section (15 points in the rubric). Expand `structuredDesc.proposedSolution` into a detailed technical approach with:
+       - Architecture overview (components, data flow, package boundaries)
+       - Specific patterns, endpoints, schemas, or components to build
+       - How it integrates with existing codebase (reference actual files/modules from Stage 1 analysis)
+       - Key design decisions and their rationale
+       - ASCII diagrams or tables where they aid understanding
+
+     **6. Scope Definition** — What is explicitly in scope and out of scope. Include boundary conditions, default behaviors, and edge cases. If `structuredDesc.alternatives` lists rejected approaches, mention them here as "Not in Scope" with brief rationale.
+
+     **7. Execution Plan** — Phase table mapping phases to features with identifiers, complexity, and parallel groups:
+     ```markdown
+     | Phase | Feature | Identifier | Complexity | Parallel |
+     |-------|---------|------------|------------|----------|
+     | 1 | ... | ENG-XX | moderate | — |
+     ```
+
+     **8. Technical Considerations** — From Stage 1 codebase analysis: key files that will be created/modified, risk areas, database constraints, existing infrastructure to leverage, scalability concerns. This section should be rich with specific file paths and technical details.
+
+     **9. Success Criteria** — Specific, verifiable criteria. Expand `successMetrics` into testable statements.
+
+     **10. Supporting Sections** — Include at least 2 of: Target Audience (from `targetAudience`), Alternatives Considered (from `alternatives`), Dependencies (from `dependencies`), Access Control, UI/UX Requirements. Use ALL fields provided in the epic request — do not drop them.
+
+   **Word count baseline:** The epic description MUST be at least 500 words. An epic description under 300 words is almost certainly too sparse and will fail the quality gate in Stage 4.
+
+   **Epic description quality (applies to BOTH standard and --from-request modes):**
+
+   The epic `description` field must be a comprehensive reference document that scores >= 80 on the Epic Description Rubric in Stage 4. It must include: Overview, Problem Statement, Goals, Proposed Approach (with architecture details), Scope Definition, Execution Plan, Technical Considerations, Success Criteria, and at least 2 supporting sections. See the Epic Description Score rubric in Stage 4 for full details.
 
    **Epic creation call:**
    ```
@@ -317,7 +350,34 @@ This gate is **always interactive** — even with `--gates=auto`, you MUST prese
 
 ### Quality Scoring Rubric
 
-Compute three sub-scores (0-100 each), then average them for an **Overall Score**.
+Compute four sub-scores (0-100 each), then compute a weighted **Overall Score**.
+
+#### Epic Description Score (0-100)
+
+🔴 **Hard floor: An epic whose Epic Description Score is below 80 is NEVER ready, regardless of the overall score.** A weak epic description undermines everything downstream.
+
+Evaluate the epic description as a standalone reference document. Any engineer (human or AI) should be able to understand the full scope, approach, and constraints without reading anything else.
+
+| Check | Points | Condition |
+|-------|--------|-----------|
+| **Overview/Source** | 10 | Has a clear overview AND source reference (if from request) |
+| **Problem Statement** | 10 | Clearly articulates the problem with current state + impact — not just a feature request |
+| **Goals** | 10 | Has a goals table or list with specific, measurable objectives |
+| **Proposed Approach** | 15 | Describes the technical approach with architecture, specific patterns, endpoints, components, or data flows — not just bullet-point summaries |
+| **Scope Definition** | 10 | Defines what's in scope and/or explicitly out of scope. Includes boundary conditions or edge cases |
+| **Execution Plan** | 10 | Has an execution plan table mapping phases to features with identifiers and complexity |
+| **Technical Considerations** | 15 | Covers key files, risk areas, existing infrastructure, database constraints, or scalability concerns with specific file paths |
+| **Success Criteria** | 10 | Has specific, verifiable success criteria (not vague aspirations) |
+| **Supporting Sections** | 10 | Includes at least 2 of: Target Audience, Alternatives Considered, Dependencies, Access Control, UI/UX Requirements |
+
+**Scoring rules:**
+- Award **full points** if the section is present AND substantive (multiple sentences, specific details)
+- Award **half points** if the section is present but thin (single sentence or generic)
+- Award **zero** if the section is missing entirely
+
+**Word count check:** Flag any description under 300 words as a critical issue regardless of section scores.
+
+**If the Epic Description Score is below 80:** You MUST update the epic description using `spectree__update_epic` to add the missing/thin sections, then re-score. Use the codebase analysis from Stage 1 to enrich technical sections.
 
 #### Structure Score (0-100)
 
@@ -358,10 +418,16 @@ Evaluate task sizing and parallel safety:
 #### Overall Score
 
 ```
-Overall = (Structure + Detail + Scoping) / 3
+Overall = (Epic Description * 0.30) + (Structure * 0.25) + (Detail * 0.25) + (Scoping * 0.20)
 ```
 
-**Minimum threshold: 80.** If Overall Score < 80, you MUST fix the failing checks by updating structured descriptions, splitting tasks, or adjusting dependencies. Then re-score. Do NOT proceed to Stage 5 until the score reaches 80+.
+Epic Description is weighted highest (30%) because it is the most commonly under-specified section and drives all downstream quality.
+
+**Minimum thresholds:**
+- **Overall Score must be >= 80** to proceed to Stage 5
+- **Epic Description Score must be >= 80** regardless of overall score (hard floor)
+
+If either threshold fails, you MUST fix the failing checks, then re-score. Do NOT proceed to Stage 5 until both thresholds pass.
 
 ### Evaluation Output
 
@@ -370,20 +436,22 @@ Present the score like this:
 ```
 Quality Evaluation Results
 ──────────────────────────
+Epic Description: 92/100  (1 issue: Scope Definition is thin — only 1 sentence)
 Structure Score:  95/100  (1 issue: Feature 3 missing execution order)
 Detail Score:     85/100  (3 issues: Tasks 2.1, 4.3 missing files involved; Task 5.2 has 1 acceptance criterion)
 Scoping Score:    90/100  (1 issue: Features 2 and 3 share packages/api/src/routes/users.ts but are in same parallel group)
 ──────────────────────────
-Overall Score:    90/100  ✓ PASS
+Overall Score:    90/100  ✓ PASS  (Epic Description ✓ above hard floor)
 
 Issues to review:
-1. [Detail] Task ENG-42-1: Missing filesInvolved — needs at least 1 file path
-2. [Detail] Task ENG-44-3: Missing filesInvolved — needs at least 1 file path
-3. [Detail] Task ENG-46-2: Only 1 acceptance criterion — needs at least 2
-4. [Scoping] Features ENG-43, ENG-44: Both modify packages/api/src/routes/users.ts — cannot be in same parallel group
+1. [Epic Desc] Scope Definition: Only 1 sentence — add explicit in/out scope boundaries
+2. [Detail] Task ENG-42-1: Missing filesInvolved — needs at least 1 file path
+3. [Detail] Task ENG-44-3: Missing filesInvolved — needs at least 1 file path
+4. [Detail] Task ENG-46-2: Only 1 acceptance criterion — needs at least 2
+5. [Scoping] Features ENG-43, ENG-44: Both modify packages/api/src/routes/users.ts — cannot be in same parallel group
 ```
 
-If the score is below 80, fix each issue (call `spectree__set_structured_description` or `spectree__set_execution_metadata` as needed), then re-run the evaluation.
+If any threshold fails, fix each issue (call `spectree__update_epic` for description issues, `spectree__set_structured_description` or `spectree__set_execution_metadata` for feature/task issues), then re-run the evaluation.
 
 **Gate:** Always interactive. Present the quality score and all issues found. Wait for user approval.
 
@@ -414,10 +482,12 @@ If the score is below 80, fix each issue (call `spectree__set_structured_descrip
 ## Rules
 
 1. **MUST** call `spectree__list_teams` before creating any epic
-2. **MUST** set structured descriptions for ALL features and ALL tasks — no exceptions
-3. **MUST** verify the execution plan at the end of the pipeline
-4. **MUST** include at least 3 acceptance criteria per feature and 2 per task
-5. **MUST** include specific file paths in `filesInvolved` for every task
-6. **MUST** write AI instructions specific enough for a fresh session to implement
-7. **NEVER** create tasks scoped larger than ~125k tokens (complex)
-8. **NEVER** put features that modify the same files in the same parallel group
+2. **MUST** write epic descriptions that score >= 80 on the Epic Description Rubric — this is a hard floor that blocks the pipeline regardless of other scores
+3. **MUST** set structured descriptions for ALL features and ALL tasks — no exceptions
+4. **MUST** verify the execution plan at the end of the pipeline
+5. **MUST** include at least 3 acceptance criteria per feature and 2 per task
+6. **MUST** include specific file paths in `filesInvolved` for every task
+7. **MUST** write AI instructions specific enough for a fresh session to implement
+8. **NEVER** create tasks scoped larger than ~125k tokens (complex)
+9. **NEVER** put features that modify the same files in the same parallel group
+10. **NEVER** copy epic request fields verbatim as the epic description — the request is input, the description is a synthesized, enriched output

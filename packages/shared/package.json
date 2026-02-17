@@ -21,5 +21,8 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
   }
 }

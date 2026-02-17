@@ -1,0 +1,42 @@
+{
+  "name": "@spectree/planning",
+  "version": "1.0.0",
+  "description": "Planning and scoping tools for creating implementation plans from epic requests",
+  "agents": [
+    {
+      "name": "planner",
+      "path": ".github/agents/planner.md",
+      "description": "Creates detailed implementation plans with features, tasks, and structured descriptions"
+    },
+    {
+      "name": "plan-reviewer",
+      "path": ".github/agents/plan-reviewer.md",
+      "description": "Reviews implementation plans for completeness and quality"
+    },
+    {
+      "name": "request-formulator",
+      "path": ".github/agents/request-formulator.md",
+      "description": "Formulates epic requests from high-level ideas"
+    }
+  ],
+  "skills": [
+    {
+      "name": "spectree-planning",
+      "path": ".github/skills/spectree-planning/SKILL.md",
+      "description": "Core planning skill for creating structured implementation plans"
+    },
+    {
+      "name": "spectree-plan-review",
+      "path": ".github/skills/spectree-plan-review/SKILL.md",
+      "description": "Plan review skill for validating implementation plans"
+    }
+  ],
+  "instructions": [
+    {
+      "name": "agents",
+      "path": ".github/instructions/agents.instructions.md",
+      "description": "Guidelines for agent behavior and coordination"
+    }
+  ],
+  "dependencies": {}
+}

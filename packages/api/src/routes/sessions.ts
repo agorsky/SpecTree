@@ -263,4 +263,23 @@ export default async function sessionRoutes(
     emitSessionEvent(request.body);
     return reply.status(204).send();
   });
+
+  // ---------------------------------------------------------------------------
+  // GET /api/v1/sessions/:id/state - Get session state machine state
+  // ---------------------------------------------------------------------------
+  fastify.get<{
+    Params: SessionIdParams;
+  }>("/by-id/:id/state", async (request, reply) => {
+    const { getSessionState, getAllowedTransitions } = await import("../services/session-state-machine.js");
+    
+    const currentState = await getSessionState(request.params.id);
+    const allowedTransitions = await getAllowedTransitions(request.params.id);
+
+    return reply.send({
+      data: {
+        currentState,
+        allowedTransitions,
+      },
+    });
+  });
 }
