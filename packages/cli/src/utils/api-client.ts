@@ -34,7 +34,7 @@ export class ApiClient {
       'Content-Type': 'application/json',
     };
     if (authToken) {
-      headers['Authorization'] = `Bearer ${authToken}`;
+      headers.Authorization = `Bearer ${authToken}`;
     }
     this.client = axios.create({
       baseURL: this.baseUrl,

@@ -43,10 +43,14 @@ Each guide follows this structure:
 ### Essential Commands
 
 ```bash
-# Skill Pack Management
-spectree list                      # List installed packs
-spectree install @spectree/full    # Install full pack suite
-spectree update --all              # Update all packs
+# Skill Pack Management (specify your registry URL or set SPECTREE_REGISTRY_URL)
+spectree list --registry https://your-spectree-instance.com
+spectree install @spectree/full --registry https://your-spectree-instance.com
+spectree update --all --registry https://your-spectree-instance.com
+
+# Or set the env var once to avoid repeating --registry:
+export SPECTREE_REGISTRY_URL=https://your-spectree-instance.com
+spectree install @spectree/full    # Uses SPECTREE_REGISTRY_URL
 
 # SpecTree MCP Tools (in GitHub Copilot)
 @spectree list epics               # List your epics
