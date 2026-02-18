@@ -361,21 +361,7 @@ Content-Type: application/json
 **Success Response (200 OK):**
 ```json
 {
-  "data": {
-    "updated": 2,
-    "features": [
-      {
-        "id": "feature-uuid-1",
-        "identifier": "ENG-42",
-        "statusId": "new-status-uuid"
-      },
-      {
-        "id": "feature-uuid-2",
-        "identifier": "ENG-43",
-        "statusId": "new-status-uuid"
-      }
-    ]
-  }
+  "updated": 2
 }
 ```
 
@@ -383,7 +369,7 @@ Content-Type: application/json
 
 ## Progress Tracking Endpoints
 
-### POST /api/v1/features/:id/start-work
+### POST /api/v1/features/:id/progress/start
 
 Begin working on a feature. Sets status to "In Progress" and records start timestamp.
 
@@ -414,7 +400,7 @@ Content-Type: application/json
 
 ---
 
-### POST /api/v1/features/:id/complete-work
+### POST /api/v1/features/:id/progress/complete
 
 Mark a feature as complete. Sets status to "Done", records completion timestamp, calculates duration, and sets progress to 100%.
 
@@ -449,7 +435,7 @@ Content-Type: application/json
 
 ---
 
-### POST /api/v1/features/:id/log-progress
+### POST /api/v1/features/:id/progress/log
 
 Log progress without changing status. Useful for recording incremental updates.
 
@@ -482,7 +468,7 @@ Content-Type: application/json
 
 ---
 
-### POST /api/v1/features/:id/report-blocker
+### POST /api/v1/features/:id/progress/blocker
 
 Report that a feature is blocked.
 
@@ -603,7 +589,7 @@ Get all code artifacts linked to this feature.
 
 ---
 
-### POST /api/v1/features/:id/code-context/file
+### POST /api/v1/features/:id/code-context/files
 
 Link a file to this feature.
 
@@ -616,7 +602,7 @@ Link a file to this feature.
 
 ---
 
-### DELETE /api/v1/features/:id/code-context/file
+### DELETE /api/v1/features/:id/code-context/files
 
 Unlink a file from this feature.
 
@@ -629,7 +615,7 @@ Unlink a file from this feature.
 
 ---
 
-### POST /api/v1/features/:id/code-context/function
+### POST /api/v1/features/:id/code-context/functions
 
 Link a function to this feature.
 
@@ -656,7 +642,7 @@ Link a git branch to this feature.
 
 ---
 
-### POST /api/v1/features/:id/code-context/commit
+### POST /api/v1/features/:id/code-context/commits
 
 Link a git commit to this feature.
 
@@ -751,7 +737,7 @@ Update a specific section.
 
 ---
 
-### POST /api/v1/features/:id/structured-desc/criterion
+### POST /api/v1/features/:id/structured-desc/acceptance-criteria
 
 Add an acceptance criterion.
 
@@ -764,7 +750,7 @@ Add an acceptance criterion.
 
 ---
 
-### POST /api/v1/features/:id/structured-desc/file
+### POST /api/v1/features/:id/structured-desc/files
 
 Link a file to filesInvolved.
 
@@ -777,7 +763,7 @@ Link a file to filesInvolved.
 
 ---
 
-### POST /api/v1/features/:id/structured-desc/external-link
+### POST /api/v1/features/:id/structured-desc/links
 
 Add an external documentation link.
 

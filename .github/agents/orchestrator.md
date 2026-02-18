@@ -64,7 +64,8 @@ Then emit a progress announcement and log to SpecTree:
 
 **Log to SpecTree:**
 ```
-spectree__append_ai_note({
+spectree__manage_ai_context({
+  action: "append_note",
   type: "epic",
   id: "<epic-id>",
   noteType: "context",
@@ -88,13 +89,13 @@ For each phase in the execution plan:
 
 ```
 // Get structured description (requirements, acceptance criteria, AI instructions)
-spectree__get_structured_description({ type: "feature", id: "<feature-identifier>" })
+spectree__manage_description({ action: "get", type: "feature", id: "<feature-identifier>" })
 
 // Get AI context from previous sessions
-spectree__get_ai_context({ type: "feature", id: "<feature-identifier>" })
+spectree__manage_ai_context({ action: "get_context", type: "feature", id: "<feature-identifier>" })
 
 // Get linked code files
-spectree__get_code_context({ type: "feature", id: "<feature-identifier>" })
+spectree__manage_code_context({ action: "get_context", type: "feature", id: "<feature-identifier>" })
 
 // Get past decisions
 spectree__get_decision_context({ epicId: "<epic-id>" })
@@ -102,7 +103,7 @@ spectree__get_decision_context({ epicId: "<epic-id>" })
 
 3. **Mark the feature as in progress** in SpecTree BEFORE spawning the feature-worker. This ensures the dashboard reflects work has started even if the feature-worker fails to update SpecTree:
    ```
-   spectree__start_work({ type: "feature", id: "<feature-identifier>" })
+   spectree__manage_progress({ action: "start_work", type: "feature", id: "<feature-identifier>" })
    ```
 
 4. **Build the context prompt** for the feature-worker sub-agent (see Context Injection Template below)
@@ -125,7 +126,8 @@ spectree__get_decision_context({ epicId: "<epic-id>" })
    Then call:
    ```
    // a) Log an orchestrator-level AI note summarizing the feature-worker's output
-   spectree__append_ai_note({
+   spectree__manage_ai_context({
+     action: "append_note",
      type: "feature",
      id: "<feature-identifier>",
      noteType: "context",
@@ -133,14 +135,16 @@ spectree__get_decision_context({ epicId: "<epic-id>" })
    })
 
    // b) Set structured AI context for future sessions
-   spectree__set_ai_context({
+   spectree__manage_ai_context({
+     action: "set_context",
      type: "feature",
      id: "<feature-identifier>",
      context: "## Implementation Summary\n- What was implemented: <summary>\n- Tasks completed: <list of task identifiers>\n- Issues encountered: <any errors or blockers>\n- Files modified: <list of files from feature-worker output>"
    })
 
    // c) Mark the feature as complete
-   spectree__complete_work({
+   spectree__manage_progress({
+     action: "complete_work",
      type: "feature",
      id: "<feature-identifier>",
      summary: "Summary of what was implemented"
@@ -158,7 +162,8 @@ spectree__get_decision_context({ epicId: "<epic-id>" })
    ```
    **Log to SpecTree:**
    ```
-   spectree__append_ai_note({
+   spectree__manage_ai_context({
+     action: "append_note",
      type: "epic",
      id: "<epic-id>",
      noteType: "context",
@@ -176,13 +181,15 @@ spectree__get_decision_context({ epicId: "<epic-id>" })
    // b) If feature status is still Backlog/In Progress, apply fallback
    if (feature.status.category !== "completed") {
      // Log a warning
-     spectree__append_ai_note({
+     spectree__manage_ai_context({
+       action: "append_note",
        type: "feature",
        id: "<feature-identifier>",
        noteType: "observation",
        content: "⚠️ FALLBACK: Feature-worker did not update SpecTree status. Orchestrator applying fallback completion."
      })
-     spectree__complete_work({
+     spectree__manage_progress({
+       action: "complete_work",
        type: "feature",
        id: "<feature-identifier>",
        summary: "Completed via orchestrator fallback — feature-worker did not update status"
@@ -193,7 +200,8 @@ spectree__get_decision_context({ epicId: "<epic-id>" })
    for each task in feature.tasks:
      if (task.status.category !== "completed") {
        spectree__update_task({ id: "<task-identifier>", status: "Done" })
-       spectree__append_ai_note({
+       spectree__manage_ai_context({
+         action: "append_note",
          type: "task",
          id: "<task-identifier>",
          noteType: "observation",
@@ -203,7 +211,8 @@ spectree__get_decision_context({ epicId: "<epic-id>" })
 
    // d) Check if AI notes are empty — if so, add a fallback note
    if (feature.aiNotes is null or empty) {
-     spectree__append_ai_note({
+     spectree__manage_ai_context({
+       action: "append_note",
        type: "feature",
        id: "<feature-identifier>",
        noteType: "context",
@@ -253,7 +262,8 @@ After all phases are complete:
 
    **Log reconciliation results:**
    ```
-   spectree__append_ai_note({
+   spectree__manage_ai_context({
+     action: "append_note",
      type: "epic",
      id: "<epic-id>",
      noteType: "observation",
@@ -276,7 +286,8 @@ After all phases are complete:
    ```
 4. **Log final status to SpecTree:**
    ```
-   spectree__append_ai_note({
+   spectree__manage_ai_context({
+     action: "append_note",
      type: "epic",
      id: "<epic-id>",
      noteType: "context",
@@ -329,7 +340,7 @@ When spawning a feature-worker sub-agent, build a prompt using this template. Fi
 # Feature: {FEATURE_IDENTIFIER} - {FEATURE_TITLE}
 
 ## Requirements
-{from spectree__get_structured_description → summary}
+{from spectree__manage_description with action='get' → summary}
 
 ## Acceptance Criteria
 {from structured description → acceptanceCriteria[]}
@@ -347,27 +358,26 @@ When spawning a feature-worker sub-agent, build a prompt using this template. Fi
 {from structured description → technicalNotes}
 
 ## Previous Context
-{from spectree__get_ai_context, or "No previous context" if empty}
+{from spectree__manage_ai_context with action='get_context', or "No previous context" if empty}
 
 ## Code Context
-{from spectree__get_code_context, or "No code context yet" if empty}
+{from spectree__manage_code_context with action='get_context', or "No code context yet" if empty}
 
 ## Decisions Made So Far
 {from spectree__get_decision_context, or "No decisions yet" if empty}
 
 ## Your Tools
 You have SpecTree MCP tools. Use them to:
-- spectree__start_work - Begin work on a task
-- spectree__log_progress - Report progress on tasks
+- spectree__manage_progress - Begin work, mark complete, log progress
 - spectree__log_decision - Record implementation decisions
-- spectree__link_code_file - Track modified files
-- spectree__run_all_validations - Verify your work
+- spectree__manage_code_context - Track modified files
+- spectree__manage_validations - Verify your work
 - spectree__complete_task_with_validation - Validate and complete a task
 
 ## When Done
 1. Run spectree__complete_task_with_validation for each task
-2. Ensure all modified files are linked via spectree__link_code_file
-3. Leave an AI note via spectree__append_ai_note summarizing what was done
+2. Ensure all modified files are linked via spectree__manage_code_context (action='link_file')
+3. Leave an AI note via spectree__manage_ai_context (action='append_note') summarizing what was done
 ```
 
 **IMPORTANT:** Always inject the FULL context. Do not truncate or summarize the SpecTree data. The feature-worker runs in an isolated session and has no other context.
@@ -377,9 +387,10 @@ You have SpecTree MCP tools. Use them to:
 ## Error Handling
 
 If a feature-worker sub-agent fails:
-1. Log the error with `spectree__report_blocker`:
+1. Log the error with `spectree__manage_progress`:
    ```
-   spectree__report_blocker({
+   spectree__manage_progress({
+     action: "report_blocker",
      type: "feature",
      id: "<feature-identifier>",
      reason: "Description of what went wrong"
@@ -409,7 +420,7 @@ If the user requests a dry run (e.g., "show me the plan without executing"):
 2. **ALWAYS** call `spectree__start_session` before executing any phases — this tracks the session on the dashboard
 3. **ALWAYS** call `spectree__end_session` after all phases complete — this records handoff data for future sessions
 4. **ALWAYS** inject full SpecTree context into sub-agent prompts — never spawn workers without context
-5. **ALWAYS** call `spectree__start_work` for each feature BEFORE spawning its feature-worker
+5. **ALWAYS** call `spectree__manage_progress` (action='start_work') for each feature BEFORE spawning its feature-worker
 6. **ALWAYS** log AI notes and set AI context for each feature AFTER it completes
 7. **ALWAYS** update SpecTree progress after each feature completes
 8. **ALWAYS** invoke the reviewer agent after each phase
@@ -456,7 +467,7 @@ Use these emoji indicators consistently in all progress messages:
 ### Implications
 
 - Progress announcements (Step 2) are still valuable: they appear in the final output and help the user understand what happened.
-- **SpecTree epic-level logging is the primary mechanism for real-time visibility.** The user (or another agent) can call `spectree__get_progress_summary` or `spectree__get_ai_context({ type: "epic", id: "<epic-id>" })` at any time to check progress.
+- **SpecTree epic-level logging is the primary mechanism for real-time visibility.** The user (or another agent) can call `spectree__get_progress_summary` or `spectree__manage_ai_context({ action: "get_context", type: "epic", id: "<epic-id>" })` at any time to check progress.
 - The `report_intent` tool updates a UI status indicator and provides some visibility during execution.
 
 ### Workarounds for Real-Time Monitoring

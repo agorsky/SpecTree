@@ -15,7 +15,7 @@ We need to configure GitHub Actions to deploy the SpecTree application to Azure 
 | Resource | Name | Resource Group |
 |----------|------|----------------|
 | Container Registry | `acrspectreedev` | `rg-spectree-dev` |
-| API Container App | `ca-spectree-api-dev` | `rg-spectree-dev` |
+| API Container App | `ca-spectree-dev` | `rg-spectree-dev` |
 | Web Container App | `ca-spectree-web-dev` | `rg-spectree-dev` |
 
 ## GitHub Repository

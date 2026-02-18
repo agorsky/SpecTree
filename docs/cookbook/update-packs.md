@@ -11,11 +11,19 @@ Keep your SpecTree skill packs up-to-date with the latest features, fixes, and i
 - **Skill packs installed** — At least one pack in `.github/copilot-instructions/`
 - **SpecTree CLI available** — Run `spectree --version` to verify
 - **Git working directory clean** — Updates modify files, commit changes first
+- **Registry configured** — Either use `--registry` flag or set `SPECTREE_REGISTRY_URL` env var
 
 **Verify installed packs:**
 ```bash
-spectree list
+# With registry flag:
+spectree list --registry https://your-spectree-instance.com
+
+# Or set env var once:
+export SPECTREE_REGISTRY_URL=https://your-spectree-instance.com
+spectree list    # Uses SPECTREE_REGISTRY_URL
 ```
+
+> **Note:** All CLI commands in this guide assume you've either set `SPECTREE_REGISTRY_URL` or will add `--registry <url>` to each command.
 
 ---
 

@@ -1,5 +1,21 @@
 # Validation Checklists
 
+> **⚠️ DEPRECATION NOTICE:**  
+> The individual validation tools (`spectree__add_validation`, `spectree__list_validations`, `spectree__run_validation`, `spectree__run_all_validations`, `spectree__mark_manual_validated`, `spectree__remove_validation`, `spectree__reset_validations`) are **DEPRECATED**.  
+>  
+> **Use instead:** `spectree__manage_validations` with action-based routing:
+> - `action='add'` - Add validation check
+> - `action='list'` - List all validations
+> - `action='run'` - Run single validation
+> - `action='run_all'` - Run all validations
+> - `action='mark_manual'` - Mark manual check as validated
+> - `action='remove'` - Remove validation
+> - `action='reset'` - Reset all to pending
+>
+> **Or use:** `spectree__complete_task_with_validation` to validate and complete atomically.
+>
+> See [Tools Reference](./tools-reference.md#spectree__manage_validations) for complete documentation.
+
 Validation Checklists define executable acceptance criteria for tasks. They allow AI agents and developers to verify that work is truly "done" by running automated checks.
 
 ## Overview

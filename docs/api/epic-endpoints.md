@@ -365,7 +365,7 @@ Content-Type: application/json
 
 ## Advanced Endpoints
 
-### POST /api/v1/epics/create-complete
+### POST /api/v1/epics/complete
 
 Create a complete epic with all features and tasks atomically. See [Template Endpoints](./template-endpoints.md) for similar functionality.
 
@@ -667,7 +667,7 @@ Update a specific section without touching other sections.
 
 ---
 
-### POST /api/v1/epics/:id/structured-desc/criterion
+### POST /api/v1/epics/:id/structured-desc/acceptance-criteria
 
 Add an acceptance criterion to the epic.
 
@@ -680,7 +680,7 @@ Add an acceptance criterion to the epic.
 
 ---
 
-### POST /api/v1/epics/:id/structured-desc/file
+### POST /api/v1/epics/:id/structured-desc/files
 
 Link a file to the epic's filesInvolved list.
 
@@ -693,7 +693,7 @@ Link a file to the epic's filesInvolved list.
 
 ---
 
-### POST /api/v1/epics/:id/structured-desc/external-link
+### POST /api/v1/epics/:id/structured-desc/links
 
 Add an external documentation link.
 

@@ -16,6 +16,7 @@
 - [Deployment](#deployment)
 - [API Documentation](#api-documentation)
 - [Git Workflow](#git-workflow)
+- [Quality & Audit Reports](#quality--audit-reports)
 - [Historical Documents](#historical-documents)
 
 ---
@@ -37,6 +38,7 @@
 | Document | Description |
 |----------|-------------|
 | [whats-new/v0.2.0.md](./whats-new/v0.2.0.md) | Current release notes for v0.2.0 |
+| [whats-new/v0.1.0.md](./whats-new/v0.1.0.md) | Release notes for v0.1.0 |
 | [whats-new/README.md](./whats-new/README.md) | What's New documentation conventions and version index |
 
 ---
@@ -149,6 +151,7 @@ The orchestrator runs parallel AI agents to execute SpecTree epics automatically
 | Document | Description | Audience |
 |----------|-------------|----------|
 | [deployment/azure-deployment-guide.md](./deployment/azure-deployment-guide.md) | Complete Azure deployment guide | Ops/DevOps |
+| [deployment/ai-agent-deployment-guide.md](./deployment/ai-agent-deployment-guide.md) | AI agent-executable deployment guide with Azure CLI commands | AI agents/DevOps |
 | [deployment/azure-manual-deployment-runbook.md](./deployment/azure-manual-deployment-runbook.md) | Step-by-step manual deployment runbook | Ops |
 | [guides/deployment-review-eng7.md](./guides/deployment-review-eng7.md) | Deployment review and post-mortem | Team |
 | [deployment/bicep-secret-reference-pattern.md](./deployment/bicep-secret-reference-pattern.md) | Bicep pattern for secret references | Developers |
@@ -278,6 +281,18 @@ Located in [archive/analysis/](./archive/analysis/):
 
 ---
 
+## 📊 Quality & Audit Reports
+
+These documents track documentation quality, validation, and audit results:
+
+| Document | Description |
+|----------|-------------|
+| [instruction-audit.md](./instruction-audit.md) | Instruction files audit report (overlaps, contradictions) |
+| [validation-report.md](./validation-report.md) | SpecTree external adoption validation report |
+| [CONVENTIONS.md](./CONVENTIONS.md) | Documentation naming and versioning conventions |
+
+---
+
 ## 🤝 Contributing
 
 When adding new documentation:
@@ -287,6 +302,8 @@ When adding new documentation:
 3. **Add status indicators** (Current, Historical, etc.)
 4. **Link from related documents** to improve discoverability
 5. **Archive old planning docs** to `archive/planning/` or `archive/analysis/` once implemented
+
+**Note:** The `local/` subdirectory may contain organization-specific or personal documentation that is excluded from this index.
 
 ---
 

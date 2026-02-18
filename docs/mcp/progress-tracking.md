@@ -2,6 +2,17 @@
 
 This document describes the purpose-built MCP tools for automatic progress tracking in SpecTree.
 
+> **⚠️ DEPRECATION NOTICE:**  
+> The individual tools documented here (`spectree__start_work`, `spectree__complete_work`, `spectree__log_progress`, `spectree__report_blocker`) are **DEPRECATED**.  
+>  
+> **Use instead:** `spectree__manage_progress` with action-based routing:
+> - `action='start_work'` - Begin working on an item
+> - `action='complete_work'` - Mark item as complete
+> - `action='log_progress'` - Record incremental progress
+> - `action='report_blocker'` - Report blockage
+>
+> See [Tools Reference](./tools-reference.md#spectree__manage_progress) for complete documentation.
+
 ## Overview
 
 The progress tracking tools make status updates natural and automatic for AI workflows. Instead of relying on manual status updates, these tools integrate progress tracking directly into the work lifecycle.

@@ -1,5 +1,18 @@
 # Structured Descriptions
 
+> **⚠️ DEPRECATION NOTICE:**  
+> The individual structured description tools (`spectree__get_structured_description`, `spectree__set_structured_description`, `spectree__update_section`, `spectree__add_acceptance_criterion`, `spectree__link_file`, `spectree__add_external_link`) are **DEPRECATED**.  
+>  
+> **Use instead:** `spectree__manage_description` with action-based routing:
+> - `action='get'` - Retrieve structured description
+> - `action='set'` - Replace entire description
+> - `action='update_section'` - Update single section
+> - `action='add_criterion'` - Add acceptance criterion
+> - `action='link_file'` - Add file to filesInvolved
+> - `action='add_link'` - Add external link
+>
+> See [Tools Reference](./tools-reference.md#spectree__manage_description) for complete documentation.
+
 SpecTree supports rich, structured descriptions for Features and Tasks that enable AI agents to extract and update specific sections without parsing unstructured text.
 
 ## Overview

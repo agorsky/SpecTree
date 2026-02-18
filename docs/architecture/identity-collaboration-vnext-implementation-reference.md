@@ -28,9 +28,7 @@ The Identity & Collaboration vNext project transformed SpecTree from an "everyon
 
 ## Design Reference
 
-**Primary Specification:** `docs/DESIGN-REFERENCES/spectree-vnext-identity-collaboration-migration.md`
-
-This document contains the full behavioral specification, migration policy, and acceptance criteria that guided the implementation.
+**Note:** The original design specification `docs/DESIGN-REFERENCES/spectree-vnext-identity-collaboration-migration.md` was used during implementation but is no longer maintained. This document serves as the canonical reference for the implemented identity and collaboration system.
 
 ---
 
@@ -514,6 +512,6 @@ npx prisma generate          # Regenerate client (safe)
 ## Contact / Questions
 
 For questions about this implementation, refer to:
-1. The design spec: `docs/DESIGN-REFERENCES/spectree-vnext-identity-collaboration-migration.md`
+1. This document for the complete implementation reference
 2. The Linear project for detailed issue descriptions
 3. Test files for expected behavior examples

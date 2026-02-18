@@ -115,6 +115,7 @@ Create a `.spectree/pack.json` file to publish your pack:
 ## Environment Variables
 
 - `SPECTREE_REGISTRY_URL` - Default registry URL (default: `http://localhost:3001`)
+- `SPECTREE_TOKEN` - Authentication token for install, update, and list commands
 - `SPECTREE_API_TOKEN` - Authentication token for publishing
 
 ## Project Structure

@@ -146,24 +146,14 @@ Check if there's an active session for an epic.
 
 **Returns:** Active session details or null.
 
-### spectree__log_session_work
-
-Manually log work on an item (usually called automatically).
-
-**Input:**
-- `epicId`: Epic containing the item
-- `itemId`: UUID of feature or task
-- `itemType`: "feature" or "task"
-- `identifier`: Human-readable identifier (e.g., "COM-123")
-- `action`: Action performed (e.g., "reviewed", "investigated")
-
 ## Automatic Work Tracking
 
-The following operations automatically log work to the active session:
-- `spectree__start_work` - logs "started" action
-- `spectree__complete_work` - logs "completed" action
+The following operations automatically track work progress:
+- `spectree__manage_progress` with action `start_work` - begins work on an item
+- `spectree__manage_progress` with action `complete_work` - completes work on an item
+- `spectree__manage_progress` with action `log_progress` - logs incremental progress
 
-This means AI agents don't need to manually log most work - it's tracked automatically.
+This means AI agents don't need to manually track work - it's built into the progress tools.
 
 ## Best Practices
 

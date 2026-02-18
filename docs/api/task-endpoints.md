@@ -365,21 +365,7 @@ Content-Type: application/json
 **Success Response (200 OK):**
 ```json
 {
-  "data": {
-    "updated": 2,
-    "tasks": [
-      {
-        "id": "task-uuid-1",
-        "identifier": "ENG-42-1",
-        "statusId": "new-status-uuid"
-      },
-      {
-        "id": "task-uuid-2",
-        "identifier": "ENG-42-2",
-        "statusId": "new-status-uuid"
-      }
-    ]
-  }
+  "updated": 2
 }
 ```
 
@@ -387,7 +373,7 @@ Content-Type: application/json
 
 ## Progress Tracking Endpoints
 
-### POST /api/v1/tasks/:id/start-work
+### POST /api/v1/tasks/:id/progress/start
 
 Begin working on a task. Sets status to "In Progress" and records start timestamp.
 
@@ -418,7 +404,7 @@ Content-Type: application/json
 
 ---
 
-### POST /api/v1/tasks/:id/complete-work
+### POST /api/v1/tasks/:id/progress/complete
 
 Mark a task as complete. Sets status to "Done", records completion timestamp, calculates duration, and sets progress to 100%.
 
@@ -453,7 +439,7 @@ Content-Type: application/json
 
 ---
 
-### POST /api/v1/tasks/:id/log-progress
+### POST /api/v1/tasks/:id/progress/log
 
 Log progress without changing status. Useful for recording incremental updates.
 
@@ -486,7 +472,7 @@ Content-Type: application/json
 
 ---
 
-### POST /api/v1/tasks/:id/report-blocker
+### POST /api/v1/tasks/:id/progress/blocker
 
 Report that a task is blocked.
 
@@ -626,7 +612,7 @@ Get all code artifacts linked to this task.
 
 ---
 
-### POST /api/v1/tasks/:id/code-context/file
+### POST /api/v1/tasks/:id/code-context/files
 
 Link a file to this task.
 
@@ -639,7 +625,7 @@ Link a file to this task.
 
 ---
 
-### DELETE /api/v1/tasks/:id/code-context/file
+### DELETE /api/v1/tasks/:id/code-context/files
 
 Unlink a file from this task.
 
@@ -652,7 +638,7 @@ Unlink a file from this task.
 
 ---
 
-### POST /api/v1/tasks/:id/code-context/function
+### POST /api/v1/tasks/:id/code-context/functions
 
 Link a function to this task.
 
@@ -679,7 +665,7 @@ Link a git branch to this task.
 
 ---
 
-### POST /api/v1/tasks/:id/code-context/commit
+### POST /api/v1/tasks/:id/code-context/commits
 
 Link a git commit to this task.
 
@@ -778,7 +764,7 @@ Update a specific section.
 
 ---
 
-### POST /api/v1/tasks/:id/structured-desc/criterion
+### POST /api/v1/tasks/:id/structured-desc/acceptance-criteria
 
 Add an acceptance criterion.
 
@@ -791,7 +777,7 @@ Add an acceptance criterion.
 
 ---
 
-### POST /api/v1/tasks/:id/structured-desc/file
+### POST /api/v1/tasks/:id/structured-desc/files
 
 Link a file to filesInvolved.
 
@@ -804,7 +790,7 @@ Link a file to filesInvolved.
 
 ---
 
-### POST /api/v1/tasks/:id/structured-desc/external-link
+### POST /api/v1/tasks/:id/structured-desc/links
 
 Add an external documentation link.
 

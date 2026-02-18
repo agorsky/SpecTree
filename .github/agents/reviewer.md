@@ -21,9 +21,10 @@ Before doing anything, call `spectree__list_teams` to verify SpecTree MCP is con
 
 ### Step 1: Read Requirements
 
-Call `spectree__get_structured_description` for the feature or task:
+Call `spectree__manage_description` for the feature or task:
 ```
-spectree__get_structured_description({
+spectree__manage_description({
+  action: "get",
   type: "feature",     // or "task"
   id: "<identifier>"   // e.g., "ENG-42"
 })
@@ -49,9 +50,10 @@ For each acceptance criterion:
 
 ### Step 4: Run Automated Validations
 
-Call `spectree__run_all_validations` to run automated checks:
+Call `spectree__manage_validations` to run automated checks:
 ```
-spectree__run_all_validations({
+spectree__manage_validations({
+  action: "run_all",
   taskId: "<task-identifier>"   // e.g., "COM-123-1"
 })
 ```
@@ -65,9 +67,10 @@ Review the validation results. Automated validations include:
 
 ### Step 5: Review Code Quality
 
-Call `spectree__get_code_context` to see what files were modified:
+Call `spectree__manage_code_context` to see what files were modified:
 ```
-spectree__get_code_context({
+spectree__manage_code_context({
+  action: "get_context",
   type: "feature",
   id: "<identifier>"
 })
@@ -159,7 +162,7 @@ When reviewing all features in an epic:
 ## Rules
 
 1. **ALWAYS** read the structured description before reviewing — never review without knowing the requirements
-2. **ALWAYS** run `spectree__run_all_validations` — never skip automated checks
+2. **ALWAYS** run `spectree__manage_validations` (action='run_all') — never skip automated checks
 3. **ALWAYS** check actual code, not just validation results — validations may not cover everything
 4. **ALWAYS** report findings in the structured format above
 5. **ALWAYS** run status reconciliation checks when reviewing an entire epic — flag any mismatches between task/feature status and actual work performed

@@ -841,6 +841,7 @@ The CI/CD pipeline is defined in `.github/workflows/azure-deploy.yml`. It handle
 
 **Key features:**
 - Runs tests, lint, and type checks on every push and PR
+- Validates What's New entry exists before deployment (blocks deployment if missing)
 - On merge to `main`: builds Docker images, pushes to ACR, deploys schema changes, and updates Container Apps
 - Schema migration is **automatic** — detects changes to `packages/api/prisma/` and runs `prisma db push` against Azure SQL Server
 - Temporary firewall rules are created and cleaned up automatically for schema deployment
@@ -872,16 +873,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v2
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
-      - run: pnpm install
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
+      - name: Install dependencies
+        run: pnpm install
+      - name: Lint
+        run: pnpm turbo run lint --filter='@spectree/shared' --filter='@ttc-ggi/spectree-cli' --filter='@ttc-ggi/spectree-mcp'
+      - name: Type check
+        run: pnpm typecheck
+        continue-on-error: true
+      - name: Run tests
+        run: pnpm test
+        continue-on-error: true
 
   build-and-deploy:
     needs: test
@@ -897,15 +902,18 @@ jobs:
         run: |
           if git diff --name-only HEAD~1 HEAD | grep -q 'packages/api/prisma/'; then
             echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Schema changes detected"
           else
             echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No schema changes"
           fi
+
+      - name: Validate What's New Entry
+        run: bash scripts/validate-whats-new.sh
 
       # Node/pnpm setup (conditional — only when schema changes need deployment)
       - uses: pnpm/action-setup@v2
         if: steps.schema-check.outputs.changed == 'true'
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         if: steps.schema-check.outputs.changed == 'true'
         with:

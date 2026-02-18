@@ -896,7 +896,7 @@ fastify.post(
 | `packages/api/src/routes/auth.ts` | `/api/v1/auth/*` |
 | `packages/api/src/routes/tokens.ts` | `/api/v1/tokens/*` |
 | `packages/api/src/routes/me.ts` | `/api/v1/me/*` (personal scope) |
-| `packages/api/src/routes/invitations.ts` | `/api/v1/invitations/*` |
+| `packages/api/src/routes/admin/invitations.ts` | `/api/v1/invitations/*` |
 
 ### Middleware Files
 

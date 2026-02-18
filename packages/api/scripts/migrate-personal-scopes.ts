@@ -12,7 +12,7 @@
  * - Handles failures gracefully
  * - Runs in transactions for data integrity
  *
- * @see docs/DESIGN-REFERENCES/spectree-vnext-identity-collaboration-migration.md
+ * @see docs/architecture/identity-collaboration-vnext-implementation-reference.md
  */
 import { prisma } from "../src/lib/db.js";
 import { createPersonalScope, userHasPersonalScope } from "../src/services/personalScopeService.js";

@@ -23,13 +23,15 @@
 
 ## Overview
 
-The SpecTree MCP server provides **68 registered tools** across 19 tool modules, enabling AI agents (like GitHub Copilot CLI) to manage project work through the Model Context Protocol.
+The SpecTree MCP server provides **95 registered tools** across 19 tool modules, enabling AI agents (like GitHub Copilot CLI) to manage project work through the Model Context Protocol.
 
 ### Key Statistics
 
 | Metric | Value |
 |--------|-------|
-| Total MCP Tools | 68 |
+| Total MCP Tools | 95 |
+| Composite Tools (recommended) | 6 |
+| Deprecated Tools (still functional) | 30 |
 | Tool Modules | 19 files |
 | AI-Enhanced Database Fields | 14 per Feature/Task |
 | Dedicated AI Models | 3 (AiSession, Decision, PlanTemplate) |
@@ -70,11 +72,13 @@ The MCP implementation was designed around these principles:
 │  │  (Copilot CLI)  │◄───────►│ (packages/mcp)  │◄───────►│  (packages/api) │ │
 │  └─────────────────┘         └─────────────────┘         └────────┬────────┘ │
 │                                     │                              │          │
-│                              76 Tools                        Prisma ORM      │
-│                                     │                              │          │
-│                              ┌──────┴──────┐               ┌───────▼───────┐ │
-│                              │ Tool Modules │               │   SQLite DB   │ │
-│                              │  (21 files)  │               └───────────────┘ │
+│                              95 Tools                        Prisma ORM      │
+│                           (6 composite,                           │          │
+│                            30 deprecated)                   ┌───────▼───────┐ │
+│                                     │                       │   SQLite DB   │ │
+│                              ┌──────┴──────┐               └───────────────┘ │
+│                              │ Tool Modules │                                  │
+│                              │  (19 files)  │                                  │
 │                              └─────────────┘                                  │
 │                                                                               │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -316,6 +320,16 @@ model PlanTemplate {
 
 ## MCP Tools - Complete Reference
 
+> **Note on Tool Organization:** SpecTree provides 6 **Composite Tools** that consolidate common workflows into single calls. These tools follow the pattern of a base name with action-based routing (e.g., `manage_ai_context`, `complete_task_with_validation`). They are **recommended** over the individual deprecated tools they replace. Deprecated tools remain functional but should be avoided in new code.
+>
+> **Composite Tools:**
+> - `spectree__manage_ai_context` - Replaces 3 AI context tools
+> - `spectree__manage_code_context` - Replaces 7 code context tools  
+> - `spectree__manage_description` - Replaces 6 structured description tools
+> - `spectree__manage_progress` - Replaces 4 progress tracking tools
+> - `spectree__manage_validations` - Replaces 7 validation tools
+> - `spectree__complete_task_with_validation` - Validates & completes atomically
+
 ### Help (1 tool)
 
 | Tool | Description |
@@ -356,13 +370,13 @@ model PlanTemplate {
 | `spectree__list_statuses` | List workflow statuses for a team |
 | `spectree__get_status` | Get status details by ID or name |
 
-### Ordering (3 tools)
+### Ordering (1 recommended + 2 deprecated tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__reorder_epic` | Change epic order within team |
-| `spectree__reorder_feature` | Change feature order within epic |
-| `spectree__reorder_task` | Change task order within feature |
+| `spectree__reorder_item` | **Composite tool**: Reorder epics, features, or tasks |
+| ⚠️ `spectree__reorder_feature` | **DEPRECATED**: Use `reorder_item` instead |
+| ⚠️ `spectree__reorder_task` | **DEPRECATED**: Use `reorder_item` instead |
 
 ### Search (1 tool)
 
@@ -394,22 +408,24 @@ model PlanTemplate {
 | `spectree__mark_blocked` | Add dependency (blocker) |
 | `spectree__mark_unblocked` | Remove dependency |
 
-### AI Context (3 tools)
+### AI Context (1 recommended + 3 deprecated tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__get_ai_context` | Retrieve AI context and notes for feature/task |
-| `spectree__set_ai_context` | Set/replace AI context (full replacement) |
-| `spectree__append_ai_note` | Append note (observation, decision, blocker, next-step) |
+| `spectree__manage_ai_context` | **Composite tool**: Get, set, or append AI context/notes |
+| ⚠️ `spectree__get_ai_context` | **DEPRECATED**: Use `manage_ai_context` action='get_context' |
+| ⚠️ `spectree__set_ai_context` | **DEPRECATED**: Use `manage_ai_context` action='set_context' |
+| ⚠️ `spectree__append_ai_note` | **DEPRECATED**: Use `manage_ai_context` action='append_note' |
 
-### Progress Tracking (4 tools)
+### Progress Tracking (1 recommended + 4 deprecated tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__start_work` | Begin work (sets status, start timestamp) |
-| `spectree__complete_work` | Complete work (sets status, calculates duration) |
-| `spectree__log_progress` | Log incremental progress with optional % |
-| `spectree__report_blocker` | Report blocker with reason |
+| `spectree__manage_progress` | **Composite tool**: Start, complete, log progress, or report blockers |
+| ⚠️ `spectree__start_work` | **DEPRECATED**: Use `manage_progress` action='start_work' |
+| ⚠️ `spectree__complete_work` | **DEPRECATED**: Use `manage_progress` action='complete_work' |
+| ⚠️ `spectree__log_progress` | **DEPRECATED**: Use `manage_progress` action='log_progress' |
+| ⚠️ `spectree__report_blocker` | **DEPRECATED**: Use `manage_progress` action='report_blocker' |
 
 ### Progress Summary (3 tools)
 
@@ -419,7 +435,7 @@ model PlanTemplate {
 | `spectree__get_my_work` | Get user's assigned work queue |
 | `spectree__get_blocked_summary` | Get all blocked items |
 
-### Session Handoff (6 tools)
+### Session Handoff (5 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -428,42 +444,44 @@ model PlanTemplate {
 | `spectree__get_active_session` | Check for active session |
 | `spectree__get_last_session` | Get last completed session's handoff |
 | `spectree__get_session_history` | Get session history for epic |
-| `spectree__log_session_work` | Log work done during session |
 
-### Structured Descriptions (6 tools)
-
-| Tool | Description |
-|------|-------------|
-| `spectree__get_structured_description` | Get parsed structured description |
-| `spectree__set_structured_description` | Set entire structured description |
-| `spectree__update_section` | Update single section (summary, aiInstructions, etc.) |
-| `spectree__add_acceptance_criterion` | Append acceptance criterion |
-| `spectree__link_file` | Link file to filesInvolved |
-| `spectree__add_external_link` | Add external documentation link |
-
-### Code Context (7 tools)
+### Structured Descriptions (1 recommended + 6 deprecated tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__get_code_context` | Get all code artifacts (files, branch, commits, PR) |
-| `spectree__link_code_file` | Link file to feature/task |
-| `spectree__unlink_code_file` | Remove file link |
-| `spectree__link_function` | Link function (file:function format) |
-| `spectree__link_branch` | Set git branch |
-| `spectree__link_commit` | Add commit SHA |
-| `spectree__link_pr` | Set pull request number and URL |
+| `spectree__manage_description` | **Composite tool**: Get, set, update sections, add criteria/files/links |
+| ⚠️ `spectree__get_structured_description` | **DEPRECATED**: Use `manage_description` action='get' |
+| ⚠️ `spectree__set_structured_description` | **DEPRECATED**: Use `manage_description` action='set' |
+| ⚠️ `spectree__update_section` | **DEPRECATED**: Use `manage_description` action='update_section' |
+| ⚠️ `spectree__add_acceptance_criterion` | **DEPRECATED**: Use `manage_description` action='add_criterion' |
+| ⚠️ `spectree__link_file` | **DEPRECATED**: Use `manage_description` action='link_file' |
+| ⚠️ `spectree__add_external_link` | **DEPRECATED**: Use `manage_description` action='add_link' |
 
-### Validation Checklists (7 tools)
+### Code Context (1 recommended + 7 deprecated tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__add_validation` | Add validation check (command, file_exists, file_contains, test_passes, manual) |
-| `spectree__list_validations` | List validation checks for task |
-| `spectree__run_validation` | Run single validation check |
-| `spectree__run_all_validations` | Run all validations for task |
-| `spectree__mark_manual_validated` | Mark manual check as validated |
-| `spectree__remove_validation` | Remove validation check |
-| `spectree__reset_validations` | Reset all validations to pending |
+| `spectree__manage_code_context` | **Composite tool**: Get, link, or unlink files/functions/branches/commits/PRs |
+| ⚠️ `spectree__get_code_context` | **DEPRECATED**: Use `manage_code_context` action='get_context' |
+| ⚠️ `spectree__link_code_file` | **DEPRECATED**: Use `manage_code_context` action='link_file' |
+| ⚠️ `spectree__unlink_code_file` | **DEPRECATED**: Use `manage_code_context` action='unlink_file' |
+| ⚠️ `spectree__link_function` | **DEPRECATED**: Use `manage_code_context` action='link_function' |
+| ⚠️ `spectree__link_branch` | **DEPRECATED**: Use `manage_code_context` action='link_branch' |
+| ⚠️ `spectree__link_commit` | **DEPRECATED**: Use `manage_code_context` action='link_commit' |
+| ⚠️ `spectree__link_pr` | **DEPRECATED**: Use `manage_code_context` action='link_pr' |
+
+### Validation Checklists (1 recommended + 7 deprecated tools)
+
+| Tool | Description |
+|------|-------------|
+| `spectree__manage_validations` | **Composite tool**: Add, list, run, mark, remove, or reset validations |
+| ⚠️ `spectree__add_validation` | **DEPRECATED**: Use `manage_validations` action='add' |
+| ⚠️ `spectree__list_validations` | **DEPRECATED**: Use `manage_validations` action='list' |
+| ⚠️ `spectree__run_validation` | **DEPRECATED**: Use `manage_validations` action='run' |
+| ⚠️ `spectree__run_all_validations` | **DEPRECATED**: Use `manage_validations` action='run_all' |
+| ⚠️ `spectree__mark_manual_validated` | **DEPRECATED**: Use `manage_validations` action='mark_manual' |
+| ⚠️ `spectree__remove_validation` | **DEPRECATED**: Use `manage_validations` action='remove' |
+| ⚠️ `spectree__reset_validations` | **DEPRECATED**: Use `manage_validations` action='reset' |
 
 ### Decision Log (4 tools)
 
@@ -496,7 +514,7 @@ model PlanTemplate {
 | Tool | Description |
 |------|-------------|
 | `spectree__get_next_required_action` | Get context-aware next action guidance |
-| `spectree__get_workflow_stages` | Get all workflow stage definitions |
+| `spectree__get_session_state` | Get current session state and allowed transitions |
 
 ---
 

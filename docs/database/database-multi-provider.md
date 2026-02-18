@@ -62,13 +62,19 @@ The SQL Server schema (`schema.sqlserver.prisma`) has some differences from the 
 
 ### Cyclic Referential Actions
 
-SQL Server doesn't allow multiple cascade paths to the same table. The following relations use `onDelete: NoAction` instead of cascade/setNull:
+SQL Server doesn't allow multiple cascade paths to the same table. The following relations use `onDelete: NoAction` in the SQL Server schema (`schema.sqlserver.prisma`) instead of the SQLite schema's cascade/setNull:
 
+**SQLite Schema (schema.prisma):**
+- `Status.team` and `Status.personalScope` - Cascade
+- `Feature.status` and `Feature.assignee` - SetNull
+- `Task.status` and `Task.assignee` - SetNull
+
+**SQL Server Schema (schema.sqlserver.prisma):**
 - `Status.team` and `Status.personalScope` - NoAction (must delete statuses manually before team/scope)
 - `Feature.status` and `Feature.assignee` - NoAction (must nullify in application code)
 - `Task.status` and `Task.assignee` - NoAction (must nullify in application code)
 
-This means the application must handle cleanup in the correct order when deleting:
+For SQL Server deployments, the application must handle cleanup in the correct order when deleting:
 1. Delete/update features and tasks first
 2. Delete statuses
 3. Delete teams/personal scopes

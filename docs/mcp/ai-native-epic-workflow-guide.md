@@ -185,10 +185,12 @@ See you next session!
 The AI uses these tools automatically:
 
 ```
+spectree__create_epic_complete    → Creates entire epic atomically
+   OR (if building incrementally):
 spectree__create_epic
 spectree__create_feature (with executionOrder, dependencies, parallelGroup)
 spectree__create_task (with executionOrder, estimatedComplexity)
-spectree__set_structured_description (AI instructions, acceptance criteria)
+spectree__manage_description action='set' (AI instructions, acceptance criteria)
 spectree__get_execution_plan (to verify and show you)
 ```
 
@@ -197,27 +199,26 @@ spectree__get_execution_plan (to verify and show you)
 The AI uses these tools as it works:
 
 ```
-spectree__start_work          → When beginning a task
-spectree__link_code_file      → When modifying files
-spectree__link_function       → When modifying specific functions
-spectree__link_branch         → When creating a branch
-spectree__link_commit         → After committing
-spectree__log_decision        → When making implementation choices
-spectree__append_ai_note      → When discovering important context
-spectree__log_progress        → During longer tasks
-spectree__add_validation      → To define "done" criteria
-spectree__run_all_validations → Before completing
-spectree__complete_work       → When task is verified complete
+spectree__manage_progress action='start_work'       → When beginning a task
+spectree__manage_code_context action='link_file'    → When modifying files
+spectree__manage_code_context action='link_function' → When modifying specific functions
+spectree__manage_code_context action='link_branch'  → When creating a branch
+spectree__manage_code_context action='link_commit'  → After committing
+spectree__log_decision                              → When making implementation choices
+spectree__manage_ai_context action='append_note'    → When discovering important context
+spectree__manage_progress action='log_progress'     → During longer tasks
+spectree__manage_validations action='add'           → To define "done" criteria
+spectree__complete_task_with_validation             → Validates & completes atomically
 ```
 
 ### During Session Transitions
 
 ```
-spectree__start_session       → Reads previous handoff
-spectree__get_progress_summary → Gets current epic state
-spectree__get_ai_context      → Gets task-specific context
-spectree__get_decision_context → Reviews relevant decisions
-spectree__end_session         → Writes handoff for next session
+spectree__start_session              → Reads previous handoff
+spectree__get_progress_summary       → Gets current epic state
+spectree__manage_ai_context action='get_context' → Gets task-specific context
+spectree__get_decision_context       → Reviews relevant decisions
+spectree__end_session                → Writes handoff for next session
 ```
 
 ---

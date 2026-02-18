@@ -42,16 +42,16 @@ If a task requires schema changes, use `npx prisma db push` and `npx prisma gene
 You **MUST** call these SpecTree MCP tools during execution. These calls are **NOT optional**. If you skip them, the SpecTree dashboard will show no progress, no activity, and features will remain in Backlog.
 
 **Mandatory calls for EVERY task:**
-- `spectree__start_work` — before implementing (sets status to "In Progress")
-- `spectree__link_code_file` — for EVERY file you create or modify
-- `spectree__log_progress` — after each significant step
+- `spectree__manage_progress` with `action='start_work'` — before implementing (sets status to "In Progress")
+- `spectree__manage_code_context` with `action='link_file'` — for EVERY file you create or modify
+- `spectree__manage_progress` with `action='log_progress'` — after each significant step
 - `spectree__complete_task_with_validation` — when done (validates + sets status to "Done")
 
 **Mandatory calls for EVERY feature (after all tasks):**
-- `spectree__append_ai_note` — summarize what was done
+- `spectree__manage_ai_context` with `action='append_note'` — summarize what was done
 - `spectree__log_decision` — for every non-trivial implementation choice
 
-> ⚠️ **Common parameter mistakes:** `spectree__append_ai_note` uses `content` (NOT `note`) and requires `noteType`. `spectree__complete_task_with_validation` and `spectree__run_all_validations` use `taskId` (NOT `id`/`type`).
+> ⚠️ **Note:** Individual tools like `spectree__start_work`, `spectree__link_code_file`, `spectree__append_ai_note` still work but are deprecated. Use the composite `spectree__manage_*` tools for better efficiency.
 
 ## Per-Task Workflow
 
@@ -59,9 +59,10 @@ For each task in the feature, follow this workflow in order:
 
 ### 1. Start Work
 
-Call `spectree__start_work` to mark the task as in progress:
+Call `spectree__manage_progress` with `action='start_work'` to mark the task as in progress:
 ```
-spectree__start_work({
+spectree__manage_progress({
+  action: "start_work",
   type: "task",
   id: "<task-identifier>"    // e.g., "ENG-42-1"
 })
@@ -71,7 +72,8 @@ spectree__start_work({
 
 Read the task's AI instructions from the context provided by the orchestrator. If you need additional details, call:
 ```
-spectree__get_structured_description({
+spectree__manage_description({
+  action: "get",
   type: "task",
   id: "<task-identifier>"
 })
@@ -86,9 +88,10 @@ Follow the AI instructions step by step. Use `read`, `edit`, `search`, and `exec
 
 ### 4. Link Modified Files
 
-For every file you create or modify, call `spectree__link_code_file`:
+For every file you create or modify, call `spectree__manage_code_context` with `action='link_file'`:
 ```
-spectree__link_code_file({
+spectree__manage_code_context({
+  action: "link_file",
   type: "task",
   id: "<task-identifier>",
   filePath: "packages/api/src/routes/preferences.ts"
@@ -97,9 +100,10 @@ spectree__link_code_file({
 
 ### 5. Log Progress
 
-After each significant implementation step, call `spectree__log_progress`:
+After each significant implementation step, call `spectree__manage_progress` with `action='log_progress'`:
 ```
-spectree__log_progress({
+spectree__manage_progress({
+  action: "log_progress",
   type: "task",
   id: "<task-identifier>",
   message: "Created API route handler with GET and PUT endpoints",
@@ -125,8 +129,9 @@ spectree__log_decision({
 
 Before marking the task complete, run all validations:
 ```
-spectree__run_all_validations({
-  taskId: "<task-identifier>"    // e.g., "ENG-42-1" — NOT 'id' or 'type'
+spectree__manage_validations({
+  action: "run_all",
+  taskId: "<task-identifier>"    // e.g., "ENG-42-1"
 })
 ```
 
@@ -148,11 +153,11 @@ If validation fails, fix the issues and retry.
 
 Before moving to the next task, verify ALL of these:
 
-- ☐ `spectree__start_work` called at the beginning
-- ☐ All created/modified files linked via `spectree__link_code_file`
-- ☐ Progress logged via `spectree__log_progress`
+- ☐ `spectree__manage_progress` (action='start_work') called at the beginning
+- ☐ All created/modified files linked via `spectree__manage_code_context` (action='link_file')
+- ☐ Progress logged via `spectree__manage_progress` (action='log_progress')
 - ☐ Decisions logged via `spectree__log_decision` (if any choices were made)
-- ☐ Validations run via `spectree__run_all_validations`
+- ☐ Validations run via `spectree__manage_validations` (action='run_all')
 - ☐ Task completed via `spectree__complete_task_with_validation`
 
 ---
@@ -163,7 +168,8 @@ Once all tasks in the feature are complete:
 
 1. **Mark the parent feature as Done** — this is the most commonly missed step. The orchestrator expects features to be marked Done by the worker:
    ```
-   spectree__complete_work({
+   spectree__manage_progress({
+     action: "complete_work",
      type: "feature",
      id: "<feature-identifier>",   // e.g., "ENG-42"
      summary: "Implemented all 3 tasks: API routes, database model, frontend page. All tests passing."
@@ -172,19 +178,21 @@ Once all tasks in the feature are complete:
 
 2. Leave an AI note summarizing the work done:
    ```
-   spectree__append_ai_note({
+   spectree__manage_ai_context({
+     action: "append_note",
      type: "feature",
      id: "<feature-identifier>",   // e.g., "ENG-42"
-     noteType: "observation",       // REQUIRED: "observation" | "decision" | "blocker" | "next-step" | "context"
+     noteType: "observation",
      content: "Implemented all 3 tasks: API routes, database model, frontend page. Used Zod for validation. All tests passing."
    })
    ```
 
-3. Ensure every modified file has been linked via `spectree__link_code_file`.
+3. Ensure every modified file has been linked via `spectree__manage_code_context` (action='link_file').
 
 4. **If any task was NOT performed** (e.g., skipped, deferred, blocked), leave it in its current status (Backlog/Blocked) — **NEVER mark unperformed work as Done**. Instead, log why it was skipped:
    ```
-   spectree__append_ai_note({
+   spectree__manage_ai_context({
+     action: "append_note",
      type: "task",
      id: "<skipped-task-identifier>",
      noteType: "context",
@@ -206,8 +214,8 @@ If a SpecTree MCP tool call fails:
 Example summary when SpecTree calls failed:
 ```
 ## SpecTree Tracking Failures
-- spectree__link_code_file for "src/routes/auth.ts" failed twice (timeout)
-- spectree__log_progress for ENG-42-2 failed once (retried successfully)
+- spectree__manage_code_context (action='link_file') for "src/routes/auth.ts" failed twice (timeout)
+- spectree__manage_progress (action='log_progress') for ENG-42-2 failed once (retried successfully)
 ```
 
 > The orchestrator has its own defensive status management and will apply fallback updates for any calls you missed.
@@ -217,12 +225,12 @@ Example summary when SpecTree calls failed:
 ## Rules
 
 1. **MUST** complete tasks in execution order — never skip ahead
-2. **MUST** call `spectree__start_work` before implementing each task
+2. **MUST** call `spectree__manage_progress` (action='start_work') before implementing each task
 3. **MUST** run validations before marking any task complete
-4. **MUST** link ALL created or modified files via `spectree__link_code_file`
+4. **MUST** link ALL created or modified files via `spectree__manage_code_context` (action='link_file')
 5. **MUST** log decisions with rationale — future sessions depend on this context
 6. **MUST** leave an AI note after completing the feature
-7. **MUST** call `spectree__complete_work` on the parent feature after all tasks are done — the orchestrator depends on this to track phase completion
+7. **MUST** call `spectree__manage_progress` (action='complete_work') on the parent feature after all tasks are done — the orchestrator depends on this to track phase completion
 8. **Do NOT** modify files outside the task's scope (check `filesInvolved`)
 9. **Do NOT** skip acceptance criteria — verify each one is met
 10. **Do NOT** proceed to the next task if the current task's validations fail

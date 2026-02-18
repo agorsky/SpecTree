@@ -33,8 +33,8 @@ Follow the review process defined in the `spectree-plan-review` skill:
 
 1. **Load the epic** — `spectree__get_epic({ query: "<epic-id-or-name>" })`
 2. **Evaluate epic description** — against the Epic Description Rubric (check word count, required sections, substantiveness)
-3. **Evaluate each feature** — `spectree__get_feature` + `spectree__get_structured_description` for each, scored against Feature Rubric
-4. **Evaluate each task** — `spectree__get_structured_description` for each task, scored against Task Rubric
+3. **Evaluate each feature** — `spectree__get_feature` + `spectree__manage_description` (action='get') for each, scored against Feature Rubric
+4. **Evaluate each task** — `spectree__manage_description` (action='get') for each task, scored against Task Rubric
 5. **Evaluate execution plan** — `spectree__get_execution_plan`, check all features included, dependencies explicit, no parallel conflicts
 6. **Compute weighted overall score** — Epic 30%, Features 25%, Tasks 25%, Plan 20%
 7. **Present the full review report** — using the report format from the skill

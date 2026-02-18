@@ -291,43 +291,49 @@ The epic request provides the **requirements**. Your job in this stage is to com
 
 **Goal:** Set structured descriptions for EVERY feature and task.
 
-For each feature, call `spectree__set_structured_description`:
+For each feature, call `spectree__manage_description` with action='set':
 ```
-spectree__set_structured_description({
+spectree__manage_description({
+  action: "set",
   type: "feature",
   id: "<feature-identifier>",   // e.g., "ENG-42"
-  summary: "One-line summary of the feature",
-  aiInstructions: "Step-by-step implementation guidance...",
-  acceptanceCriteria: [
-    "Criterion 1 (verifiable)",
-    "Criterion 2 (verifiable)",
-    "Criterion 3 (verifiable)"
-  ],
-  filesInvolved: [
-    "packages/api/src/routes/example.ts",
-    "packages/web/src/pages/example.tsx"
-  ],
-  technicalNotes: "Any important context...",
-  riskLevel: "low",           // low | medium | high
-  estimatedEffort: "medium"   // trivial | small | medium | large | xl
+  structuredDesc: {
+    summary: "One-line summary of the feature",
+    aiInstructions: "Step-by-step implementation guidance...",
+    acceptanceCriteria: [
+      "Criterion 1 (verifiable)",
+      "Criterion 2 (verifiable)",
+      "Criterion 3 (verifiable)"
+    ],
+    filesInvolved: [
+      "packages/api/src/routes/example.ts",
+      "packages/web/src/pages/example.tsx"
+    ],
+    technicalNotes: "Any important context...",
+    riskLevel: "low",           // low | medium | high
+    estimatedEffort: "medium"   // trivial | small | medium | large | xl
+  }
 })
 ```
 
-For each task, call `spectree__set_structured_description`:
+For each task, call `spectree__manage_description` with action='set':
 ```
-spectree__set_structured_description({
+spectree__manage_description({
+  action: "set",
   type: "task",
   id: "<task-identifier>",     // e.g., "ENG-42-1"
-  summary: "One-line summary of the task",
-  aiInstructions: "1. Read file X\n2. Create function Y\n3. Add tests...",
-  acceptanceCriteria: [
-    "Criterion 1",
-    "Criterion 2"
-  ],
-  filesInvolved: ["specific/file/path.ts"],
-  technicalNotes: "...",
-  riskLevel: "low",
-  estimatedEffort: "small"
+  structuredDesc: {
+    summary: "One-line summary of the task",
+    aiInstructions: "1. Read file X\n2. Create function Y\n3. Add tests...",
+    acceptanceCriteria: [
+      "Criterion 1",
+      "Criterion 2"
+    ],
+    filesInvolved: ["specific/file/path.ts"],
+    technicalNotes: "...",
+    riskLevel: "low",
+    estimatedEffort: "small"
+  }
 })
 ```
 
@@ -451,7 +457,7 @@ Issues to review:
 5. [Scoping] Features ENG-43, ENG-44: Both modify packages/api/src/routes/users.ts — cannot be in same parallel group
 ```
 
-If any threshold fails, fix each issue (call `spectree__update_epic` for description issues, `spectree__set_structured_description` or `spectree__set_execution_metadata` for feature/task issues), then re-run the evaluation.
+If any threshold fails, fix each issue (call `spectree__update_epic` for description issues, `spectree__manage_description` (action='set') or `spectree__set_execution_metadata` for feature/task issues), then re-run the evaluation.
 
 **Gate:** Always interactive. Present the quality score and all issues found. Wait for user approval.
 

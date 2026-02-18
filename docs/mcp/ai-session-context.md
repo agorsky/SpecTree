@@ -1,5 +1,15 @@
 # AI Session Context
 
+> **⚠️ DEPRECATION NOTICE:**  
+> The individual AI context tools (`spectree__get_ai_context`, `spectree__set_ai_context`, `spectree__append_ai_note`) are **DEPRECATED**.  
+>  
+> **Use instead:** `spectree__manage_ai_context` with action-based routing:
+> - `action='get_context'` - Retrieve AI context and notes
+> - `action='set_context'` - Replace entire context
+> - `action='append_note'` - Add a note
+>
+> See [Tools Reference](./tools-reference.md#spectree__manage_ai_context) for complete documentation.
+
 This guide explains how AI agents can use SpecTree's AI context features for cross-session continuity and knowledge transfer.
 
 ---

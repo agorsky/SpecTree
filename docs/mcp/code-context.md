@@ -1,5 +1,19 @@
 # Code Context (Codebase Integration)
 
+> **⚠️ DEPRECATION NOTICE:**  
+> The individual code context tools (`spectree__get_code_context`, `spectree__link_code_file`, `spectree__unlink_code_file`, `spectree__link_function`, `spectree__link_branch`, `spectree__link_commit`, `spectree__link_pr`) are **DEPRECATED**.  
+>  
+> **Use instead:** `spectree__manage_code_context` with action-based routing:
+> - `action='get_context'` - Get all code artifacts
+> - `action='link_file'` - Link a file  
+> - `action='unlink_file'` - Remove a file link
+> - `action='link_function'` - Link a function
+> - `action='link_branch'` - Link git branch
+> - `action='link_commit'` - Link git commit
+> - `action='link_pr'` - Link pull request
+>
+> See [Tools Reference](./tools-reference.md#spectree__manage_code_context) for complete documentation.
+
 Code Context provides a way to link features and tasks directly to code artifacts, enabling AI agents to instantly understand the code context for any work item without needing to search or explore.
 
 ## Overview
