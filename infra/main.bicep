@@ -45,6 +45,9 @@ param sqlEnableAadOnlyAuth bool = false
 @description('Container image to deploy')
 param containerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
+@description('Enable Azure Front Door with WAF')
+param frontDoorEnabled bool = false
+
 @description('Tags to apply to all resources')
 param tags object = {}
 
@@ -170,8 +173,27 @@ module containerApps 'modules/containerApps.bicep' = {
     containerImage: containerImage
     keyVaultUri: keyVault.outputs.keyVaultUri
     sqlConnectionString: sql.outputs.connectionString
+    azureFrontDoorId: frontDoorEnabled ? frontDoor.outputs.frontDoorId : ''
   }
   dependsOn: [privateEndpoints]
+}
+
+// ============================================================================
+// Azure Front Door with WAF
+// ============================================================================
+
+module frontDoor 'modules/frontDoor.bicep' = {
+  name: 'deploy-front-door'
+  scope: resourceGroup(resourceGroupName)
+  params: {
+    baseName: baseName
+    environment: environment
+    tags: defaultTags
+    containerAppFqdn: containerApps.outputs.containerAppFqdn
+    webContainerAppFqdn: containerApps.outputs.webContainerAppFqdn
+    enabled: frontDoorEnabled
+  }
+  dependsOn: [containerApps]
 }
 
 // ============================================================================
@@ -180,6 +202,9 @@ module containerApps 'modules/containerApps.bicep' = {
 
 output resourceGroupName string = resourceGroupName
 output containerAppFqdn string = containerApps.outputs.containerAppFqdn
+output webContainerAppFqdn string = containerApps.outputs.webContainerAppFqdn
 output keyVaultName string = keyVault.outputs.keyVaultName
 output sqlServerName string = sql.outputs.sqlServerName
 output sqlDatabaseName string = sql.outputs.sqlDatabaseName
+output frontDoorEndpointFqdn string = frontDoorEnabled ? frontDoor.outputs.endpointFqdn : ''
+output frontDoorId string = frontDoorEnabled ? frontDoor.outputs.frontDoorId : ''

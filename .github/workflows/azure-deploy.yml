@@ -170,6 +170,23 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_NAME }}.azurecr.io/spectree-web:${{ github.sha }}
 
+      - name: Purge Front Door Cache
+        run: |
+          # Only purge if Front Door profile exists
+          FD_PROFILE="afd-spectree-dev"
+          FD_ENDPOINT="ep-spectree-dev"
+          if az afd profile show --profile-name "$FD_PROFILE" --resource-group ${{ env.RESOURCE_GROUP }} &>/dev/null; then
+            echo "Purging Front Door cache..."
+            az afd endpoint purge \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --profile-name "$FD_PROFILE" \
+              --endpoint-name "$FD_ENDPOINT" \
+              --content-paths "/*"
+            echo "Cache purge initiated"
+          else
+            echo "Front Door not deployed — skipping cache purge"
+          fi
+
       - name: Verify API deployment
         run: |
           echo "Waiting for deployment to stabilize..."

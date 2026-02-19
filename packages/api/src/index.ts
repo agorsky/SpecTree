@@ -6,6 +6,7 @@ import compress from "@fastify/compress";
 import rateLimit from "@fastify/rate-limit";
 import { prisma } from "./lib/db.js";
 import { registerErrorHandler } from "./middleware/errorHandler.js";
+import { frontDoorValidation } from "./middleware/frontDoorValidation.js";
 import { NotFoundError } from "./errors/index.js";
 import { initializeJwtSecret } from "./utils/jwt.js";
 import { getSecretsProvider } from "./lib/secrets/index.js";
@@ -50,8 +51,11 @@ async function main(): Promise<void> {
   });
 
   // Register plugins
+  const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5173";
   await fastify.register(cors, {
-    origin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+    origin: corsOrigin.includes(",")
+      ? corsOrigin.split(",").map((o) => o.trim())
+      : corsOrigin,
   });
   await fastify.register(helmet);
   await fastify.register(compress);
@@ -63,6 +67,9 @@ async function main(): Promise<void> {
 
   // Register error handler
   registerErrorHandler(fastify);
+
+  // Validate requests originate from Azure Front Door (when configured)
+  fastify.addHook("onRequest", frontDoorValidation);
 
   // Register route plugins
   await fastify.register(usersRoutes, { prefix: "/api/v1/users" });

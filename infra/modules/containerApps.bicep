@@ -39,6 +39,9 @@ param minReplicas int = 0
 @description('Maximum number of replicas')
 param maxReplicas int = 10
 
+@description('Azure Front Door ID for X-Azure-FDID header validation (empty = disabled)')
+param azureFrontDoorId string = ''
+
 // ============================================================================
 // Variables
 // ============================================================================
@@ -93,7 +96,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-11-02-
     }
     vnetConfiguration: {
       infrastructureSubnetId: containerAppsSubnetId
-      internal: false
+      internal: true // PHASE 4 LOCKDOWN: Only accessible via Front Door
     }
     zoneRedundant: environment == 'prod'
     workloadProfiles: [
@@ -180,6 +183,10 @@ resource containerApp 'Microsoft.App/containerApps@2023-11-02-preview' = {
             {
               name: 'SQLSERVER_DATABASE_URL'
               secretRef: 'sql-connection-string'
+            }
+            {
+              name: 'AZURE_FRONT_DOOR_ID'
+              value: azureFrontDoorId
             }
           ]
           probes: [

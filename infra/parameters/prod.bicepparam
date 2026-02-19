@@ -25,6 +25,9 @@ param sqlAppUserPassword = '' // Application user password
 // Container configuration - should be updated with actual production image
 param containerImage = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
+// Front Door configuration
+param frontDoorEnabled = false // Set to true to deploy Azure Front Door with WAF
+
 // Resource tags
 param tags = {
   environment: 'prod'
