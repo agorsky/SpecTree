@@ -55,7 +55,7 @@ resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@20
   properties: {
     policySettings: {
       enabledState: 'Enabled'
-      mode: 'Prevention' // PHASE 4 LOCKDOWN: Active blocking mode
+      mode: 'Detection' // Start in Detection mode; switch to Prevention in Phase 4 lockdown
       requestBodyCheck: 'Enabled'
     }
     managedRules: {

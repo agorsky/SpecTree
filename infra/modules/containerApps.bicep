@@ -96,7 +96,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-11-02-
     }
     vnetConfiguration: {
       infrastructureSubnetId: containerAppsSubnetId
-      internal: true // PHASE 4 LOCKDOWN: Only accessible via Front Door
+      internal: false // Phase 4 lockdown will change to true after Front Door is verified
     }
     zoneRedundant: environment == 'prod'
     workloadProfiles: [

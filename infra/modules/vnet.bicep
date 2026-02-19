@@ -53,7 +53,7 @@ resource containerAppsNsg 'Microsoft.Network/networkSecurityGroups@2023-09-01' =
           protocol: 'Tcp'
           sourcePortRange: '*'
           destinationPortRange: '443'
-          sourceAddressPrefix: 'AzureFrontDoor.Backend' // PHASE 4 LOCKDOWN: Only allow Front Door traffic
+          sourceAddressPrefix: '*' // Phase 4 lockdown will restrict to AzureFrontDoor.Backend
           destinationAddressPrefix: '*'
         }
       }
@@ -66,7 +66,7 @@ resource containerAppsNsg 'Microsoft.Network/networkSecurityGroups@2023-09-01' =
           protocol: 'Tcp'
           sourcePortRange: '*'
           destinationPortRange: '80'
-          sourceAddressPrefix: 'AzureFrontDoor.Backend' // PHASE 4 LOCKDOWN: Only allow Front Door traffic
+          sourceAddressPrefix: '*' // Phase 4 lockdown will restrict to AzureFrontDoor.Backend
           destinationAddressPrefix: '*'
         }
       }
