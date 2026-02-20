@@ -15,6 +15,7 @@ import { Search, ThumbsUp, Flame, ThumbsDown, Plus, ChevronDown } from 'lucide-r
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { EpicRequestStatus, EpicRequestWithReactionCounts } from '@/lib/api/epic-requests';
+import { CliInstructionModal } from '@/components/epic-requests/cli-instruction-modal';
 
 // Status badge colors based on status
 const statusColors: Record<EpicRequestStatus, string> = {
@@ -142,10 +143,10 @@ export function EpicRequestsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Epic Requests</h1>
-        <Button onClick={() => { void navigate('/epic-requests/new'); }}>
+        <CliInstructionModal>
           <Plus className="h-4 w-4 mr-2" />
           New Request
-        </Button>
+        </CliInstructionModal>
       </div>
 
       {/* Filters */}
@@ -224,10 +225,10 @@ export function EpicRequestsPage() {
               : 'No epic requests yet'}
           </p>
           {!searchQuery && (
-            <Button onClick={() => { void navigate('/epic-requests/new'); }}>
+            <CliInstructionModal>
               <Plus className="h-4 w-4 mr-2" />
               Create your first request
-            </Button>
+            </CliInstructionModal>
           )}
         </div>
       ) : (
