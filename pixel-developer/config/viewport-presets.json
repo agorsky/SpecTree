@@ -1,0 +1,104 @@
+{
+  "description": "Viewport presets for Playwright screenshot capture. Each preset defines exact dimensions and device characteristics.",
+  "presets": {
+    "desktop": {
+      "name": "Desktop",
+      "width": 1920,
+      "height": 1080,
+      "devicePixelRatio": 1,
+      "isMobile": false,
+      "hasTouch": false,
+      "colorScheme": "light",
+      "userAgent": null,
+      "notes": "Standard 1080p desktop. Primary viewport for pixel comparison."
+    },
+    "desktop-hidpi": {
+      "name": "Desktop HiDPI",
+      "width": 1920,
+      "height": 1080,
+      "devicePixelRatio": 2,
+      "isMobile": false,
+      "hasTouch": false,
+      "colorScheme": "light",
+      "userAgent": null,
+      "notes": "Retina/HiDPI desktop. Use for 2x asset verification."
+    },
+    "laptop": {
+      "name": "Laptop",
+      "width": 1440,
+      "height": 900,
+      "devicePixelRatio": 2,
+      "isMobile": false,
+      "hasTouch": false,
+      "colorScheme": "light",
+      "userAgent": null,
+      "notes": "Common laptop viewport (MacBook Pro 15-inch equivalent)."
+    },
+    "tablet": {
+      "name": "Tablet",
+      "width": 768,
+      "height": 1024,
+      "devicePixelRatio": 2,
+      "isMobile": true,
+      "hasTouch": true,
+      "colorScheme": "light",
+      "userAgent": "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "notes": "iPad portrait. Standard tablet breakpoint at 768px."
+    },
+    "tablet-landscape": {
+      "name": "Tablet Landscape",
+      "width": 1024,
+      "height": 768,
+      "devicePixelRatio": 2,
+      "isMobile": true,
+      "hasTouch": true,
+      "colorScheme": "light",
+      "userAgent": "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "notes": "iPad landscape."
+    },
+    "mobile": {
+      "name": "Mobile",
+      "width": 375,
+      "height": 812,
+      "devicePixelRatio": 3,
+      "isMobile": true,
+      "hasTouch": true,
+      "colorScheme": "light",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "notes": "iPhone 13/14 dimensions. Standard mobile breakpoint."
+    },
+    "mobile-small": {
+      "name": "Mobile Small",
+      "width": 320,
+      "height": 568,
+      "devicePixelRatio": 2,
+      "isMobile": true,
+      "hasTouch": true,
+      "colorScheme": "light",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "notes": "iPhone SE / small Android. Tests minimum supported width."
+    },
+    "mobile-large": {
+      "name": "Mobile Large",
+      "width": 428,
+      "height": 926,
+      "devicePixelRatio": 3,
+      "isMobile": true,
+      "hasTouch": true,
+      "colorScheme": "light",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "notes": "iPhone 14 Pro Max. Tests large mobile layouts."
+    }
+  },
+  "defaultPresets": ["desktop", "tablet", "mobile"],
+  "captureSettings": {
+    "waitForNetworkIdle": true,
+    "waitForFonts": true,
+    "disableAnimations": true,
+    "animationSettleMs": 500,
+    "postDisableWaitMs": 100,
+    "screenshotType": "png",
+    "fullPage": false,
+    "omitBackground": false
+  }
+}

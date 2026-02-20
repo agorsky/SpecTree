@@ -1,0 +1,140 @@
+{
+  "blender": {
+    "executablePath": "/usr/local/bin/blender",
+    "version": "4.1",
+    "pythonVersion": "3.11",
+    "headlessArgs": ["--background", "--factory-startup"]
+  },
+  "render": {
+    "engine": "CYCLES",
+    "device": "GPU",
+    "previewSamples": 64,
+    "qualityCheckSamples": 128,
+    "finalRenderSamples": 512,
+    "resolution": {
+      "x": 1920,
+      "y": 1080
+    },
+    "previewResolution": {
+      "x": 960,
+      "y": 540
+    },
+    "colorManagement": {
+      "viewTransform": "Filmic",
+      "look": "Medium High Contrast",
+      "exposure": 0.0,
+      "gamma": 1.0
+    },
+    "denoising": {
+      "enabled": true,
+      "algorithm": "OPENIMAGEDENOISE"
+    },
+    "film": {
+      "transparent": false,
+      "filterSize": 1.5
+    }
+  },
+  "output": {
+    "directory": "./output",
+    "createTimestampedSubdir": true,
+    "preserveIntermediateFiles": false,
+    "renderFormat": "PNG",
+    "renderColorDepth": "16",
+    "renderCompression": 15
+  },
+  "quality": {
+    "thresholds": {
+      "geometry": 70,
+      "materials": 70,
+      "lighting": 65,
+      "composition": 60,
+      "overall": 70
+    },
+    "weights": {
+      "geometry": 0.30,
+      "materials": 0.25,
+      "lighting": 0.25,
+      "composition": 0.20
+    },
+    "maxRefinementRounds": 3,
+    "earlyExitScore": 90,
+    "renderTimeoutSeconds": 300
+  },
+  "limits": {
+    "maxPolygons": 500000,
+    "maxTextureSize": 4096,
+    "maxObjectCount": 200,
+    "maxMaterialCount": 50,
+    "maxHierarchyDepth": 4
+  },
+  "export": {
+    "formats": [
+      {
+        "name": "glTF",
+        "enabled": true,
+        "binary": true,
+        "extension": ".glb",
+        "draco": {
+          "enabled": true,
+          "compressionLevel": 6,
+          "positionQuantization": 14,
+          "normalQuantization": 10,
+          "texcoordQuantization": 12
+        },
+        "maxTextureSize": 2048,
+        "textureFormat": "AUTO"
+      },
+      {
+        "name": "FBX",
+        "enabled": true,
+        "extension": ".fbx",
+        "embedTextures": true,
+        "axisForward": "-Z",
+        "axisUp": "Y",
+        "globalScale": 1.0
+      },
+      {
+        "name": "USD",
+        "enabled": true,
+        "extension": ".usdc",
+        "exportTextures": true,
+        "generatePreviewSurface": true,
+        "maxTextureSize": 8192,
+        "textureFormat": "EXR"
+      },
+      {
+        "name": "OBJ",
+        "enabled": false,
+        "extension": ".obj",
+        "triangulate": true,
+        "maxTextureSize": 2048
+      }
+    ],
+    "cleanBeforeExport": true,
+    "validateAfterExport": true,
+    "generateChecksums": true
+  },
+  "textures": {
+    "directory": "./textures",
+    "hdriDirectory": "./hdri",
+    "defaultMaxSize": 4096,
+    "webMaxSize": 2048,
+    "compressionQuality": 85
+  },
+  "defaults": {
+    "style": "realistic",
+    "lightingPreset": "studio_3point",
+    "cameraFocalLength": 50,
+    "cameraSensorWidth": 36,
+    "cameraFStop": 2.8,
+    "groundPlane": true,
+    "worldBackground": "gradient"
+  },
+  "pipeline": {
+    "version": "1.0.0",
+    "logLevel": "info",
+    "saveSceneGraph": true,
+    "savePipelineLog": true,
+    "deterministicSeed": true
+  }
+}

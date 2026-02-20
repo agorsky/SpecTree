@@ -1,0 +1,64 @@
+{
+  "name": "@spectree/spline",
+  "version": "1.0.0",
+  "description": "Automated interactive 3D scene creation and web-ready export pipeline using Spline (spline.design). Converts structured prompts into production-grade interactive 3D experiences with materials, state-based animations, and multi-format export (React, iframe, MP4, GLB) for web and mobile apps",
+  "agents": [
+    {
+      "name": "sp-orchestrator",
+      "path": "spline-pipeline/agents/sp-orchestrator.md",
+      "description": "Entry-point agent that chains all sub-agents and manages the quality refinement loop (max 3 rounds) from prompt to exported interactive 3D scene"
+    },
+    {
+      "name": "sp-prompt-interpreter",
+      "path": "spline-pipeline/agents/sp-prompt-interpreter.md",
+      "description": "Parses structured or natural-language prompts into a normalized scene specification with objects, materials, lighting, interactions, and export targets"
+    },
+    {
+      "name": "sp-scene-planner",
+      "path": "spline-pipeline/agents/sp-scene-planner.md",
+      "description": "Creates a complete scene graph from the scene spec with object hierarchies, transforms, material assignments, state definitions, and event bindings"
+    },
+    {
+      "name": "sp-object-builder",
+      "path": "spline-pipeline/agents/sp-object-builder.md",
+      "description": "Creates and configures 3D objects in Spline including parametric shapes, text, vector paths, imported models, and groups"
+    },
+    {
+      "name": "sp-material-stylist",
+      "path": "spline-pipeline/agents/sp-material-stylist.md",
+      "description": "Applies materials (glass, PBR, gradient, matcap), textures, environment maps, and post-processing effects (bloom, DOF, noise)"
+    },
+    {
+      "name": "sp-interaction-designer",
+      "path": "spline-pipeline/agents/sp-interaction-designer.md",
+      "description": "Defines states, events (hover, click, scroll), actions, timeline animations, and transitions for interactive Spline scenes"
+    },
+    {
+      "name": "sp-quality-inspector",
+      "path": "spline-pipeline/agents/sp-quality-inspector.md",
+      "description": "Reviews scene quality against standards for composition, materials, interactions, and web performance with scored pass/fail"
+    },
+    {
+      "name": "sp-export-manager",
+      "path": "spline-pipeline/agents/sp-export-manager.md",
+      "description": "Exports scenes in production formats: web embeds (React, iframe, vanilla JS), video (MP4), images (PNG), and geometry (GLB/OBJ)"
+    }
+  ],
+  "skills": [
+    {
+      "name": "spline-pipeline-process",
+      "path": "spline-pipeline/process.md",
+      "description": "3-phase pipeline process from structured prompt to exported interactive 3D scene with iterative quality refinement"
+    }
+  ],
+  "instructions": [
+    {
+      "name": "spline-config",
+      "path": "spline-pipeline/sp-config.json",
+      "description": "Project configuration including resolution, export formats, video settings, quality thresholds, and target file sizes"
+    }
+  ],
+  "dependencies": {
+    "spline-*": "Requires Spline MCP tools for scene creation, material application, and export"
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "description": "Project-specific configuration for the Pixel Developer pipeline. Customize per-project settings here.",
+  "project": {
+    "name": "SpecTree",
+    "framework": "React",
+    "version": "18",
+    "stylePreprocessor": "css",
+    "componentPrefix": "app"
+  },
+  "devServer": {
+    "url": "http://localhost:5173",
+    "startCommand": "pnpm --filter @spectree/web dev",
+    "healthCheckPath": "/",
+    "startupTimeoutMs": 30000
+  },
+  "paths": {
+    "componentsDir": "packages/web/src/components",
+    "sharedComponentsDir": "packages/web/src/components/shared",
+    "stylesDir": "packages/web/src/styles",
+    "tokensFile": "packages/web/src/styles/tokens.css",
+    "variablesFile": "packages/web/src/styles/variables.css",
+    "globalStylesFile": "packages/web/src/index.css",
+    "screenshotsDir": "__screenshots__",
+    "diffOutputDir": "__screenshots__/diffs"
+  },
+  "tokens": {
+    "colors": {
+      "prefix": "--color-",
+      "categories": {
+        "primary": { "base": "--color-primary", "hover": "--color-primary-hover", "active": "--color-primary-active" },
+        "secondary": { "base": "--color-secondary", "hover": "--color-secondary-hover" },
+        "surface": { "base": "--color-surface", "raised": "--color-surface-raised", "sunken": "--color-surface-sunken" },
+        "text": { "primary": "--color-text-primary", "secondary": "--color-text-secondary", "disabled": "--color-text-disabled", "inverse": "--color-text-inverse" },
+        "border": { "default": "--color-border", "strong": "--color-border-strong", "subtle": "--color-border-subtle" },
+        "status": {
+          "success": "--color-success",
+          "warning": "--color-warning",
+          "error": "--color-error",
+          "info": "--color-info"
+        }
+      }
+    },
+    "spacing": {
+      "prefix": "--spacing-",
+      "scale": {
+        "xxs": "2px",
+        "xs": "4px",
+        "sm": "8px",
+        "md": "16px",
+        "lg": "24px",
+        "xl": "32px",
+        "xxl": "48px",
+        "xxxl": "64px"
+      }
+    },
+    "radii": {
+      "prefix": "--radius-",
+      "scale": {
+        "none": "0",
+        "sm": "4px",
+        "md": "8px",
+        "lg": "12px",
+        "xl": "16px",
+        "full": "9999px"
+      }
+    },
+    "typography": {
+      "fontFamily": {
+        "primary": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        "mono": "'JetBrains Mono', 'Fira Code', monospace"
+      },
+      "fontSizes": {
+        "xs": "12px",
+        "sm": "14px",
+        "md": "16px",
+        "lg": "18px",
+        "xl": "20px",
+        "xxl": "24px",
+        "xxxl": "32px",
+        "display": "48px"
+      },
+      "fontWeights": {
+        "regular": 400,
+        "medium": 500,
+        "semi": 600,
+        "bold": 700
+      },
+      "lineHeights": {
+        "tight": 1.25,
+        "normal": 1.5,
+        "relaxed": 1.75
+      }
+    },
+    "shadows": {
+      "prefix": "--shadow-",
+      "scale": {
+        "sm": "0 1px 2px rgba(0, 0, 0, 0.05)",
+        "md": "0 2px 4px rgba(0, 0, 0, 0.1)",
+        "lg": "0 4px 8px rgba(0, 0, 0, 0.1)",
+        "xl": "0 8px 16px rgba(0, 0, 0, 0.1)",
+        "card": "0 2px 8px rgba(0, 0, 0, 0.08)",
+        "dropdown": "0 4px 12px rgba(0, 0, 0, 0.12)",
+        "modal": "0 8px 24px rgba(0, 0, 0, 0.16)"
+      }
+    },
+    "zIndex": {
+      "prefix": "--z-",
+      "scale": {
+        "behind": -1,
+        "base": 0,
+        "raised": 1,
+        "dropdown": 100,
+        "sticky": 200,
+        "overlay": 300,
+        "modal": 400,
+        "toast": 500,
+        "tooltip": 600
+      }
+    }
+  },
+  "screenshots": {
+    "defaultViewports": ["desktop"],
+    "referenceDir": "__screenshots__/references",
+    "captureSelector": null,
+    "waitBeforeCaptureMs": 500,
+    "maxRetries": 2,
+    "retryDelayMs": 1000
+  },
+  "standards": {
+    "bemNaming": true,
+    "noHardcodedColors": true,
+    "noHardcodedSpacing": true,
+    "noUseImports": true,
+    "maxNestingDepth": 3,
+    "noImportant": true,
+    "noFloatLayout": true,
+    "preferGapOverMargin": true
+  },
+  "figma": {
+    "imageExportScale": 2,
+    "imageFormat": "png",
+    "extractionDepth": 5,
+    "resolveAliases": true
+  }
+}
