@@ -4,7 +4,7 @@ description: "Entry-point agent that chains all sub-agents and manages the fix-v
   loop (max 3 rounds) from Figma link to pixel-perfect code. Coordinates extraction,
   scouting, implementation, screenshot comparison, diff analysis, fixing, standards
   enforcement, and validation in an iterative pipeline."
-tools: ['agent', 'execute', 'read', 'search', 'figma-console/*']
+tools: ['agent', 'execute', 'read', 'search', 'figma-console/*', 'report_intent']
 agents: ['pd-figma-extractor', 'pd-component-scout', 'pd-screenshot-comparator', 'pd-diff-analyzer', 'pd-fixer', 'pd-standards-enforcer', 'pd-validator']
 user-invokable: true
 ---
