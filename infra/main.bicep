@@ -173,7 +173,7 @@ module containerApps 'modules/containerApps.bicep' = {
     containerImage: containerImage
     keyVaultUri: keyVault.outputs.keyVaultUri
     sqlConnectionString: sql.outputs.connectionString
-    azureFrontDoorId: frontDoorEnabled ? frontDoor.outputs.frontDoorId : ''
+    azureFrontDoorId: '' // Set via Azure Portal or CLI after Front Door is provisioned
   }
   dependsOn: [privateEndpoints]
 }
@@ -193,7 +193,6 @@ module frontDoor 'modules/frontDoor.bicep' = {
     webContainerAppFqdn: containerApps.outputs.webContainerAppFqdn
     enabled: frontDoorEnabled
   }
-  dependsOn: [containerApps]
 }
 
 // ============================================================================
