@@ -2,24 +2,24 @@
   "description": "Project-specific configuration for the Pixel Developer pipeline. Customize per-project settings here.",
   "project": {
     "name": "SpecTree",
-    "framework": "Angular",
-    "version": "17",
-    "stylePreprocessor": "scss",
+    "framework": "React",
+    "version": "18",
+    "stylePreprocessor": "css",
     "componentPrefix": "app"
   },
   "devServer": {
-    "url": "http://localhost:4200",
-    "startCommand": "npm run start",
+    "url": "http://localhost:5173",
+    "startCommand": "pnpm --filter @spectree/web dev",
     "healthCheckPath": "/",
     "startupTimeoutMs": 30000
   },
   "paths": {
-    "componentsDir": "src/app/components",
-    "sharedComponentsDir": "src/app/shared/components",
-    "stylesDir": "src/styles",
-    "tokensFile": "src/styles/_tokens.scss",
-    "variablesFile": "src/styles/_variables.scss",
-    "globalStylesFile": "src/styles.scss",
+    "componentsDir": "packages/web/src/components",
+    "sharedComponentsDir": "packages/web/src/components/shared",
+    "stylesDir": "packages/web/src/styles",
+    "tokensFile": "packages/web/src/styles/tokens.css",
+    "variablesFile": "packages/web/src/styles/variables.css",
+    "globalStylesFile": "packages/web/src/index.css",
     "screenshotsDir": "__screenshots__",
     "diffOutputDir": "__screenshots__/diffs"
   },
