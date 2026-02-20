@@ -86,8 +86,8 @@ export class FileManager {
       const extractedFiles = await this.getAllFiles(tmpDir);
       const installedFiles: string[] = [];
 
-      // Copy extracted files to .github/copilot-instructions/
-      const targetDir = path.join(this.githubDir, 'copilot-instructions');
+      // Copy extracted files to project root (pack paths include .github/ prefix)
+      const targetDir = path.dirname(this.githubDir);
       await fs.mkdir(targetDir, { recursive: true });
 
       for (const file of extractedFiles) {

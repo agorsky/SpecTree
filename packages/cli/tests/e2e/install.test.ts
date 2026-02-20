@@ -21,8 +21,8 @@ describe('CLI install command E2E', () => {
   it('should install a pack and create manifest', async () => {
     // Create a mock pack tarball
     const mockPack = await createMockPackTarball({
-      'agents/planner.md': '# Planner Agent\nHelps plan projects.',
-      'instructions/planning.md': '# Planning Instructions\nUse this for planning.',
+      '.github/agents/planner.md': '# Planner Agent\nHelps plan projects.',
+      '.github/instructions/planning.md': '# Planning Instructions\nUse this for planning.',
     });
 
     // Initialize file manager
@@ -33,8 +33,8 @@ describe('CLI install command E2E', () => {
 
     // Verify files were copied
     expect(installedFiles.length).toBeGreaterThan(0);
-    expect(await testEnv.fileExists('.github/copilot-instructions/agents/planner.md')).toBe(true);
-    expect(await testEnv.fileExists('.github/copilot-instructions/instructions/planning.md')).toBe(true);
+    expect(await testEnv.fileExists('.github/agents/planner.md')).toBe(true);
+    expect(await testEnv.fileExists('.github/instructions/planning.md')).toBe(true);
 
     // Add to manifest
     await fileManager.addPackToManifest('@spectree/planning', '1.0.0', installedFiles);
@@ -53,11 +53,11 @@ describe('CLI install command E2E', () => {
 
   it('should handle file conflicts gracefully', async () => {
     // Pre-create a file that will conflict
-    await testEnv.writeFile('.github/copilot-instructions/agents/planner.md', '# Existing content');
+    await testEnv.writeFile('.github/agents/planner.md', '# Existing content');
 
     // Create a mock pack with the same file
     const mockPack = await createMockPackTarball({
-      'agents/planner.md': '# New Planner Agent',
+      '.github/agents/planner.md': '# New Planner Agent',
     });
 
     const fileManager = new FileManager(testEnv.getTestDir());
@@ -68,7 +68,7 @@ describe('CLI install command E2E', () => {
     expect(installedFiles.length).toBeGreaterThan(0);
 
     // Verify file was overwritten
-    const content = await testEnv.readFile('.github/copilot-instructions/agents/planner.md');
+    const content = await testEnv.readFile('.github/agents/planner.md');
     expect(content).toContain('# New Planner Agent');
   });
 
@@ -89,8 +89,8 @@ describe('CLI install command E2E', () => {
 
   it('should extract nested directory structures', async () => {
     const mockPack = await createMockPackTarball({
-      'agents/subfolder/nested-agent.md': '# Nested Agent',
-      'instructions/sub1/sub2/deep-instruction.md': '# Deep Instruction',
+      '.github/agents/subfolder/nested-agent.md': '# Nested Agent',
+      '.github/instructions/sub1/sub2/deep-instruction.md': '# Deep Instruction',
     });
 
     const fileManager = new FileManager(testEnv.getTestDir());
@@ -98,11 +98,11 @@ describe('CLI install command E2E', () => {
 
     expect(installedFiles.length).toBe(2);
     expect(
-      await testEnv.fileExists('.github/copilot-instructions/agents/subfolder/nested-agent.md')
+      await testEnv.fileExists('.github/agents/subfolder/nested-agent.md')
     ).toBe(true);
     expect(
       await testEnv.fileExists(
-        '.github/copilot-instructions/instructions/sub1/sub2/deep-instruction.md'
+        '.github/instructions/sub1/sub2/deep-instruction.md'
       )
     ).toBe(true);
   });

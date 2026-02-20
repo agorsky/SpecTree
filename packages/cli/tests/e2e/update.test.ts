@@ -23,7 +23,7 @@ describe('CLI update command E2E', () => {
 
     // Install v1.0.0
     const packV1 = await createMockPackTarball({
-      'agents/planner.md': '# Planner v1.0.0',
+      '.github/agents/planner.md': '# Planner v1.0.0',
     });
 
     const filesV1 = await fileManager.copyFilesToGithub(packV1, '@spectree/planning');
@@ -33,12 +33,12 @@ describe('CLI update command E2E', () => {
     let manifest = await fileManager.readManifest();
     expect(manifest.installedPacks['@spectree/planning'].version).toBe('1.0.0');
 
-    let content = await testEnv.readFile('.github/copilot-instructions/agents/planner.md');
+    let content = await testEnv.readFile('.github/agents/planner.md');
     expect(content).toContain('v1.0.0');
 
     // Update to v2.0.0
     const packV2 = await createMockPackTarball({
-      'agents/planner.md': '# Planner v2.0.0\nNew features!',
+      '.github/agents/planner.md': '# Planner v2.0.0\nNew features!',
     });
 
     const filesV2 = await fileManager.copyFilesToGithub(packV2, '@spectree/planning');
@@ -48,7 +48,7 @@ describe('CLI update command E2E', () => {
     manifest = await fileManager.readManifest();
     expect(manifest.installedPacks['@spectree/planning'].version).toBe('2.0.0');
 
-    content = await testEnv.readFile('.github/copilot-instructions/agents/planner.md');
+    content = await testEnv.readFile('.github/agents/planner.md');
     expect(content).toContain('v2.0.0');
     expect(content).toContain('New features!');
   });
@@ -58,25 +58,25 @@ describe('CLI update command E2E', () => {
 
     // Install v1.0.0 with one file
     const packV1 = await createMockPackTarball({
-      'agents/planner.md': '# Planner',
+      '.github/agents/planner.md': '# Planner',
     });
 
     await fileManager.copyFilesToGithub(packV1, '@spectree/planning');
-    await fileManager.addPackToManifest('@spectree/planning', '1.0.0', ['copilot-instructions/agents/planner.md']);
+    await fileManager.addPackToManifest('@spectree/planning', '1.0.0', ['agents/planner.md']);
 
     // Update to v2.0.0 with additional files
     const packV2 = await createMockPackTarball({
-      'agents/planner.md': '# Planner',
-      'agents/executor.md': '# Executor',
-      'instructions/new-guide.md': '# New Guide',
+      '.github/agents/planner.md': '# Planner',
+      '.github/agents/executor.md': '# Executor',
+      '.github/instructions/new-guide.md': '# New Guide',
     });
 
     const filesV2 = await fileManager.copyFilesToGithub(packV2, '@spectree/planning');
     await fileManager.addPackToManifest('@spectree/planning', '2.0.0', filesV2);
 
     // Verify new files exist
-    expect(await testEnv.fileExists('.github/copilot-instructions/agents/executor.md')).toBe(true);
-    expect(await testEnv.fileExists('.github/copilot-instructions/instructions/new-guide.md')).toBe(true);
+    expect(await testEnv.fileExists('.github/agents/executor.md')).toBe(true);
+    expect(await testEnv.fileExists('.github/instructions/new-guide.md')).toBe(true);
 
     // Verify manifest tracks all files
     const manifest = await fileManager.readManifest();
@@ -88,8 +88,8 @@ describe('CLI update command E2E', () => {
 
     // Install v1.0.0 with multiple files
     const packV1 = await createMockPackTarball({
-      'agents/planner.md': '# Planner',
-      'agents/old-agent.md': '# Old Agent',
+      '.github/agents/planner.md': '# Planner',
+      '.github/agents/old-agent.md': '# Old Agent',
     });
 
     const filesV1 = await fileManager.copyFilesToGithub(packV1, '@spectree/planning');
@@ -97,7 +97,7 @@ describe('CLI update command E2E', () => {
 
     // Update to v2.0.0 with fewer files
     const packV2 = await createMockPackTarball({
-      'agents/planner.md': '# Planner Updated',
+      '.github/agents/planner.md': '# Planner Updated',
     });
 
     const filesV2 = await fileManager.copyFilesToGithub(packV2, '@spectree/planning');
@@ -109,10 +109,10 @@ describe('CLI update command E2E', () => {
     await fileManager.addPackToManifest('@spectree/planning', '2.0.0', filesV2);
 
     // Verify old file is removed
-    expect(await testEnv.fileExists('.github/copilot-instructions/agents/old-agent.md')).toBe(false);
+    expect(await testEnv.fileExists('.github/agents/old-agent.md')).toBe(false);
 
     // Verify new file exists
-    expect(await testEnv.fileExists('.github/copilot-instructions/agents/planner.md')).toBe(true);
+    expect(await testEnv.fileExists('.github/agents/planner.md')).toBe(true);
   });
 });
 
