@@ -81,14 +81,14 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
     // Enable public access for dev to allow Azure services; use private endpoints in prod
     publicNetworkAccess: environment == 'prod' ? 'Disabled' : 'Enabled'
     restrictOutboundNetworkAccess: 'Disabled'
-    administrators: {
+    administrators: !empty(aadAdminObjectId) ? {
       administratorType: 'ActiveDirectory'
       principalType: 'Group'
       login: aadAdminLogin
       sid: aadAdminObjectId
       tenantId: aadTenantId
       azureADOnlyAuthentication: enableAadOnlyAuth
-    }
+    } : null
   }
 }
 
@@ -96,7 +96,7 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
 // Azure AD Administrator (explicit resource for better control)
 // ============================================================================
 
-resource sqlServerAadAdmin 'Microsoft.Sql/servers/administrators@2023-08-01-preview' = {
+resource sqlServerAadAdmin 'Microsoft.Sql/servers/administrators@2023-08-01-preview' = if (!empty(aadAdminObjectId)) {
   parent: sqlServer
   name: 'ActiveDirectory'
   properties: {
