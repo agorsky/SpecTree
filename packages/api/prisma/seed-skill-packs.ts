@@ -142,6 +142,9 @@ async function seedAllSkillPacks(): Promise<void> {
     await seedSkillPack("orchestration.json", "Orchestration & Execution");
     await seedSkillPack("review.json", "Code Review & QA");
     await seedSkillPack("full.json", "Complete Suite");
+    await seedSkillPack("blender.json", "Blender 3D Pipeline");
+    await seedSkillPack("pixel.json", "Pixel Developer");
+    await seedSkillPack("spline.json", "Spline 3D Pipeline");
 
     console.log("\n✓ All skill packs seeded successfully!");
   } catch (error) {

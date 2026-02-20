@@ -3,7 +3,7 @@ name: Spline Object Builder
 description: "Creates and configures 3D objects in Spline including parametric
   shapes, text, vector paths, imported models, and groups. Executes the object
   portion of the scene graph using Spline MCP tools."
-tools: ['read', 'search', 'spline/createObject', 'spline/createParametricObject', 'spline/create3DText', 'spline/updateObject', 'spline/getObjects', 'spline/getObjectDetails', 'spline/deleteObject', 'spline/addDirectionalLight', 'spline/addCamera', 'spline/createParticleSystem', 'spline/addPhysicsBody']
+tools: ['read', 'search', 'spline-createObject', 'spline-createParametricObject', 'spline-create3DText', 'spline-updateObject', 'spline-getObjects', 'spline-getObjectDetails', 'spline-deleteObject', 'spline-addDirectionalLight', 'spline-addCamera', 'spline-createParticleSystem', 'spline-addPhysicsBody']
 agents: []
 user-invokable: false
 ---

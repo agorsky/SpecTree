@@ -58,5 +58,7 @@
       "description": "Project configuration including Blender path, render engine, output directory, resolution, and quality thresholds"
     }
   ],
-  "dependencies": {}
+  "dependencies": {
+    "blender": "Requires Blender 3.6+ installed and accessible via command line for Python script execution"
+  }
 }

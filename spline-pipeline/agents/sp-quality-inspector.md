@@ -3,7 +3,7 @@ name: Spline Quality Inspector
 description: "Reviews scene quality against standards for composition, materials,
   interactions, and web performance with a scored pass/fail rubric. Returns
   actionable issues for the refinement loop."
-tools: ['read', 'search', 'spline/getScene', 'spline/getObjects', 'spline/getObjectDetails', 'spline/getMaterials', 'spline/getMaterialDetails', 'spline/getStates', 'spline/getStateDetails', 'spline/getEvents', 'spline/getEventDetails', 'spline/listMaterialLayers', 'spline/listActions']
+tools: ['read', 'search', 'spline-getScene', 'spline-getObjects', 'spline-getObjectDetails', 'spline-getMaterials', 'spline-getMaterialDetails', 'spline-getStates', 'spline-getStateDetails', 'spline-getEvents', 'spline-getEventDetails', 'spline-listMaterialLayers', 'spline-listActions']
 agents: []
 user-invokable: false
 ---

@@ -73,5 +73,9 @@
       "description": "Project-specific configuration including framework, dev server, color tokens, and radius tokens"
     }
   ],
-  "dependencies": {}
+  "dependencies": {
+    "figma-console/*": "Requires Figma MCP tools (figma-console server) for design extraction",
+    "playwright": "Requires Playwright for screenshot capture",
+    "pixelmatch": "Requires pixelmatch library for pixel-level image comparison"
+  }
 }

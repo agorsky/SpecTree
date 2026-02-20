@@ -3,7 +3,7 @@ name: Spline Export Manager
 description: "Exports Spline scenes in production formats: web embeds (React,
   iframe, vanilla JS), video (MP4), images (PNG), and geometry (GLB/OBJ).
   Generates integration code with responsive wrappers and loading states."
-tools: ['read', 'search', 'spline/exportSceneCode', 'spline/generateEmbedCode', 'spline/generateReactComponent', 'spline/generateComprehensiveExample', 'spline/generateAnimationCode', 'spline/generateSceneInteractionCode', 'spline/generateVariableCode', 'spline/generateEventListenerCode', 'spline/generateObjectCode', 'spline/getRuntimeSetup', 'spline/getScene']
+tools: ['read', 'search', 'spline-exportSceneCode', 'spline-generateEmbedCode', 'spline-generateReactComponent', 'spline-generateComprehensiveExample', 'spline-generateAnimationCode', 'spline-generateSceneInteractionCode', 'spline-generateVariableCode', 'spline-generateEventListenerCode', 'spline-generateObjectCode', 'spline-getRuntimeSetup', 'spline-getScene']
 agents: []
 user-invokable: false
 ---

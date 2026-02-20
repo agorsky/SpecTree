@@ -25,23 +25,23 @@ The orchestrator provides:
 Navigate to the Figma file and establish connection:
 
 ```
-figma_navigate({ url: "<figma-file-url>" })
+figma-console-figma_navigate({ url: "<figma-file-url>" })
 ```
 
-Verify connection with `figma_get_status()`. If connection fails, retry once with `figma_reconnect()`.
+Verify connection with `figma-console-figma_get_status()`. If connection fails, retry once with `figma-console-figma_reconnect()`.
 
 ### Step 2: Get File Structure
 
 Start with a lightweight overview to understand the document tree:
 
 ```
-figma_get_file_data({ depth: 1, verbosity: "summary" })
+figma-console-figma_get_file_data({ depth: 1, verbosity: "summary" })
 ```
 
 If a specific node ID was provided, fetch that subtree:
 
 ```
-figma_get_file_data({ nodeIds: ["<node-id>"], depth: 3, verbosity: "standard" })
+figma-console-figma_get_file_data({ nodeIds: ["<node-id>"], depth: 3, verbosity: "standard" })
 ```
 
 ### Step 3: Extract Component Metadata
@@ -49,7 +49,7 @@ figma_get_file_data({ nodeIds: ["<node-id>"], depth: 3, verbosity: "standard" })
 For each target component or frame, extract full design data:
 
 ```
-figma_get_component({ nodeId: "<node-id>" })
+figma-console-figma_get_component({ nodeId: "<node-id>" })
 ```
 
 This returns:
@@ -60,7 +60,7 @@ This returns:
 For development-ready specs with filtered implementation context:
 
 ```
-figma_get_component_for_development({ nodeId: "<node-id>" })
+figma-console-figma_get_component_for_development({ nodeId: "<node-id>" })
 ```
 
 ### Step 4: Extract Design Tokens
@@ -68,8 +68,8 @@ figma_get_component_for_development({ nodeId: "<node-id>" })
 Retrieve all variables and styles applied to the target:
 
 ```
-figma_get_variables({ format: "filtered", resolveAliases: true })
-figma_get_styles({ verbosity: "standard" })
+figma-console-figma_get_variables({ format: "filtered", resolveAliases: true })
+figma-console-figma_get_styles({ verbosity: "standard" })
 ```
 
 Map Figma variables to CSS custom properties:
@@ -126,13 +126,13 @@ For each visible node in the target tree, extract:
 Export the target node as an image for screenshot comparison:
 
 ```
-figma_get_component_image({ nodeId: "<node-id>", format: "png", scale: 2 })
+figma-console-figma_get_component_image({ nodeId: "<node-id>", format: "png", scale: 2 })
 ```
 
 Or use the plugin-based capture for current state:
 
 ```
-figma_capture_screenshot({ nodeId: "<node-id>", scale: 2 })
+figma-console-figma_capture_screenshot({ nodeId: "<node-id>", scale: 2 })
 ```
 
 ### Step 7: Handle Auto-Layout vs Absolute Positioning
@@ -235,7 +235,7 @@ Return a structured JSON object with this schema:
 
 | Error | Recovery |
 |-------|----------|
-| Figma connection fails | Call `figma_reconnect()`, retry once |
+| Figma connection fails | Call `figma-console-figma_reconnect()`, retry once |
 | Node not found | Ask orchestrator for correct node ID |
 | Variables API returns 403 | Fall back to styles extraction |
 | Image export fails | Retry with lower scale (1x instead of 2x) |

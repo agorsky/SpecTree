@@ -3,7 +3,7 @@ name: Spline Pipeline Orchestrator
 description: "Entry-point agent that chains all sub-agents and manages the quality
   refinement loop (max 3 rounds) from prompt to exported interactive 3D scene.
   Coordinates the full pipeline: interpret → plan → build → style → animate → inspect → export."
-tools: ['agent', 'read', 'search', 'spline/*']
+tools: ['agent', 'read', 'search', 'spline-*']
 agents: ['sp-prompt-interpreter', 'sp-scene-planner', 'sp-object-builder', 'sp-material-stylist', 'sp-interaction-designer', 'sp-quality-inspector', 'sp-export-manager']
 user-invokable: true
 ---

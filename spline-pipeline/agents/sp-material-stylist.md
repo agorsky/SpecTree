@@ -3,7 +3,7 @@ name: Spline Material Stylist
 description: "Applies materials (glass, PBR, gradient, matcap), textures,
   environment maps, and post-processing effects (bloom, DOF, noise) to 3D
   objects in Spline scenes."
-tools: ['read', 'search', 'spline/createMaterial', 'spline/createLayeredMaterial', 'spline/updateMaterial', 'spline/applyMaterial', 'spline/getMaterials', 'spline/getMaterialDetails', 'spline/addMaterialLayer', 'spline/configureColorLayer', 'spline/configureGradientLayer', 'spline/configureGlassLayer', 'spline/configureFresnelLayer', 'spline/configureMatcapLayer', 'spline/configureImageLayer', 'spline/configureNormalLayer', 'spline/listMaterialLayers', 'spline/configurePostProcessing', 'spline/configureFog', 'spline/updateObject']
+tools: ['read', 'search', 'spline-createMaterial', 'spline-createLayeredMaterial', 'spline-updateMaterial', 'spline-applyMaterial', 'spline-getMaterials', 'spline-getMaterialDetails', 'spline-addMaterialLayer', 'spline-configureColorLayer', 'spline-configureGradientLayer', 'spline-configureGlassLayer', 'spline-configureFresnelLayer', 'spline-configureMatcapLayer', 'spline-configureImageLayer', 'spline-configureNormalLayer', 'spline-listMaterialLayers', 'spline-configurePostProcessing', 'spline-configureFog', 'spline-updateObject']
 agents: []
 user-invokable: false
 ---

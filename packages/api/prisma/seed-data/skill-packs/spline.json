@@ -58,5 +58,7 @@
       "description": "Project configuration including resolution, export formats, video settings, quality thresholds, and target file sizes"
     }
   ],
-  "dependencies": {}
+  "dependencies": {
+    "spline-*": "Requires Spline MCP tools for scene creation, material application, and export"
+  }
 }

@@ -89,7 +89,7 @@
     },
     "vanilla": {
       "moduleType": "esm",
-      "runtimeCdn": "https://unpkg.com/@splinetool/runtime@latest/build/runtime.js",
+      "runtimeCdn": "https://unpkg.com/@splinetool/runtime@2.0.0/build/runtime.js",
       "fadeInTransition": true
     },
     "next": {

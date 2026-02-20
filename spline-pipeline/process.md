@@ -260,8 +260,8 @@ All thresholds, defaults, and settings are defined in `sp-config.json`. Key sett
 |---------|---------|-------------|
 | `quality.passThreshold` | 70 | Minimum quality score to pass |
 | `quality.maxRefinementRounds` | 3 | Maximum quality loop iterations |
-| `scene.maxObjects` | 50 | Performance budget for objects |
-| `scene.maxMaterials` | 15 | Performance budget for materials |
+| `scene.limits.maxObjects` | 50 | Performance budget for objects |
+| `scene.limits.maxMaterials` | 15 | Performance budget for materials |
 | `export.defaultFormats` | `["react", "iframe"]` | Formats when none specified |
 | `video.fps` | 30 | Video export frame rate |
 | `video.duration` | 10 | Video export duration (seconds) |

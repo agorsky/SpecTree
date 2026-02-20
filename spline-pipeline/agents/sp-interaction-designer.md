@@ -3,7 +3,7 @@ name: Spline Interaction Designer
 description: "Defines states, events (hover, click, scroll), actions, timeline
   animations, and transitions for interactive Spline scenes using the Spline
   MCP state machine and event system."
-tools: ['read', 'search', 'spline/createState', 'spline/getStates', 'spline/getStateDetails', 'spline/triggerState', 'spline/createComprehensiveEvent', 'spline/createEvent', 'spline/getEvents', 'spline/getEventDetails', 'spline/configureEventParameters', 'spline/createAction', 'spline/configureTransitionAction', 'spline/configureAnimationAction', 'spline/configureVariableAction', 'spline/configureConditionalAction', 'spline/listActions', 'spline/setVariable', 'spline/getVariable', 'spline/generateAnimationCode']
+tools: ['read', 'search', 'spline-createState', 'spline-getStates', 'spline-getStateDetails', 'spline-triggerState', 'spline-createComprehensiveEvent', 'spline-createEvent', 'spline-getEvents', 'spline-getEventDetails', 'spline-configureEventParameters', 'spline-createAction', 'spline-configureTransitionAction', 'spline-configureAnimationAction', 'spline-configureVariableAction', 'spline-configureConditionalAction', 'spline-listActions', 'spline-setVariable', 'spline-getVariable', 'spline-generateAnimationCode']
 agents: []
 user-invokable: false
 ---

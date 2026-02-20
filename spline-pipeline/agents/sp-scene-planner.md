@@ -2,7 +2,7 @@
 name: Spline Scene Planner
 description: "Creates a complete scene graph from the scene spec with object
   hierarchies, transforms, material assignments, state definitions, and event bindings."
-tools: ['read', 'search', 'spline/getScene', 'spline/getObjects']
+tools: ['read', 'search', 'spline-getScene', 'spline-getObjects']
 agents: []
 user-invokable: false
 ---
