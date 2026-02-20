@@ -1,0 +1,244 @@
+{
+  "name": "spline-pipeline",
+  "version": "1.0.0",
+  "description": "Configuration for the Spline 3D scene creation and export pipeline",
+
+  "scene": {
+    "defaults": {
+      "backgroundColor": "#0F0B2E",
+      "ambientLightColor": "#E0E7FF",
+      "ambientLightIntensity": 0.3
+    },
+    "camera": {
+      "type": "perspective",
+      "fov": 45,
+      "near": 0.1,
+      "far": 1000,
+      "defaultPosition": { "x": 0, "y": 1, "z": 5 },
+      "defaultTarget": { "x": 0, "y": 0, "z": 0 }
+    },
+    "limits": {
+      "maxObjects": 50,
+      "maxMaterials": 15,
+      "maxLights": 5,
+      "maxShadowCasters": 2,
+      "maxStates": 15,
+      "maxEvents": 20,
+      "maxActionsPerEvent": 4,
+      "maxVariables": 10,
+      "maxGroupDepth": 4,
+      "maxParticleSystems": 2,
+      "maxGlassLayers": 3,
+      "maxSceneStartEvents": 3
+    }
+  },
+
+  "resolution": {
+    "web": {
+      "width": 1920,
+      "height": 1080,
+      "pixelRatio": 2
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "pixelRatio": 3
+    },
+    "thumbnail": {
+      "width": 800,
+      "height": 600,
+      "pixelRatio": 1
+    }
+  },
+
+  "quality": {
+    "passThreshold": 70,
+    "maxRefinementRounds": 3,
+    "categoryWeights": {
+      "composition": 0.25,
+      "materials": 0.25,
+      "interactions": 0.25,
+      "performance": 0.25
+    },
+    "scoring": {
+      "excellent": { "min": 90, "label": "Excellent" },
+      "good": { "min": 70, "label": "Good" },
+      "fair": { "min": 50, "label": "Fair" },
+      "poor": { "min": 0, "label": "Poor" }
+    }
+  },
+
+  "export": {
+    "defaultFormats": ["react", "iframe"],
+    "supportedFormats": ["react", "iframe", "vanilla", "next", "video", "image", "glb"],
+    "react": {
+      "typescript": true,
+      "suspense": true,
+      "lazyLoad": true,
+      "errorBoundary": true,
+      "dependencies": {
+        "@splinetool/react-spline": "^2.2.6",
+        "@splinetool/runtime": "^1.5.5"
+      }
+    },
+    "iframe": {
+      "responsive": true,
+      "defaultAspectRatio": "16:9",
+      "lazyLoading": true,
+      "borderRadius": "12px"
+    },
+    "vanilla": {
+      "moduleType": "esm",
+      "runtimeCdn": "https://unpkg.com/@splinetool/runtime@latest/build/runtime.js",
+      "fadeInTransition": true
+    },
+    "next": {
+      "ssrDisabled": true,
+      "dynamicImport": true,
+      "clientDirective": true
+    }
+  },
+
+  "video": {
+    "fps": 30,
+    "duration": 10,
+    "codec": "h264",
+    "format": "mp4",
+    "quality": "high",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "bitrate": "8M",
+    "loop": false
+  },
+
+  "image": {
+    "format": "png",
+    "scale": 2,
+    "quality": 95,
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "transparent": false
+  },
+
+  "geometry": {
+    "format": "glb",
+    "compress": true,
+    "includeTextures": true,
+    "maxFileSize": "10MB"
+  },
+
+  "materials": {
+    "defaultType": "physical",
+    "defaultRoughness": 0.5,
+    "defaultMetalness": 0.0,
+    "segmentQuality": {
+      "hero": 64,
+      "standard": 32,
+      "background": 16
+    },
+    "presets": {
+      "glass": {
+        "baseType": "physical",
+        "transparent": true,
+        "opacity": 0.85,
+        "roughness": 0.05,
+        "ior": 1.45
+      },
+      "chrome": {
+        "baseType": "physical",
+        "metalness": 1.0,
+        "roughness": 0.05,
+        "color": "#E5E7EB"
+      },
+      "neon": {
+        "baseType": "physical",
+        "roughness": 0.3,
+        "emissiveIntensity": 2.5
+      },
+      "plastic": {
+        "baseType": "physical",
+        "metalness": 0.0,
+        "roughness": 0.4
+      },
+      "toon": {
+        "baseType": "toon",
+        "flatShading": true
+      }
+    }
+  },
+
+  "interactions": {
+    "timing": {
+      "hover": { "duration": 300, "easing": "easeOut" },
+      "click": { "duration": 400, "easing": "easeInOut" },
+      "scroll": { "duration": 800, "easing": "easeOut" },
+      "pageLoad": { "duration": 1200, "easing": "easeOut" },
+      "continuousLoop": { "easing": "linear" }
+    },
+    "defaults": {
+      "hoverScale": 1.05,
+      "hoverLiftY": 0.3,
+      "clickRotation": 360,
+      "parallaxDampening": 0.03,
+      "floatAmplitude": 0.2,
+      "floatFrequency": 2000
+    }
+  },
+
+  "lighting": {
+    "presets": {
+      "studio": {
+        "key": { "color": "#FFFFFF", "intensity": 1.2, "position": { "x": 5, "y": 8, "z": 5 }, "castShadow": true },
+        "fill": { "color": "#E0E7FF", "intensity": 0.5, "position": { "x": -3, "y": 4, "z": -2 }, "castShadow": false },
+        "rim": { "color": "#F0ABFC", "intensity": 0.6, "position": { "x": 0, "y": 2, "z": -6 }, "castShadow": false }
+      },
+      "dramatic": {
+        "key": { "color": "#FFFFFF", "intensity": 1.8, "position": { "x": 3, "y": 10, "z": 3 }, "castShadow": true }
+      },
+      "soft": {
+        "key": { "color": "#FFF7ED", "intensity": 0.8, "position": { "x": 0, "y": 8, "z": 5 }, "castShadow": true },
+        "fill": { "color": "#DBEAFE", "intensity": 0.6, "position": { "x": -5, "y": 3, "z": 0 }, "castShadow": false }
+      },
+      "neon": {
+        "accent1": { "color": "#7C3AED", "intensity": 1.0, "position": { "x": 2, "y": 2, "z": 2 }, "castShadow": false },
+        "accent2": { "color": "#06B6D4", "intensity": 1.0, "position": { "x": -2, "y": 2, "z": -2 }, "castShadow": false }
+      }
+    },
+    "maxTotalIntensity": 3.0
+  },
+
+  "postProcessing": {
+    "bloom": {
+      "defaultIntensity": 0.3,
+      "neonIntensity": 0.7,
+      "subtleIntensity": 0.15
+    },
+    "depthOfField": {
+      "defaultFocusDistance": 5,
+      "defaultFocalLength": 50,
+      "defaultBokehScale": 3
+    },
+    "fog": {
+      "defaultColor": "#1E1B4B",
+      "defaultNear": 5,
+      "defaultFar": 30,
+      "defaultDensity": 0.05
+    }
+  },
+
+  "performance": {
+    "targetFrameRate": 60,
+    "maxBundleSize": "500KB",
+    "maxSceneFileSize": "5MB",
+    "maxTextureSize": "2048x2048",
+    "lodDistances": {
+      "high": 5,
+      "medium": 15,
+      "low": 30
+    }
+  }
+}

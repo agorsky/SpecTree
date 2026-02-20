@@ -1,0 +1,45 @@
+{
+  "description": "Global pixel-diff threshold configuration. The pipeline PASSes when diff% ≤ maxDiffPercent.",
+  "global": {
+    "maxDiffPercent": 1.0,
+    "pixelmatchThreshold": 0.1,
+    "includeAntiAliasing": false
+  },
+  "viewports": {
+    "desktop": {
+      "maxDiffPercent": 1.0,
+      "notes": "Primary viewport — strictest threshold"
+    },
+    "tablet": {
+      "maxDiffPercent": 1.5,
+      "notes": "Slightly relaxed for responsive layout shifts"
+    },
+    "mobile": {
+      "maxDiffPercent": 2.0,
+      "notes": "Most relaxed — mobile font rendering varies more"
+    }
+  },
+  "sceneOverrides": {
+    "_example_map-view": {
+      "maxDiffPercent": 5.0,
+      "reason": "Map tiles load non-deterministically, higher tolerance needed"
+    },
+    "_example_chart-dashboard": {
+      "maxDiffPercent": 3.0,
+      "reason": "Chart animations and data labels may shift slightly"
+    }
+  },
+  "loop": {
+    "maxRounds": 3,
+    "stagnantThreshold": 0.1,
+    "catastrophicRegressionThreshold": 5.0,
+    "consecutiveStagnantAbort": 2,
+    "consecutiveRegressingAbort": 2
+  },
+  "comparison": {
+    "diffColorRGB": [255, 0, 0],
+    "diffColorAltRGB": [0, 255, 0],
+    "unchangedAlpha": 0.1,
+    "regionGridSize": 4
+  }
+}
