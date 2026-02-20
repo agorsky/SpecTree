@@ -1,7 +1,7 @@
 {
   "name": "@spectree/blender",
   "version": "1.0.0",
-  "description": "Automated 3D asset creation and scene generation pipeline using Blender. Converts structured prompts into production-grade 3D assets with PBR materials, professional lighting, and multi-format export, with iterative quality refinement",
+  "description": "Automated 3D asset creation and scene generation pipeline using Blender. Converts structured prompts into production-grade 3D assets with PBR materials, professional lighting, and multi-format export, with iterative quality refinement. Note: This skill pack is not seeded automatically by the default seedAllSkillPacks script and must be installed via the dedicated Blender pipeline setup or a separate seeding step.",
   "agents": [
     {
       "name": "bp-orchestrator",
