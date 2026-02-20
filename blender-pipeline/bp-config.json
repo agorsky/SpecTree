@@ -1,0 +1,10 @@
+{
+  "blenderPath": "/usr/bin/blender",
+  "renderEngine": "CYCLES",
+  "outputDir": "./output",
+  "resolution": { "width": 1920, "height": 1080 },
+  "qualityThresholds": {
+    "minScore": 0.8,
+    "maxRefinementRounds": 3
+  }
+}

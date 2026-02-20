@@ -1,0 +1,8 @@
+{
+  "framework": "angular",
+  "devServer": "http://localhost:4200",
+  "tokens": {
+    "colors": {},
+    "radius": {}
+  }
+}

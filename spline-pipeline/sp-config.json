@@ -1,0 +1,16 @@
+{
+  "resolution": { "width": 1920, "height": 1080 },
+  "exportFormats": ["react", "iframe", "mp4", "glb"],
+  "videoSettings": {
+    "fps": 30,
+    "duration": 10
+  },
+  "qualityThresholds": {
+    "minScore": 0.8,
+    "maxRefinementRounds": 3
+  },
+  "targetFileSizes": {
+    "glb": "10MB",
+    "mp4": "50MB"
+  }
+}
