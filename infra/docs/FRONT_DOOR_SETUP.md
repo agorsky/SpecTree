@@ -23,17 +23,17 @@ Internet → Azure Front Door (WAF) → Container Apps Environment
 
 | Type  | Name                         | Value                                             | Purpose              |
 |-------|------------------------------|---------------------------------------------------|----------------------|
-| CNAME | `spectree`                   | `ep-spectree-dev.z01.azurefd.net`                | Route traffic to FD  |
+| CNAME | `spectree`                   | `ep-spectree-dev-a8fcd4e6bdgsaacg.a02.azurefd.net` | Route traffic to FD  |
 | TXT   | `_dnsauth.spectree`          | *(Provided by Azure portal during domain setup)*  | Domain validation    |
 
 ### 2. API Endpoint: `spectree-api.toro.com`
 
 | Type  | Name                         | Value                                             | Purpose              |
 |-------|------------------------------|---------------------------------------------------|----------------------|
-| CNAME | `spectree-api`               | `ep-spectree-dev.z01.azurefd.net`                | Route traffic to FD  |
+| CNAME | `spectree-api`               | `ep-spectree-dev-a8fcd4e6bdgsaacg.a02.azurefd.net` | Route traffic to FD  |
 | TXT   | `_dnsauth.spectree-api`      | *(Provided by Azure portal during domain setup)*  | Domain validation    |
 
-> **Note:** The exact Front Door endpoint hostname (`ep-spectree-dev.z01.azurefd.net`) will be confirmed after initial deployment. The `.z01` segment varies by Azure region.
+> **Note:** The Front Door endpoint hostname is `ep-spectree-dev-a8fcd4e6bdgsaacg.a02.azurefd.net` (confirmed from deployment on Feb 20, 2026).
 
 ## TLS / SSL Configuration
 
@@ -72,12 +72,12 @@ After DNS records are configured, the SpecTree team will:
 | Role | Name | Notes |
 |------|------|-------|
 | IT / DNS Admin | Robert Dineen | DNS record creation |
-| SpecTree Team | *(Update with deployer name)* | Azure Portal configuration |
+| SpecTree Team | Aaron Gorsky | Azure Portal configuration |
 
 ## Production Considerations
 
 For production deployment, replace `dev` with `prod` in all endpoint names:
-- Front Door endpoint: `ep-spectree-prod.z01.azurefd.net`
+- Front Door endpoint: `ep-spectree-prod-<hash>.a02.azurefd.net`
 - Resource names: `afd-spectree-prod`, `wafpspectreeprod`
 - Separate DNS records needed for production custom domains
 
