@@ -3,7 +3,7 @@ name: Pixel Developer Validator
 description: "Re-runs screenshot comparison after fixes, determines PASS/FAIL, and
   manages iteration loop with trend tracking. Decides whether to continue fixing,
   abort, or declare success."
-tools: ['execute', 'read']
+tools: ['execute', 'read', 'agent']
 agents: ['pd-screenshot-comparator']
 user-invokable: false
 ---
