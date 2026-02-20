@@ -58,20 +58,9 @@ resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@20
       mode: 'Detection' // Start in Detection mode; switch to Prevention in Phase 4 lockdown
       requestBodyCheck: 'Enabled'
     }
-    managedRules: {
-      managedRuleSets: [
-        {
-          ruleSetType: 'Microsoft_DefaultRuleSet'
-          ruleSetVersion: '2.1'
-          ruleSetAction: 'Block'
-        }
-        {
-          ruleSetType: 'Microsoft_BotManagerRuleSet'
-          ruleSetVersion: '1.1'
-          ruleSetAction: 'Block'
-        }
-      ]
-    }
+    // Note: Managed rules (DefaultRuleSet, BotManagerRuleSet) require Premium SKU.
+    // Using Standard SKU with custom rules only to minimize cost.
+    // Upgrade to Premium_AzureFrontDoor SKU to enable managed rules.
   }
 }
 
@@ -207,10 +196,7 @@ resource staticAssetCacheRule 'Microsoft.Cdn/profiles/ruleSets/rules@2023-05-01'
             'gif'
             'svg'
             'ico'
-            'woff'
             'woff2'
-            'ttf'
-            'eot'
           ]
           negateCondition: false
           transforms: [
