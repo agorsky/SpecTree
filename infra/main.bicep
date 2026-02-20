@@ -42,8 +42,11 @@ param sqlAppUserPassword string
 @description('Enable Azure AD only authentication for SQL')
 param sqlEnableAadOnlyAuth bool = false
 
-@description('Container image to deploy')
+@description('API container image to deploy')
 param containerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+
+@description('Web container image to deploy')
+param webContainerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
 @description('Enable Azure Front Door with WAF')
 param frontDoorEnabled bool = false
@@ -171,6 +174,7 @@ module containerApps 'modules/containerApps.bicep' = {
     tags: defaultTags
     containerAppsSubnetId: vnet.outputs.containerAppsSubnetId
     containerImage: containerImage
+    webContainerImage: webContainerImage
     keyVaultUri: keyVault.outputs.keyVaultUri
     sqlConnectionString: sql.outputs.connectionString
     azureFrontDoorId: '' // Set via Azure Portal or CLI after Front Door is provisioned
