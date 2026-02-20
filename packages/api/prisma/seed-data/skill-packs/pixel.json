@@ -1,0 +1,77 @@
+{
+  "name": "@spectree/pixel",
+  "version": "1.0.0",
+  "description": "Design-to-code pipeline that converts Figma designs into pixel-perfect implementations, then iteratively reviews and fixes until 99% fidelity match",
+  "agents": [
+    {
+      "name": "pd-orchestrator",
+      "path": "pixel-developer/agents/pd-orchestrator.md",
+      "description": "Entry-point agent that chains all sub-agents and manages the fix-validation loop (max 3 rounds) from Figma link to pixel-perfect code"
+    },
+    {
+      "name": "pd-figma-extractor",
+      "path": "pixel-developer/agents/pd-figma-extractor.md",
+      "description": "Extracts exact design specs from Figma node tree via MCP tools including colors, typography, spacing, dimensions, borders, shadows, and layout"
+    },
+    {
+      "name": "pd-component-scout",
+      "path": "pixel-developer/agents/pd-component-scout.md",
+      "description": "Scans codebase to identify reusable components, design tokens, and layout patterns for optimal code reuse"
+    },
+    {
+      "name": "pd-screenshot-comparator",
+      "path": "pixel-developer/agents/pd-screenshot-comparator.md",
+      "description": "Captures implementation screenshots via Playwright and compares pixel-by-pixel against Figma reference using pixelmatch"
+    },
+    {
+      "name": "pd-diff-analyzer",
+      "path": "pixel-developer/agents/pd-diff-analyzer.md",
+      "description": "Identifies exactly which elements and CSS properties differ from design, produces prioritized fix list ordered by visual impact"
+    },
+    {
+      "name": "pd-fixer",
+      "path": "pixel-developer/agents/pd-fixer.md",
+      "description": "Applies surgical SCSS/HTML changes using design tokens to bring implementation within 1% of design spec"
+    },
+    {
+      "name": "pd-standards-enforcer",
+      "path": "pixel-developer/agents/pd-standards-enforcer.md",
+      "description": "Audits code changes for compliance with project coding standards including BEM naming, token usage, and no hardcoded values"
+    },
+    {
+      "name": "pd-validator",
+      "path": "pixel-developer/agents/pd-validator.md",
+      "description": "Re-runs screenshot comparison after fixes, determines PASS/FAIL, and manages iteration loop with trend tracking"
+    }
+  ],
+  "skills": [
+    {
+      "name": "design-extraction",
+      "path": "pixel-developer/process.md",
+      "description": "8-step pipeline process from Figma link input to CI-locked pixel-perfect implementation"
+    },
+    {
+      "name": "coding-standards",
+      "path": "pixel-developer/CODING-STANDARDS.md",
+      "description": "Component structure standards including BEM naming, CSS variable usage, no @use imports, and Angular patterns"
+    }
+  ],
+  "instructions": [
+    {
+      "name": "pixel-thresholds",
+      "path": "pixel-developer/config/thresholds.json",
+      "description": "Global diff threshold configuration (1% max) with scene-specific override support"
+    },
+    {
+      "name": "pixel-viewports",
+      "path": "pixel-developer/config/viewport-presets.json",
+      "description": "Viewport presets for screenshot capture including desktop, tablet, and mobile dimensions"
+    },
+    {
+      "name": "pixel-config",
+      "path": "pixel-developer/pd-config.json",
+      "description": "Project-specific configuration including framework, dev server, color tokens, and radius tokens"
+    }
+  ],
+  "dependencies": {}
+}

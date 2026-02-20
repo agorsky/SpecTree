@@ -1,0 +1,62 @@
+{
+  "name": "@spectree/blender",
+  "version": "1.0.0",
+  "description": "Automated 3D asset creation and scene generation pipeline using Blender. Converts structured prompts into production-grade 3D assets with PBR materials, professional lighting, and multi-format export, with iterative quality refinement",
+  "agents": [
+    {
+      "name": "bp-orchestrator",
+      "path": "blender-pipeline/agents/bp-orchestrator.md",
+      "description": "Entry-point agent that chains all sub-agents and manages the quality refinement loop (max 3 rounds) from prompt to exported 3D assets"
+    },
+    {
+      "name": "bp-prompt-interpreter",
+      "path": "blender-pipeline/agents/bp-prompt-interpreter.md",
+      "description": "Parses structured or natural-language prompts into a normalized asset specification with geometry, materials, lighting, and camera definitions"
+    },
+    {
+      "name": "bp-scene-planner",
+      "path": "blender-pipeline/agents/bp-scene-planner.md",
+      "description": "Creates a complete scene graph from the asset spec with object hierarchies, transforms, material assignments, and render configuration"
+    },
+    {
+      "name": "bp-asset-generator",
+      "path": "blender-pipeline/agents/bp-asset-generator.md",
+      "description": "Generates Blender Python scripts for geometry creation including meshes, curves, modifiers, and sculpting operations"
+    },
+    {
+      "name": "bp-material-applicator",
+      "path": "blender-pipeline/agents/bp-material-applicator.md",
+      "description": "Creates PBR materials with Principled BSDF shader node trees, UV mappings, and texture assignments"
+    },
+    {
+      "name": "bp-lighting-rigger",
+      "path": "blender-pipeline/agents/bp-lighting-rigger.md",
+      "description": "Sets up professional lighting rigs (3-point, HDRI, dramatic) and camera configuration with focal length, DOF, and composition"
+    },
+    {
+      "name": "bp-quality-inspector",
+      "path": "blender-pipeline/agents/bp-quality-inspector.md",
+      "description": "Renders previews and evaluates scene quality against standards for geometry, materials, lighting, and composition with scored pass/fail"
+    },
+    {
+      "name": "bp-export-manager",
+      "path": "blender-pipeline/agents/bp-export-manager.md",
+      "description": "Exports final assets in production formats (glTF, FBX, USD, OBJ) with optimized settings and produces an export manifest"
+    }
+  ],
+  "skills": [
+    {
+      "name": "blender-pipeline-process",
+      "path": "blender-pipeline/process.md",
+      "description": "3-phase pipeline process from structured prompt to exported 3D assets with iterative quality refinement"
+    }
+  ],
+  "instructions": [
+    {
+      "name": "blender-config",
+      "path": "blender-pipeline/bp-config.json",
+      "description": "Project configuration including Blender path, render engine, output directory, resolution, and quality thresholds"
+    }
+  ],
+  "dependencies": {}
+}
