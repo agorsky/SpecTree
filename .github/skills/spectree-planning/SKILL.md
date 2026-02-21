@@ -1,3 +1,8 @@
+---
+name: SpecTree Planning
+description: "Core planning skill that encodes the full 5-stage pipeline for creating well-structured SpecTree epics from natural language descriptions."
+---
+
 # SpecTree Planning Procedure
 
 This skill encodes the full 5-stage pipeline for creating well-structured SpecTree epics from natural language descriptions. Follow each stage sequentially, applying quality checks before proceeding.

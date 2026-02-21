@@ -110,6 +110,26 @@ export default function skillPacksRoutes(
     return params.id;
   }
 
+  // Helper: enrich a SkillPackVersion response with name/description from the stored manifest
+  function enrichVersionResponse(
+    version: Record<string, unknown>,
+    skillPack: { name: string; description: string | null }
+  ) {
+    let parsed: Record<string, unknown> = {};
+    try {
+      if (typeof version.manifest === "string") {
+        parsed = JSON.parse(version.manifest) as Record<string, unknown>;
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return {
+      ...version,
+      name: parsed.name ?? skillPack.name,
+      description: parsed.description ?? skillPack.description,
+    };
+  }
+
   // Scoped package params: /@:scope/:name → "@scope/name"
   interface ScopedParams {
     id: string;
@@ -218,7 +238,7 @@ export default function skillPacksRoutes(
         throw new NotFoundError(`Version '${version}' not found for skill pack '${skillPack.name}'`);
       }
 
-      return reply.send(packVersion);
+      return reply.send(enrichVersionResponse(packVersion, skillPack));
     }
   );
 
@@ -247,7 +267,7 @@ export default function skillPacksRoutes(
         throw new NotFoundError(`No stable versions found for skill pack '${skillPack.name}'`);
       }
 
-      return reply.send(latestVersion);
+      return reply.send(enrichVersionResponse(latestVersion, skillPack));
     }
   );
 
@@ -362,7 +382,7 @@ export default function skillPacksRoutes(
       if (!skillPack) throw new NotFoundError(`Skill pack '${packName}' not found`);
       const packVersion = await getSkillPackVersion(skillPack.id, request.params.version);
       if (!packVersion) throw new NotFoundError(`Version '${request.params.version}' not found for '${packName}'`);
-      return reply.send(packVersion);
+      return reply.send(enrichVersionResponse(packVersion, skillPack));
     }
   );
 
@@ -374,7 +394,7 @@ export default function skillPacksRoutes(
       if (!skillPack) throw new NotFoundError(`Skill pack '${packName}' not found`);
       const latestVersion = await getLatestVersion(skillPack.id);
       if (!latestVersion) throw new NotFoundError(`No stable versions found for '${packName}'`);
-      return reply.send(latestVersion);
+      return reply.send(enrichVersionResponse(latestVersion, skillPack));
     }
   );
 

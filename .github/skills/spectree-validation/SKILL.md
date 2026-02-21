@@ -1,3 +1,8 @@
+---
+name: SpecTree Validation
+description: "Procedures for running, interpreting, and acting on SpecTree validation checks and executable acceptance criteria."
+---
+
 # SpecTree Validation Procedures
 
 This skill defines how to run, interpret, and act on SpecTree validation checks. Validations are executable acceptance criteria attached to tasks that verify work was completed correctly.

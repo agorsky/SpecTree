@@ -1,3 +1,8 @@
+---
+name: SpecTree Session Management
+description: "Protocol for managing SpecTree-integrated AI sessions with start/during/end workflow for context continuity across sessions."
+---
+
 # SpecTree Session Management Protocol
 
 This skill defines the protocol for managing SpecTree-integrated AI sessions. Every AI session working on a SpecTree epic should follow this start/during/end workflow to maintain context continuity across sessions.

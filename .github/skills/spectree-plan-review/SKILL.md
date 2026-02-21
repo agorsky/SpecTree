@@ -1,3 +1,8 @@
+---
+name: SpecTree Plan Review
+description: "Quality rubrics, scoring methodology, and review process for evaluating SpecTree epics before implementation."
+---
+
 # SpecTree Plan Quality Review Procedure
 
 This skill defines the quality rubrics, scoring methodology, and review process for evaluating SpecTree epics before implementation. Use this to determine whether an epic is ready for orchestrator execution.

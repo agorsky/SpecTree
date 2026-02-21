@@ -68,7 +68,7 @@ export class PackBundler {
           throw new Error(`Agent file not found: ${agentFile}`);
         }
         const content = await fs.readFile(fullPath, 'utf-8');
-        files[`agents/${agentFile}`] = content;
+        files[`.github/agents/${agentFile}`] = content;
       }
     }
 
@@ -80,7 +80,7 @@ export class PackBundler {
           throw new Error(`Skill file not found: ${skillFile}`);
         }
         const content = await fs.readFile(fullPath, 'utf-8');
-        files[`skills/${skillFile}`] = content;
+        files[`.github/skills/${skillFile}`] = content;
       }
     }
 
@@ -92,7 +92,7 @@ export class PackBundler {
           throw new Error(`Instruction file not found: ${instructionFile}`);
         }
         const content = await fs.readFile(fullPath, 'utf-8');
-        files[`instructions/${instructionFile}`] = content;
+        files[`.github/instructions/${instructionFile}`] = content;
       }
     }
 
@@ -103,7 +103,7 @@ export class PackBundler {
         throw new Error(`MCP config file not found: ${manifest.files.mcpConfig}`);
       }
       const content = await fs.readFile(fullPath, 'utf-8');
-      files[manifest.files.mcpConfig] = content;
+      files[`.github/${manifest.files.mcpConfig}`] = content;
     }
 
     return {
