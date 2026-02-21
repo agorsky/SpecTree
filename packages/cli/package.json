@@ -1,6 +1,6 @@
 {
   "name": "@ttc-ggi/spectree-cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "SpecTree CLI - Install, update, and manage Skill Packs",
   "type": "module",
   "bin": {
