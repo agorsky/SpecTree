@@ -20,6 +20,11 @@ export async function frontDoorValidation(
     return;
   }
 
+  // Skip validation for internal health checks (Container Apps probes)
+  if (request.url === "/health") {
+    return;
+  }
+
   const requestFrontDoorId = request.headers["x-azure-fdid"] as
     | string
     | undefined;
