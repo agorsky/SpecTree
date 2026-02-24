@@ -171,8 +171,8 @@ Check `~/.config/github-copilot/config.json`:
         "command": "npx",
         "args": ["@spectree/mcp"],
         "env": {
-          "SPECTREE_API_URL": "http://localhost:3001",
-          "SPECTREE_TOKEN": "your-token-here"
+          "API_BASE_URL": "http://localhost:3001",
+          "API_TOKEN": "your-token-here"
         }
       }
     }
@@ -232,7 +232,7 @@ Error: Unauthorized - Invalid API token
 2. Click "Create Token"
 3. Give it a name (e.g., "MCP Server")
 4. Copy the token **exactly** (trim whitespace)
-5. Update MCP config `SPECTREE_TOKEN`
+5. Update MCP config `API_TOKEN`
 6. Restart Copilot
 
 **Verify token format:**
@@ -242,7 +242,7 @@ Valid token format: 32-character alphanumeric string
 **Check for whitespace:**
 ```bash
 # In your MCP config, ensure:
-"SPECTREE_TOKEN": "abc123xyz456..."  # No quotes within, no spaces
+"API_TOKEN": "abc123xyz456..."  # No quotes within, no spaces
 ```
 
 **Test token manually:**

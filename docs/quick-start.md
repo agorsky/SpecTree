@@ -66,8 +66,8 @@ Add the SpecTree MCP server to GitHub Copilot's settings:
         "command": "npx",
         "args": ["@ttc-ggi/spectree-mcp"],
         "env": {
-          "SPECTREE_API_URL": "https://ca-spectree-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io",
-          "SPECTREE_TOKEN": "your-api-token-here"
+          "API_BASE_URL": "https://ca-spectree-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io",
+          "API_TOKEN": "your-api-token-here"
         }
       }
     }
@@ -93,7 +93,7 @@ Open GitHub Copilot and test connectivity:
 
 **Troubleshooting:** If you see "MCP server not responding," check:
 - SpecTree API is running (`curl http://localhost:3001/health`)
-- MCP config has the correct `SPECTREE_TOKEN`
+- MCP config has the correct `API_TOKEN`
 - Restart GitHub Copilot after config changes
 
 **Time:** ~30 seconds
@@ -301,7 +301,7 @@ npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
 **Cause:** MCP configuration incorrect or SpecTree not running  
 **Solution:**
 1. Verify API is running: `curl http://localhost:3001/health`
-2. Check MCP config file has correct `SPECTREE_TOKEN`
+2. Check MCP config file has correct `API_TOKEN`
 3. Restart GitHub Copilot
 
 ### "Invalid API token"

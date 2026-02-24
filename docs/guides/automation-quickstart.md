@@ -36,7 +36,7 @@ cd packages/mcp
 pnpm dev
 ```
 
-The MCP server connects AI agents to SpecTree tools. Verify the `.env` file in `packages/mcp/` contains a valid `SPECTREE_TOKEN`.
+The MCP server connects AI agents to SpecTree tools. Verify the `.env` file in `packages/mcp/` contains a valid `API_TOKEN`.
 
 ### 3. Copilot CLI
 
@@ -60,8 +60,8 @@ These files are already committed to the repository. No setup required.
 ### 5. Environment Variables
 
 ```bash
-export SPECTREE_API_URL=http://localhost:3001
-export SPECTREE_TOKEN=<your-token-from-packages/mcp/.env>
+export API_BASE_URL=http://localhost:3001
+export API_TOKEN=<your-token-from-packages/mcp/.env>
 ```
 
 ### 6. Build the Orchestrator CLI
@@ -349,12 +349,12 @@ The AI agent cannot reach SpecTree tools. Check:
 
 1. Is the SpecTree API running? (`curl http://localhost:3001/health`)
 2. Is the MCP server running? (`cd packages/mcp && pnpm dev`)
-3. Is the `SPECTREE_TOKEN` set in `packages/mcp/.env`?
+3. Is the `API_TOKEN` set in `packages/mcp/.env`?
 
-### "SPECTREE_API_URL not configured"
+### "API_BASE_URL not configured"
 
 ```bash
-export SPECTREE_API_URL=http://localhost:3001
+export API_BASE_URL=http://localhost:3001
 ```
 
 ### "Authentication Error" / "Missing token"
@@ -366,7 +366,7 @@ spectree-agent auth --token <your-token>
 Or set the environment variable:
 
 ```bash
-export SPECTREE_TOKEN=<your-token>
+export API_TOKEN=<your-token>
 ```
 
 ### "Team not found"

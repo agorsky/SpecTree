@@ -8,6 +8,8 @@ Project Management & Issue Tracking Platform
 - [What's New (v0.2.0)](#whats-new-v020)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
+  - [Using SpecTree in Your Project](#using-spectree-in-your-project)
+  - [Developing SpecTree](#developing-spectree)
 - [Project Structure](#project-structure)
 - [Environment Variables](#environment-variables)
 - [Development](#development)
@@ -78,7 +80,104 @@ az --version      # Optional, for Azure deployment
 
 ## Quick Start
 
-Get up and running in under 5 minutes:
+### Using SpecTree in Your Project
+
+Install SpecTree's AI agents and MCP tools into any project to get AI-powered project management.
+
+#### Prerequisites
+
+- **Node.js 20+** — Check with `node --version`
+- **GitHub CLI (`gh`)** — Authenticated via SSO (`gh auth status` to verify)
+- **GitHub Copilot** — Required for AI agent integration ([Get Copilot](https://github.com/features/copilot))
+
+#### 1. Configure npm for GitHub Packages (one-time)
+
+SpecTree is distributed via GitHub Packages. Run these commands once:
+
+```bash
+# Ensure your GitHub CLI session has package read access
+gh auth refresh -s read:packages
+
+# Tell npm to use GitHub Packages for @ttc-ggi packages
+npm config set @ttc-ggi:registry https://npm.pkg.github.com
+
+# Pass your GitHub CLI session token to npm (npm can't use SSO directly)
+npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
+```
+
+> **Note:** If you later run `gh auth login` or `gh auth refresh`, re-run the `npm config set .../:_authToken` command above to update the cached token.
+
+#### 2. Install SpecTree Skill Packs
+
+```bash
+npx @ttc-ggi/spectree-cli install @spectree/full --registry https://ca-spectree-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
+```
+
+This installs the full SpecTree Skill Pack suite including:
+- **Planner** — Decompose requirements into structured epics
+- **Orchestrator** — Execute features with parallel AI agents
+- **Reviewer** — Validate implementations against acceptance criteria
+- **Worker** — Feature implementation agent
+
+#### 3. Configure GitHub Copilot MCP
+
+Add the SpecTree MCP server to your GitHub Copilot config:
+
+**macOS/Linux:** `~/.config/github-copilot/config.json`
+**Windows:** `%APPDATA%\github-copilot\config.json`
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "spectree": {
+        "command": "npx",
+        "args": ["@ttc-ggi/spectree-mcp"],
+        "env": {
+          "API_BASE_URL": "https://ca-spectree-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io",
+          "API_TOKEN": "your-api-token-here"
+        }
+      }
+    }
+  }
+}
+```
+
+**Get your API token:**
+1. Navigate to https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
+2. Go to **Settings → API Tokens → Create Token**
+
+#### 4. Verify Installation
+
+Open GitHub Copilot and test connectivity:
+
+```
+@spectree list epics
+```
+
+**Expected:** A list of epics in your workspace (or an empty list if none exist yet).
+
+**Troubleshooting:** If you see "MCP server not responding," check:
+- MCP config has the correct `API_TOKEN`
+- Restart GitHub Copilot after config changes
+
+#### Your First Workflow
+
+Once installed, the typical workflow is:
+
+1. **Submit an epic request** — `@request-formulator I want to add a user preferences API`
+2. **Review & approve** — Admins approve requests via the web UI or MCP tools
+3. **Plan the epic** — `@planner --from-request "User Preferences API"`
+4. **Execute with AI agents** — `@orchestrator execute epic ENG-42`
+5. **Review results** — `@reviewer review feature ENG-42-1`
+
+> **📚 Full walkthrough with examples:** See the [Quick Start Guide](./docs/quick-start.md) for detailed step-by-step instructions with expected output for each stage.
+
+---
+
+### Developing SpecTree
+
+To work on SpecTree itself, clone the repo and set up the development environment:
 
 ```bash
 # 1. Clone the repository
