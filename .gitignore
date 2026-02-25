@@ -84,3 +84,7 @@ spectree.db-journal
 # Backup files (*.bak, *.pre-restore)
 **/*.bak
 **/*.pre-restore
+
+# Docker local deployment (override *.local pattern)
+!**/Dockerfile.local
+!docker-compose.local.yml

@@ -333,4 +333,4 @@ npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
 
 **Want to dive deeper?** Read the [Workflow Cookbook](./cookbook/README.md) for guided walkthroughs
 
-**Found a bug?** Open an issue at [GitHub Issues](https://github.com/TTC-GGI/SpecTree/issues)
+**Found a bug?** Open an issue at [GitHub Issues](https://github.com/agorsky/SpecTree/issues)

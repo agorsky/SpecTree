@@ -26,7 +26,11 @@
     "audit:instructions": "tsx scripts/audit-instructions.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:logs": "docker-compose logs -f",
+    "docker:local:up": "docker-compose -f docker-compose.local.yml up -d --build",
+    "docker:local:down": "docker-compose -f docker-compose.local.yml down",
+    "docker:local:logs": "docker-compose -f docker-compose.local.yml logs -f",
+    "docker:local:reset": "docker-compose -f docker-compose.local.yml down -v"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",

@@ -853,6 +853,18 @@ Production deployments use Azure SQL. Azure SQL databases use private endpoints 
 
 ## Deployment
 
+### Local Deployment (Docker)
+
+Run SpecTree locally with Docker using SQLite — no cloud accounts or external databases needed.
+
+```bash
+docker-compose -f docker-compose.local.yml up -d --build   # start
+open http://localhost                                        # admin@spectree.dev / Password123!
+```
+
+- **[Local Docker Deployment Guide](./docs/guides/local-docker-deployment.md)** — Complete setup, configuration, architecture deep dive, and troubleshooting
+- **[Quick Start Reference](./docs/local-deployment.md)** — Condensed quick-start for experienced users
+
 ### Prerequisites for Deployment
 
 1. Azure CLI installed and authenticated: `az login`
@@ -1006,3 +1018,5 @@ Additional documentation is available in the `docs/` directory:
 | [MCP Decision Log](./docs/mcp/decision-log.md) | Append-only decision records for preserving rationale |
 | [MCP Documentation](./docs/mcp/) | MCP server setup, authentication, and security |
 | [Azure Deployment Guide](./docs/deployment/azure-deployment-guide.md) | Production deployment to Azure |
+| [Local Docker Deployment Guide](./docs/guides/local-docker-deployment.md) | Complete guide: setup, configuration, architecture, and troubleshooting for local Docker |
+| [Local Deployment Quick Start](./docs/local-deployment.md) | Condensed quick-start for running SpecTree locally with Docker |
