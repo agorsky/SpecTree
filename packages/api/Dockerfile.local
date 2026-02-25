@@ -1,0 +1,80 @@
+FROM node:22-alpine AS base
+RUN corepack enable pnpm
+
+# Build stage
+FROM base AS builder
+WORKDIR /app
+
+# Install build dependencies for native modules (bcrypt)
+RUN apk add --no-cache python3 make g++ bash
+
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/api/package.json ./packages/api/
+
+# Create dummy git hooks script so root postinstall succeeds in Docker
+RUN mkdir -p scripts && echo '#!/bin/bash' > scripts/setup-git-hooks.sh && chmod +x scripts/setup-git-hooks.sh
+
+# Install dependencies (all lifecycle scripts run, including bcrypt native compile)
+RUN pnpm install --frozen-lockfile
+
+# Copy source
+COPY tsconfig.base.json ./
+COPY packages/shared ./packages/shared
+COPY packages/api ./packages/api
+
+# Build shared package first
+RUN pnpm --filter @spectree/shared build
+
+# Generate Prisma client from SQLite schema (NOT schema.sqlserver.prisma)
+WORKDIR /app/packages/api
+RUN npx prisma generate --schema=prisma/schema.prisma
+
+# Compile TypeScript using docker tsconfig (includes prisma/**/*.ts for seed scripts)
+RUN npx tsc -p tsconfig.docker.json
+
+# Copy generated Prisma client into dist output
+RUN cp -r src/generated dist/src/
+
+# Production stage
+FROM base AS runner
+WORKDIR /app/packages/api
+
+ENV NODE_ENV=production
+
+# Install bash and build dependencies for native modules (bcrypt)
+RUN apk add --no-cache python3 make g++ bash
+
+# Copy package files from builder
+COPY --from=builder /app/package.json /app/package.json
+COPY --from=builder /app/pnpm-lock.yaml /app/pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml /app/pnpm-workspace.yaml
+COPY --from=builder /app/packages/shared/package.json /app/packages/shared/package.json
+COPY --from=builder /app/packages/shared/dist /app/packages/shared/dist
+COPY --from=builder /app/packages/api/package.json ./package.json
+COPY --from=builder /app/packages/api/dist ./dist
+COPY --from=builder /app/packages/api/prisma ./prisma
+
+# Create dummy git hooks script so root postinstall succeeds in Docker
+RUN mkdir -p /app/scripts && echo '#!/bin/bash' > /app/scripts/setup-git-hooks.sh && chmod +x /app/scripts/setup-git-hooks.sh
+
+# Install production dependencies (all lifecycle scripts run, including bcrypt native compile)
+WORKDIR /app
+RUN pnpm install --frozen-lockfile --prod
+
+# Remove build tools to reduce image size
+RUN apk del python3 make g++
+
+WORKDIR /app/packages/api
+
+# Copy entrypoint script and make executable
+COPY packages/api/docker-entrypoint-local.sh ./docker-entrypoint-local.sh
+RUN chmod +x ./docker-entrypoint-local.sh
+
+# Create data directory for SQLite volume mount
+RUN mkdir -p /app/data
+
+EXPOSE 3001
+
+ENTRYPOINT ["./docker-entrypoint-local.sh"]
