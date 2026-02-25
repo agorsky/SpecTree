@@ -86,7 +86,28 @@ Use the `read` and `search` tools to explore the codebase if the user references
 - Dependencies/prerequisites (max 2000 chars)
 - Estimated effort (max 1000 chars)
 
-### Stage 7: Duplicate Check
+### Stage 7: Scope Selection
+
+Ask the user where this epic request should be submitted:
+
+1. Call `spectree__list_teams()` to discover available teams
+2. Present the options:
+   - **Personal** — auto-approved, private to you
+   - **[Team Name] ([KEY])** — requires admin approval
+3. Default to **Personal** if the user doesn't specify
+
+Example prompt:
+```
+Where should this request be submitted?
+- Personal (auto-approved, private to you)
+- Engineering (ENG) (requires admin review)
+
+Default: Personal
+```
+
+**Output:** Scope selection — `"personal"` or `"team"`.
+
+### Stage 8: Duplicate Check
 
 Before submitting, check for duplicate or similar requests:
 
@@ -105,7 +126,7 @@ Before submitting, check for duplicate or similar requests:
    - Continue creating a new request anyway?
    ```
 
-### Stage 8: Preview and Confirm
+### Stage 9: Preview and Confirm
 
 Synthesize all responses into:
 
@@ -128,6 +149,9 @@ Present both to the user:
 ## Title
 [The title you determined]
 
+## Scope
+[Personal (auto-approved) / Team Name (requires admin approval)]
+
 ## Description (Markdown)
 [Show the formatted description]
 
@@ -138,12 +162,13 @@ Present both to the user:
 Ready to submit? (yes / no / modify)
 ```
 
-### Stage 9: Submit
+### Stage 10: Submit
 
 If the user approves, call `spectree__create_epic_request`:
 ```
 spectree__create_epic_request({
   title: "...",
+  scope: "personal",  // or omit for team (default)
   description: "...",  // The rendered markdown
   structuredDesc: {
     problemStatement: "...",
@@ -164,9 +189,11 @@ After successful submission, show the user:
 
 ID: [request-id]
 Title: [title]
-Status: pending
+Scope: [Personal / Team Name]
+Status: [auto-approved / pending]
 
-Your request has been submitted for review. Admins will be notified and can approve, reject, or provide feedback.
+Your request has been submitted. [If team-scoped: Admins will be notified and can approve, reject, or provide feedback.]
+[If personal: The request is auto-approved and ready for conversion to an epic.]
 
 You can view all epic requests by asking: "Show me epic requests"
 ```
@@ -201,9 +228,10 @@ If the user says "no" at the preview stage:
 3. **MUST** present a preview and get confirmation before submitting
 4. **MUST** submit with both `description` (markdown) and `structuredDesc` (JSON)
 5. **MUST** ensure required fields are populated: title, problemStatement, proposedSolution, impactAssessment
-6. **DO NOT** include the 'agent' tool in your tools list — you cannot spawn sub-agents
-7. **DO NOT** submit requests without user confirmation
-8. **DO NOT** skip the duplicate check stage
+6. **MUST** ask about scope (Personal vs Team) before submitting
+7. **DO NOT** include the 'agent' tool in your tools list — you cannot spawn sub-agents
+8. **DO NOT** submit requests without user confirmation
+9. **DO NOT** skip the duplicate check stage
 
 ## Example Session
 

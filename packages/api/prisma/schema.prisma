@@ -343,9 +343,10 @@ model PersonalScope {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  statuses Status[]
-  epics    Epic[]
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statuses     Status[]
+  epics        Epic[]
+  epicRequests EpicRequest[]
 
   @@map("personal_scopes")
 }
@@ -515,16 +516,19 @@ model EpicRequest {
   status           String   @default("pending") // pending | approved | rejected | converted
   requestedById    String   @map("requested_by_id")
   convertedEpicId  String?  @unique @map("converted_epic_id")
+  personalScopeId  String?  @map("personal_scope_id")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  requestedBy  User                     @relation(fields: [requestedById], references: [id], onDelete: Cascade)
-  convertedEpic Epic?                   @relation(fields: [convertedEpicId], references: [id], onDelete: SetNull)
-  reactions    EpicRequestReaction[]
-  comments     EpicRequestComment[]
+  requestedBy   User                     @relation(fields: [requestedById], references: [id], onDelete: Cascade)
+  convertedEpic Epic?                    @relation(fields: [convertedEpicId], references: [id], onDelete: SetNull)
+  personalScope PersonalScope?           @relation(fields: [personalScopeId], references: [id], onDelete: SetNull)
+  reactions     EpicRequestReaction[]
+  comments      EpicRequestComment[]
 
   @@index([requestedById])
   @@index([convertedEpicId])
+  @@index([personalScopeId])
   @@index([status])
   @@index([createdAt])
   @@map("epic_requests")

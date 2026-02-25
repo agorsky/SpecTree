@@ -9,13 +9,27 @@ import {
   type CreatePersonalProjectInput,
   type CreatePersonalStatusInput,
 } from "../schemas/me.js";
+import {
+  createPersonalEpicRequestSchema,
+  listEpicRequestsQuerySchema,
+  type CreatePersonalEpicRequestInput,
+  type EpicRequestStatus,
+} from "../schemas/epicRequest.js";
 import { getPersonalScope, createPersonalScope } from "../services/personalScopeService.js";
+import { createEpicRequest } from "../services/epicRequestService.js";
 import { getMyWork, getBlockedSummary } from "../services/summaryService.js";
+import { validateBody, validateQuery } from "../middleware/validate.js";
 
 // Request type definitions
 interface ListPersonalProjectsQuery {
   cursor?: string;
   limit?: string;
+}
+
+interface ListPersonalEpicRequestsQuery {
+  cursor?: string;
+  limit?: string;
+  status?: EpicRequestStatus;
 }
 
 /**
@@ -315,6 +329,128 @@ export default async function meRoutes(
 
       const status = await prisma.status.create({ data });
       return reply.status(201).send({ data: status });
+    }
+  );
+
+  // =========================================================================
+  // POST /me/epic-requests - Create a personal epic request
+  // =========================================================================
+  /**
+   * POST /api/v1/me/epic-requests
+   * Create a new epic request in the authenticated user's personal scope.
+   * The request is auto-approved (no admin review needed for personal requests).
+   * Requires authentication.
+   */
+  fastify.post<{ Body: CreatePersonalEpicRequestInput }>(
+    "/epic-requests",
+    {
+      preHandler: [authenticate],
+      preValidation: [validateBody(createPersonalEpicRequestSchema)],
+    },
+    async (request, reply) => {
+      const userId = request.user!.id;
+
+      // Get or create user's personal scope (lazy initialization)
+      let personalScope = await getPersonalScope(userId);
+      if (!personalScope) {
+        await createPersonalScope(userId);
+        personalScope = await getPersonalScope(userId);
+      }
+
+      if (!personalScope) {
+        throw new NotFoundError("Unable to retrieve personal scope");
+      }
+
+      // Create the epic request with personalScopeId (triggers auto-approval)
+      const epicRequest = await createEpicRequest(
+        {
+          title: request.body.title,
+          description: request.body.description,
+          structuredDesc: request.body.structuredDesc,
+          personalScopeId: personalScope.id,
+        },
+        userId
+      );
+
+      return reply.status(201).send({ data: epicRequest });
+    }
+  );
+
+  // =========================================================================
+  // GET /me/epic-requests - List personal epic requests
+  // =========================================================================
+  /**
+   * GET /api/v1/me/epic-requests
+   * List all epic requests in the authenticated user's personal scope.
+   * Supports cursor-based pagination and optional status filtering.
+   * Requires authentication.
+   */
+  fastify.get<{ Querystring: ListPersonalEpicRequestsQuery }>(
+    "/epic-requests",
+    {
+      preHandler: [authenticate],
+      preValidation: [validateQuery(listEpicRequestsQuerySchema)],
+    },
+    async (request, reply) => {
+      const userId = request.user!.id;
+
+      // Get or create user's personal scope (lazy initialization)
+      let personalScope = await getPersonalScope(userId);
+      if (!personalScope) {
+        await createPersonalScope(userId);
+        personalScope = await getPersonalScope(userId);
+      }
+
+      if (!personalScope) {
+        throw new NotFoundError("Unable to retrieve personal scope");
+      }
+
+      // Parse pagination params
+      const limit = Math.min(100, Math.max(1, request.query.limit ? Number(request.query.limit) : 20));
+      const cursor = request.query.cursor;
+
+      // Build where clause for personal scope epic requests only
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const whereClause: Record<string, any> = {
+        personalScopeId: personalScope.id,
+      };
+
+      if (request.query.status) {
+        whereClause.status = request.query.status;
+      }
+
+      // Query epic requests in user's personal scope
+      const requests = await prisma.epicRequest.findMany({
+        take: limit + 1,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        include: {
+          requestedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      const hasMore = requests.length > limit;
+      if (hasMore) {
+        requests.pop();
+      }
+
+      const lastRequest = requests.at(-1);
+      const nextCursor = hasMore && lastRequest ? lastRequest.id : null;
+
+      return reply.send({
+        data: requests,
+        meta: {
+          cursor: nextCursor,
+          hasMore,
+        },
+      });
     }
   );
 

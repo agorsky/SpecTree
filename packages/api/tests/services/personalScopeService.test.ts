@@ -17,6 +17,9 @@ vi.mock('../../src/lib/db.js', () => ({
     epic: {
       findFirst: vi.fn(),
     },
+    epicRequest: {
+      findFirst: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -31,6 +34,7 @@ import {
   createDefaultStatuses,
   getDefaultBacklogStatus,
   isEpicInPersonalScope,
+  isEpicRequestInPersonalScope,
   isPersonalScopeOwner,
 } from '../../src/services/personalScopeService.js';
 import { NotFoundError, ConflictError } from '../../src/errors/index.js';
@@ -282,6 +286,39 @@ describe('personalScopeService', () => {
       vi.mocked(prisma.epic.findFirst).mockResolvedValue(null);
 
       const result = await isEpicInPersonalScope('epic-123', 'user-456');
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('isEpicRequestInPersonalScope', () => {
+    it('should return true when epic request belongs to user personal scope', async () => {
+      vi.mocked(prisma.epicRequest.findFirst).mockResolvedValue({ id: 'request-123' } as any);
+
+      const result = await isEpicRequestInPersonalScope('request-123', 'user-123');
+
+      expect(result).toBe(true);
+      expect(prisma.epicRequest.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'request-123',
+          personalScope: { userId: 'user-123' },
+        },
+        select: { id: true },
+      });
+    });
+
+    it('should return false when epic request does not belong to user personal scope', async () => {
+      vi.mocked(prisma.epicRequest.findFirst).mockResolvedValue(null);
+
+      const result = await isEpicRequestInPersonalScope('request-123', 'user-456');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false when epic request does not exist', async () => {
+      vi.mocked(prisma.epicRequest.findFirst).mockResolvedValue(null);
+
+      const result = await isEpicRequestInPersonalScope('nonexistent', 'user-123');
 
       expect(result).toBe(false);
     });

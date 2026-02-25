@@ -29,6 +29,7 @@
 | [troubleshooting.md](./troubleshooting.md) | **🔧 Troubleshooting** — Solutions for common installation and usage issues | Everyone |
 | [guides/setup-guide.md](./guides/setup-guide.md) | Complete setup instructions for local development | New developers |
 | [guides/automation-quickstart.md](./guides/automation-quickstart.md) | Quick start guide for using SpecTree automation | AI/automation users |
+| [guides/spectree-platform-briefing-for-ai-agents.md](./guides/spectree-platform-briefing-for-ai-agents.md) | **🤖 Platform Briefing** — Comprehensive overview for external AI agents evaluating SpecTree integration | AI agents/architects |
 | [guides/mcp-auth-fix-summary.md](./guides/mcp-auth-fix-summary.md) | Troubleshooting MCP authentication issues | Developers |
 
 ---

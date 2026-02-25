@@ -34,6 +34,7 @@ export interface EpicRequest {
   structuredDesc?: EpicRequestStructuredDesc;
   status: EpicRequestStatus;
   requestedById: string;
+  personalScopeId?: string | null;
   requestedBy?: {
     id: string;
     name: string;
@@ -41,6 +42,35 @@ export interface EpicRequest {
   };
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Transfer direction for moving epic requests between scopes
+ */
+export type TransferDirection = 'personal-to-team' | 'team-to-personal';
+
+/**
+ * Input for transferring an epic request between scopes
+ */
+export interface TransferEpicRequestInput {
+  direction: TransferDirection;
+}
+
+/**
+ * Input for transferring an epic between scopes
+ */
+export interface TransferEpicInput {
+  direction: TransferDirection;
+  teamId?: string;
+}
+
+/**
+ * Input for creating a personal epic request
+ */
+export interface CreatePersonalEpicRequestInput {
+  title: string;
+  description?: string;
+  structuredDesc?: EpicRequestStructuredDesc;
 }
 
 /**
@@ -260,4 +290,30 @@ export const epicRequestsApi = {
    */
   deleteComment: (epicRequestId: string, commentId: string) =>
     api.delete(`/epic-requests/${epicRequestId}/comments/${commentId}`),
+
+  /**
+   * Create a personal epic request (auto-approved)
+   */
+  createPersonal: (input: CreatePersonalEpicRequestInput) =>
+    api.post<{ data: EpicRequest }>('/me/epic-requests', input),
+
+  /**
+   * List personal epic requests
+   */
+  listPersonal: (filters: EpicRequestFilters = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined) params.append(key, String(value));
+    });
+    const queryString = params.toString();
+    return api.get<PaginatedEpicRequestsResponse>(
+      `/me/epic-requests${queryString ? `?${queryString}` : ''}`
+    );
+  },
+
+  /**
+   * Transfer an epic request between personal and team scope
+   */
+  transfer: (id: string, input: TransferEpicRequestInput) =>
+    api.post<{ data: EpicRequest }>(`/epic-requests/${id}/transfer`, input),
 };

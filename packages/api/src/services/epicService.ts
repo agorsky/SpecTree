@@ -1,8 +1,9 @@
 import { prisma } from "../lib/db.js";
 import type { Epic } from "../generated/prisma/index.js";
-import { NotFoundError, ValidationError } from "../errors/index.js";
+import { NotFoundError, ValidationError, ForbiddenError } from "../errors/index.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
 import { getAccessibleScopes, hasAccessibleScopes } from "../utils/scopeContext.js";
+import { createPersonalScope } from "./personalScopeService.js";
 import * as changelogService from "./changelogService.js";
 import { emitEntityCreated, emitEntityUpdated, emitEntityDeleted } from "../events/index.js";
 
@@ -834,4 +835,298 @@ export async function createEpicComplete(
   });
 
   return result;
+}
+
+// =============================================================================
+// Scope Transfer
+// =============================================================================
+
+/**
+ * Transfer direction for scope transfers
+ */
+export type TransferDirection = "personal-to-team" | "team-to-personal";
+
+/**
+ * Transfer an epic between personal and team scope.
+ * Cascades scope change to all child features and tasks, remapping statusIds.
+ *
+ * personal-to-team:
+ *   - Sets teamId, clears personalScopeId, scopeType='team'
+ *   - Remaps all child feature/task statusIds from personal statuses to team statuses
+ *   - Requires user to be a member of the target team
+ *
+ * team-to-personal:
+ *   - Sets personalScopeId, clears teamId, scopeType='personal'
+ *   - Remaps all child feature/task statusIds from team statuses to personal statuses
+ *   - Only the personal scope owner can initiate
+ *
+ * Status remapping strategy:
+ *   1. Match by status name (e.g., "In Progress" → "In Progress")
+ *   2. Fall back to the target scope's backlog status if no match found
+ *
+ * @throws NotFoundError if epic doesn't exist
+ * @throws ForbiddenError if user doesn't own the personal scope or isn't a team member
+ * @throws ValidationError if direction is invalid for current scope or target team doesn't exist
+ */
+export async function transferEpicScope(
+  epicId: string,
+  userId: string,
+  direction: TransferDirection,
+  teamId?: string
+): Promise<Epic> {
+  // Fetch the epic with its features and tasks
+  const existing = await prisma.epic.findFirst({
+    where: { id: epicId, isArchived: false },
+    include: {
+      features: {
+        select: {
+          id: true,
+          statusId: true,
+          tasks: {
+            select: {
+              id: true,
+              statusId: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!existing) {
+    throw new NotFoundError(`Epic with id '${epicId}' not found`);
+  }
+
+  if (direction === "personal-to-team") {
+    // Validate: epic must currently be in a personal scope
+    if (!existing.personalScopeId || existing.scopeType !== "personal") {
+      throw new ValidationError(
+        "Epic is not in a personal scope; cannot transfer to team"
+      );
+    }
+
+    // Validate: teamId is required
+    if (!teamId) {
+      throw new ValidationError(
+        "teamId is required when transferring to team scope"
+      );
+    }
+
+    // Validate: user owns the personal scope
+    const personalScope = await prisma.personalScope.findUnique({
+      where: { id: existing.personalScopeId },
+      select: { userId: true },
+    });
+    if (!personalScope || personalScope.userId !== userId) {
+      throw new ForbiddenError(
+        "Only the personal scope owner can transfer this epic"
+      );
+    }
+
+    // Validate: user is a member of the target team
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_teamId: {
+          userId,
+          teamId,
+        },
+      },
+      select: { id: true },
+    });
+    if (!membership) {
+      throw new ForbiddenError(
+        "You must be a member of the target team to transfer this epic"
+      );
+    }
+
+    // Validate: target team exists and is not archived
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+      select: { id: true, isArchived: true },
+    });
+    if (!team || team.isArchived) {
+      throw new NotFoundError(`Team with id '${teamId}' not found`);
+    }
+
+    // Build status mapping: personal scope statuses → team statuses
+    const statusMap = await buildStatusMapping(existing.personalScopeId, null, teamId);
+
+    // Execute transfer in a transaction
+    return prisma.$transaction(async (tx) => {
+      // Update the epic
+      const updatedEpic = await tx.epic.update({
+        where: { id: epicId },
+        data: {
+          teamId,
+          personalScopeId: null,
+          scopeType: "team",
+        },
+      });
+
+      // Remap statuses for all child features and tasks
+      await remapChildStatuses(tx, existing.features, statusMap);
+
+      return updatedEpic;
+    });
+  } else if (direction === "team-to-personal") {
+    // Validate: epic must currently be in a team scope
+    if (!existing.teamId || existing.scopeType !== "team") {
+      throw new ValidationError(
+        "Epic is not in a team scope; cannot transfer to personal"
+      );
+    }
+
+    // Look up user's personal scope, lazily creating it if needed
+    let personalScope = await prisma.personalScope.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!personalScope) {
+      personalScope = await createPersonalScope(userId);
+    }
+
+    // Validate: user is a member of the current team (must have access to transfer)
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_teamId: {
+          userId,
+          teamId: existing.teamId,
+        },
+      },
+      select: { id: true },
+    });
+    if (!membership) {
+      throw new ForbiddenError(
+        "You must be a member of the current team to transfer this epic"
+      );
+    }
+
+    // Build status mapping: team statuses → personal scope statuses
+    const statusMap = await buildStatusMapping(null, existing.teamId, null, personalScope.id);
+
+    // Execute transfer in a transaction
+    return prisma.$transaction(async (tx) => {
+      // Update the epic
+      const updatedEpic = await tx.epic.update({
+        where: { id: epicId },
+        data: {
+          teamId: null,
+          personalScopeId: personalScope.id,
+          scopeType: "personal",
+        },
+      });
+
+      // Remap statuses for all child features and tasks
+      await remapChildStatuses(tx, existing.features, statusMap);
+
+      return updatedEpic;
+    });
+  } else {
+    throw new ValidationError(
+      `Invalid transfer direction: '${direction}'. Must be 'personal-to-team' or 'team-to-personal'.`
+    );
+  }
+}
+
+/**
+ * Build a mapping from source scope statusIds to target scope statusIds.
+ * Maps by status name, falling back to the target scope's backlog status.
+ *
+ * For personal-to-team: sourcePersonalScopeId + targetTeamId
+ * For team-to-personal: sourceTeamId + targetPersonalScopeId
+ */
+async function buildStatusMapping(
+  sourcePersonalScopeId: string | null,
+  sourceTeamId: string | null,
+  targetTeamId?: string | null,
+  targetPersonalScopeId?: string | null,
+): Promise<Map<string, string>> {
+  // Fetch source statuses
+  const sourceStatuses = await prisma.status.findMany({
+    where: sourcePersonalScopeId
+      ? { personalScopeId: sourcePersonalScopeId }
+      : { teamId: sourceTeamId! },
+    select: { id: true, name: true },
+  });
+
+  // Fetch target statuses
+  const targetStatuses = await prisma.status.findMany({
+    where: targetTeamId
+      ? { teamId: targetTeamId }
+      : { personalScopeId: targetPersonalScopeId! },
+    select: { id: true, name: true, category: true },
+  });
+
+  // Find the fallback status (backlog in target scope)
+  const fallbackStatus = targetStatuses.find((s) => s.category === "backlog");
+  const fallbackStatusId = fallbackStatus?.id ?? targetStatuses[0]?.id;
+
+  // Build name → id map for target statuses
+  const targetNameMap = new Map<string, string>();
+  for (const status of targetStatuses) {
+    targetNameMap.set(status.name.toLowerCase(), status.id);
+  }
+
+  // Build source id → target id mapping
+  const statusMap = new Map<string, string>();
+  for (const sourceStatus of sourceStatuses) {
+    const targetId = targetNameMap.get(sourceStatus.name.toLowerCase());
+    statusMap.set(sourceStatus.id, targetId ?? fallbackStatusId ?? "");
+  }
+
+  return statusMap;
+}
+
+/**
+ * Remap statusIds for all features and tasks using the provided status mapping.
+ * Uses a Prisma transaction client.
+ */
+async function remapChildStatuses(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  features: Array<{
+    id: string;
+    statusId: string | null;
+    tasks: Array<{
+      id: string;
+      statusId: string | null;
+    }>;
+  }>,
+  statusMap: Map<string, string>
+): Promise<void> {
+  for (const feature of features) {
+    // Remap feature status
+    if (feature.statusId) {
+      const newStatusId = statusMap.get(feature.statusId);
+      if (newStatusId && newStatusId !== feature.statusId) {
+        await tx.feature.update({
+          where: { id: feature.id },
+          data: { statusId: newStatusId },
+        });
+      } else if (!newStatusId) {
+        // Source status not in mapping — clear it
+        await tx.feature.update({
+          where: { id: feature.id },
+          data: { statusId: null },
+        });
+      }
+    }
+
+    // Remap task statuses
+    for (const task of feature.tasks) {
+      if (task.statusId) {
+        const newStatusId = statusMap.get(task.statusId);
+        if (newStatusId && newStatusId !== task.statusId) {
+          await tx.task.update({
+            where: { id: task.id },
+            data: { statusId: newStatusId },
+          });
+        } else if (!newStatusId) {
+          await tx.task.update({
+            where: { id: task.id },
+            data: { statusId: null },
+          });
+        }
+      }
+    }
+  }
 }

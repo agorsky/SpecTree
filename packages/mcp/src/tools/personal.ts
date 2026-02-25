@@ -5,6 +5,7 @@
  * - Getting personal scope information
  * - Listing and creating personal projects
  * - Listing personal statuses
+ * - Listing personal epic requests
  *
  * Personal scope is a private container for the user's personal work items
  * that are not shared with any team.
@@ -231,6 +232,68 @@ export function registerPersonalTools(server: McpServer): void {
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
           return createErrorResponse(new Error("Authentication required to access personal statuses"));
+        }
+        return createErrorResponse(error);
+      }
+    }
+  );
+
+  // ==========================================================================
+  // spectree__list_personal_epic_requests
+  // ==========================================================================
+  server.registerTool(
+    "spectree__list_personal_epic_requests",
+    {
+      description:
+        "List epic requests in the authenticated user's personal scope. " +
+        "Personal epic requests are private and only visible to the owner. " +
+        "Returns paginated results with optional status filtering, ordered by creation date (newest first). " +
+        "Use this to see your personal epic request drafts and proposals.",
+      inputSchema: {
+        cursor: z
+          .string()
+          .optional()
+          .describe(
+            "Pagination cursor from a previous response's meta.cursor field. " +
+              "Pass this to fetch the next page of results."
+          ),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .optional()
+          .describe(
+            "Maximum number of epic requests to return per page (default: 20, max: 100). " +
+              "Use with cursor for pagination through large result sets."
+          ),
+        status: z
+          .enum(["pending", "approved", "rejected", "converted"])
+          .optional()
+          .describe(
+            "Filter by request status: 'pending', 'approved', 'rejected', or 'converted'. " +
+              "Personal requests are typically auto-approved."
+          ),
+      },
+    },
+    async (input) => {
+      try {
+        const apiClient = getApiClient();
+
+        const result = await apiClient.listPersonalEpicRequests({
+          cursor: input.cursor,
+          limit: input.limit,
+          status: input.status,
+        });
+
+        return createResponse({
+          epicRequests: result.data,
+          meta: result.meta,
+          scope: "personal",
+        });
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          return createErrorResponse(new Error("Authentication required to access personal epic requests"));
         }
         return createErrorResponse(error);
       }

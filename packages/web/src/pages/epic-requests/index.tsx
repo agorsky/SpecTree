@@ -11,7 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, ThumbsUp, Flame, ThumbsDown, Plus, ChevronDown } from 'lucide-react';
+import { Search, ThumbsUp, Flame, ThumbsDown, Plus, ChevronDown, User, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { EpicRequestStatus, EpicRequestWithReactionCounts } from '@/lib/api/epic-requests';
@@ -52,19 +52,37 @@ function RequestCard({ request, onClick }: RequestCardProps) {
       className="p-4 hover:bg-accent/50 transition-colors cursor-pointer"
       onClick={onClick}
     >
-      {/* Header with status */}
+      {/* Header with status and scope */}
       <div className="flex items-start justify-between mb-2">
         <h3 className="text-base font-semibold leading-tight flex-1 pr-2">
           {request.title}
         </h3>
-        <Badge
-          className={cn(
-            'text-xs font-medium shrink-0',
-            statusColors[request.status]
-          )}
-        >
-          {request.status}
-        </Badge>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Scope badge */}
+          <Badge
+            className={cn(
+              'text-xs font-medium',
+              request.personalScopeId
+                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+            )}
+          >
+            {request.personalScopeId ? (
+              <><User className="h-3 w-3 mr-1" />Personal</>
+            ) : (
+              <><Users className="h-3 w-3 mr-1" />Team</>
+            )}
+          </Badge>
+          {/* Status badge */}
+          <Badge
+            className={cn(
+              'text-xs font-medium',
+              statusColors[request.status]
+            )}
+          >
+            {request.status}
+          </Badge>
+        </div>
       </div>
 
       {/* Author and time */}

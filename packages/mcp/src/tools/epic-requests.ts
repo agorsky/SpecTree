@@ -3,7 +3,7 @@
  *
  * Provides tools for managing Epic Requests - user proposals for new epics
  * that require approval before conversion. Includes CRUD operations, reactions,
- * and comments functionality.
+ * comments functionality, and scope transfer between personal and team contexts.
  */
 
 import { z } from "zod";
@@ -33,6 +33,8 @@ export function registerEpicRequestTools(server: McpServer): void {
         // Return the empty template with field descriptions
         const template = {
           title: "Enter the title of your epic request here (required)",
+          scope:
+            "Where to create: 'personal' (auto-approved, private to you) or 'team' (default, requires admin approval)",
           description: "Optional plain markdown description of the epic request",
           structuredDesc: {
             problemStatement:
@@ -76,7 +78,8 @@ export function registerEpicRequestTools(server: McpServer): void {
       description:
         "Create a new Epic Request - a proposal for a new epic that requires approval. " +
         "Epic Requests are used to suggest new initiatives or major features. " +
-        "The request will be created with 'pending' status and can be reviewed by admins. " +
+        "By default, creates a team-scoped request with 'pending' status for admin review. " +
+        "Set scope='personal' to create in your personal scope (auto-approved, no admin review needed). " +
         "Supports optional structuredDesc with detailed proposal information. " +
         "Returns the created epic request with metadata.",
       inputSchema: {
@@ -91,6 +94,13 @@ export function registerEpicRequestTools(server: McpServer): void {
           .optional()
           .describe(
             "Plain markdown description of the epic request (optional, max 10000 chars)"
+          ),
+        scope: z
+          .enum(["personal", "team"])
+          .optional()
+          .describe(
+            "Scope for the epic request. 'team' (default) creates a team-scoped request " +
+              "requiring admin approval. 'personal' creates in your personal scope and is auto-approved."
           ),
         structuredDesc: z
           .object({
@@ -161,6 +171,7 @@ export function registerEpicRequestTools(server: McpServer): void {
     async (input) => {
       try {
         const apiClient = getApiClient();
+        const isPersonal = input.scope === "personal";
 
         const createInput: {
           title: string;
@@ -205,11 +216,17 @@ export function registerEpicRequestTools(server: McpServer): void {
           }
         }
 
-        const result = await apiClient.createEpicRequest(createInput);
+        // Route to personal or team endpoint based on scope
+        const result = isPersonal
+          ? await apiClient.createPersonalEpicRequest(createInput)
+          : await apiClient.createEpicRequest(createInput);
 
         return createResponse({
           epicRequest: result.data,
-          message: "Epic request created successfully with status 'pending'",
+          scope: isPersonal ? "personal" : "team",
+          message: isPersonal
+            ? "Personal epic request created successfully (auto-approved)"
+            : "Epic request created successfully with status 'pending'",
         });
       } catch (error) {
         return createErrorResponse(error);
@@ -228,7 +245,9 @@ export function registerEpicRequestTools(server: McpServer): void {
         "Returns requests with aggregated reaction counts (like, fire, dislike) and the " +
         "current user's reaction if any. Supports filtering by status (pending, approved, " +
         "rejected, converted) and by the user who created the request. Results are ordered " +
-        "by creation date (newest first).",
+        "by creation date (newest first). " +
+        "Note: This lists team-scoped epic requests. For personal epic requests, use " +
+        "spectree__list_personal_epic_requests instead.",
       inputSchema: {
         cursor: z
           .string()
@@ -293,6 +312,8 @@ export function registerEpicRequestTools(server: McpServer): void {
         "Get a single epic request by ID with full details including reaction counts and " +
         "the current user's reaction. Returns the complete epic request object with " +
         "structured description if present, requester information, and aggregated reactions. " +
+        "Access control: team-scoped requests are visible to all authenticated users; " +
+        "personal-scoped requests are only visible to the owner. " +
         "Use this to view the full details of a specific epic request.",
       inputSchema: {
         id: z
@@ -665,6 +686,145 @@ export function registerEpicRequestTools(server: McpServer): void {
         if (error instanceof ApiError && error.status === 404) {
           return createErrorResponse(
             new Error(`Epic request with id '${input.id}' not found`)
+          );
+        }
+        return createErrorResponse(error);
+      }
+    }
+  );
+
+  // ==========================================================================
+  // spectree__transfer_epic_request_scope
+  // ==========================================================================
+  server.registerTool(
+    "spectree__transfer_epic_request_scope",
+    {
+      description:
+        "Transfer an epic request between personal and team scope. " +
+        "Use 'personal-to-team' to move a personal epic request to team scope (sets status to 'pending' for admin review). " +
+        "Use 'team-to-personal' to move a team epic request to your personal scope (auto-approved). " +
+        "Only the creator of the epic request can transfer it. " +
+        "Returns the updated epic request.",
+      inputSchema: {
+        id: z
+          .string()
+          .uuid()
+          .describe("The UUID of the epic request to transfer"),
+        direction: z
+          .enum(["personal-to-team", "team-to-personal"])
+          .describe(
+            "Transfer direction: 'personal-to-team' moves to team scope (sets status to pending for approval), " +
+              "'team-to-personal' moves to your personal scope (auto-approved)"
+          ),
+      },
+    },
+    async (input) => {
+      try {
+        const apiClient = getApiClient();
+
+        const transferInput: { direction: "personal-to-team" | "team-to-personal" } = {
+          direction: input.direction,
+        };
+
+        const result = await apiClient.transferEpicRequestScope(input.id, transferInput);
+
+        return createResponse({
+          epicRequest: result.data,
+          direction: input.direction,
+          message:
+            input.direction === "personal-to-team"
+              ? "Epic request transferred to team scope. Status set to 'pending' for admin review."
+              : "Epic request transferred to personal scope. Auto-approved.",
+        });
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(
+            new Error(`Epic request with id '${input.id}' not found`)
+          );
+        }
+        if (error instanceof ApiError && error.status === 403) {
+          return createErrorResponse(
+            new Error(
+              "You don't have permission to transfer this epic request. " +
+                "Only the creator can transfer."
+            )
+          );
+        }
+        return createErrorResponse(error);
+      }
+    }
+  );
+
+  // ==========================================================================
+  // spectree__transfer_epic_scope
+  // ==========================================================================
+  server.registerTool(
+    "spectree__transfer_epic_scope",
+    {
+      description:
+        "Transfer an epic between personal and team scope. " +
+        "Use 'personal-to-team' to move a personal epic to a team (cascades scope change to all child features and tasks with status remapping). " +
+        "Use 'team-to-personal' to move a team epic to your personal scope. " +
+        "Requires authentication. Returns the updated epic.",
+      inputSchema: {
+        id: z
+          .string()
+          .uuid()
+          .describe("The UUID of the epic to transfer"),
+        direction: z
+          .enum(["personal-to-team", "team-to-personal"])
+          .describe(
+            "Transfer direction: 'personal-to-team' moves to team scope (requires teamId, cascades to children), " +
+              "'team-to-personal' moves to your personal scope"
+          ),
+        teamId: z
+          .string()
+          .uuid()
+          .optional()
+          .describe(
+            "Target team ID. Required when direction is 'personal-to-team'. " +
+              "Use spectree__list_teams to find available teams."
+          ),
+      },
+    },
+    async (input) => {
+      try {
+        const apiClient = getApiClient();
+
+        if (input.direction === "personal-to-team" && !input.teamId) {
+          return createErrorResponse(
+            new Error("teamId is required when direction is 'personal-to-team'")
+          );
+        }
+
+        const transferInput: { direction: "personal-to-team" | "team-to-personal"; teamId?: string } = {
+          direction: input.direction,
+        };
+        if (input.teamId !== undefined) {
+          transferInput.teamId = input.teamId;
+        }
+
+        const result = await apiClient.transferEpicScope(input.id, transferInput);
+
+        return createResponse({
+          epic: result.data,
+          direction: input.direction,
+          message:
+            input.direction === "personal-to-team"
+              ? "Epic transferred to team scope. All child features and tasks updated with status remapping."
+              : "Epic transferred to personal scope.",
+        });
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return createErrorResponse(
+            new Error(`Epic with id '${input.id}' not found`)
+          );
+        }
+        if (error instanceof ApiError && error.status === 403) {
+          return createErrorResponse(
+            new Error(
+              "You don't have permission to transfer this epic."
+            )
           );
         }
         return createErrorResponse(error);

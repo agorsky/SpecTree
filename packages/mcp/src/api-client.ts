@@ -3387,6 +3387,62 @@ export class ApiClient {
   }
 
   // ===========================================================================
+  // Personal Epic Requests
+  // ===========================================================================
+
+  /**
+   * Create a new epic request in the user's personal scope.
+   * Personal epic requests are auto-approved.
+   */
+  async createPersonalEpicRequest(input: CreateEpicRequestInput): Promise<{ data: EpicRequest }> {
+    return this.request<{ data: EpicRequest }>("POST", "/api/v1/me/epic-requests", input);
+  }
+
+  /**
+   * List epic requests in the user's personal scope.
+   */
+  async listPersonalEpicRequests(params?: ListEpicRequestsParams): Promise<ListEpicRequestsResponse> {
+    const query = this.buildQueryString({
+      cursor: params?.cursor,
+      limit: params?.limit,
+      status: params?.status,
+    });
+    return this.request<ListEpicRequestsResponse>("GET", `/api/v1/me/epic-requests${query}`);
+  }
+
+  // ===========================================================================
+  // Scope Transfers
+  // ===========================================================================
+
+  /**
+   * Transfer an epic request between personal and team scope.
+   */
+  async transferEpicRequestScope(
+    id: string,
+    input: { direction: "personal-to-team" | "team-to-personal" }
+  ): Promise<{ data: EpicRequest }> {
+    return this.request<{ data: EpicRequest }>(
+      "POST",
+      `/api/v1/epic-requests/${encodeURIComponent(id)}/transfer`,
+      input
+    );
+  }
+
+  /**
+   * Transfer an epic between personal and team scope.
+   */
+  async transferEpicScope(
+    id: string,
+    input: { direction: "personal-to-team" | "team-to-personal"; teamId?: string }
+  ): Promise<{ data: unknown }> {
+    return this.request<{ data: unknown }>(
+      "POST",
+      `/api/v1/epics/${encodeURIComponent(id)}/transfer`,
+      input
+    );
+  }
+
+  // ===========================================================================
   // Skill Packs
   // ===========================================================================
 

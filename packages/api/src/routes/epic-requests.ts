@@ -13,6 +13,7 @@ import {
   deleteComment,
   approveRequest,
   rejectRequest,
+  transferEpicRequestScope,
 } from "../services/epicRequestService.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { requireGlobalAdmin } from "../middleware/globalAdmin.js";
@@ -25,6 +26,7 @@ import {
   updateCommentSchema,
   listEpicRequestsQuerySchema,
   listCommentsQuerySchema,
+  transferEpicRequestScopeSchema,
   type CreateEpicRequestInput,
   type UpdateEpicRequestInput,
   type EpicRequestStatus,
@@ -90,6 +92,10 @@ interface CreateCommentBody {
 
 interface UpdateCommentBody {
   content: string;
+}
+
+interface TransferEpicRequestBody {
+  direction: "personal-to-team" | "team-to-personal";
 }
 
 /**
@@ -255,6 +261,32 @@ export default function epicRequestsRoutes(
     async (request, reply) => {
       const { id } = request.params;
       const epicRequest = await rejectRequest(id, request.user!.id);
+      return reply.send({ data: epicRequest });
+    }
+  );
+
+  /**
+   * POST /api/v1/epic-requests/:id/transfer
+   * Transfer an epic request between personal and team scope.
+   * personal-to-team: clears personalScopeId, sets status to 'pending'
+   * team-to-personal: sets personalScopeId, auto-approves
+   * Requires authentication (creator only)
+   */
+  fastify.post<{ Params: EpicRequestIdParams; Body: TransferEpicRequestBody }>(
+    "/:id/transfer",
+    {
+      preHandler: [authenticate],
+      preValidation: [validateBody(transferEpicRequestScopeSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { direction } = request.body;
+
+      const epicRequest = await transferEpicRequestScope(
+        id,
+        request.user!.id,
+        direction
+      );
       return reply.send({ data: epicRequest });
     }
   );

@@ -96,3 +96,21 @@ export function useUnarchiveEpic() {
     },
   });
 }
+
+/**
+ * Hook for transferring an epic between personal and team scope
+ */
+export function useTransferEpicScope() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: { direction: 'personal-to-team' | 'team-to-personal'; teamId?: string } }) =>
+      epicsApi.transfer(id, input),
+    onSuccess: (_data, variables) => {
+      // Invalidate all epic lists (scope changed)
+      void queryClient.invalidateQueries({ queryKey: epicKeys.lists() });
+      // Invalidate the specific detail
+      void queryClient.invalidateQueries({ queryKey: epicKeys.detail(variables.id) });
+    },
+  });
+}

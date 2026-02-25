@@ -64,6 +64,10 @@ function aggregateReactions(
  * List epic requests with cursor-based pagination and optional filtering
  * Default sort: newest-first (createdAt DESC)
  * Returns aggregated reaction counts per request
+ * 
+ * Visibility filtering: When userId is provided, personal requests belonging
+ * to other users are excluded. Only team/global requests (personalScopeId IS NULL)
+ * and the caller's own personal requests are returned.
  */
 export async function listEpicRequests(
   options: ListEpicRequestsOptions = {},
@@ -72,16 +76,34 @@ export async function listEpicRequests(
   const limit = Math.min(100, Math.max(1, options.limit ?? 20));
 
   // Build where clause
-  const whereClause: {
-    status?: EpicRequestStatus;
-    requestedById?: string;
-  } = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const whereClause: Record<string, any> = {};
 
   if (options.status !== undefined) {
     whereClause.status = options.status;
   }
   if (options.requestedById !== undefined) {
     whereClause.requestedById = options.requestedById;
+  }
+
+  // Visibility filtering: exclude other users' personal requests
+  if (userId) {
+    // Look up the caller's personal scope ID
+    const personalScope = await prisma.personalScope.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (personalScope) {
+      // Show: team/global requests (no personalScopeId) OR caller's own personal requests
+      whereClause.OR = [
+        { personalScopeId: null },
+        { personalScopeId: personalScope.id },
+      ];
+    } else {
+      // User has no personal scope, only show team/global requests
+      whereClause.personalScopeId = null;
+    }
   }
 
   // Fetch requests with pagination
@@ -137,6 +159,10 @@ export async function listEpicRequests(
 
 /**
  * Get a single epic request by ID with reaction counts
+ * 
+ * Visibility filtering: When userId is provided, personal requests belonging
+ * to other users return null (404). Only team/global requests and the caller's
+ * own personal requests are accessible.
  */
 export async function getEpicRequestById(
   id: string,
@@ -158,6 +184,11 @@ export async function getEpicRequestById(
           email: true,
         },
       },
+      personalScope: {
+        select: {
+          userId: true,
+        },
+      },
     },
   });
 
@@ -165,8 +196,22 @@ export async function getEpicRequestById(
     return null;
   }
 
+  // Visibility check: if the request belongs to a personal scope,
+  // only the owner of that scope can access it
+  if (request.personalScopeId && userId) {
+    const requestWithScope = request as typeof request & { personalScope?: { userId: string } };
+    const scopeOwnerUserId = requestWithScope.personalScope?.userId;
+    if (scopeOwnerUserId !== userId) {
+      return null;
+    }
+  } else if (request.personalScopeId && !userId) {
+    // Personal request but no userId provided - treat as not found
+    return null;
+  }
+
   const { reactionCounts, userReaction } = aggregateReactions(request.reactions, userId);
-  const { reactions: _reactions, ...requestWithoutReactions } = request;
+  const { reactions: _reactions, personalScope: _personalScope, ...requestWithoutReactions } = request as
+    typeof request & { personalScope?: unknown };
   return {
     ...requestWithoutReactions,
     reactionCounts,
@@ -176,6 +221,7 @@ export async function getEpicRequestById(
 
 /**
  * Create a new epic request
+ * When personalScopeId is provided, the request is auto-approved (status set to 'approved')
  */
 export async function createEpicRequest(
   input: CreateEpicRequestInput,
@@ -199,6 +245,8 @@ export async function createEpicRequest(
     requestedById: string;
     description?: string | null;
     structuredDesc?: string | null;
+    personalScopeId?: string;
+    status?: string;
   } = {
     title: input.title.trim(),
     requestedById: userId,
@@ -209,6 +257,12 @@ export async function createEpicRequest(
   }
   if (structuredDescJson !== null) {
     data.structuredDesc = structuredDescJson;
+  }
+
+  // Personal scope support: auto-approve personal epic requests
+  if (input.personalScopeId) {
+    data.personalScopeId = input.personalScopeId;
+    data.status = "approved";
   }
 
   const epicRequest = await prisma.epicRequest.create({ data });
@@ -728,4 +782,108 @@ export async function rejectRequest(
   });
 
   return updatedRequest;
+}
+
+// ==================== SCOPE TRANSFER ====================
+
+/**
+ * Transfer direction for scope transfers
+ */
+export type TransferDirection = "personal-to-team" | "team-to-personal";
+
+/**
+ * Transfer an epic request between personal and team scope.
+ *
+ * personal-to-team:
+ *   - Clears personalScopeId (makes it globally visible)
+ *   - Sets status to 'pending' (needs team approval)
+ *   - Only the creator can initiate
+ *
+ * team-to-personal:
+ *   - Sets personalScopeId to the user's personal scope
+ *   - Sets status to 'approved' (auto-approved in personal scope)
+ *   - Only the creator can initiate
+ *
+ * @throws NotFoundError if request doesn't exist
+ * @throws ForbiddenError if user is not the creator
+ * @throws ValidationError if request is converted, or direction is invalid for current scope
+ */
+export async function transferEpicRequestScope(
+  epicRequestId: string,
+  userId: string,
+  direction: TransferDirection
+): Promise<EpicRequest> {
+  // Fetch the existing epic request
+  const existing = await prisma.epicRequest.findUnique({
+    where: { id: epicRequestId },
+  });
+
+  if (!existing) {
+    throw new NotFoundError(`Epic request with id '${epicRequestId}' not found`);
+  }
+
+  // Only the creator can transfer
+  if (existing.requestedById !== userId) {
+    throw new ForbiddenError("Only the creator can transfer this epic request");
+  }
+
+  // Cannot transfer converted requests
+  if (existing.status === "converted") {
+    throw new ValidationError("Cannot transfer a converted epic request");
+  }
+
+  if (direction === "personal-to-team") {
+    // Validate: request must currently be in a personal scope
+    if (!existing.personalScopeId) {
+      throw new ValidationError(
+        "Epic request is not in a personal scope; cannot transfer to team"
+      );
+    }
+
+    // Clear personalScopeId and set status to pending
+    const updatedRequest = await prisma.epicRequest.update({
+      where: { id: epicRequestId },
+      data: {
+        personalScopeId: null,
+        status: "pending",
+      },
+    });
+
+    return updatedRequest;
+  } else if (direction === "team-to-personal") {
+    // Validate: request must NOT currently be in a personal scope
+    if (existing.personalScopeId) {
+      throw new ValidationError(
+        "Epic request is already in a personal scope; cannot transfer to personal"
+      );
+    }
+
+    // Look up the user's personal scope, lazily creating it if needed
+    let personalScope = await prisma.personalScope.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!personalScope) {
+      personalScope = await prisma.personalScope.create({
+        data: { userId },
+        select: { id: true },
+      });
+    }
+
+    // Set personalScopeId and auto-approve
+    const updatedRequest = await prisma.epicRequest.update({
+      where: { id: epicRequestId },
+      data: {
+        personalScopeId: personalScope.id,
+        status: "approved",
+      },
+    });
+
+    return updatedRequest;
+  } else {
+    throw new ValidationError(
+      `Invalid transfer direction: '${direction}'. Must be 'personal-to-team' or 'team-to-personal'.`
+    );
+  }
 }

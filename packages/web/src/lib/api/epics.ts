@@ -54,4 +54,10 @@ export const epicsApi = {
   archive: (id: string) => api.post<{ data: Epic }>(`/epics/${id}/archive`, {}),
 
   unarchive: (id: string) => api.post<{ data: Epic }>(`/epics/${id}/unarchive`, {}),
+
+  /**
+   * Transfer an epic between personal and team scope
+   */
+  transfer: (id: string, input: { direction: 'personal-to-team' | 'team-to-personal'; teamId?: string }) =>
+    api.post<{ data: Epic }>(`/epics/${id}/transfer`, input),
 };

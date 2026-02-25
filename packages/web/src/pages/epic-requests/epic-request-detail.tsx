@@ -13,12 +13,13 @@ import {
   useRejectEpicRequest,
   useDeleteEpicRequest,
   useUpdateEpicRequest,
+  useTransferEpicRequestScope,
 } from '@/hooks/queries/use-epic-requests';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { MarkdownRenderer } from '@/components/common/markdown-renderer';
-import { ArrowLeft, ThumbsUp, Flame, ThumbsDown, Edit, Trash2, Send, Check, CheckCircle, X, Copy, Terminal } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, Flame, ThumbsDown, Edit, Trash2, Send, Check, CheckCircle, X, Copy, Terminal, ArrowRightLeft, User, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { EpicRequestStatus, ReactionType, EpicRequestComment } from '@/lib/api/epic-requests';
@@ -58,6 +59,7 @@ export function EpicRequestDetailPage() {
   const rejectMutation = useRejectEpicRequest();
   const deleteRequestMutation = useDeleteEpicRequest();
   const updateRequestMutation = useUpdateEpicRequest();
+  const transferMutation = useTransferEpicRequestScope();
 
   // Comment form state
   const [newCommentContent, setNewCommentContent] = useState('');
@@ -241,7 +243,39 @@ export function EpicRequestDetailPage() {
     void navigate(`/epic-requests/${requestId ?? ''}/edit`);
   };
 
+  // Transfer handlers
+  const handleMoveToTeam = async () => {
+    if (!requestId) return;
+    if (
+      window.confirm(
+        'Move this request to team scope? It will become visible to all members and require admin approval.'
+      )
+    ) {
+      await transferMutation.mutateAsync({
+        id: requestId,
+        input: { direction: 'personal-to-team' },
+      });
+    }
+  };
+
+  const handleMoveToPersonal = async () => {
+    if (!requestId) return;
+    if (
+      window.confirm(
+        'Move this request to your personal scope? It will be auto-approved and only visible to you.'
+      )
+    ) {
+      await transferMutation.mutateAsync({
+        id: requestId,
+        input: { direction: 'team-to-personal' },
+      });
+    }
+  };
+
   const plannerCommand = `\\planner --from-request "${request.title}"`;
+
+  // Determine scope
+  const isPersonalScope = !!request.personalScopeId;
 
   // Determine permissions
   const isAdmin = user?.isGlobalAdmin ?? false;
@@ -330,7 +364,49 @@ export function EpicRequestDetailPage() {
               Delete
             </Button>
           )}
+
+          {/* Transfer: Move to Team - visible for personal requests (creator only) */}
+          {isPersonalScope && isCreator && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { void handleMoveToTeam(); }}
+              disabled={transferMutation.isPending}
+            >
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              Move to Team
+            </Button>
+          )}
+
+          {/* Transfer: Move to Personal - visible for team requests (creator only) */}
+          {!isPersonalScope && isCreator && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { void handleMoveToPersonal(); }}
+              disabled={transferMutation.isPending}
+              className="text-purple-600 hover:text-purple-700"
+            >
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              Move to Personal
+            </Button>
+          )}
         </div>
+
+        <Badge
+          className={cn(
+            'text-xs font-medium',
+            isPersonalScope
+              ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+              : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+          )}
+        >
+          {isPersonalScope ? (
+            <><User className="h-3 w-3 mr-1" />Personal</>
+          ) : (
+            <><Users className="h-3 w-3 mr-1" />Team</>
+          )}
+        </Badge>
 
         <Badge
           className={cn('text-xs font-medium', statusColors[request.status])}

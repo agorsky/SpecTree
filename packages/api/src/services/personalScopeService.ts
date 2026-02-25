@@ -194,6 +194,22 @@ export async function isEpicInPersonalScope(epicId: string, userId: string): Pro
 }
 
 /**
+ * Check if an epic request belongs to a user's personal scope.
+ * Returns true if the epic request has a personalScopeId and that scope belongs to the given user.
+ * Useful for authorization checks on personal epic requests.
+ */
+export async function isEpicRequestInPersonalScope(epicRequestId: string, userId: string): Promise<boolean> {
+  const epicRequest = await prisma.epicRequest.findFirst({
+    where: {
+      id: epicRequestId,
+      personalScope: { userId },
+    },
+    select: { id: true },
+  });
+  return epicRequest !== null;
+}
+
+/**
  * Check if a user owns a specific PersonalScope.
  */
 export async function isPersonalScopeOwner(personalScopeId: string, userId: string): Promise<boolean> {

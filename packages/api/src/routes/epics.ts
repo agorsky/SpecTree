@@ -8,6 +8,7 @@ import {
   archiveEpic,
   unarchiveEpic,
   createEpicComplete,
+  transferEpicScope,
 } from "../services/epicService.js";
 import {
   getEpicAiContext,
@@ -27,7 +28,7 @@ import { authenticate } from "../middleware/authenticate.js";
 import { validateBody } from "../middleware/validate.js";
 import { requireTeamAccess, requireRole } from "../middleware/authorize.js";
 import { generateSortOrderBetween } from "../utils/ordering.js";
-import { reorderEpicSchema } from "../schemas/epic.js";
+import { reorderEpicSchema, transferEpicScopeSchema, type TransferEpicScopeInput } from "../schemas/epic.js";
 import {
   appendAiNoteSchema,
   setAiContextSchema,
@@ -264,6 +265,32 @@ export default function epicsRoutes(
       const { id } = request.params;
 
       const epic = await unarchiveEpic(id);
+      return reply.send({ data: epic });
+    }
+  );
+
+  /**
+   * POST /api/v1/epics/:id/transfer
+   * Transfer an epic between personal and team scope.
+   * Cascades scope change to all child features and tasks with status remapping.
+   * Requires authentication.
+   */
+  fastify.post<{ Params: EpicIdParams; Body: TransferEpicScopeInput }>(
+    "/:id/transfer",
+    {
+      preHandler: [authenticate],
+      preValidation: [validateBody(transferEpicScopeSchema)],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { direction, teamId } = request.body;
+
+      const epic = await transferEpicScope(
+        id,
+        request.user!.id,
+        direction,
+        teamId
+      );
       return reply.send({ data: epic });
     }
   );

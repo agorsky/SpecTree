@@ -62,6 +62,26 @@ export const createEpicRequestSchema = z.object({
   structuredDesc: epicRequestStructuredDescSchema.optional().describe(
     "Structured description with required problemStatement, proposedSolution, and impactAssessment"
   ),
+  personalScopeId: z.string().uuid().optional().describe(
+    "Personal scope ID. When provided, the request is auto-approved."
+  ),
+});
+
+/**
+ * Schema for creating a personal epic request via /me/epic-requests.
+ * Same as createEpicRequestSchema but without personalScopeId —
+ * the personal scope is inferred from the authenticated user's session.
+ */
+export const createPersonalEpicRequestSchema = z.object({
+  title: z.string().min(1).max(500).describe(
+    "Title of the personal epic request"
+  ),
+  description: z.string().max(10000).optional().describe(
+    "Plain markdown description of the epic request"
+  ),
+  structuredDesc: epicRequestStructuredDescSchema.optional().describe(
+    "Structured description with required problemStatement, proposedSolution, and impactAssessment"
+  ),
 });
 
 /**
@@ -140,9 +160,29 @@ export const listCommentsQuerySchema = z.object({
 
 // Type exports for use in route handlers and services
 export type CreateEpicRequestInput = z.infer<typeof createEpicRequestSchema>;
+export type CreatePersonalEpicRequestInput = z.infer<typeof createPersonalEpicRequestSchema>;
 export type UpdateEpicRequestInput = z.infer<typeof updateEpicRequestSchema>;
 export type ListEpicRequestsQuery = z.infer<typeof listEpicRequestsQuerySchema>;
 export type AddReactionInput = z.infer<typeof addReactionSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
 export type ListCommentsQuery = z.infer<typeof listCommentsQuerySchema>;
+
+/**
+ * Valid transfer direction values
+ */
+export const transferDirectionValues = ["personal-to-team", "team-to-personal"] as const;
+export type TransferDirection = (typeof transferDirectionValues)[number];
+
+/**
+ * Schema for transferring an epic request between scopes.
+ * Epic requests move to global team visibility (not a specific team),
+ * so no teamId is needed unlike epic transfers.
+ */
+export const transferEpicRequestScopeSchema = z.object({
+  direction: z.enum(transferDirectionValues).describe(
+    "Transfer direction: 'personal-to-team' or 'team-to-personal'"
+  ),
+});
+
+export type TransferEpicRequestScopeInput = z.infer<typeof transferEpicRequestScopeSchema>;
