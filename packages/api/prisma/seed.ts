@@ -1,4 +1,4 @@
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "../src/generated/prisma/index.js";
 import bcrypt from "bcrypt";
 import { BUILT_IN_TEMPLATES } from "./built-in-templates.js";
 
