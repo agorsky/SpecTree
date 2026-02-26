@@ -13,7 +13,7 @@ export DATABASE_URL="file:/app/data/spectree.db"
 # --skip-generate: Prisma client already generated at build time
 # --accept-data-loss: dev flexibility for schema changes
 echo 'Pushing database schema...'
-/app/node_modules/.bin/prisma db push --schema=prisma/schema.prisma --accept-data-loss
+/app/node_modules/.pnpm/node_modules/.bin/prisma db push --schema=prisma/schema.prisma --accept-data-loss
 
 # First-boot seeding via sentinel file
 if [ ! -f /app/data/.seeded ]; then
