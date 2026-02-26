@@ -190,7 +190,7 @@ async function main() {
   console.log(`Admin: ${adminUser.email}`);
   console.log(`Password: ${DEFAULT_PASSWORD}`);
   console.log(`PersonalScope: ${adminPersonalScope.id}`);
-  console.log(`Personal Epics: ${sideProjectIdeas.name}, ${learningGoals.name}`);
+  console.log(`Personal Scope ready for epics and features.`);
   console.log("========================================\n");
   console.log("You can now log in and create your own epics, features, and tasks.");
   console.log("Personal epics are private and only visible to you.");
