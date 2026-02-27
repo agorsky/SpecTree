@@ -27,6 +27,7 @@ import templatesRoutes from "./routes/templates.js";
 import sessionsRoutes from "./routes/sessions.js";
 import decisionsRoutes from "./routes/decisions.js";
 import lawsRoutes from "./routes/laws.js";
+import casesRoutes from "./routes/cases.js";
 import changelogRoutes from "./routes/changelog.js";
 import executionPlansRoutes from "./routes/execution-plans.js";
 import userActivityRoutes from "./routes/userActivity.js";
@@ -89,6 +90,7 @@ async function main(): Promise<void> {
   await fastify.register(sessionsRoutes, { prefix: "/api/v1/sessions" });
   await fastify.register(decisionsRoutes, { prefix: "/api/v1/decisions" });
   await fastify.register(lawsRoutes, { prefix: "/api/v1/laws" });
+  await fastify.register(casesRoutes, { prefix: "/api/v1/cases" });
   await fastify.register(changelogRoutes, { prefix: "/api/v1/changelog" });
   await fastify.register(executionPlansRoutes, { prefix: "/api/v1/execution-plans" });
   await fastify.register(userActivityRoutes, { prefix: "/api/v1/user-activity" });

@@ -311,6 +311,7 @@ model Task {
   creator   User?      @relation("TaskCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
   implementer User?    @relation("TaskImplementedBy", fields: [implementedBy], references: [id], onDelete: SetNull)
   decisions Decision[]
+  remediationCase Case? @relation("RemediationCase")
 
   @@index([featureId])
   @@index([statusId])
@@ -571,10 +572,49 @@ model Law {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  cases Case[]
+
   @@index([severity])
   @@index([appliesTo])
   @@index([isActive])
   @@map("laws")
+}
+
+// =============================================================================
+// Case Model
+// Court cases filed against AI agents for law violations
+// Valid CaseStatus values: 'open', 'hearing', 'verdict', 'corrected', 'dismissed'
+// Valid CaseVerdict values: 'guilty', 'not_guilty', 'dismissed'
+// Valid DeductionLevel values: 'none', 'minor', 'major', 'critical'
+// =============================================================================
+
+model Case {
+  id                String    @id @default(uuid())
+  caseNumber        Int       @unique @map("case_number")
+  accusedAgent      String    @map("accused_agent")
+  lawId             String    @map("law_id")
+  evidence          String    // JSON array: [{type, reference, description}]
+  severity          String    // 'minor' | 'major' | 'critical'
+  status            String    @default("open") // 'open' | 'hearing' | 'verdict' | 'corrected' | 'dismissed'
+  filedBy           String    @default("barney") @map("filed_by")
+  verdict           String?   // 'guilty' | 'not_guilty' | 'dismissed'
+  verdictReason     String?   @map("verdict_reason")
+  deductionLevel    String?   @map("deduction_level") // 'none' | 'minor' | 'major' | 'critical'
+  remediationTaskId String?   @unique @map("remediation_task_id")
+  filedAt           DateTime  @default(now()) @map("filed_at")
+  resolvedAt        DateTime? @map("resolved_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  law             Law   @relation(fields: [lawId], references: [id])
+  remediationTask Task? @relation("RemediationCase", fields: [remediationTaskId], references: [id])
+
+  @@index([status])
+  @@index([accusedAgent])
+  @@index([lawId])
+  @@index([severity])
+  @@index([filedAt])
+  @@map("cases")
 }
 
 // =============================================================================

@@ -1214,6 +1214,28 @@ export interface Law {
   updatedAt: string;
 }
 
+/** Case filed against an AI agent */
+export interface Case {
+  id: string;
+  caseNumber: number;
+  accusedAgent: string;
+  lawId: string;
+  evidence: string;
+  severity: string;
+  status: string;
+  filedBy: string;
+  verdict: string | null;
+  verdictReason: string | null;
+  deductionLevel: string | null;
+  remediationTaskId: string | null;
+  filedAt: string;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  law?: Law;
+  remediationTask?: Record<string, unknown> | null;
+}
+
 /** Decision record */
 export interface Decision {
   id: string;
@@ -3613,6 +3635,82 @@ export class ApiClient {
       "PUT",
       `/api/v1/laws/${encodeURIComponent(idOrCode)}`,
       input
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cases
+  // ---------------------------------------------------------------------------
+
+  async listCases(params?: {
+    status?: string;
+    accusedAgent?: string;
+    severity?: string;
+    lawId?: string;
+    limit?: number;
+    cursor?: string;
+  }): Promise<{ data: Case[]; meta: { cursor: string | null; hasMore: boolean } }> {
+    const query = this.buildQueryString({
+      status: params?.status,
+      accusedAgent: params?.accusedAgent,
+      severity: params?.severity,
+      lawId: params?.lawId,
+      limit: params?.limit,
+      cursor: params?.cursor,
+    });
+    return this.request<{ data: Case[]; meta: { cursor: string | null; hasMore: boolean } }>(
+      "GET",
+      `/api/v1/cases${query}`
+    );
+  }
+
+  async getCase(id: string): Promise<{ data: Case }> {
+    return this.request<{ data: Case }>(
+      "GET",
+      `/api/v1/cases/${encodeURIComponent(id)}`
+    );
+  }
+
+  async fileCase(input: {
+    accusedAgent: string;
+    lawId: string;
+    evidence: Array<{ type: string; reference: string; description: string }>;
+    severity: string;
+    filedBy?: string | undefined;
+  }): Promise<{ data: Case }> {
+    return this.request<{ data: Case }>("POST", "/api/v1/cases", input);
+  }
+
+  async startHearing(id: string): Promise<{ data: Case }> {
+    return this.request<{ data: Case }>(
+      "PUT",
+      `/api/v1/cases/${encodeURIComponent(id)}/hearing`
+    );
+  }
+
+  async issueVerdict(
+    id: string,
+    input: { verdict: string; verdictReason: string; deductionLevel: string }
+  ): Promise<{ data: Case }> {
+    return this.request<{ data: Case }>(
+      "PUT",
+      `/api/v1/cases/${encodeURIComponent(id)}/verdict`,
+      input
+    );
+  }
+
+  async markCaseCorrected(id: string): Promise<{ data: Case }> {
+    return this.request<{ data: Case }>(
+      "PUT",
+      `/api/v1/cases/${encodeURIComponent(id)}/correct`
+    );
+  }
+
+  async dismissCase(id: string, reason: string): Promise<{ data: Case }> {
+    return this.request<{ data: Case }>(
+      "PUT",
+      `/api/v1/cases/${encodeURIComponent(id)}/dismiss`,
+      { reason }
     );
   }
 }
