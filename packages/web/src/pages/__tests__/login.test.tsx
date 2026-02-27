@@ -35,7 +35,7 @@ describe("LoginPage", () => {
 
   it("renders title and subtitle", () => {
     renderLogin();
-    expect(screen.getByText("SpecTree")).toBeDefined();
+    expect(screen.getByText("Dispatcher")).toBeDefined();
     expect(screen.getByText("Enter passphrase to continue")).toBeDefined();
   });
 

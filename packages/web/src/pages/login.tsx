@@ -35,7 +35,7 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>SpecTree</CardTitle>
+          <CardTitle>Dispatcher</CardTitle>
           <p className="text-sm text-muted-foreground">
             Enter passphrase to continue
           </p>

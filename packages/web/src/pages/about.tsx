@@ -10,7 +10,7 @@ export function AboutPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">About SpecTree</h1>
+        <h1 className="text-3xl font-bold tracking-tight">About Dispatcher</h1>
         <p className="text-muted-foreground">
           Learn more about the OpenAPI Spec Analysis Platform.
         </p>
@@ -19,14 +19,14 @@ export function AboutPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>What is SpecTree?</CardTitle>
+            <CardTitle>What is Dispatcher?</CardTitle>
             <CardDescription>
               Understanding our platform
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              SpecTree is a powerful OpenAPI specification analysis platform
+              Dispatcher is a powerful OpenAPI specification analysis platform
               that helps developers understand, validate, and visualize their
               API definitions.
             </p>
@@ -37,7 +37,7 @@ export function AboutPage() {
           <CardHeader>
             <CardTitle>Features</CardTitle>
             <CardDescription>
-              What you can do with SpecTree
+              What you can do with Dispatcher
             </CardDescription>
           </CardHeader>
           <CardContent>

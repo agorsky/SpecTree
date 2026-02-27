@@ -36,7 +36,7 @@ export function HomePage() {
     <div className="space-y-8">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">
-          Welcome to SpecTree
+          Welcome to Dispatcher
         </h1>
         <p className="text-muted-foreground">
           OpenAPI Spec Analysis Platform - Analyze and understand your API
@@ -80,7 +80,7 @@ export function HomePage() {
           <CardHeader>
             <CardTitle>Quick Start</CardTitle>
             <CardDescription>
-              Get started with SpecTree
+              Get started with Dispatcher
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

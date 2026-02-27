@@ -164,7 +164,7 @@ export function SettingsPage() {
             <div>
               <CardTitle>Personal API keys</CardTitle>
               <CardDescription>
-                Use SpecTree's API to build your own integrations
+                Use Dispatcher's API to build your own integrations
               </CardDescription>
             </div>
             <Button
