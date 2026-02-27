@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { useAuthStore } from "@/stores/auth-store";
 import { useCurrentUser } from "@/hooks/queries/use-current-user";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/hooks/use-theme";
@@ -50,7 +49,6 @@ const TIMEZONE_OPTIONS: string[] =
 const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 export function SettingsPage() {
-  const logout = useAuthStore((s) => s.logout);
   const { data: currentUser } = useCurrentUser();
   const user = currentUser?.data;
   const queryClient = useQueryClient();
@@ -204,18 +202,7 @@ export function SettingsPage() {
         onOpenChange={setIsCreateKeyDialogOpen}
       />
 
-      {/* Session */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Session</CardTitle>
-          <CardDescription>Manage your current session</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline" onClick={() => { logout(); }}>
-            Sign Out
-          </Button>
-        </CardContent>
-      </Card>
+
     </div>
   );
 }
