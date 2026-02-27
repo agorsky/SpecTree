@@ -1,14 +1,14 @@
-# AI Agent Deployment Guide — SpecTree to Azure
+# AI Agent Deployment Guide — Dispatcher to Azure
 
-> **Purpose**: This document enables an AI agent to execute a full production deployment of SpecTree to Azure using only Azure CLI commands run from the local machine. Follow every step in order. Do NOT skip steps. Do NOT proceed if a step fails.
+> **Purpose**: This document enables an AI agent to execute a full production deployment of Dispatcher to Azure using only Azure CLI commands run from the local machine. Follow every step in order. Do NOT skip steps. Do NOT proceed if a step fails.
 
 ---
 
 ## Overview
 
-SpecTree has two containers deployed to Azure Container Apps:
-- **API** (`ca-spectree-dev`) — Node.js/Fastify backend with Prisma ORM, connects to Azure SQL Server
-- **Web** (`ca-spectree-web-dev`) — React SPA served by nginx, proxies `/api` requests to the API container
+Dispatcher has two containers deployed to Azure Container Apps:
+- **API** (`ca-dispatcher-dev`) — Node.js/Fastify backend with Prisma ORM, connects to Azure SQL Server
+- **Web** (`ca-dispatcher-web-dev`) — React SPA served by nginx, proxies `/api` requests to the API container
 
 A deployment may also require a **database schema migration** if Prisma schema files have changed.
 
@@ -33,7 +33,7 @@ az account show   # Must be logged in
 # 2. Docker is running
 docker version
 
-# 3. You are in the SpecTree repository root
+# 3. You are in the Dispatcher repository root
 ls packages/api/Dockerfile.azure packages/web/Dockerfile packages/web/nginx.azure.conf
 # All three files must exist
 
@@ -50,12 +50,12 @@ If `az account show` fails, run `az login` first.
 Set these at the start of every deployment session. All values are fixed infrastructure names:
 
 ```bash
-export ACR_NAME="acrspectreedev"
-export RESOURCE_GROUP="rg-spectree-dev"
-export SQL_SERVER="sql-spectree-dev"
-export SQL_DATABASE="sqldb-spectree-dev"
-export API_CONTAINER_APP="ca-spectree-dev"
-export WEB_CONTAINER_APP="ca-spectree-web-dev"
+export ACR_NAME="acrdispatcherdev"
+export RESOURCE_GROUP="rg-dispatcher-dev"
+export SQL_SERVER="sql-dispatcher-dev"
+export SQL_DATABASE="sqldb-dispatcher-dev"
+export API_CONTAINER_APP="ca-dispatcher-dev"
+export WEB_CONTAINER_APP="ca-dispatcher-web-dev"
 export SQL_ADMIN_USER="sqladmin"
 ```
 
@@ -99,13 +99,13 @@ The API image **must** use `Dockerfile.azure` (not the standard Dockerfile) beca
 ```bash
 # Build from repository root
 docker build \
-  -t $ACR_NAME.azurecr.io/spectree-api:$IMAGE_TAG \
-  -t $ACR_NAME.azurecr.io/spectree-api:latest \
+  -t $ACR_NAME.azurecr.io/dispatcher-api:$IMAGE_TAG \
+  -t $ACR_NAME.azurecr.io/dispatcher-api:latest \
   -f packages/api/Dockerfile.azure .
 
 # Push both tags
-docker push $ACR_NAME.azurecr.io/spectree-api:$IMAGE_TAG
-docker push $ACR_NAME.azurecr.io/spectree-api:latest
+docker push $ACR_NAME.azurecr.io/dispatcher-api:$IMAGE_TAG
+docker push $ACR_NAME.azurecr.io/dispatcher-api:latest
 ```
 
 **Expected**: Push completes with digest/size output. Build takes ~2-5 minutes.
@@ -118,12 +118,12 @@ The web image uses the standard `packages/web/Dockerfile`. No build args are req
 
 ```bash
 docker build \
-  -t $ACR_NAME.azurecr.io/spectree-web:$IMAGE_TAG \
-  -t $ACR_NAME.azurecr.io/spectree-web:latest \
+  -t $ACR_NAME.azurecr.io/dispatcher-web:$IMAGE_TAG \
+  -t $ACR_NAME.azurecr.io/dispatcher-web:latest \
   -f packages/web/Dockerfile .
 
-docker push $ACR_NAME.azurecr.io/spectree-web:$IMAGE_TAG
-docker push $ACR_NAME.azurecr.io/spectree-web:latest
+docker push $ACR_NAME.azurecr.io/dispatcher-web:$IMAGE_TAG
+docker push $ACR_NAME.azurecr.io/dispatcher-web:latest
 ```
 
 **Expected**: Push completes successfully.
@@ -168,7 +168,7 @@ az sql server firewall-rule create \
 
 ```bash
 # Install API dependencies (needed for Prisma CLI)
-pnpm install --filter @spectree/api
+pnpm install --filter @dispatcher/api
 
 # Push schema to Azure SQL
 cd packages/api
@@ -232,7 +232,7 @@ Your rule should no longer appear. The only permanent rule should be `AllowAzure
 az containerapp update \
   --name $API_CONTAINER_APP \
   --resource-group $RESOURCE_GROUP \
-  --image $ACR_NAME.azurecr.io/spectree-api:$IMAGE_TAG
+  --image $ACR_NAME.azurecr.io/dispatcher-api:$IMAGE_TAG
 ```
 
 **Expected**: JSON output with the updated container app configuration and a new revision name.
@@ -245,7 +245,7 @@ az containerapp update \
 az containerapp update \
   --name $WEB_CONTAINER_APP \
   --resource-group $RESOURCE_GROUP \
-  --image $ACR_NAME.azurecr.io/spectree-web:$IMAGE_TAG
+  --image $ACR_NAME.azurecr.io/dispatcher-web:$IMAGE_TAG
 ```
 
 **Expected**: JSON output with updated configuration.
@@ -361,13 +361,13 @@ Repeat for the web container if needed.
 
 | Resource | Value |
 |----------|-------|
-| Resource Group | `rg-spectree-dev` |
-| ACR | `acrspectreedev` |
-| SQL Server | `sql-spectree-dev` |
-| SQL Database | `sqldb-spectree-dev` |
+| Resource Group | `rg-dispatcher-dev` |
+| ACR | `acrdispatcherdev` |
+| SQL Server | `sql-dispatcher-dev` |
+| SQL Database | `sqldb-dispatcher-dev` |
 | SQL Admin User | `sqladmin` |
-| API Container App | `ca-spectree-dev` |
-| Web Container App | `ca-spectree-web-dev` |
+| API Container App | `ca-dispatcher-dev` |
+| Web Container App | `ca-dispatcher-web-dev` |
 | API Dockerfile | `packages/api/Dockerfile.azure` |
 | Web Dockerfile | `packages/web/Dockerfile` |
 | SQL Server Schema | `packages/api/prisma/schema.sqlserver.prisma` |

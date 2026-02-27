@@ -70,17 +70,17 @@ env: [
 
 ```bash
 # Set connection string as parameter
-SQL_CONN="sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=YourSecurePassword123!;encrypt=true"
+SQL_CONN="sqlserver://sql-dispatcher-dev.database.windows.net:1433;database=sqldb-dispatcher-dev;user=sqladmin;password=YourSecurePassword123!;encrypt=true"
 
 # Deploy with secure parameter
 az deployment group create \
-  --resource-group rg-spectree-dev \
+  --resource-group rg-dispatcher-dev \
   --template-file infra/modules/containerApps.bicep \
-  --parameters baseName=spectree \
+  --parameters baseName=dispatcher \
   --parameters environment=dev \
   --parameters sqlConnectionString="$SQL_CONN" \
-  --parameters containerImage=myregistry.azurecr.io/spectree-api:latest \
-  --parameters keyVaultUri=https://kv-spectree-dev.vault.azure.net \
+  --parameters containerImage=myregistry.azurecr.io/dispatcher-api:latest \
+  --parameters keyVaultUri=https://kv-dispatcher-dev.vault.azure.net \
   --parameters containerAppsSubnetId=/subscriptions/.../subnets/...
 ```
 
@@ -175,7 +175,7 @@ For local development, developers continue using `.env` files:
 
 ```env
 # .env.local (NOT committed to source control)
-SQLSERVER_DATABASE_URL=sqlserver://localhost:1433;database=spectree;user=sa;password=LocalDev123!;encrypt=false
+SQLSERVER_DATABASE_URL=sqlserver://localhost:1433;database=dispatcher;user=sa;password=LocalDev123!;encrypt=false
 ```
 
 ## Secret Rotation
@@ -191,7 +191,7 @@ To rotate the SQL password:
 NEW_SQL_CONN="sqlserver://...:1433;...password=NewPassword456!;..."
 
 az deployment group create \
-  --resource-group rg-spectree-dev \
+  --resource-group rg-dispatcher-dev \
   --template-file infra/modules/containerApps.bicep \
   --parameters sqlConnectionString="$NEW_SQL_CONN" \
   # ... other parameters
@@ -205,12 +205,12 @@ The Container App will create a new revision with the updated secret.
 
 **Check 1:** Verify secret is set correctly
 ```bash
-az containerapp show --name ca-spectree-dev --resource-group rg-spectree-dev --query "properties.configuration.secrets[?name=='sql-connection-string'].name"
+az containerapp show --name ca-dispatcher-dev --resource-group rg-dispatcher-dev --query "properties.configuration.secrets[?name=='sql-connection-string'].name"
 ```
 
 **Check 2:** Verify environment variable uses secretRef
 ```bash
-az containerapp show --name ca-spectree-dev --resource-group rg-spectree-dev --query "properties.template.containers[0].env[?name=='SQLSERVER_DATABASE_URL']"
+az containerapp show --name ca-dispatcher-dev --resource-group rg-dispatcher-dev --query "properties.template.containers[0].env[?name=='SQLSERVER_DATABASE_URL']"
 ```
 
 Expected output:
@@ -225,7 +225,7 @@ Expected output:
 
 **Check 3:** View logs for connection errors
 ```bash
-az containerapp logs show --name ca-spectree-dev --resource-group rg-spectree-dev --follow
+az containerapp logs show --name ca-dispatcher-dev --resource-group rg-dispatcher-dev --follow
 ```
 
 ### Secret value appears in logs

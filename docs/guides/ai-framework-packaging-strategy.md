@@ -1,7 +1,7 @@
-# SpecTree AI Framework Packaging Strategy
+# Dispatcher AI Framework Packaging Strategy
 
 ## Purpose
-This document explains how SpecTree currently uses Copilot instructions, GitHub instructions, custom agents, and skills, and proposes the most effective way to package and share these assets across other projects.
+This document explains how Dispatcher currently uses Copilot instructions, GitHub instructions, custom agents, and skills, and proposes the most effective way to package and share these assets across other projects.
 
 ---
 
@@ -9,11 +9,11 @@ This document explains how SpecTree currently uses Copilot instructions, GitHub 
 
 ### 1.1 Layered architecture in this repository
 
-SpecTree currently uses four AI-configuration layers:
+Dispatcher currently uses four AI-configuration layers:
 
 1. **Global Copilot instruction policy**  
    - File: `.github/copilot-instructions.md`
-   - Role: global operating rules, workflow constraints, and SpecTree MCP usage requirements.
+   - Role: global operating rules, workflow constraints, and Dispatcher MCP usage requirements.
 
 2. **Path-scoped instruction packs**  
    - Files: `.github/instructions/*.instructions.md`
@@ -29,13 +29,13 @@ SpecTree currently uses four AI-configuration layers:
 
 ### 1.2 Runtime paths (important distinction)
 
-There are **two different execution paths** in SpecTree:
+There are **two different execution paths** in Dispatcher:
 
 #### A) Direct Copilot agent invocation path
 - Used by shell wrappers:
-  - `scripts/spectree-plan.sh` -> `@planner`
-  - `scripts/spectree-run.sh` -> `@orchestrator`
-  - `scripts/spectree-validate.sh` -> `@reviewer`
+  - `scripts/dispatcher-plan.sh` -> `@planner`
+  - `scripts/dispatcher-run.sh` -> `@orchestrator`
+  - `scripts/dispatcher-validate.sh` -> `@reviewer`
 - This path directly uses `.github/agents/*` and global instructions.
 
 #### B) Orchestrator package ACP path
@@ -60,17 +60,17 @@ There are **two different execution paths** in SpecTree:
   - `plan-reviewer`
 
 - **Skills (4):**
-  - `spectree-planning`
-  - `spectree-session`
-  - `spectree-validation`
-  - `spectree-plan-review`
+  - `dispatcher-planning`
+  - `dispatcher-session`
+  - `dispatcher-validation`
+  - `dispatcher-plan-review`
 
 ### 2.2 Drift and consistency findings
 
 > **Status: All resolved** (2026-02-16). Items 1–4 were fixed; item 5 was intentionally kept.
 
 1. **~~Count drift in top-level docs~~** ✅ FIXED
-   - `.github/copilot-instructions.md` now correctly says *six custom agents* and *four skills*, and includes sections for `@plan-reviewer` agent and `spectree-plan-review` skill.
+   - `.github/copilot-instructions.md` now correctly says *six custom agents* and *four skills*, and includes sections for `@plan-reviewer` agent and `dispatcher-plan-review` skill.
 
 2. **~~Governance conflict in planner tool policy~~** ✅ FIXED
    - `.github/agents/planner.md` no longer includes `agent` in frontmatter tools, matching the policy in `.github/instructions/agents.instructions.md`.
@@ -98,7 +98,7 @@ Package and version these as a cohesive "AI integration kit":
 - `.github/instructions/*.instructions.md` (path-scoped rules)
 - `.github/agents/*.md` (execution roles)
 - `.github/skills/*/SKILL.md` (procedures)
-- wrapper scripts (`scripts/spectree-plan.sh`, `spectree-run.sh`, `spectree-validate.sh`) where helpful
+- wrapper scripts (`scripts/dispatcher-plan.sh`, `dispatcher-run.sh`, `dispatcher-validate.sh`) where helpful
 - setup docs for MCP config + token/auth flow
 
 ### 3.2 What should remain project-local
@@ -152,7 +152,7 @@ This gives one place to discover/install while preserving domain ownership throu
 ### Recommendation summary
 Start with **one shared "AI packs" repo**, but enforce strict modular boundaries:
 
-- **Core pack** (SpecTree MCP interaction, sessions, validations, execution lifecycle)
+- **Core pack** (Dispatcher MCP interaction, sessions, validations, execution lifecycle)
 - **UI/UX extension pack** (owned by UI/UX engineer/team)
 - Pack-level versioning and compatibility metadata
 - Automated sync into consumer repos
@@ -195,7 +195,7 @@ Each pack should declare:
 - `name`
 - `version`
 - `dependsOn` (e.g., `core >=1.2.0`)
-- `compatibleSpecTreeApi` (version range)
+- `compatibleDispatcherApi` (version range)
 - `compatibleMcpToolset` (tool API baseline)
 - `owners`
 
@@ -217,7 +217,7 @@ For each consuming project:
 ### 6.2 Versioning pattern
 
 - Semantic version per pack.
-- Compatibility matrix maps pack versions <-> SpecTree MCP/API versions.
+- Compatibility matrix maps pack versions <-> Dispatcher MCP/API versions.
 - Consumer repos pin pack tags (do not track moving main branch).
 
 ### 6.3 Governance pattern
@@ -230,7 +230,7 @@ For each consuming project:
 
 ---
 
-## 7) Immediate Improvements Recommended in SpecTree Before Externalizing
+## 7) Immediate Improvements Recommended in Dispatcher Before Externalizing
 
 > **Status: All resolved** (2026-02-16).
 
@@ -265,6 +265,6 @@ If UI/UX velocity or ownership pressure grows, you can split that pack into its 
 - Agent governance rules: `.github/instructions/agents.instructions.md`
 - Actual agent definitions: `.github/agents/*.md`
 - Skills inventory: `.github/skills/*/SKILL.md`
-- Headless invocation path: `scripts/spectree-plan.sh`, `scripts/spectree-run.sh`, `scripts/spectree-validate.sh`
+- Headless invocation path: `scripts/dispatcher-plan.sh`, `scripts/dispatcher-run.sh`, `scripts/dispatcher-validate.sh`
 - ACP session behavior: `packages/orchestrator/src/orchestrator/*.ts`, `packages/orchestrator/src/acp/types.ts`
 - Onboarding/quickstart references: `docs/guides/automation-quickstart.md`, `docs/guides/setup-guide.md`

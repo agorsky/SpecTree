@@ -1,6 +1,6 @@
 # User Registration & Management Options Analysis
 
-> **Strategic analysis for SpecTree user registration without Microsoft Entra**
+> **Strategic analysis for Dispatcher user registration without Microsoft Entra**
 >
 > This document analyzes various approaches to secure user registration and management
 > when Microsoft Entra (Azure AD) integration is not immediately available. The goal is
@@ -29,7 +29,7 @@
 
 ### Existing Authentication System
 
-SpecTree currently has a functional authentication system with:
+Dispatcher currently has a functional authentication system with:
 
 | Feature | Status | Details |
 |---------|--------|---------|
@@ -410,7 +410,7 @@ This reduces admin data entry while maintaining control.
 
 ### Defining "Admin" for User Management
 
-Since SpecTree uses team-scoped roles (not global admin), we need to decide:
+Since Dispatcher uses team-scoped roles (not global admin), we need to decide:
 
 **Option A: Global Admin Flag**
 ```prisma
@@ -425,7 +425,7 @@ model User {
 - Simpler but less controlled
 
 **Option C: Specific "System Admin" Team**
-- Create a special team (e.g., "SpecTree Admins")
+- Create a special team (e.g., "Dispatcher Admins")
 - Only admins of this team can manage users
 
 **Recommendation**: Option A (Global Admin Flag) is clearest and most controllable.
@@ -542,4 +542,4 @@ function generateInviteCode(): string {
 ---
 
 *Document created: January 30, 2026*
-*For use with SpecTree Azure deployment planning*
+*For use with Dispatcher Azure deployment planning*

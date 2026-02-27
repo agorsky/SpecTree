@@ -1,6 +1,6 @@
-# SpecTree Complete Setup & Run Guide
+# Dispatcher Complete Setup & Run Guide
 
-A comprehensive walkthrough for setting up, running, and accessing the SpecTree project management platform.
+A comprehensive walkthrough for setting up, running, and accessing the Dispatcher project management platform.
 
 ---
 
@@ -10,7 +10,7 @@ A comprehensive walkthrough for setting up, running, and accessing the SpecTree 
 
 ```bash
 # 1. Navigate to project
-cd /path/to/SpecTree
+cd /path/to/Dispatcher
 
 # 2. Start the app
 pnpm dev
@@ -22,25 +22,25 @@ pnpm dev
 
 **First time or database was reset?** Initialize and seed the database:
 ```bash
-pnpm --filter @spectree/api db:push
-pnpm --filter @spectree/api db:seed
+pnpm --filter @dispatcher/api db:push
+pnpm --filter @dispatcher/api db:seed
 ```
 
 **Login credentials:**
 | Email | Password |
 |-------|----------|
-| `admin@spectree.dev` | `Password123!` |
-| `developer@spectree.dev` | `Password123!` |
-| `guest@spectree.dev` | `Password123!` |
+| `admin@dispatcher.dev` | `Password123!` |
+| `developer@dispatcher.dev` | `Password123!` |
+| `guest@dispatcher.dev` | `Password123!` |
 
 <details>
 <summary><strong>⚠️ Having issues? Quick troubleshooting</strong></summary>
 
 | Problem | Solution |
 |---------|----------|
-| Database not found | Run `pnpm --filter @spectree/api db:push` |
+| Database not found | Run `pnpm --filter @dispatcher/api db:push` |
 | "Cannot find module" errors | Run `pnpm build` first |
-| Prisma client errors | Run `pnpm --filter @spectree/api db:generate` |
+| Prisma client errors | Run `pnpm --filter @dispatcher/api db:generate` |
 
 </details>
 
@@ -63,14 +63,14 @@ pnpm --filter @spectree/api db:seed
 
 ## Overview
 
-SpecTree is a monorepo containing four packages:
+Dispatcher is a monorepo containing four packages:
 
 | Package | Description | Port |
 |---------|-------------|------|
-| `@spectree/api` | Fastify REST API backend | 3001 |
-| `@spectree/web` | React + Vite frontend | 5173 |
-| `@spectree/mcp` | Model Context Protocol server for AI integration | N/A (stdio) |
-| `@spectree/shared` | Shared TypeScript types and utilities | N/A (library) |
+| `@dispatcher/api` | Fastify REST API backend | 3001 |
+| `@dispatcher/web` | React + Vite frontend | 5173 |
+| `@dispatcher/mcp` | Model Context Protocol server for AI integration | N/A (stdio) |
+| `@dispatcher/shared` | Shared TypeScript types and utilities | N/A (library) |
 
 **Architecture:**
 ```
@@ -122,7 +122,7 @@ Before starting, ensure you have these installed:
 
 ```bash
 git clone <repository-url>
-cd SpecTree
+cd Dispatcher
 ```
 
 ### Step 2: Install Dependencies
@@ -144,7 +144,7 @@ The default `.env` file is pre-configured for local development:
 
 ```bash
 # Database Configuration (SQLite)
-DATABASE_URL=file:./data/spectree.db
+DATABASE_URL=file:./data/dispatcher.db
 
 # API Server Configuration
 API_PORT=3001
@@ -161,13 +161,13 @@ The database is a SQLite file that's created automatically:
 
 ```bash
 # Generate Prisma client
-pnpm --filter @spectree/api db:generate
+pnpm --filter @dispatcher/api db:generate
 
 # Create database and apply schema
-pnpm --filter @spectree/api db:push
+pnpm --filter @dispatcher/api db:push
 ```
 
-The database file is created at `packages/api/prisma/data/spectree.db`.
+The database file is created at `packages/api/prisma/data/dispatcher.db`.
 
 > **Note**: `db:push` is for development. For production, use `db:migrate` to create migrations.
 
@@ -178,15 +178,15 @@ pnpm build
 ```
 
 This builds packages in dependency order:
-1. `@spectree/shared` (no dependencies)
-2. `@spectree/api` (depends on shared)
-3. `@spectree/web` (depends on shared)
-4. `@spectree/mcp` (depends on shared & api)
+1. `@dispatcher/shared` (no dependencies)
+2. `@dispatcher/api` (depends on shared)
+3. `@dispatcher/web` (depends on shared)
+4. `@dispatcher/mcp` (depends on shared & api)
 
 ### Step 6: (Optional) Seed the Database
 
 ```bash
-pnpm --filter @spectree/api db:seed
+pnpm --filter @dispatcher/api db:seed
 ```
 
 This creates sample data for testing.
@@ -211,13 +211,13 @@ This starts:
 
 ```bash
 # API only
-pnpm --filter @spectree/api dev
+pnpm --filter @dispatcher/api dev
 
 # Web only
-pnpm --filter @spectree/web dev
+pnpm --filter @dispatcher/web dev
 
 # MCP server (watch mode)
-pnpm --filter @spectree/mcp dev
+pnpm --filter @dispatcher/mcp dev
 ```
 
 ### Production Mode (Local)
@@ -227,10 +227,10 @@ pnpm --filter @spectree/mcp dev
 pnpm build
 
 # Start API
-pnpm --filter @spectree/api start
+pnpm --filter @dispatcher/api start
 
 # In another terminal, preview web build
-pnpm --filter @spectree/web preview
+pnpm --filter @dispatcher/web preview
 ```
 
 ### Full Docker Stack (Optional)
@@ -279,38 +279,38 @@ curl "http://localhost:3001/api/v1/features?query=authentication&status=in_progr
 ### Database Access
 
 **Database Location:**
-- File: `packages/api/prisma/data/spectree.db`
+- File: `packages/api/prisma/data/dispatcher.db`
 
 **Tools for Database Access:**
 
 1. **Prisma Studio** (built-in GUI):
    ```bash
-   pnpm --filter @spectree/api db:studio
+   pnpm --filter @dispatcher/api db:studio
    ```
    Opens at http://localhost:5555
 
 2. **SQLite CLI** (if installed):
    ```bash
-   sqlite3 packages/api/prisma/data/spectree.db
+   sqlite3 packages/api/prisma/data/dispatcher.db
    ```
 
 ---
 
 ## Package Details
 
-### @spectree/api (Backend)
+### @dispatcher/api (Backend)
 
 **Technology**: Fastify 5, Prisma ORM, SQLite
 
 **Key Scripts:**
 ```bash
-pnpm --filter @spectree/api dev          # Development server
-pnpm --filter @spectree/api build        # Build for production
-pnpm --filter @spectree/api test         # Run tests
-pnpm --filter @spectree/api db:studio    # Database GUI
-pnpm --filter @spectree/api db:push      # Sync schema (dev)
-pnpm --filter @spectree/api db:migrate   # Create migration
-pnpm --filter @spectree/api db:seed      # Seed sample data
+pnpm --filter @dispatcher/api dev          # Development server
+pnpm --filter @dispatcher/api build        # Build for production
+pnpm --filter @dispatcher/api test         # Run tests
+pnpm --filter @dispatcher/api db:studio    # Database GUI
+pnpm --filter @dispatcher/api db:push      # Sync schema (dev)
+pnpm --filter @dispatcher/api db:migrate   # Create migration
+pnpm --filter @dispatcher/api db:seed      # Seed sample data
 ```
 
 **API Routes:**
@@ -322,35 +322,35 @@ pnpm --filter @spectree/api db:seed      # Seed sample data
 - `GET /api/v1/teams` - List teams
 - `GET /api/v1/users` - List users
 
-### @spectree/web (Frontend)
+### @dispatcher/web (Frontend)
 
 **Technology**: React 19, Vite 6, Tailwind CSS 4, TanStack Query, Zustand
 
 **Key Scripts:**
 ```bash
-pnpm --filter @spectree/web dev          # Development server
-pnpm --filter @spectree/web build        # Production build
-pnpm --filter @spectree/web preview      # Preview production build
-pnpm --filter @spectree/web test         # Run tests
+pnpm --filter @dispatcher/web dev          # Development server
+pnpm --filter @dispatcher/web build        # Production build
+pnpm --filter @dispatcher/web preview      # Preview production build
+pnpm --filter @dispatcher/web test         # Run tests
 ```
 
-### @spectree/mcp (AI Integration)
+### @dispatcher/mcp (AI Integration)
 
 **Technology**: Model Context Protocol SDK
 
 **Key Scripts:**
 ```bash
-pnpm --filter @spectree/mcp build        # Build MCP server
-pnpm --filter @spectree/mcp dev          # Watch mode
-pnpm --filter @spectree/mcp start        # Run directly
+pnpm --filter @dispatcher/mcp build        # Build MCP server
+pnpm --filter @dispatcher/mcp dev          # Watch mode
+pnpm --filter @dispatcher/mcp start        # Run directly
 ```
 
-### @spectree/shared (Common Code)
+### @dispatcher/shared (Common Code)
 
 **Contents**: Shared TypeScript types and utilities used by all other packages.
 
 ```bash
-pnpm --filter @spectree/shared build     # Build library
+pnpm --filter @dispatcher/shared build     # Build library
 ```
 
 ---
@@ -391,23 +391,23 @@ The database contains these main tables:
 
 ```bash
 # Reset database (delete all data)
-rm packages/api/prisma/data/spectree.db
-pnpm --filter @spectree/api db:push
+rm packages/api/prisma/data/dispatcher.db
+pnpm --filter @dispatcher/api db:push
 
 # View current schema
-pnpm --filter @spectree/api db:studio
+pnpm --filter @dispatcher/api db:studio
 
 # Create a migration after schema changes
-pnpm --filter @spectree/api db:migrate --name describe_change
+pnpm --filter @dispatcher/api db:migrate --name describe_change
 
 # Deploy migrations (production)
-pnpm --filter @spectree/api db:migrate:deploy
+pnpm --filter @dispatcher/api db:migrate:deploy
 
 # Backup database
 ./scripts/backup-db.sh
 
 # Restore from backup
-./scripts/restore-db.sh ./backups/spectree_YYYYMMDD_HHMMSS.db
+./scripts/restore-db.sh ./backups/dispatcher_YYYYMMDD_HHMMSS.db
 ```
 
 ### Connection String
@@ -415,20 +415,20 @@ pnpm --filter @spectree/api db:migrate:deploy
 Prisma uses `DATABASE_URL` environment variable:
 
 ```
-file:./data/spectree.db
+file:./data/dispatcher.db
 ```
 
 ---
 
 ## MCP Server Integration
 
-The MCP server allows AI agents (like Claude) to interact with SpecTree via authenticated API requests.
+The MCP server allows AI agents (like Claude) to interact with Dispatcher via authenticated API requests.
 
 ### Setup for Claude Code
 
 1. **Build the MCP server:**
    ```bash
-   pnpm --filter @spectree/mcp build
+   pnpm --filter @dispatcher/mcp build
    ```
 
 2. **Start the API server and generate an API token:**
@@ -438,7 +438,7 @@ The MCP server allows AI agents (like Claude) to interact with SpecTree via auth
    # Login to get a JWT
    curl -X POST http://localhost:3001/api/v1/auth/login \
      -H "Content-Type: application/json" \
-     -d '{"email":"admin@spectree.dev","password":"Password123!"}'
+     -d '{"email":"admin@dispatcher.dev","password":"Password123!"}'
    
    # Create API token (use accessToken from login response)
    curl -X POST http://localhost:3001/api/v1/tokens \
@@ -451,10 +451,10 @@ The MCP server allows AI agents (like Claude) to interact with SpecTree via auth
    ```json
    {
      "mcpServers": {
-       "spectree": {
+       "dispatcher": {
          "type": "stdio",
          "command": "node",
-         "args": ["/path/to/SpecTree/packages/mcp/dist/index.js"],
+         "args": ["/path/to/Dispatcher/packages/mcp/dist/index.js"],
          "env": {
            "API_TOKEN": "st_your_token_here",
            "API_BASE_URL": "http://localhost:3001"
@@ -471,32 +471,32 @@ The MCP server allows AI agents (like Claude) to interact with SpecTree via auth
 | Tool | Description |
 |------|-------------|
 | **Search** | |
-| `spectree__search` | Search across features and tasks |
+| `dispatcher__search` | Search across features and tasks |
 | **Epics** | |
-| `spectree__list_epics` | List all epics |
-| `spectree__get_epic` | Get epic details |
-| `spectree__create_epic` | Create a new epic |
-| `spectree__reorder_epic` | Change epic position |
+| `dispatcher__list_epics` | List all epics |
+| `dispatcher__get_epic` | Get epic details |
+| `dispatcher__create_epic` | Create a new epic |
+| `dispatcher__reorder_epic` | Change epic position |
 | **Features** | |
-| `spectree__list_features` | List features with filters |
-| `spectree__get_feature` | Get feature details |
-| `spectree__create_feature` | Create a new feature |
-| `spectree__update_feature` | Update a feature |
-| `spectree__reorder_feature` | Change feature position |
+| `dispatcher__list_features` | List features with filters |
+| `dispatcher__get_feature` | Get feature details |
+| `dispatcher__create_feature` | Create a new feature |
+| `dispatcher__update_feature` | Update a feature |
+| `dispatcher__reorder_feature` | Change feature position |
 | **Tasks** | |
-| `spectree__list_tasks` | List tasks with filters |
-| `spectree__get_task` | Get task details |
-| `spectree__create_task` | Create a new task |
-| `spectree__update_task` | Update a task |
-| `spectree__reorder_task` | Change task position |
+| `dispatcher__list_tasks` | List tasks with filters |
+| `dispatcher__get_task` | Get task details |
+| `dispatcher__create_task` | Create a new task |
+| `dispatcher__update_task` | Update a task |
+| `dispatcher__reorder_task` | Change task position |
 | **Statuses** | |
-| `spectree__list_statuses` | List available statuses |
-| `spectree__get_status` | Get status details |
+| `dispatcher__list_statuses` | List available statuses |
+| `dispatcher__get_status` | Get status details |
 | **Personal Scope** | |
-| `spectree__get_personal_scope` | Get user's personal scope info |
-| `spectree__list_personal_projects` | List epics in personal scope |
-| `spectree__create_personal_project` | Create an epic in personal scope |
-| `spectree__list_personal_statuses` | List personal workflow statuses |
+| `dispatcher__get_personal_scope` | Get user's personal scope info |
+| `dispatcher__list_personal_projects` | List epics in personal scope |
+| `dispatcher__create_personal_project` | Create an epic in personal scope |
+| `dispatcher__list_personal_statuses` | List personal workflow statuses |
 
 ---
 
@@ -509,11 +509,11 @@ The MCP server allows AI agents (like Claude) to interact with SpecTree via auth
 **Solutions**:
 1. Create the database:
    ```bash
-   pnpm --filter @spectree/api db:push
+   pnpm --filter @dispatcher/api db:push
    ```
 2. Check file exists:
    ```bash
-   ls packages/api/prisma/data/spectree.db
+   ls packages/api/prisma/data/dispatcher.db
    ```
 
 ### "ECONNREFUSED" when connecting to API
@@ -532,7 +532,7 @@ The MCP server allows AI agents (like Claude) to interact with SpecTree via auth
 
 **Solution**:
 ```bash
-pnpm --filter @spectree/api db:push --force-reset
+pnpm --filter @dispatcher/api db:push --force-reset
 ```
 
 > ⚠️ Warning: This deletes all data. Use only in development.
@@ -542,7 +542,7 @@ pnpm --filter @spectree/api db:push --force-reset
 **Solution**:
 ```bash
 pnpm build
-pnpm --filter @spectree/api db:generate
+pnpm --filter @dispatcher/api db:generate
 ```
 
 ### pnpm install fails
@@ -623,7 +623,7 @@ cd infra
 pnpm install
 
 # Create database (first time only)
-pnpm --filter @spectree/api db:push
+pnpm --filter @dispatcher/api db:push
 
 # Build and start
 pnpm build

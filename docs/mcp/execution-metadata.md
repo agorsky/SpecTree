@@ -4,7 +4,7 @@ This document describes the execution metadata fields available on Features and 
 
 ## Overview
 
-SpecTree supports execution metadata on both Features and Tasks to enable intelligent work planning. AI agents can use this metadata to:
+Dispatcher supports execution metadata on both Features and Tasks to enable intelligent work planning. AI agents can use this metadata to:
 
 1. Understand the suggested order of work
 2. Identify which items can run in parallel
@@ -25,7 +25,7 @@ Both Features and Tasks support these fields:
 
 ## MCP Tools
 
-### spectree__get_execution_plan
+### dispatcher__get_execution_plan
 
 Returns an ordered execution plan for features in an epic.
 
@@ -91,7 +91,7 @@ Returns an ordered execution plan for features in an epic.
 }
 ```
 
-### spectree__set_execution_metadata
+### dispatcher__set_execution_metadata
 
 Set execution metadata for a feature or task.
 
@@ -108,7 +108,7 @@ Set execution metadata for a feature or task.
 }
 ```
 
-### spectree__mark_blocked
+### dispatcher__mark_blocked
 
 Mark a feature or task as blocked by another item.
 
@@ -121,7 +121,7 @@ Mark a feature or task as blocked by another item.
 }
 ```
 
-### spectree__mark_unblocked
+### dispatcher__mark_unblocked
 
 Remove a blocker from a feature or task.
 
@@ -239,7 +239,7 @@ const plan = await getExecutionPlan({ epicId: "my-epic" });
 
 ## AI Agent Best Practices
 
-1. **Call `spectree__get_instructions` first** to learn about all available capabilities
+1. **Call `dispatcher__get_instructions` first** to learn about all available capabilities
 2. **Call get_execution_plan** to understand the work order before starting
 3. **Respect dependencies** - don't start items until dependencies are complete
 4. **Use parallel groups** when multiple independent items can be worked on
@@ -248,7 +248,7 @@ const plan = await getExecutionPlan({ epicId: "my-epic" });
 
 ## Discovering Capabilities
 
-AI agents can call `spectree__get_instructions` with different topics:
+AI agents can call `dispatcher__get_instructions` with different topics:
 
 - `all` - Complete instructions (recommended for first-time setup)
 - `execution` - Execution planning and dependencies

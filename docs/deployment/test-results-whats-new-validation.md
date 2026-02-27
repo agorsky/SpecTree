@@ -5,7 +5,7 @@
 
 ## Test Environment
 - Local development environment
-- SpecTree version: 0.1.0
+- Dispatcher version: 0.1.0
 - Script: scripts/validate-whats-new.sh
 - Workflow: .github/workflows/azure-deploy.yml
 

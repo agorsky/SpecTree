@@ -1,6 +1,6 @@
 # Updating Skill Packs
 
-Keep your SpecTree skill packs up-to-date with the latest features, fixes, and improvements. This guide covers checking for updates, updating packs, and troubleshooting update issues.
+Keep your Dispatcher skill packs up-to-date with the latest features, fixes, and improvements. This guide covers checking for updates, updating packs, and troubleshooting update issues.
 
 **Time Estimate:** ~5 minutes
 
@@ -9,18 +9,18 @@ Keep your SpecTree skill packs up-to-date with the latest features, fixes, and i
 ## Prerequisites
 
 - **Skill packs installed** — At least one pack in `.github/copilot-instructions/`
-- **SpecTree CLI available** — Run `spectree --version` to verify
+- **Dispatcher CLI available** — Run `dispatcher --version` to verify
 - **Git working directory clean** — Updates modify files, commit changes first
 - **Registry configured** — Either use `--registry` flag or set `SPECTREE_REGISTRY_URL` env var
 
 **Verify installed packs:**
 ```bash
 # With registry flag:
-spectree list --registry https://your-spectree-instance.com
+dispatcher list --registry https://your-dispatcher-instance.com
 
 # Or set env var once:
-export SPECTREE_REGISTRY_URL=https://your-spectree-instance.com
-spectree list    # Uses SPECTREE_REGISTRY_URL
+export SPECTREE_REGISTRY_URL=https://your-dispatcher-instance.com
+dispatcher list    # Uses SPECTREE_REGISTRY_URL
 ```
 
 > **Note:** All CLI commands in this guide assume you've either set `SPECTREE_REGISTRY_URL` or will add `--registry <url>` to each command.
@@ -46,7 +46,7 @@ Skill pack updates provide:
 ### Option 1: List Installed with Update Status
 
 ```bash
-spectree list
+dispatcher list
 ```
 
 **Output:**
@@ -54,9 +54,9 @@ spectree list
 ```
 Installed Skill Packs:
 
-  @spectree/planning       1.2.0  →  1.3.0 available  ⚠️
-  @spectree/orchestrator   0.5.0  (up-to-date)       ✅
-  @spectree/core           1.0.1  →  1.1.0 available  ⚠️
+  @dispatcher/planning       1.2.0  →  1.3.0 available  ⚠️
+  @dispatcher/orchestrator   0.5.0  (up-to-date)       ✅
+  @dispatcher/core           1.0.1  →  1.1.0 available  ⚠️
 
 Total: 3 packs installed (2 updates available)
 ```
@@ -64,13 +64,13 @@ Total: 3 packs installed (2 updates available)
 ### Option 2: Check Specific Pack
 
 ```bash
-spectree list @spectree/planning
+dispatcher list @dispatcher/planning
 ```
 
 **Output:**
 
 ```
-@spectree/planning
+@dispatcher/planning
 
   Installed Version: 1.2.0
   Latest Version:    1.3.0
@@ -81,7 +81,7 @@ spectree list @spectree/planning
     - Improved epic decomposition accuracy
     - Fixed bug in dependency detection
   
-  Update: spectree update @spectree/planning
+  Update: dispatcher update @dispatcher/planning
 ```
 
 ### Option 3: Via MCP Tools
@@ -89,7 +89,7 @@ spectree list @spectree/planning
 In GitHub Copilot:
 
 ```
-@spectree list installed packs
+@dispatcher list installed packs
 ```
 
 Shows status with update reminders.
@@ -101,7 +101,7 @@ Shows status with update reminders.
 ### Update Single Pack
 
 ```bash
-spectree update @spectree/planning
+dispatcher update @dispatcher/planning
 ```
 
 **What happens:**
@@ -116,17 +116,17 @@ spectree update @spectree/planning
 **Output:**
 
 ```
-🔄 Updating @spectree/planning...
+🔄 Updating @dispatcher/planning...
 
 Current version: 1.2.0
 Latest version:  1.3.0
 
-📦 Downloading @spectree/planning@1.3.0...
+📦 Downloading @dispatcher/planning@1.3.0...
 🗑️  Removing old files (4 files)...
 📁 Installing new files (5 files)...
 ✅ Updated local manifest
 
-✅ Successfully updated @spectree/planning to 1.3.0
+✅ Successfully updated @dispatcher/planning to 1.3.0
 
 What's new in 1.3.0:
   - Added @plan-reviewer agent for validation
@@ -134,12 +134,12 @@ What's new in 1.3.0:
   - Fixed bug in dependency detection
 
 ⚠️  Changes made to:
-  .github/copilot-instructions/@spectree/planning/
+  .github/copilot-instructions/@dispatcher/planning/
 
 Review the changes and commit:
   git status
   git diff
-  git commit -m "Update @spectree/planning to 1.3.0"
+  git commit -m "Update @dispatcher/planning to 1.3.0"
 ```
 
 ### Update All Packs
@@ -147,7 +147,7 @@ Review the changes and commit:
 Update everything at once:
 
 ```bash
-spectree update --all
+dispatcher update --all
 ```
 
 **Output:**
@@ -156,15 +156,15 @@ spectree update --all
 🔄 Checking for updates...
 
 Updates available:
-  @spectree/planning   1.2.0 → 1.3.0
-  @spectree/core       1.0.1 → 1.1.0
+  @dispatcher/planning   1.2.0 → 1.3.0
+  @dispatcher/core       1.0.1 → 1.1.0
 
 Update all? (yes/no): yes
 
-Updating @spectree/planning...
+Updating @dispatcher/planning...
 ✅ Updated to 1.3.0
 
-Updating @spectree/core...
+Updating @dispatcher/core...
 ✅ Updated to 1.1.0
 
 Summary:
@@ -177,7 +177,7 @@ Next: Review changes and commit to Git
 ### Update to Specific Version
 
 ```bash
-spectree update @spectree/planning --version 1.2.5
+dispatcher update @dispatcher/planning --version 1.2.5
 ```
 
 Useful for:
@@ -194,7 +194,7 @@ Useful for:
 Before updating, see what's available:
 
 ```bash
-spectree list
+dispatcher list
 ```
 
 ### Step 2: Review Release Notes
@@ -202,7 +202,7 @@ spectree list
 Read what changed in the new version:
 
 ```bash
-spectree list @spectree/planning
+dispatcher list @dispatcher/planning
 ```
 
 **Check for:**
@@ -216,7 +216,7 @@ If you've made local modifications:
 
 ```bash
 # Backup current installation
-cp -r .github/copilot-instructions/@spectree .github/copilot-instructions/@spectree-backup
+cp -r .github/copilot-instructions/@dispatcher .github/copilot-instructions/@dispatcher-backup
 
 # Or commit to Git first
 git add .
@@ -226,13 +226,13 @@ git commit -m "Checkpoint before updating skill packs"
 ### Step 4: Run Update
 
 ```bash
-spectree update @spectree/planning
+dispatcher update @dispatcher/planning
 ```
 
 Or update all:
 
 ```bash
-spectree update --all
+dispatcher update --all
 ```
 
 ### Step 5: Review Changes
@@ -267,8 +267,8 @@ If everything works:
 
 ```bash
 git add .github/copilot-instructions/
-git add .spectree/manifest.json
-git commit -m "Update skill packs: @spectree/planning 1.2.0 → 1.3.0"
+git add .dispatcher/manifest.json
+git commit -m "Update skill packs: @dispatcher/planning 1.2.0 → 1.3.0"
 ```
 
 ---
@@ -280,13 +280,13 @@ git commit -m "Update skill packs: @spectree/planning 1.2.0 → 1.3.0"
 Major version (e.g., `1.x.x` → `2.0.0`) may have breaking changes:
 
 ```
-⚠️  BREAKING CHANGES in @spectree/planning@2.0.0:
+⚠️  BREAKING CHANGES in @dispatcher/planning@2.0.0:
 
-  - Agent name changed: @planner → @spectree-planner
-  - MCP tool renamed: spectree__plan_epic → spectree__create_from_template
+  - Agent name changed: @planner → @dispatcher-planner
+  - MCP tool renamed: dispatcher__plan_epic → dispatcher__create_from_template
   - Removed deprecated skill: epic-scoping
 
-Migration required. See: https://docs.spectree.dev/migration-2.0
+Migration required. See: https://docs.dispatcher.dev/migration-2.0
 
 Continue? (yes/no):
 ```
@@ -304,13 +304,13 @@ If update causes issues:
 
 ```bash
 # Rollback to previous version
-spectree update @spectree/planning --version 1.2.0
+dispatcher update @dispatcher/planning --version 1.2.0
 ```
 
 Or restore from Git:
 
 ```bash
-git checkout HEAD -- .github/copilot-instructions/@spectree/planning
+git checkout HEAD -- .github/copilot-instructions/@dispatcher/planning
 ```
 
 ---
@@ -322,12 +322,12 @@ git checkout HEAD -- .github/copilot-instructions/@spectree/planning
 Add to GitHub Actions workflow:
 
 ```yaml
-- name: Check for SpecTree pack updates
+- name: Check for Dispatcher pack updates
   run: |
-    spectree list | grep "available"
+    dispatcher list | grep "available"
     if [ $? -eq 0 ]; then
       echo "⚠️  Skill pack updates available!"
-      spectree list
+      dispatcher list
     fi
 ```
 
@@ -336,7 +336,7 @@ Add to GitHub Actions workflow:
 Use GitHub Actions scheduled workflow:
 
 ```yaml
-name: SpecTree Update Check
+name: Dispatcher Update Check
 on:
   schedule:
     - cron: '0 9 * * MON'  # Every Monday at 9am
@@ -346,7 +346,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check for updates
-        run: spectree list
+        run: dispatcher list
 ```
 
 ---
@@ -360,7 +360,7 @@ jobs:
 
 ```bash
 git stash
-spectree update @spectree/planning
+dispatcher update @dispatcher/planning
 git stash pop
 ```
 
@@ -373,11 +373,11 @@ Then merge conflicts if any.
 
 ```bash
 # Check installation status
-spectree list @spectree/planning
+dispatcher list @dispatcher/planning
 
 # If corrupted, reinstall
-spectree uninstall @spectree/planning
-spectree install @spectree/planning
+dispatcher uninstall @dispatcher/planning
+dispatcher install @dispatcher/planning
 ```
 
 ### New Version Breaks Workflows
@@ -387,7 +387,7 @@ spectree install @spectree/planning
 
 ```bash
 # Rollback
-spectree update @spectree/planning --version 1.2.0
+dispatcher update @dispatcher/planning --version 1.2.0
 
 # Report issue
 # Open GitHub issue with version details
@@ -401,10 +401,10 @@ spectree update @spectree/planning --version 1.2.0
 ```
 ⚠️  Dependency conflict detected:
 
-@spectree/planning@1.3.0 requires @spectree/core@^1.1.0
-You have @spectree/core@1.0.1 installed
+@dispatcher/planning@1.3.0 requires @dispatcher/core@^1.1.0
+You have @dispatcher/core@1.0.1 installed
 
-Update @spectree/core first? (yes/no):
+Update @dispatcher/core first? (yes/no):
 ```
 
 Select `yes` to update dependencies automatically.
@@ -419,7 +419,7 @@ Check for updates weekly or biweekly:
 
 ```bash
 # Add to your routine
-spectree list
+dispatcher list
 ```
 
 Don't let packs get too far behind.
@@ -429,7 +429,7 @@ Don't let packs get too far behind.
 Always review what changed before updating:
 
 ```bash
-spectree list @spectree/planning
+dispatcher list @dispatcher/planning
 ```
 
 Understand new features and breaking changes.
@@ -448,7 +448,7 @@ For major updates, use a feature branch:
 
 ```bash
 git checkout -b update-skill-packs
-spectree update --all
+dispatcher update --all
 # Test...
 git commit
 git push
@@ -460,7 +460,7 @@ git push
 After manual file changes, sync the manifest:
 
 ```bash
-spectree sync-local-packs
+dispatcher sync-local-packs
 ```
 
 Detects drift between files and manifest.
@@ -496,4 +496,4 @@ After successful update:
 ✅ Handling breaking changes and rollbacks  
 ✅ Best practices for safe updates  
 
-**Pro Tip:** Subscribe to SpecTree release notifications (GitHub Watch → Releases) to know when updates are available.
+**Pro Tip:** Subscribe to Dispatcher release notifications (GitHub Watch → Releases) to know when updates are available.

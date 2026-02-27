@@ -1,6 +1,6 @@
 # Database Multi-Provider Setup
 
-SpecTree uses Prisma ORM with support for multiple database providers:
+Dispatcher uses Prisma ORM with support for multiple database providers:
 
 - **SQLite** - Local development (default)
 - **SQL Server** - Azure production deployment
@@ -16,7 +16,7 @@ SpecTree uses Prisma ORM with support for multiple database providers:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DATABASE_URL` | SQLite connection (local) | `file:./data/spectree.db` |
+| `DATABASE_URL` | SQLite connection (local) | `file:./data/dispatcher.db` |
 | `SQLSERVER_DATABASE_URL` | Azure SQL connection | `sqlserver://server.database.windows.net:1433;database=db;user=user;password=pwd;encrypt=true` |
 
 ## NPM Scripts
@@ -41,7 +41,7 @@ npm run db:studio
 
 ```bash
 # Set the connection string
-export SQLSERVER_DATABASE_URL="sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=<PASSWORD>;encrypt=true"
+export SQLSERVER_DATABASE_URL="sqlserver://sql-dispatcher-dev.database.windows.net:1433;database=sqldb-dispatcher-dev;user=sqladmin;password=<PASSWORD>;encrypt=true"
 
 # Generate Prisma client for SQL Server
 npm run db:generate:sqlserver
@@ -89,8 +89,8 @@ See [Azure Deployment Guide](../deployment/azure-deployment-guide.md) for full d
    ```bash
    MY_IP=$(curl -s ifconfig.me)
    az sql server firewall-rule create \
-     --resource-group rg-spectree-dev \
-     --server sql-spectree-dev \
+     --resource-group rg-dispatcher-dev \
+     --server sql-dispatcher-dev \
      --name "TempMigrationAccess" \
      --start-ip-address $MY_IP \
      --end-ip-address $MY_IP
@@ -98,7 +98,7 @@ See [Azure Deployment Guide](../deployment/azure-deployment-guide.md) for full d
 
 2. **Set connection string**:
    ```bash
-   export SQLSERVER_DATABASE_URL="sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=<PASSWORD>;encrypt=true"
+   export SQLSERVER_DATABASE_URL="sqlserver://sql-dispatcher-dev.database.windows.net:1433;database=sqldb-dispatcher-dev;user=sqladmin;password=<PASSWORD>;encrypt=true"
    ```
 
 3. **Push schema to Azure SQL**:
@@ -110,8 +110,8 @@ See [Azure Deployment Guide](../deployment/azure-deployment-guide.md) for full d
 4. **Remove firewall rule**:
    ```bash
    az sql server firewall-rule delete \
-     --resource-group rg-spectree-dev \
-     --server sql-spectree-dev \
+     --resource-group rg-dispatcher-dev \
+     --server sql-dispatcher-dev \
      --name "TempMigrationAccess"
    ```
 
@@ -122,8 +122,8 @@ The Azure Container App uses `SQLSERVER_DATABASE_URL` for the database connectio
 ```bash
 # In Container App, set SQLSERVER_DATABASE_URL
 az containerapp update \
-  --name ca-spectree-dev \
-  --resource-group rg-spectree-dev \
+  --name ca-dispatcher-dev \
+  --resource-group rg-dispatcher-dev \
   --set-env-vars "SQLSERVER_DATABASE_URL=sqlserver://..."
 ```
 

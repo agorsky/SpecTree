@@ -8,20 +8,20 @@
 
 ## Overview
 
-We need to configure GitHub Actions to deploy the SpecTree application to Azure Container Apps. This requires setting up authentication between GitHub and Azure.
+We need to configure GitHub Actions to deploy the Dispatcher application to Azure Container Apps. This requires setting up authentication between GitHub and Azure.
 
 ## Target Resources
 
 | Resource | Name | Resource Group |
 |----------|------|----------------|
-| Container Registry | `acrspectreedev` | `rg-spectree-dev` |
-| API Container App | `ca-spectree-dev` | `rg-spectree-dev` |
-| Web Container App | `ca-spectree-web-dev` | `rg-spectree-dev` |
+| Container Registry | `acrdispatcherdev` | `rg-dispatcher-dev` |
+| API Container App | `ca-dispatcher-dev` | `rg-dispatcher-dev` |
+| Web Container App | `ca-dispatcher-web-dev` | `rg-dispatcher-dev` |
 
 ## GitHub Repository
 
 - **Organization/User**: `<FILL IN YOUR GITHUB ORG/USERNAME>`
-- **Repository**: `SpecTree`
+- **Repository**: `Dispatcher`
 - **Branch**: `main`
 
 ---
@@ -34,7 +34,7 @@ This is the more secure approach - no secrets to manage or rotate.
 
 1. Go to **Azure Portal → Microsoft Entra ID → App registrations**
 2. Click **New registration**
-3. Name: `sp-spectree-github`
+3. Name: `sp-dispatcher-github`
 4. Supported account types: **Single tenant**
 5. Click **Register**
 
@@ -46,7 +46,7 @@ This is the more secure approach - no secrets to manage or rotate.
 4. Configure:
    - **Federated credential scenario**: GitHub Actions deploying Azure resources
    - **Organization**: `<github-org-or-username>`
-   - **Repository**: `SpecTree`
+   - **Repository**: `Dispatcher`
    - **Entity type**: Branch
    - **GitHub branch name**: `main`
    - **Name**: `github-main-branch`
@@ -54,11 +54,11 @@ This is the more secure approach - no secrets to manage or rotate.
 
 ### Step 3: Grant Role Assignment
 
-1. Go to **Azure Portal → Resource Groups → rg-spectree-dev**
+1. Go to **Azure Portal → Resource Groups → rg-dispatcher-dev**
 2. Click **Access control (IAM)**
 3. Click **Add → Add role assignment**
 4. Role: **Contributor**
-5. Members: Select the `sp-spectree-github` app registration
+5. Members: Select the `sp-dispatcher-github` app registration
 6. Click **Review + assign**
 
 ### Step 4: Provide These Values
@@ -83,9 +83,9 @@ If federated credentials aren't preferred, create a service principal with a sec
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 
 az ad sp create-for-rbac \
-  --name "sp-spectree-github" \
+  --name "sp-dispatcher-github" \
   --role contributor \
-  --scopes /subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-spectree-dev \
+  --scopes /subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-dispatcher-dev \
   --sdk-auth
 ```
 
@@ -113,7 +113,7 @@ The service principal needs:
 
 | Permission | Scope | Reason |
 |------------|-------|--------|
-| **Contributor** | `rg-spectree-dev` resource group | Deploy to Container Apps, push to ACR |
+| **Contributor** | `rg-dispatcher-dev` resource group | Deploy to Container Apps, push to ACR |
 
 ---
 

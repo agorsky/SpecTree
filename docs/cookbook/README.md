@@ -1,6 +1,6 @@
-# SpecTree Workflow Cookbook
+# Dispatcher Workflow Cookbook
 
-Step-by-step guides for common SpecTree workflows. Each guide includes prerequisites, detailed steps, expected outputs, and troubleshooting tips.
+Step-by-step guides for common Dispatcher workflows. Each guide includes prerequisites, detailed steps, expected outputs, and troubleshooting tips.
 
 ---
 
@@ -8,7 +8,7 @@ Step-by-step guides for common SpecTree workflows. Each guide includes prerequis
 
 ### Getting Started
 
-- **[Creating Your First Epic](./first-epic.md)** — Create an epic from scratch using the SpecTree MCP tools *(~10 minutes)*
+- **[Creating Your First Epic](./first-epic.md)** — Create an epic from scratch using the Dispatcher MCP tools *(~10 minutes)*
 - **[Using the Planner Agent](./planner-agent.md)** — Decompose requirements into structured epics with AI *(~15 minutes)*
 
 ### Development Workflows
@@ -34,7 +34,7 @@ Each guide follows this structure:
 4. **Common Pitfalls** — Issues to avoid and how to fix them
 5. **Time Estimate** — How long the workflow takes
 
-**Tip:** Follow guides in order if you're new to SpecTree. Start with "Creating Your First Epic" to understand the basics.
+**Tip:** Follow guides in order if you're new to Dispatcher. Start with "Creating Your First Epic" to understand the basics.
 
 ---
 
@@ -44,18 +44,18 @@ Each guide follows this structure:
 
 ```bash
 # Skill Pack Management (specify your registry URL or set SPECTREE_REGISTRY_URL)
-spectree list --registry https://your-spectree-instance.com
-spectree install @spectree/full --registry https://your-spectree-instance.com
-spectree update --all --registry https://your-spectree-instance.com
+dispatcher list --registry https://your-dispatcher-instance.com
+dispatcher install @dispatcher/full --registry https://your-dispatcher-instance.com
+dispatcher update --all --registry https://your-dispatcher-instance.com
 
 # Or set the env var once to avoid repeating --registry:
-export SPECTREE_REGISTRY_URL=https://your-spectree-instance.com
-spectree install @spectree/full    # Uses SPECTREE_REGISTRY_URL
+export SPECTREE_REGISTRY_URL=https://your-dispatcher-instance.com
+dispatcher install @dispatcher/full    # Uses SPECTREE_REGISTRY_URL
 
-# SpecTree MCP Tools (in GitHub Copilot)
-@spectree list epics               # List your epics
-@spectree create epic              # Create epic interactively
-@spectree get progress <epic-id>   # Check epic progress
+# Dispatcher MCP Tools (in GitHub Copilot)
+@dispatcher list epics               # List your epics
+@dispatcher create epic              # Create epic interactively
+@dispatcher get progress <epic-id>   # Check epic progress
 ```
 
 ### Common Patterns
@@ -63,7 +63,7 @@ spectree install @spectree/full    # Uses SPECTREE_REGISTRY_URL
 **Planning Pattern:**
 1. Describe requirement in natural language
 2. Run `@planner` to decompose into epic
-3. Review and adjust in SpecTree UI
+3. Review and adjust in Dispatcher UI
 4. Start implementation
 
 **Implementation Pattern:**

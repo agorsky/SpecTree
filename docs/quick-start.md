@@ -1,12 +1,12 @@
-# SpecTree Quick Start
+# Dispatcher Quick Start
 
-Get up and running with SpecTree in under 5 minutes. This guide covers installation, MCP configuration, and your first workflow.
+Get up and running with Dispatcher in under 5 minutes. This guide covers installation, MCP configuration, and your first workflow.
 
 ---
 
 ## Prerequisites
 
-Before installing SpecTree, ensure you have:
+Before installing Dispatcher, ensure you have:
 
 - **Node.js 20+** — Check with `node --version`
 - **GitHub CLI (`gh`)** — Authenticated via SSO (`gh auth status` to verify)
@@ -18,7 +18,7 @@ Before installing SpecTree, ensure you have:
 
 ### Step 1: Configure npm for internal packages (one-time)
 
-SpecTree is distributed via GitHub Packages. Run these commands once to configure npm:
+Dispatcher is distributed via GitHub Packages. Run these commands once to configure npm:
 
 ```bash
 # Ensure your GitHub CLI session has package read access
@@ -37,13 +37,13 @@ This reuses your existing `gh` CLI login — no need to manually create or manag
 
 **Time:** ~10 seconds
 
-### Step 2: Install SpecTree Skill Packs
+### Step 2: Install Dispatcher Skill Packs
 
 ```bash
-npx @ttc-ggi/spectree-cli install @spectree/full --registry https://ca-spectree-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
+npx @ttc-ggi/dispatcher-cli install @dispatcher/full --registry https://ca-dispatcher-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
 ```
 
-This installs the full SpecTree Skill Pack suite including:
+This installs the full Dispatcher Skill Pack suite including:
 - **Planner** — Decompose requirements into structured epics
 - **Orchestrator** — Execute features with parallel AI agents
 - **Reviewer** — Validate implementations against acceptance criteria
@@ -53,7 +53,7 @@ This installs the full SpecTree Skill Pack suite including:
 
 ### Step 3: Configure GitHub Copilot
 
-Add the SpecTree MCP server to GitHub Copilot's settings:
+Add the Dispatcher MCP server to GitHub Copilot's settings:
 
 **macOS/Linux:** `~/.config/github-copilot/config.json`  
 **Windows:** `%APPDATA%\github-copilot\config.json`
@@ -62,11 +62,11 @@ Add the SpecTree MCP server to GitHub Copilot's settings:
 {
   "mcp": {
     "servers": {
-      "spectree": {
+      "dispatcher": {
         "command": "npx",
-        "args": ["@ttc-ggi/spectree-mcp"],
+        "args": ["@ttc-ggi/dispatcher-mcp"],
         "env": {
-          "API_BASE_URL": "https://ca-spectree-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io",
+          "API_BASE_URL": "https://ca-dispatcher-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io",
           "API_TOKEN": "your-api-token-here"
         }
       }
@@ -76,7 +76,7 @@ Add the SpecTree MCP server to GitHub Copilot's settings:
 ```
 
 **Get your API token:**
-1. Navigate to https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
+1. Navigate to https://ca-dispatcher-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
 2. Go to Settings → API Tokens → Create Token
 
 **Time:** ~2 minutes
@@ -86,13 +86,13 @@ Add the SpecTree MCP server to GitHub Copilot's settings:
 Open GitHub Copilot and test connectivity:
 
 ```
-@spectree list epics
+@dispatcher list epics
 ```
 
 **Expected output:** List of epics in your workspace (or empty list if none exist).
 
 **Troubleshooting:** If you see "MCP server not responding," check:
-- SpecTree API is running (`curl http://localhost:3001/health`)
+- Dispatcher API is running (`curl http://localhost:3001/health`)
 - MCP config has the correct `API_TOKEN`
 - Restart GitHub Copilot after config changes
 
@@ -100,7 +100,7 @@ Open GitHub Copilot and test connectivity:
 
 ### Step 5: Submit Your First Epic Request
 
-The recommended way to propose new work in SpecTree is through **Epic Requests** — structured proposals that go through a review process before becoming epics.
+The recommended way to propose new work in Dispatcher is through **Epic Requests** — structured proposals that go through a review process before becoming epics.
 
 Use the **request-formulator** agent to create a well-structured epic request:
 
@@ -115,7 +115,7 @@ The request-formulator will guide you through a structured interview covering:
 4. **Success Criteria** — How will you measure success? *(optional)*
 5. **Technical Context** — Dependencies, alternatives, effort estimate *(optional)*
 
-After the interview, it checks for duplicate requests, shows a preview, and submits to SpecTree for review.
+After the interview, it checks for duplicate requests, shows a preview, and submits to Dispatcher for review.
 
 **Expected output:**
 ```
@@ -132,26 +132,26 @@ Your request has been submitted for review.
 
 ### Step 6: Review and Approve the Epic Request
 
-Epic requests go through a review cycle before they become epics. Admins can approve or reject requests from the **SpecTree web UI** or via **MCP tools**.
+Epic requests go through a review cycle before they become epics. Admins can approve or reject requests from the **Dispatcher web UI** or via **MCP tools**.
 
 **In the web UI:**
-1. Navigate to https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io/epic-requests
+1. Navigate to https://ca-dispatcher-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io/epic-requests
 2. Click on the pending request to view details
 3. Add comments, react (👍 🔥 👎), and approve or reject
 
 **Via MCP tools (admin only):**
 ```
-@spectree list epic requests with status pending
+@dispatcher list epic requests with status pending
 ```
 
 To approve:
 ```
-@spectree approve epic request <request-id>
+@dispatcher approve epic request <request-id>
 ```
 
 To reject:
 ```
-@spectree reject epic request <request-id>
+@dispatcher reject epic request <request-id>
 ```
 
 > **Note:** Only global admins can approve or reject requests. Anyone can submit requests, add comments, and react.
@@ -180,7 +180,7 @@ The planner will:
 ✅ Created feature ENG-42-2: REST API Endpoints (4 tasks)
 ✅ Created feature ENG-42-3: Frontend Settings Page (3 tasks)
 
-Epic ready for review: https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io/epics/ENG-42
+Epic ready for review: https://ca-dispatcher-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io/epics/ENG-42
 ```
 
 > **Tip:** You can also invoke the planner directly without an epic request for quick prototyping:
@@ -188,7 +188,7 @@ Epic ready for review: https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.a
 > @planner "Add a user preferences API with GET and PUT endpoints"
 > ```
 
-**Next:** Review the epic at https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io/epics and adjust as needed.
+**Next:** Review the epic at https://ca-dispatcher-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io/epics and adjust as needed.
 
 **Time:** ~5 minutes
 
@@ -203,7 +203,7 @@ Once you're satisfied with the plan, use the **orchestrator** agent to implement
 The orchestrator will:
 1. **Load the execution plan** — Retrieve phases, dependencies, and parallel groups
 2. **Spawn worker agents** — One per feature, running in parallel where possible
-3. **Track progress** — Update task statuses in SpecTree as work completes
+3. **Track progress** — Update task statuses in Dispatcher as work completes
 4. **Run validations** — Verify acceptance criteria after each task
 5. **Review each phase** — Invoke the reviewer agent to check quality
 
@@ -231,7 +231,7 @@ The orchestrator will:
 🏁 All phases complete. Final status: 3/3 features done.
 ```
 
-You can monitor progress in real time from the SpecTree web UI — tasks move from "Backlog" → "In Progress" → "Done" as workers complete them.
+You can monitor progress in real time from the Dispatcher web UI — tasks move from "Backlog" → "In Progress" → "Done" as workers complete them.
 
 **Time:** Varies by epic size (~10-30 minutes for a small epic)
 
@@ -245,9 +245,9 @@ After orchestration completes:
    git log --oneline -10
    ```
 
-2. **Check the epic in SpecTree:**
+2. **Check the epic in Dispatcher:**
    ```
-   @spectree get progress summary for epic ENG-42
+   @dispatcher get progress summary for epic ENG-42
    ```
 
 3. **Run the reviewer agent** for a final quality check (optional — the orchestrator runs it per-phase automatically):
@@ -291,14 +291,14 @@ gh auth refresh -s read:packages
 npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
 ```
 
-### "Command not found: spectree"
+### "Command not found: dispatcher"
 
 **Cause:** CLI not in PATH after installation  
-**Solution:** Run `npm install -g @ttc-ggi/spectree-cli` or use `npx @ttc-ggi/spectree-cli` prefix
+**Solution:** Run `npm install -g @ttc-ggi/dispatcher-cli` or use `npx @ttc-ggi/dispatcher-cli` prefix
 
-### "MCP server spectree not responding"
+### "MCP server dispatcher not responding"
 
-**Cause:** MCP configuration incorrect or SpecTree not running  
+**Cause:** MCP configuration incorrect or Dispatcher not running  
 **Solution:**
 1. Verify API is running: `curl http://localhost:3001/health`
 2. Check MCP config file has correct `API_TOKEN`
@@ -307,12 +307,12 @@ npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
 ### "Invalid API token"
 
 **Cause:** Token expired or incorrect  
-**Solution:** Generate new token at https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io/settings/api-tokens and update MCP config
+**Solution:** Generate new token at https://ca-dispatcher-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io/settings/api-tokens and update MCP config
 
 ### "Cannot connect to database"
 
 **Cause:** Database not initialized  
-**Solution:** Run `pnpm --filter @spectree/api db:push` from repository root
+**Solution:** Run `pnpm --filter @dispatcher/api db:push` from repository root
 
 ---
 
@@ -333,4 +333,4 @@ npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
 
 **Want to dive deeper?** Read the [Workflow Cookbook](./cookbook/README.md) for guided walkthroughs
 
-**Found a bug?** Open an issue at [GitHub Issues](https://github.com/agorsky/SpecTree/issues)
+**Found a bug?** Open an issue at [GitHub Issues](https://github.com/agorsky/Dispatcher/issues)

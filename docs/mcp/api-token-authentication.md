@@ -1,8 +1,8 @@
 # API Token Authentication System
 
-> **Documentation for SpecTree MCP Integration**
+> **Documentation for Dispatcher MCP Integration**
 > 
-> This document provides comprehensive documentation for the API Token Authentication System, which enables programmatic access to the SpecTree API via long-lived tokens.
+> This document provides comprehensive documentation for the API Token Authentication System, which enables programmatic access to the Dispatcher API via long-lived tokens.
 
 ---
 
@@ -24,7 +24,7 @@
 
 ## Overview
 
-The API Token Authentication System provides long-lived, programmatic access to the SpecTree API. Unlike short-lived JWT tokens that require user login, API tokens are designed for:
+The API Token Authentication System provides long-lived, programmatic access to the Dispatcher API. Unlike short-lived JWT tokens that require user login, API tokens are designed for:
 
 - **MCP (Model Context Protocol) server integration**
 - **CI/CD pipelines**
@@ -46,7 +46,7 @@ The API Token Authentication System provides long-lived, programmatic access to 
 
 ## Problem Statement
 
-The MCP server needs to authenticate with the SpecTree API without user interaction. Traditional JWT tokens have limitations for this use case:
+The MCP server needs to authenticate with the Dispatcher API without user interaction. Traditional JWT tokens have limitations for this use case:
 
 ```mermaid
 flowchart LR
@@ -79,7 +79,7 @@ flowchart TB
         CI[CI/CD Pipeline]
     end
     
-    subgraph "SpecTree API"
+    subgraph "Dispatcher API"
         AUTH[Authentication Middleware]
         
         subgraph "Auth Strategies"
@@ -200,13 +200,13 @@ When a user is deleted, all their API tokens are automatically deleted (`onDelet
 
 ### Token Format
 
-All SpecTree API tokens follow this format:
+All Dispatcher API tokens follow this format:
 
 ```
 st_<base64url-encoded-random-bytes>
 ```
 
-- **Prefix**: `st_` (SpecTree) for easy identification
+- **Prefix**: `st_` (Dispatcher) for easy identification
 - **Random part**: 32 cryptographically secure random bytes, base64url encoded
 - **Example**: `st_K7xH2mPqR5vN8sT1wY4zA6bC9dE0fG3hI`
 
@@ -429,7 +429,7 @@ No body returned.
 ```mermaid
 sequenceDiagram
     participant Client as Client (MCP/CLI)
-    participant API as SpecTree API
+    participant API as Dispatcher API
     participant MW as Auth Middleware
     participant TS as Token Service
     participant DB as Database
@@ -705,7 +705,7 @@ curl -X POST http://localhost:3000/api/v1/features \
 ```json
 // Example MCP server configuration
 {
-  "spectree": {
+  "dispatcher": {
     "apiUrl": "http://localhost:3000/api/v1",
     "apiToken": "st_K7xH2mPqR5vN8sT1..."
   }

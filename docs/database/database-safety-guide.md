@@ -1,10 +1,10 @@
 # Database Safety Guide
 
-This document explains how to work safely with the SpecTree database to prevent accidental data loss.
+This document explains how to work safely with the Dispatcher database to prevent accidental data loss.
 
 ## Overview
 
-SpecTree uses SQLite for its database, stored at `packages/api/prisma/data/spectree.db`. This file contains all your projects, features, tasks, and user data.
+Dispatcher uses SQLite for its database, stored at `packages/api/prisma/data/dispatcher.db`. This file contains all your projects, features, tasks, and user data.
 
 **⚠️ WARNING**: Certain Prisma commands can permanently delete all data. Always backup before running database commands.
 
@@ -54,7 +54,7 @@ This creates a timestamped backup in the `backups/` directory.
 ls -la backups/
 
 # Restore (replace <timestamp> with actual filename)
-cp backups/spectree_<timestamp>.db packages/api/prisma/data/spectree.db
+cp backups/dispatcher_<timestamp>.db packages/api/prisma/data/dispatcher.db
 ```
 
 ---
@@ -65,18 +65,18 @@ The project is configured to use **separate databases**:
 
 | Environment | Database File | Used By |
 |-------------|--------------|---------|
-| Development | `spectree.db` | API server, MCP |
-| Testing | `spectree-test.db` | Vitest test suite |
+| Development | `dispatcher.db` | API server, MCP |
+| Testing | `dispatcher-test.db` | Vitest test suite |
 
 This separation prevents tests from accidentally deleting your real data.
 
 ### Test Database Configuration
 
-Tests automatically use `spectree-test.db` via `vitest.config.ts`:
+Tests automatically use `dispatcher-test.db` via `vitest.config.ts`:
 
 ```typescript
 env: {
-  DATABASE_URL: "file:./data/spectree-test.db",
+  DATABASE_URL: "file:./data/dispatcher-test.db",
 }
 ```
 
@@ -118,13 +118,13 @@ npx prisma db push  # Directly syncs schema, no migrations
 
 2. Restore the most recent backup:
    ```bash
-   cp backups/spectree_YYYYMMDD_HHMMSS.db packages/api/prisma/data/spectree.db
+   cp backups/dispatcher_YYYYMMDD_HHMMSS.db packages/api/prisma/data/dispatcher.db
    ```
 
 3. If the backup is missing new schema (like `api_tokens` table):
    ```bash
    # Restore backup first
-   cp backups/spectree_YYYYMMDD_HHMMSS.db packages/api/prisma/data/spectree.db
+   cp backups/dispatcher_YYYYMMDD_HHMMSS.db packages/api/prisma/data/dispatcher.db
    
    # Then apply new schema without data loss
    npx prisma db push
@@ -139,7 +139,7 @@ Unfortunately, without a backup, the data cannot be recovered. This is why regul
 ## Best Practices
 
 1. **Backup before any database command** - Run `npm run db:backup` first
-2. **Use the test database for testing** - Tests should never touch `spectree.db`
+2. **Use the test database for testing** - Tests should never touch `dispatcher.db`
 3. **Don't run `prisma migrate reset`** - It deletes everything
 4. **Check DATABASE_URL** - Make sure you're targeting the right database
 5. **Regular automated backups** - Consider a cron job for important data
@@ -150,7 +150,7 @@ Unfortunately, without a backup, the data cannot be recovered. This is why regul
 
 | File | Purpose |
 |------|---------|
-| `.env` | Development database (spectree.db) |
-| `.env.test` | Test database (spectree-test.db) |
+| `.env` | Development database (dispatcher.db) |
+| `.env.test` | Test database (dispatcher-test.db) |
 
 The test configuration is automatically loaded by Vitest.

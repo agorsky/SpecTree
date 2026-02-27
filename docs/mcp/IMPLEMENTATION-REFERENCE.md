@@ -1,6 +1,6 @@
-# SpecTree MCP Implementation Reference
+# Dispatcher MCP Implementation Reference
 
-> **Purpose:** Complete technical reference of the SpecTree MCP (Model Context Protocol) server implementation, including all AI workflow enhancements. This document serves as the authoritative source.
+> **Purpose:** Complete technical reference of the Dispatcher MCP (Model Context Protocol) server implementation, including all AI workflow enhancements. This document serves as the authoritative source.
 >
 > **Last Updated:** 2025-02-05
 > **Status:** Post-orchestrator cleanup (8 tools removed)
@@ -23,7 +23,7 @@
 
 ## Overview
 
-The SpecTree MCP server provides **95 registered tools** across 19 tool modules, enabling AI agents (like GitHub Copilot CLI) to manage project work through the Model Context Protocol.
+The Dispatcher MCP server provides **95 registered tools** across 19 tool modules, enabling AI agents (like GitHub Copilot CLI) to manage project work through the Model Context Protocol.
 
 ### Key Statistics
 
@@ -68,7 +68,7 @@ The MCP implementation was designed around these principles:
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
 │  ┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐ │
-│  │   AI Agent      │  stdio  │   MCP Server    │  HTTP   │   SpecTree API  │ │
+│  │   AI Agent      │  stdio  │   MCP Server    │  HTTP   │   Dispatcher API  │ │
 │  │  (Copilot CLI)  │◄───────►│ (packages/mcp)  │◄───────►│  (packages/api) │ │
 │  └─────────────────┘         └─────────────────┘         └────────┬────────┘ │
 │                                     │                              │          │
@@ -90,7 +90,7 @@ The MCP implementation was designed around these principles:
 packages/mcp/
 ├── src/
 │   ├── index.ts              # Server entry point
-│   ├── api-client.ts         # HTTP client for SpecTree API
+│   ├── api-client.ts         # HTTP client for Dispatcher API
 │   ├── utils.ts              # Shared utilities
 │   └── tools/                # 19 tool modules (68 tools total)
 │       ├── index.ts          # Tool registry
@@ -320,201 +320,201 @@ model PlanTemplate {
 
 ## MCP Tools - Complete Reference
 
-> **Note on Tool Organization:** SpecTree provides 6 **Composite Tools** that consolidate common workflows into single calls. These tools follow the pattern of a base name with action-based routing (e.g., `manage_ai_context`, `complete_task_with_validation`). They are **recommended** over the individual deprecated tools they replace. Deprecated tools remain functional but should be avoided in new code.
+> **Note on Tool Organization:** Dispatcher provides 6 **Composite Tools** that consolidate common workflows into single calls. These tools follow the pattern of a base name with action-based routing (e.g., `manage_ai_context`, `complete_task_with_validation`). They are **recommended** over the individual deprecated tools they replace. Deprecated tools remain functional but should be avoided in new code.
 >
 > **Composite Tools:**
-> - `spectree__manage_ai_context` - Replaces 3 AI context tools
-> - `spectree__manage_code_context` - Replaces 7 code context tools  
-> - `spectree__manage_description` - Replaces 6 structured description tools
-> - `spectree__manage_progress` - Replaces 4 progress tracking tools
-> - `spectree__manage_validations` - Replaces 7 validation tools
-> - `spectree__complete_task_with_validation` - Validates & completes atomically
+> - `dispatcher__manage_ai_context` - Replaces 3 AI context tools
+> - `dispatcher__manage_code_context` - Replaces 7 code context tools  
+> - `dispatcher__manage_description` - Replaces 6 structured description tools
+> - `dispatcher__manage_progress` - Replaces 4 progress tracking tools
+> - `dispatcher__manage_validations` - Replaces 7 validation tools
+> - `dispatcher__complete_task_with_validation` - Validates & completes atomically
 
 ### Help (1 tool)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__get_instructions` | Get comprehensive instructions for using SpecTree effectively |
+| `dispatcher__get_instructions` | Get comprehensive instructions for using Dispatcher effectively |
 
 ### Epics (4 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__list_epics` | List epics with pagination and filtering |
-| `spectree__get_epic` | Get epic by ID or name |
-| `spectree__create_epic` | Create a new epic in a team |
-| `spectree__create_personal_project` | Create epic in personal scope (alias) |
+| `dispatcher__list_epics` | List epics with pagination and filtering |
+| `dispatcher__get_epic` | Get epic by ID or name |
+| `dispatcher__create_epic` | Create a new epic in a team |
+| `dispatcher__create_personal_project` | Create epic in personal scope (alias) |
 
 ### Features (4 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__list_features` | List features with filters (epic, status, assignee) |
-| `spectree__get_feature` | Get feature by ID or identifier (e.g., `ENG-123`) |
-| `spectree__create_feature` | Create feature in an epic |
-| `spectree__update_feature` | Update feature properties |
+| `dispatcher__list_features` | List features with filters (epic, status, assignee) |
+| `dispatcher__get_feature` | Get feature by ID or identifier (e.g., `ENG-123`) |
+| `dispatcher__create_feature` | Create feature in an epic |
+| `dispatcher__update_feature` | Update feature properties |
 
 ### Tasks (4 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__list_tasks` | List tasks with filters (feature, status, assignee) |
-| `spectree__get_task` | Get task by ID or identifier (e.g., `ENG-123-1`) |
-| `spectree__create_task` | Create task under a feature |
-| `spectree__update_task` | Update task properties |
+| `dispatcher__list_tasks` | List tasks with filters (feature, status, assignee) |
+| `dispatcher__get_task` | Get task by ID or identifier (e.g., `ENG-123-1`) |
+| `dispatcher__create_task` | Create task under a feature |
+| `dispatcher__update_task` | Update task properties |
 
 ### Statuses (2 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__list_statuses` | List workflow statuses for a team |
-| `spectree__get_status` | Get status details by ID or name |
+| `dispatcher__list_statuses` | List workflow statuses for a team |
+| `dispatcher__get_status` | Get status details by ID or name |
 
 ### Ordering (1 recommended + 2 deprecated tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__reorder_item` | **Composite tool**: Reorder epics, features, or tasks |
-| ⚠️ `spectree__reorder_feature` | **DEPRECATED**: Use `reorder_item` instead |
-| ⚠️ `spectree__reorder_task` | **DEPRECATED**: Use `reorder_item` instead |
+| `dispatcher__reorder_item` | **Composite tool**: Reorder epics, features, or tasks |
+| ⚠️ `dispatcher__reorder_feature` | **DEPRECATED**: Use `reorder_item` instead |
+| ⚠️ `dispatcher__reorder_task` | **DEPRECATED**: Use `reorder_item` instead |
 
 ### Search (1 tool)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__search` | Unified search for features and tasks |
+| `dispatcher__search` | Unified search for features and tasks |
 
 ### Personal Scope (4 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__get_personal_scope` | Get user's personal scope info |
-| `spectree__list_personal_projects` | List epics in personal scope |
-| `spectree__create_personal_project` | Create epic in personal scope |
-| `spectree__list_personal_statuses` | List personal workflow statuses |
+| `dispatcher__get_personal_scope` | Get user's personal scope info |
+| `dispatcher__list_personal_projects` | List epics in personal scope |
+| `dispatcher__create_personal_project` | Create epic in personal scope |
+| `dispatcher__list_personal_statuses` | List personal workflow statuses |
 
 ### Teams (1 tool)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__list_teams` | List teams accessible to user |
+| `dispatcher__list_teams` | List teams accessible to user |
 
 ### Execution Planning (4 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__get_execution_plan` | Get ordered phases with parallel groups |
-| `spectree__set_execution_metadata` | Set order, dependencies, parallelization |
-| `spectree__mark_blocked` | Add dependency (blocker) |
-| `spectree__mark_unblocked` | Remove dependency |
+| `dispatcher__get_execution_plan` | Get ordered phases with parallel groups |
+| `dispatcher__set_execution_metadata` | Set order, dependencies, parallelization |
+| `dispatcher__mark_blocked` | Add dependency (blocker) |
+| `dispatcher__mark_unblocked` | Remove dependency |
 
 ### AI Context (1 recommended + 3 deprecated tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__manage_ai_context` | **Composite tool**: Get, set, or append AI context/notes |
-| ⚠️ `spectree__get_ai_context` | **DEPRECATED**: Use `manage_ai_context` action='get_context' |
-| ⚠️ `spectree__set_ai_context` | **DEPRECATED**: Use `manage_ai_context` action='set_context' |
-| ⚠️ `spectree__append_ai_note` | **DEPRECATED**: Use `manage_ai_context` action='append_note' |
+| `dispatcher__manage_ai_context` | **Composite tool**: Get, set, or append AI context/notes |
+| ⚠️ `dispatcher__get_ai_context` | **DEPRECATED**: Use `manage_ai_context` action='get_context' |
+| ⚠️ `dispatcher__set_ai_context` | **DEPRECATED**: Use `manage_ai_context` action='set_context' |
+| ⚠️ `dispatcher__append_ai_note` | **DEPRECATED**: Use `manage_ai_context` action='append_note' |
 
 ### Progress Tracking (1 recommended + 4 deprecated tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__manage_progress` | **Composite tool**: Start, complete, log progress, or report blockers |
-| ⚠️ `spectree__start_work` | **DEPRECATED**: Use `manage_progress` action='start_work' |
-| ⚠️ `spectree__complete_work` | **DEPRECATED**: Use `manage_progress` action='complete_work' |
-| ⚠️ `spectree__log_progress` | **DEPRECATED**: Use `manage_progress` action='log_progress' |
-| ⚠️ `spectree__report_blocker` | **DEPRECATED**: Use `manage_progress` action='report_blocker' |
+| `dispatcher__manage_progress` | **Composite tool**: Start, complete, log progress, or report blockers |
+| ⚠️ `dispatcher__start_work` | **DEPRECATED**: Use `manage_progress` action='start_work' |
+| ⚠️ `dispatcher__complete_work` | **DEPRECATED**: Use `manage_progress` action='complete_work' |
+| ⚠️ `dispatcher__log_progress` | **DEPRECATED**: Use `manage_progress` action='log_progress' |
+| ⚠️ `dispatcher__report_blocker` | **DEPRECATED**: Use `manage_progress` action='report_blocker' |
 
 ### Progress Summary (3 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__get_progress_summary` | Comprehensive epic dashboard |
-| `spectree__get_my_work` | Get user's assigned work queue |
-| `spectree__get_blocked_summary` | Get all blocked items |
+| `dispatcher__get_progress_summary` | Comprehensive epic dashboard |
+| `dispatcher__get_my_work` | Get user's assigned work queue |
+| `dispatcher__get_blocked_summary` | Get all blocked items |
 
 ### Session Handoff (5 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__start_session` | Start AI session, get previous handoff |
-| `spectree__end_session` | End session with summary, next steps, blockers |
-| `spectree__get_active_session` | Check for active session |
-| `spectree__get_last_session` | Get last completed session's handoff |
-| `spectree__get_session_history` | Get session history for epic |
+| `dispatcher__start_session` | Start AI session, get previous handoff |
+| `dispatcher__end_session` | End session with summary, next steps, blockers |
+| `dispatcher__get_active_session` | Check for active session |
+| `dispatcher__get_last_session` | Get last completed session's handoff |
+| `dispatcher__get_session_history` | Get session history for epic |
 
 ### Structured Descriptions (1 recommended + 6 deprecated tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__manage_description` | **Composite tool**: Get, set, update sections, add criteria/files/links |
-| ⚠️ `spectree__get_structured_description` | **DEPRECATED**: Use `manage_description` action='get' |
-| ⚠️ `spectree__set_structured_description` | **DEPRECATED**: Use `manage_description` action='set' |
-| ⚠️ `spectree__update_section` | **DEPRECATED**: Use `manage_description` action='update_section' |
-| ⚠️ `spectree__add_acceptance_criterion` | **DEPRECATED**: Use `manage_description` action='add_criterion' |
-| ⚠️ `spectree__link_file` | **DEPRECATED**: Use `manage_description` action='link_file' |
-| ⚠️ `spectree__add_external_link` | **DEPRECATED**: Use `manage_description` action='add_link' |
+| `dispatcher__manage_description` | **Composite tool**: Get, set, update sections, add criteria/files/links |
+| ⚠️ `dispatcher__get_structured_description` | **DEPRECATED**: Use `manage_description` action='get' |
+| ⚠️ `dispatcher__set_structured_description` | **DEPRECATED**: Use `manage_description` action='set' |
+| ⚠️ `dispatcher__update_section` | **DEPRECATED**: Use `manage_description` action='update_section' |
+| ⚠️ `dispatcher__add_acceptance_criterion` | **DEPRECATED**: Use `manage_description` action='add_criterion' |
+| ⚠️ `dispatcher__link_file` | **DEPRECATED**: Use `manage_description` action='link_file' |
+| ⚠️ `dispatcher__add_external_link` | **DEPRECATED**: Use `manage_description` action='add_link' |
 
 ### Code Context (1 recommended + 7 deprecated tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__manage_code_context` | **Composite tool**: Get, link, or unlink files/functions/branches/commits/PRs |
-| ⚠️ `spectree__get_code_context` | **DEPRECATED**: Use `manage_code_context` action='get_context' |
-| ⚠️ `spectree__link_code_file` | **DEPRECATED**: Use `manage_code_context` action='link_file' |
-| ⚠️ `spectree__unlink_code_file` | **DEPRECATED**: Use `manage_code_context` action='unlink_file' |
-| ⚠️ `spectree__link_function` | **DEPRECATED**: Use `manage_code_context` action='link_function' |
-| ⚠️ `spectree__link_branch` | **DEPRECATED**: Use `manage_code_context` action='link_branch' |
-| ⚠️ `spectree__link_commit` | **DEPRECATED**: Use `manage_code_context` action='link_commit' |
-| ⚠️ `spectree__link_pr` | **DEPRECATED**: Use `manage_code_context` action='link_pr' |
+| `dispatcher__manage_code_context` | **Composite tool**: Get, link, or unlink files/functions/branches/commits/PRs |
+| ⚠️ `dispatcher__get_code_context` | **DEPRECATED**: Use `manage_code_context` action='get_context' |
+| ⚠️ `dispatcher__link_code_file` | **DEPRECATED**: Use `manage_code_context` action='link_file' |
+| ⚠️ `dispatcher__unlink_code_file` | **DEPRECATED**: Use `manage_code_context` action='unlink_file' |
+| ⚠️ `dispatcher__link_function` | **DEPRECATED**: Use `manage_code_context` action='link_function' |
+| ⚠️ `dispatcher__link_branch` | **DEPRECATED**: Use `manage_code_context` action='link_branch' |
+| ⚠️ `dispatcher__link_commit` | **DEPRECATED**: Use `manage_code_context` action='link_commit' |
+| ⚠️ `dispatcher__link_pr` | **DEPRECATED**: Use `manage_code_context` action='link_pr' |
 
 ### Validation Checklists (1 recommended + 7 deprecated tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__manage_validations` | **Composite tool**: Add, list, run, mark, remove, or reset validations |
-| ⚠️ `spectree__add_validation` | **DEPRECATED**: Use `manage_validations` action='add' |
-| ⚠️ `spectree__list_validations` | **DEPRECATED**: Use `manage_validations` action='list' |
-| ⚠️ `spectree__run_validation` | **DEPRECATED**: Use `manage_validations` action='run' |
-| ⚠️ `spectree__run_all_validations` | **DEPRECATED**: Use `manage_validations` action='run_all' |
-| ⚠️ `spectree__mark_manual_validated` | **DEPRECATED**: Use `manage_validations` action='mark_manual' |
-| ⚠️ `spectree__remove_validation` | **DEPRECATED**: Use `manage_validations` action='remove' |
-| ⚠️ `spectree__reset_validations` | **DEPRECATED**: Use `manage_validations` action='reset' |
+| `dispatcher__manage_validations` | **Composite tool**: Add, list, run, mark, remove, or reset validations |
+| ⚠️ `dispatcher__add_validation` | **DEPRECATED**: Use `manage_validations` action='add' |
+| ⚠️ `dispatcher__list_validations` | **DEPRECATED**: Use `manage_validations` action='list' |
+| ⚠️ `dispatcher__run_validation` | **DEPRECATED**: Use `manage_validations` action='run' |
+| ⚠️ `dispatcher__run_all_validations` | **DEPRECATED**: Use `manage_validations` action='run_all' |
+| ⚠️ `dispatcher__mark_manual_validated` | **DEPRECATED**: Use `manage_validations` action='mark_manual' |
+| ⚠️ `dispatcher__remove_validation` | **DEPRECATED**: Use `manage_validations` action='remove' |
+| ⚠️ `dispatcher__reset_validations` | **DEPRECATED**: Use `manage_validations` action='reset' |
 
 ### Decision Log (4 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__log_decision` | Record decision with rationale (append-only) |
-| `spectree__list_decisions` | List decisions with filters |
-| `spectree__search_decisions` | Search decisions by text |
-| `spectree__get_decision_context` | Get decisions for current work context |
+| `dispatcher__log_decision` | Record decision with rationale (append-only) |
+| `dispatcher__list_decisions` | List decisions with filters |
+| `dispatcher__search_decisions` | Search decisions by text |
+| `dispatcher__get_decision_context` | Get decisions for current work context |
 
 ### Templates (5 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__list_templates` | List available templates |
-| `spectree__get_template` | Get template details |
-| `spectree__preview_template` | Preview template expansion |
-| `spectree__create_from_template` | Create epic from template |
-| `spectree__save_as_template` | Save epic as template |
+| `dispatcher__list_templates` | List available templates |
+| `dispatcher__get_template` | Get template details |
+| `dispatcher__preview_template` | Preview template expansion |
+| `dispatcher__create_from_template` | Create epic from template |
+| `dispatcher__save_as_template` | Save epic as template |
 
 ### Composite Tools (2 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__create_epic_complete` | Create epic with all features/tasks atomically |
-| `spectree__complete_task_with_validation` | Run validations and complete if all pass |
+| `dispatcher__create_epic_complete` | Create epic with all features/tasks atomically |
+| `dispatcher__complete_task_with_validation` | Run validations and complete if all pass |
 
 ### Workflow Guidance (2 tools)
 
 | Tool | Description |
 |------|-------------|
-| `spectree__get_next_required_action` | Get context-aware next action guidance |
-| `spectree__get_session_state` | Get current session state and allowed transitions |
+| `dispatcher__get_next_required_action` | Get context-aware next action guidance |
+| `dispatcher__get_session_state` | Get current session state and allowed transitions |
 
 ---
 
@@ -583,7 +583,7 @@ model PlanTemplate {
 | File | Purpose |
 |------|---------|
 | `packages/mcp/src/index.ts` | Server entry point |
-| `packages/mcp/src/api-client.ts` | HTTP client for SpecTree API |
+| `packages/mcp/src/api-client.ts` | HTTP client for Dispatcher API |
 | `packages/mcp/src/tools/index.ts` | Tool registry (21 registrars) |
 | `packages/mcp/src/tools/*.ts` | Individual tool modules |
 
@@ -626,9 +626,9 @@ model PlanTemplate {
 ```json
 {
   "mcpServers": {
-    "spectree": {
+    "dispatcher": {
       "command": "node",
-      "args": ["/path/to/spectree/packages/mcp/dist/index.js"],
+      "args": ["/path/to/dispatcher/packages/mcp/dist/index.js"],
       "env": {
         "API_TOKEN": "st_your-token-here",
         "API_BASE_URL": "http://localhost:3001"
@@ -642,7 +642,7 @@ model PlanTemplate {
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `API_TOKEN` | Yes | - | SpecTree API token (prefix `st_`) |
+| `API_TOKEN` | Yes | - | Dispatcher API token (prefix `st_`) |
 | `API_BASE_URL` | No | `http://localhost:3001` | API server URL |
 
 ---
@@ -655,7 +655,7 @@ The orchestrator CLI (`packages/orchestrator/`) externally manages:
 
 | Concern | How Orchestrator Handles It |
 |---------|----------------------------|
-| Sessions | Creates/ends sessions via SpecTree API when spawning/completing agents |
+| Sessions | Creates/ends sessions via Dispatcher API when spawning/completing agents |
 | Workflow | Explicitly prompts agents with specific task assignments |
 | Progress | Calls `start_work`/`complete_work` API endpoints when assigning work |
 | Branches | Creates feature branches before agent execution |
@@ -688,7 +688,7 @@ MCP tools remain available for:
 
 ## Summary
 
-The SpecTree MCP implementation provides:
+The Dispatcher MCP implementation provides:
 
 - **68 MCP tools** across 19 modules
 - **3 dedicated database models** (AiSession, Decision, PlanTemplate)

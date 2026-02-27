@@ -10,13 +10,13 @@ Tools are registered in a central registry (`src/tools/index.ts`) using an order
 
 Tool definitions must follow this pattern:
 ```ts
-server.registerTool("spectree__<action_name>", {
+server.registerTool("dispatcher__<action_name>", {
   description: "...",
   inputSchema: { /* Zod schema */ }
 }, handler)
 ```
 
-- Tool names MUST use `spectree__` prefix with double underscore
+- Tool names MUST use `dispatcher__` prefix with double underscore
 - Input schemas use Zod with `.describe()` on every parameter for documentation
 - Responses use `createResponse(data)` and `createErrorResponse(error)` wrappers from `src/tools/utils.ts`
 

@@ -1,8 +1,8 @@
-# Implementation Briefing: SpecTree Parallel Agent Orchestrator CLI
+# Implementation Briefing: Dispatcher Parallel Agent Orchestrator CLI
 
 ## Purpose of This Document
 
-This document provides complete context for an AI agent to create a comprehensive implementation plan in SpecTree for building a **Parallel Agent Orchestrator CLI Tool**.
+This document provides complete context for an AI agent to create a comprehensive implementation plan in Dispatcher for building a **Parallel Agent Orchestrator CLI Tool**.
 
 ---
 
@@ -45,9 +45,9 @@ The orchestrator package is **substantially complete** with all major components
 | **Git Integration** | | |
 | `src/git/branch-manager.ts` | ✅ Complete | 10KB - Branch operations |
 | `src/git/merge-coordinator.ts` | ✅ Complete | 9KB - Merge logic |
-| **SpecTree Integration** | | |
-| `src/spectree/api-client.ts` | ✅ Complete | 43KB - Full REST API client |
-| `src/spectree/mcp-bridge.ts` | ✅ Complete | 31KB - MCP tool bridge |
+| **Dispatcher Integration** | | |
+| `src/dispatcher/api-client.ts` | ✅ Complete | 43KB - Full REST API client |
+| `src/dispatcher/mcp-bridge.ts` | ✅ Complete | 31KB - MCP tool bridge |
 | **UI Components** | | |
 | `src/ui/progress.ts` | ✅ Complete | 12KB - Terminal progress |
 | `src/ui/agent-status.ts` | ✅ Complete | 15KB - Agent status display |
@@ -113,8 +113,8 @@ All planned features have been implemented. The orchestrator is production-ready
 
 **✅ Core Infrastructure**
 - Configuration management with user/project config merging
-- Full SpecTree REST API client (43KB, all CRUD operations)
-- MCP bridge exposing SpecTree tools to Copilot SDK (31KB)
+- Full Dispatcher REST API client (43KB, all CRUD operations)
+- MCP bridge exposing Dispatcher tools to Copilot SDK (31KB)
 
 **✅ Agent Orchestration**
 - Main orchestrator controller (33KB) managing full epic execution
@@ -169,13 +169,13 @@ The orchestrator is ready to use:
 pnpm install
 
 # Build
-pnpm --filter @spectree/orchestrator build
+pnpm --filter @dispatcher/orchestrator build
 
 # Authenticate
-spectree-agent auth --token st_your-token
+dispatcher-agent auth --token st_your-token
 
 # Run your first orchestration
-spectree-agent run "Build a user authentication API" --team Engineering
+dispatcher-agent run "Build a user authentication API" --team Engineering
 ```
 
 ### Current State
@@ -215,34 +215,34 @@ The following sections provide additional context for implementation.
 
 ### What We're Building
 
-A CLI tool (`@spectree/orchestrator`) that allows developers to:
+A CLI tool (`@dispatcher/orchestrator`) that allows developers to:
 1. Describe a project/epic in natural language
-2. Have AI automatically create structured plans in SpecTree
+2. Have AI automatically create structured plans in Dispatcher
 3. Execute the work using **parallel AI agents** when possible
 4. Track progress, decisions, and handoffs automatically
 
 ### The "One Prompt" Dream
 
 ```bash
-spectree-agent run "Build a user authentication system with OAuth, MFA, and session management"
+dispatcher-agent run "Build a user authentication system with OAuth, MFA, and session management"
 ```
 
 This single command should:
-1. Create an epic with features and tasks in SpecTree
+1. Create an epic with features and tasks in Dispatcher
 2. Analyze execution plan (phases, dependencies, parallelism)
 3. Spawn multiple AI agent sessions for parallel work
 4. Coordinate branch-per-agent strategy
-5. Track all progress back to SpecTree
+5. Track all progress back to Dispatcher
 6. Report completion and create PRs
 
 ---
 
 ## Appendix B: Technical Foundation
 
-### Existing SpecTree Architecture
+### Existing Dispatcher Architecture
 
 ```
-SpecTree/
+Dispatcher/
 ├── packages/
 │   ├── api/          # Fastify REST API + Prisma ORM (SQLite)
 │   ├── web/          # React + Vite + Tailwind + Radix UI
@@ -277,7 +277,7 @@ const session = await client.createSession({
   model: "gpt-4.1",
   streaming: true,
   tools: [myCustomTool],
-  mcpServers: { spectree: {...} }
+  mcpServers: { dispatcher: {...} }
 });
 
 // Send prompt, AI uses tools, returns response
@@ -292,19 +292,19 @@ const response = await session.sendAndWait({ prompt: "..." });
 
 ---
 
-## Appendix C: SpecTree MCP Tools Available
+## Appendix C: Dispatcher MCP Tools Available
 
-The orchestrator will leverage SpecTree's existing MCP tools. Key categories:
+The orchestrator will leverage Dispatcher's existing MCP tools. Key categories:
 
 ### Epic/Feature/Task Management
-- `spectree__create_epic` / `spectree__create_feature` / `spectree__create_task`
-- `spectree__update_feature` / `spectree__update_task`
-- `spectree__get_epic` / `spectree__get_feature` / `spectree__get_task`
+- `dispatcher__create_epic` / `dispatcher__create_feature` / `dispatcher__create_task`
+- `dispatcher__update_feature` / `dispatcher__update_task`
+- `dispatcher__get_epic` / `dispatcher__get_feature` / `dispatcher__get_task`
 
 ### Execution Planning (Critical for Parallelism)
-- `spectree__get_execution_plan` - Returns phases with parallel groups
-- `spectree__set_execution_metadata` - Set order, dependencies, parallelGroup
-- `spectree__mark_blocked` / `spectree__mark_unblocked`
+- `dispatcher__get_execution_plan` - Returns phases with parallel groups
+- `dispatcher__set_execution_metadata` - Set order, dependencies, parallelGroup
+- `dispatcher__mark_blocked` / `dispatcher__mark_unblocked`
 
 **Execution Plan Response Example:**
 ```json
@@ -328,27 +328,27 @@ The orchestrator will leverage SpecTree's existing MCP tools. Key categories:
 ```
 
 ### Session Management
-- `spectree__start_session` - Begin work on epic, get previous handoff context
-- `spectree__end_session` - Save summary, next steps, blockers, decisions
-- `spectree__get_progress_summary` - Dashboard view of epic status
+- `dispatcher__start_session` - Begin work on epic, get previous handoff context
+- `dispatcher__end_session` - Save summary, next steps, blockers, decisions
+- `dispatcher__get_progress_summary` - Dashboard view of epic status
 
 ### Progress Tracking
-- `spectree__start_work` - Mark item as in-progress
-- `spectree__complete_work` - Mark item as done with summary
-- `spectree__log_progress` - Incremental progress updates
+- `dispatcher__start_work` - Mark item as in-progress
+- `dispatcher__complete_work` - Mark item as done with summary
+- `dispatcher__log_progress` - Incremental progress updates
 
 ### Code Context
-- `spectree__link_code_file` - Link files to features/tasks
-- `spectree__link_branch` - Set git branch
-- `spectree__link_commit` - Record commits
-- `spectree__link_pr` - Link pull requests
+- `dispatcher__link_code_file` - Link files to features/tasks
+- `dispatcher__link_branch` - Set git branch
+- `dispatcher__link_commit` - Record commits
+- `dispatcher__link_pr` - Link pull requests
 
 ### Decision Logging
-- `spectree__log_decision` - Record decisions with rationale
+- `dispatcher__log_decision` - Record decisions with rationale
 
 ### Validation
-- `spectree__add_validation` - Add acceptance criteria checks
-- `spectree__run_all_validations` - Verify work is complete
+- `dispatcher__add_validation` - Add acceptance criteria checks
+- `dispatcher__run_all_validations` - Verify work is complete
 
 ---
 
@@ -366,7 +366,7 @@ packages/orchestrator/
 │   │   │   ├── continue.ts   # Continue existing epic
 │   │   │   ├── status.ts     # Check running agents
 │   │   │   ├── pause.ts      # Pause an agent
-│   │   │   └── auth.ts       # Authenticate with SpecTree
+│   │   │   └── auth.ts       # Authenticate with Dispatcher
 │   │   └── index.ts          # Command registration
 │   ├── orchestrator/
 │   │   ├── orchestrator.ts   # Main orchestration logic
@@ -376,7 +376,7 @@ packages/orchestrator/
 │   ├── git/
 │   │   ├── branch-manager.ts # Create/manage agent branches
 │   │   └── merge-coordinator.ts # Merge completed work
-│   ├── spectree/
+│   ├── dispatcher/
 │   │   ├── api-client.ts     # REST API client
 │   │   └── mcp-bridge.ts     # Expose MCP tools to SDK
 │   ├── ui/
@@ -394,7 +394,7 @@ packages/orchestrator/
 #### Flow 1: New Epic from Prompt
 
 ```
-User: spectree-agent run "Build auth system"
+User: dispatcher-agent run "Build auth system"
          │
          ▼
 ┌─────────────────────────────────────────┐
@@ -406,7 +406,7 @@ User: spectree-agent run "Build auth system"
          │
          ▼
 ┌─────────────────────────────────────────┐
-│ 2. Get Execution Plan from SpecTree     │
+│ 2. Get Execution Plan from Dispatcher     │
 │    - Phases with parallelism info       │
 └─────────────────────────────────────────┘
          │
@@ -423,7 +423,7 @@ User: spectree-agent run "Build auth system"
 ┌─────────────────────────────────────────┐
 │ 4. Completion                           │
 │    - Merge branches                     │
-│    - End SpecTree session               │
+│    - End Dispatcher session               │
 │    - Report summary                     │
 └─────────────────────────────────────────┘
 ```
@@ -455,7 +455,7 @@ Phase with canRunInParallel=true
 │         │                      │        │
 │         ▼                      ▼        │
 │    Report progress       Report progress│
-│    to SpecTree           to SpecTree    │
+│    to Dispatcher           to Dispatcher    │
 └─────────────────────────────────────────┘
          │
          ▼
@@ -476,7 +476,7 @@ Phase with canRunInParallel=true
 
 ## Appendix E: CLI Commands Specification
 
-### `spectree-agent run <prompt>`
+### `dispatcher-agent run <prompt>`
 
 Create and execute a new epic from a natural language description.
 
@@ -491,10 +491,10 @@ Options:
 
 **Example:**
 ```bash
-spectree-agent run "Build user dashboard with activity charts" --team Engineering
+dispatcher-agent run "Build user dashboard with activity charts" --team Engineering
 ```
 
-### `spectree-agent continue <epic>`
+### `dispatcher-agent continue <epic>`
 
 Continue working on an existing epic.
 
@@ -506,10 +506,10 @@ Options:
 
 **Example:**
 ```bash
-spectree-agent continue "User Dashboard"
+dispatcher-agent continue "User Dashboard"
 ```
 
-### `spectree-agent status`
+### `dispatcher-agent status`
 
 Show status of running orchestration.
 
@@ -529,29 +529,29 @@ Output:
     COM-7 "Frontend integration" (waiting on COM-5, COM-6)
 ```
 
-### `spectree-agent pause [worker]`
+### `dispatcher-agent pause [worker]`
 
 Pause a running agent or all agents.
 
-### `spectree-agent resume [worker]`
+### `dispatcher-agent resume [worker]`
 
 Resume paused agents.
 
-### `spectree-agent auth`
+### `dispatcher-agent auth`
 
-Authenticate with SpecTree API.
+Authenticate with Dispatcher API.
 
 ```bash
-spectree-agent auth
+dispatcher-agent auth
 # Opens browser for OAuth or prompts for API token
-# Stores token in ~/.spectree/credentials
+# Stores token in ~/.dispatcher/credentials
 ```
 
 ---
 
 ## Appendix F: Configuration
 
-### User Configuration (`~/.spectree/config.json`)
+### User Configuration (`~/.dispatcher/config.json`)
 
 ```json
 {
@@ -566,7 +566,7 @@ spectree-agent auth
 }
 ```
 
-### Project Configuration (`.spectree.json` in repo root)
+### Project Configuration (`.dispatcher.json` in repo root)
 
 ```json
 {
@@ -629,7 +629,7 @@ spectree-agent auth
 
 ### Integration Tests
 - Full flow with mock Copilot SDK
-- SpecTree API interaction
+- Dispatcher API interaction
 
 ### E2E Tests (Manual)
 - Real Copilot SDK with test epic
@@ -650,7 +650,7 @@ spectree-agent auth
    - Stop and report
    - Provide resolution guidance
 
-3. **SpecTree API Down**: Can't connect
+3. **Dispatcher API Down**: Can't connect
    - Retry with backoff
    - Cache progress locally
 
@@ -662,7 +662,7 @@ spectree-agent auth
 
 ## Appendix J: Team Visibility (Future Web Dashboard)
 
-After CLI is working, extend SpecTree web with:
+After CLI is working, extend Dispatcher web with:
 
 - `/orchestrator/runs` - List of orchestration runs
 - `/orchestrator/runs/:id` - Single run detail with agent progress
@@ -675,18 +675,18 @@ After CLI is working, extend SpecTree web with:
 
 The implementation is complete when:
 
-1. **CLI Installable**: `npm install -g @spectree/orchestrator`
+1. **CLI Installable**: `npm install -g @dispatcher/orchestrator`
 
 2. **Basic Flow Works**:
    ```bash
-   spectree-agent run "Add user preferences API endpoint"
+   dispatcher-agent run "Add user preferences API endpoint"
    # Creates epic, executes work, reports completion
    ```
 
 3. **Parallel Execution Works**:
    - Multiple agents run concurrently when execution plan allows
    - Each agent has its own branch
-   - All progress tracked in SpecTree
+   - All progress tracked in Dispatcher
 
 4. **Session Management**:
    - Start/end sessions properly
@@ -706,13 +706,13 @@ These documents contain additional context (already in the codebase):
 
 | Document | Location | Content |
 |----------|----------|---------|
-| SpecTree README | `/README.md` | Full project documentation |
+| Dispatcher README | `/README.md` | Full project documentation |
 | MCP Tools Reference | `/docs/mcp/tools-reference.md` | All 60+ MCP tools |
 | Execution Metadata | `/docs/mcp/execution-metadata.md` | Parallel execution details |
 | Session Handoff | `/docs/mcp/session-handoff.md` | Session management |
-| Copilot SDK Analysis | `/docs/archive/analysis/analysis-spectree-mcp-vs-copilot-sdk.md` | SDK capabilities (archived) |
-| Platform Analysis | `/docs/archive/analysis/platform-analysis-for-spectree-orchestrator.md` | Architecture decision (archived) |
-| Copilot Instructions | `/.github/copilot-instructions.md` | SpecTree conventions |
+| Copilot SDK Analysis | `/docs/archive/analysis/analysis-dispatcher-mcp-vs-copilot-sdk.md` | SDK capabilities (archived) |
+| Platform Analysis | `/docs/archive/analysis/platform-analysis-for-dispatcher-orchestrator.md` | Architecture decision (archived) |
+| Copilot Instructions | `/.github/copilot-instructions.md` | Dispatcher conventions |
 
 ---
 
@@ -734,9 +734,9 @@ The implementation was organized into features as planned:
 
 1. ✅ **Project Setup** - Initialize package, deps, TypeScript config - COMPLETE
 2. ✅ **CLI Framework** - Command structure with Commander - COMPLETE
-3. ✅ **SpecTree Integration** - API client, authentication - COMPLETE
+3. ✅ **Dispatcher Integration** - API client, authentication - COMPLETE
 4. ✅ **Single Agent Execution** - One agent working through tasks - COMPLETE
-5. ✅ **Execution Plan Integration** - Use SpecTree's execution plans - COMPLETE
+5. ✅ **Execution Plan Integration** - Use Dispatcher's execution plans - COMPLETE
 6. ✅ **Parallel Agent Pool** - Multiple concurrent SDK sessions - COMPLETE
 7. ✅ **Branch Management** - Git branch-per-agent strategy - COMPLETE
 8. ✅ **Progress UI** - Terminal progress display - COMPLETE
@@ -749,7 +749,7 @@ All features have been implemented with detailed acceptance criteria met.
 
 ## Summary
 
-This briefing provides everything needed to create a comprehensive SpecTree implementation plan for the Parallel Agent Orchestrator CLI. The agent should use SpecTree's own tools to create the epic, with proper execution metadata for parallelism, detailed structured descriptions, and clear acceptance criteria.
+This briefing provides everything needed to create a comprehensive Dispatcher implementation plan for the Parallel Agent Orchestrator CLI. The agent should use Dispatcher's own tools to create the epic, with proper execution metadata for parallelism, detailed structured descriptions, and clear acceptance criteria.
 
 The goal is a tool that makes parallel AI-assisted development accessible to the whole team through a simple CLI interface.
 
@@ -775,20 +775,20 @@ The goal is a tool that makes parallel AI-assisted development accessible to the
 cd packages/orchestrator
 pnpm build
 
-# Authenticate with SpecTree
-spectree-agent auth --token st_your-token
+# Authenticate with Dispatcher
+dispatcher-agent auth --token st_your-token
 
 # Run your first orchestration
-spectree-agent run "Build a user authentication API" --team Engineering
+dispatcher-agent run "Build a user authentication API" --team Engineering
 
 # Check status
-spectree-agent status
+dispatcher-agent status
 
 # Continue interrupted work
-spectree-agent continue
+dispatcher-agent continue
 
 # Preview a plan without executing
-spectree-agent run "Add OAuth integration" --dry-run
+dispatcher-agent run "Add OAuth integration" --dry-run
 ```
 
 ### Implementation Status: COMPLETE ✅

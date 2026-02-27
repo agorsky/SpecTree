@@ -34,6 +34,6 @@ This project supports both SQLite (development) and SQL Server (production):
 
 ## Testing Safety
 
-- Tests use a separate database (`spectree-test.db`) configured in `packages/api/vitest.config.ts`
+- Tests use a separate database (`dispatcher-test.db`) configured in `packages/api/vitest.config.ts`
 - Never run API tests from the project root — the root `vitest.config.ts` does NOT set `DATABASE_URL` to the test database
 - Always run tests via `pnpm --filter api test` or from `packages/api/`

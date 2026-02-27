@@ -1,6 +1,6 @@
-# SpecTree Local Deployment Guide
+# Dispatcher Local Deployment Guide
 
-Run a fully self-contained SpecTree instance on your machine with Docker.
+Run a fully self-contained Dispatcher instance on your machine with Docker.
 No external databases, no cloud accounts — just Docker Desktop and two commands.
 
 ---
@@ -14,7 +14,7 @@ No external databases, no cloud accounts — just Docker Desktop and two command
 | **~2 GB disk** | For Docker images (first build) |
 | **Ports 80 and 3001** | Must be free on your machine |
 
-> **Note:** Node.js and pnpm are _not_ required to run SpecTree in Docker. You only need them if you want to use the convenience scripts (`pnpm docker:local:*`) or connect the MCP server.
+> **Note:** Node.js and pnpm are _not_ required to run Dispatcher in Docker. You only need them if you want to use the convenience scripts (`pnpm docker:local:*`) or connect the MCP server.
 
 ---
 
@@ -23,7 +23,7 @@ No external databases, no cloud accounts — just Docker Desktop and two command
 ```bash
 # 1. Clone the repository
 git clone <repo-url>
-cd SpecTree
+cd Dispatcher
 
 # 2. Build and start everything
 docker-compose -f docker-compose.local.yml up -d --build
@@ -35,7 +35,7 @@ That's it. Wait ~60 seconds for the first build, then open **http://localhost** 
 
 | Field | Value |
 |---|---|
-| Email | `admin@spectree.dev` |
+| Email | `admin@dispatcher.dev` |
 | Password | `Password123!` |
 
 ---
@@ -44,7 +44,7 @@ That's it. Wait ~60 seconds for the first build, then open **http://localhost** 
 
 When the API container starts for the first time, the entrypoint script (`packages/api/docker-entrypoint-local.sh`) runs these steps automatically:
 
-1. **Schema push** — Prisma creates all SQLite tables in `/app/data/spectree.db` (idempotent; safe on every restart)
+1. **Schema push** — Prisma creates all SQLite tables in `/app/data/dispatcher.db` (idempotent; safe on every restart)
 2. **Seed data** — Creates the admin user, Engineering team, default workflow statuses, and built-in templates
 3. **Sentinel file** — Writes `/app/data/.seeded` so seeding only runs once
 
@@ -52,7 +52,7 @@ On subsequent starts, the schema push still runs (harmless) but seeding is skipp
 
 ---
 
-## Accessing SpecTree
+## Accessing Dispatcher
 
 | Service | URL | Description |
 |---|---|---|
@@ -69,7 +69,7 @@ The web container (nginx) proxies `/api/*` requests to the API container, so bot
 The MCP server runs on your **host machine** (not inside Docker). It connects to the Dockerized API over `localhost:3001`.
 
 ```bash
-npx @spectree/mcp-server --api-url http://localhost:3001
+npx @dispatcher/mcp-server --api-url http://localhost:3001
 ```
 
 Or configure it in your Claude Code / Copilot MCP settings to point at `http://localhost:3001`.
@@ -80,7 +80,7 @@ Or configure it in your Claude Code / Copilot MCP settings to point at `http://l
 
 ## Data Persistence
 
-All data lives in a Docker **named volume** called `spectree-data`, mounted at `/app/data/` inside the API container.
+All data lives in a Docker **named volume** called `dispatcher-data`, mounted at `/app/data/` inside the API container.
 
 | Action | Command | Effect |
 |---|---|---|
@@ -117,10 +117,10 @@ These are thin wrappers around `docker-compose -f docker-compose.local.yml ...`.
                              ┌──────▼─────────┐
                              │  SQLite DB      │
                              │  /app/data/     │
-                             │  spectree.db    │
+                             │  dispatcher.db    │
                              └────────────────┘
                              Named volume:
-                             spectree-data
+                             dispatcher-data
 ```
 
 - **Web** — nginx serves the pre-built Next.js frontend and reverse-proxies API calls
@@ -172,7 +172,7 @@ The web container starts immediately, but the API container needs ~15–30 secon
 docker-compose -f docker-compose.local.yml logs -f api
 ```
 
-Look for `Starting SpecTree API...` — once you see that, the UI should be ready.
+Look for `Starting Dispatcher API...` — once you see that, the UI should be ready.
 
 ### Seed failures
 

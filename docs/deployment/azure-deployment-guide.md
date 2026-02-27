@@ -1,8 +1,8 @@
-# SpecTree Azure Deployment Guide
+# Dispatcher Azure Deployment Guide
 
-> **Comprehensive guide for deploying SpecTree to Microsoft Azure**
+> **Comprehensive guide for deploying Dispatcher to Microsoft Azure**
 >
-> This document provides detailed analysis of the SpecTree application architecture, deployment options, step-by-step instructions, and best practices for production deployment on Azure. It is designed to be used by developers, DevOps engineers, or AI assistants helping with deployment.
+> This document provides detailed analysis of the Dispatcher application architecture, deployment options, step-by-step instructions, and best practices for production deployment on Azure. It is designed to be used by developers, DevOps engineers, or AI assistants helping with deployment.
 
 ---
 
@@ -29,14 +29,14 @@
 
 ## Executive Summary
 
-### What is SpecTree?
+### What is Dispatcher?
 
-SpecTree is a **project management and issue tracking platform** similar to Linear, consisting of:
+Dispatcher is a **project management and issue tracking platform** similar to Linear, consisting of:
 
-- **API Backend** (`@spectree/api`): Fastify REST API with Prisma ORM
-- **Web Frontend** (`@spectree/web`): React SPA with Vite, Tailwind CSS, and Radix UI
-- **MCP Server** (`@spectree/mcp`): Model Context Protocol server for AI integrations (Claude, GitHub Copilot)
-- **Shared Types** (`@spectree/shared`): TypeScript type definitions
+- **API Backend** (`@dispatcher/api`): Fastify REST API with Prisma ORM
+- **Web Frontend** (`@dispatcher/web`): React SPA with Vite, Tailwind CSS, and Radix UI
+- **MCP Server** (`@dispatcher/mcp`): Model Context Protocol server for AI integrations (Claude, GitHub Copilot)
+- **Shared Types** (`@dispatcher/shared`): TypeScript type definitions
 
 ### Key Technology Stack
 
@@ -71,7 +71,7 @@ For most deployments, we recommend:
 ### Monorepo Structure
 
 ```
-SpecTree/
+Dispatcher/
 ├── packages/
 │   ├── api/              # Fastify backend API (port 3001)
 │   │   ├── src/          # TypeScript source
@@ -98,11 +98,11 @@ SpecTree/
 ### Package Dependencies
 
 ```
-@spectree/shared  ─── Base package (no dependencies)
+@dispatcher/shared  ─── Base package (no dependencies)
        │
-       ├── @spectree/api     (depends on shared)
-       ├── @spectree/web     (depends on shared)
-       └── @spectree/mcp     (depends on shared, api)
+       ├── @dispatcher/api     (depends on shared)
+       ├── @dispatcher/web     (depends on shared)
+       └── @dispatcher/mcp     (depends on shared, api)
 ```
 
 ### API Architecture
@@ -160,7 +160,7 @@ Key entities (from `packages/api/prisma/schema.prisma`):
 │                              Azure Subscription                              │
 │                                                                             │
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │                    Resource Group (rg-spectree-{env})                  │  │
+│  │                    Resource Group (rg-dispatcher-{env})                  │  │
 │  │                                                                        │  │
 │  │  ┌───────────────────────────────────────────────────────────────┐    │  │
 │  │  │                 Virtual Network (10.0.0.0/16)                  │    │  │
@@ -189,8 +189,8 @@ Key entities (from `packages/api/prisma/schema.prisma`):
 │  │  │  Azure SQL      │  │  Key Vault      │  │ Container Registry  │    │  │
 │  │  │  (Private)      │  │  (Private)      │  │ (ACR)               │    │  │
 │  │  │                 │  │                 │  │                     │    │  │
-│  │  │  • TLS 1.2+     │  │  • RBAC         │  │  • spectree-api     │    │  │
-│  │  │  • TDE enabled  │  │  • Soft delete  │  │  • spectree-web     │    │  │
+│  │  │  • TLS 1.2+     │  │  • RBAC         │  │  • dispatcher-api     │    │  │
+│  │  │  • TDE enabled  │  │  • Soft delete  │  │  • dispatcher-web     │    │  │
 │  │  │  • Auditing     │  │  • Purge protect│  │                     │    │  │
 │  │  └─────────────────┘  └─────────────────┘  └─────────────────────┘    │  │
 │  │                                                                        │  │
@@ -216,14 +216,14 @@ The existing Bicep templates use this naming pattern:
 
 | Resource Type | Pattern | Example |
 |---------------|---------|---------|
-| Resource Group | `rg-{baseName}-{env}` | `rg-spectree-dev` |
-| Virtual Network | `vnet-{baseName}-{env}` | `vnet-spectree-dev` |
-| Container Apps Env | `cae-{baseName}-{env}` | `cae-spectree-dev` |
-| Container App | `ca-{baseName}-{env}` | `ca-spectree-dev` |
-| SQL Server | `sql-{baseName}-{env}` | `sql-spectree-dev` |
-| SQL Database | `sqldb-{baseName}-{env}` | `sqldb-spectree-dev` |
-| Key Vault | `kv-{baseName}-{env}` | `kv-spectree-dev` |
-| Log Analytics | `log-{baseName}-{env}` | `log-spectree-dev` |
+| Resource Group | `rg-{baseName}-{env}` | `rg-dispatcher-dev` |
+| Virtual Network | `vnet-{baseName}-{env}` | `vnet-dispatcher-dev` |
+| Container Apps Env | `cae-{baseName}-{env}` | `cae-dispatcher-dev` |
+| Container App | `ca-{baseName}-{env}` | `ca-dispatcher-dev` |
+| SQL Server | `sql-{baseName}-{env}` | `sql-dispatcher-dev` |
+| SQL Database | `sqldb-{baseName}-{env}` | `sqldb-dispatcher-dev` |
+| Key Vault | `kv-{baseName}-{env}` | `kv-dispatcher-dev` |
+| Log Analytics | `log-{baseName}-{env}` | `log-dispatcher-dev` |
 
 ---
 
@@ -346,7 +346,7 @@ docker --version
 ```bash
 # Clone repository
 git clone <repository-url>
-cd SpecTree
+cd Dispatcher
 
 # Install dependencies
 pnpm install
@@ -371,9 +371,9 @@ Before deploying infrastructure, create a container registry to store Docker ima
 
 ```bash
 # Variables
-RESOURCE_GROUP="rg-spectree-shared"
+RESOURCE_GROUP="rg-dispatcher-shared"
 LOCATION="eastus"
-ACR_NAME="acrspectree$(openssl rand -hex 4)"  # Must be globally unique
+ACR_NAME="acrdispatcher$(openssl rand -hex 4)"  # Must be globally unique
 
 # Create resource group for shared resources
 az group create --name $RESOURCE_GROUP --location $LOCATION
@@ -399,29 +399,29 @@ echo "ACR_LOGIN_SERVER: $ACR_NAME.azurecr.io"
 
 ```bash
 # Navigate to repository root
-cd /path/to/SpecTree
+cd /path/to/Dispatcher
 
 # Build API image
-docker build -t spectree-api:latest -f packages/api/Dockerfile.azure .
+docker build -t dispatcher-api:latest -f packages/api/Dockerfile.azure .
 
 # Build Web image
-docker build -t spectree-web:latest -f packages/web/Dockerfile .
+docker build -t dispatcher-web:latest -f packages/web/Dockerfile .
 
 # Tag images for ACR
-docker tag spectree-api:latest $ACR_NAME.azurecr.io/spectree-api:v1.0.0
-docker tag spectree-api:latest $ACR_NAME.azurecr.io/spectree-api:latest
-docker tag spectree-web:latest $ACR_NAME.azurecr.io/spectree-web:v1.0.0
-docker tag spectree-web:latest $ACR_NAME.azurecr.io/spectree-web:latest
+docker tag dispatcher-api:latest $ACR_NAME.azurecr.io/dispatcher-api:v1.0.0
+docker tag dispatcher-api:latest $ACR_NAME.azurecr.io/dispatcher-api:latest
+docker tag dispatcher-web:latest $ACR_NAME.azurecr.io/dispatcher-web:v1.0.0
+docker tag dispatcher-web:latest $ACR_NAME.azurecr.io/dispatcher-web:latest
 
 # Push images to ACR
-docker push $ACR_NAME.azurecr.io/spectree-api:v1.0.0
-docker push $ACR_NAME.azurecr.io/spectree-api:latest
-docker push $ACR_NAME.azurecr.io/spectree-web:v1.0.0
-docker push $ACR_NAME.azurecr.io/spectree-web:latest
+docker push $ACR_NAME.azurecr.io/dispatcher-api:v1.0.0
+docker push $ACR_NAME.azurecr.io/dispatcher-api:latest
+docker push $ACR_NAME.azurecr.io/dispatcher-web:v1.0.0
+docker push $ACR_NAME.azurecr.io/dispatcher-web:latest
 
 # Verify images
 az acr repository list --name $ACR_NAME
-az acr repository show-tags --name $ACR_NAME --repository spectree-api
+az acr repository show-tags --name $ACR_NAME --repository dispatcher-api
 ```
 
 ### Step 3: Prepare Deployment Parameters
@@ -437,7 +437,7 @@ using '../main.bicep'
 
 param environment = 'dev'
 param location = 'eastus'
-param baseName = 'spectree'
+param baseName = 'dispatcher'
 
 // SQL Server credentials
 param sqlAdminLogin = 'sqladmin'
@@ -450,15 +450,15 @@ param sqlAadAdminLogin = '<YOUR_EMAIL_OR_GROUP_NAME>'
 param sqlEnableAadOnlyAuth = false
 
 // Application database user
-param sqlAppUserLogin = 'spectree_app'
+param sqlAppUserLogin = 'dispatcher_app'
 param sqlAppUserPassword = '<GENERATE_SECURE_PASSWORD_32_CHARS>'
 
 // Container image (update with your ACR)
-param containerImage = '<ACR_NAME>.azurecr.io/spectree-api:latest'
+param containerImage = '<ACR_NAME>.azurecr.io/dispatcher-api:latest'
 
 param tags = {
   environment: 'dev'
-  project: 'spectree'
+  project: 'dispatcher'
   owner: '<YOUR_NAME>'
 }
 EOF
@@ -489,8 +489,8 @@ echo "parameters/*-secrets.bicepparam" >> .gitignore
 
 ```bash
 # Variables (from deployment output)
-RESOURCE_GROUP="rg-spectree-dev"
-CONTAINER_APP="ca-spectree-dev"
+RESOURCE_GROUP="rg-dispatcher-dev"
+CONTAINER_APP="ca-dispatcher-dev"
 ACR_NAME="<your-acr-name>"
 
 # Get Container App managed identity
@@ -521,7 +521,7 @@ az containerapp registry set \
 az containerapp update \
   --name $CONTAINER_APP \
   --resource-group $RESOURCE_GROUP \
-  --image $ACR_NAME.azurecr.io/spectree-api:v1.0.0
+  --image $ACR_NAME.azurecr.io/dispatcher-api:v1.0.0
 
 # Check deployment status
 az containerapp show \
@@ -570,11 +570,11 @@ For simpler deployments without container orchestration.
 
 ```bash
 # Variables
-RESOURCE_GROUP="rg-spectree-appservice"
+RESOURCE_GROUP="rg-dispatcher-appservice"
 LOCATION="eastus"
-APP_SERVICE_PLAN="asp-spectree"
-API_APP_NAME="app-spectree-api"
-WEB_APP_NAME="app-spectree-web"
+APP_SERVICE_PLAN="asp-dispatcher"
+API_APP_NAME="app-dispatcher-api"
+WEB_APP_NAME="app-dispatcher-web"
 
 # Create resource group
 az group create --name $RESOURCE_GROUP --location $LOCATION
@@ -627,22 +627,22 @@ pnpm build
 
 # Create deployment package for API
 cd packages/api
-zip -r ../../spectree-api.zip dist/ node_modules/ package.json prisma/
+zip -r ../../dispatcher-api.zip dist/ node_modules/ package.json prisma/
 
 # Deploy API
 az webapp deployment source config-zip \
   --name $API_APP_NAME \
   --resource-group $RESOURCE_GROUP \
-  --src ../../spectree-api.zip
+  --src ../../dispatcher-api.zip
 
 # For Web, build and deploy static files
 cd ../web
-zip -r ../../spectree-web.zip dist/
+zip -r ../../dispatcher-web.zip dist/
 
 az webapp deployment source config-zip \
   --name $WEB_APP_NAME \
   --resource-group $RESOURCE_GROUP \
-  --src ../../spectree-web.zip
+  --src ../../dispatcher-web.zip
 ```
 
 ---
@@ -655,8 +655,8 @@ For teams requiring full Kubernetes capabilities.
 
 ```bash
 # Variables
-RESOURCE_GROUP="rg-spectree-aks"
-CLUSTER_NAME="aks-spectree"
+RESOURCE_GROUP="rg-dispatcher-aks"
+CLUSTER_NAME="aks-dispatcher"
 LOCATION="eastus"
 
 # Create resource group
@@ -686,22 +686,22 @@ Create `k8s/deployment.yaml`:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: spectree-api
+  name: dispatcher-api
   labels:
-    app: spectree-api
+    app: dispatcher-api
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: spectree-api
+      app: dispatcher-api
   template:
     metadata:
       labels:
-        app: spectree-api
+        app: dispatcher-api
     spec:
       containers:
       - name: api
-        image: <ACR_NAME>.azurecr.io/spectree-api:latest
+        image: <ACR_NAME>.azurecr.io/dispatcher-api:latest
         ports:
         - containerPort: 3001
         env:
@@ -732,10 +732,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: spectree-api
+  name: dispatcher-api
 spec:
   selector:
-    app: spectree-api
+    app: dispatcher-api
   ports:
   - port: 80
     targetPort: 3001
@@ -753,7 +753,7 @@ kubectl get pods
 kubectl get services
 
 # Get external IP
-kubectl get service spectree-api -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+kubectl get service dispatcher-api -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 ```
 
 ---
@@ -793,23 +793,23 @@ For simpler deployments or development environments:
 ```bash
 # Create Storage Account
 az storage account create \
-  --name stspectreedata \
+  --name stdispatcherdata \
   --resource-group $RESOURCE_GROUP \
   --sku Standard_LRS
 
 # Create File Share
 az storage share create \
-  --name spectree-data \
-  --account-name stspectreedata
+  --name dispatcher-data \
+  --account-name stdispatcherdata
 
 # Mount in Container Apps
 az containerapp env storage set \
-  --name cae-spectree-dev \
+  --name cae-dispatcher-dev \
   --resource-group $RESOURCE_GROUP \
-  --storage-name spectreedata \
-  --azure-file-account-name stspectreedata \
-  --azure-file-account-key $(az storage account keys list -n stspectreedata --query '[0].value' -o tsv) \
-  --azure-file-share-name spectree-data \
+  --storage-name dispatcherdata \
+  --azure-file-account-name stdispatcherdata \
+  --azure-file-account-key $(az storage account keys list -n stdispatcherdata --query '[0].value' -o tsv) \
+  --azure-file-share-name dispatcher-data \
   --access-mode ReadWrite
 ```
 
@@ -821,7 +821,7 @@ If you prefer PostgreSQL:
 # Create PostgreSQL Flexible Server
 az postgres flexible-server create \
   --resource-group $RESOURCE_GROUP \
-  --name pg-spectree-dev \
+  --name pg-dispatcher-dev \
   --location $LOCATION \
   --sku-name Standard_B1ms \
   --storage-size 32 \
@@ -861,11 +861,11 @@ permissions:
   contents: read
 
 env:
-  ACR_NAME: acrspectreedev
-  RESOURCE_GROUP: rg-spectree-dev
-  API_CONTAINER_APP: ca-spectree-dev
-  WEB_CONTAINER_APP: ca-spectree-web-dev
-  SQL_SERVER: sql-spectree-dev
+  ACR_NAME: acrdispatcherdev
+  RESOURCE_GROUP: rg-dispatcher-dev
+  API_CONTAINER_APP: ca-dispatcher-dev
+  WEB_CONTAINER_APP: ca-dispatcher-web-dev
+  SQL_SERVER: sql-dispatcher-dev
 
 jobs:
   test:
@@ -880,7 +880,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Lint
-        run: pnpm turbo run lint --filter='@spectree/shared' --filter='@ttc-ggi/spectree-cli' --filter='@ttc-ggi/spectree-mcp'
+        run: pnpm turbo run lint --filter='@dispatcher/shared' --filter='@ttc-ggi/dispatcher-cli' --filter='@ttc-ggi/dispatcher-mcp'
       - name: Type check
         run: pnpm typecheck
         continue-on-error: true
@@ -921,7 +921,7 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies (for schema migration)
         if: steps.schema-check.outputs.changed == 'true'
-        run: pnpm install --filter @spectree/api
+        run: pnpm install --filter @dispatcher/api
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -933,8 +933,8 @@ jobs:
       - name: Build and push images
         run: |
           az acr login --name $ACR_NAME
-          docker build -t $ACR_NAME.azurecr.io/spectree-api:${{ github.sha }} -f packages/api/Dockerfile.azure .
-          docker push $ACR_NAME.azurecr.io/spectree-api:${{ github.sha }}
+          docker build -t $ACR_NAME.azurecr.io/dispatcher-api:${{ github.sha }} -f packages/api/Dockerfile.azure .
+          docker push $ACR_NAME.azurecr.io/dispatcher-api:${{ github.sha }}
           # ... (web image build/push)
 
       - name: Deploy schema to Azure SQL
@@ -957,7 +957,7 @@ jobs:
         run: |
           az containerapp update --name $API_CONTAINER_APP \
             --resource-group $RESOURCE_GROUP \
-            --image $ACR_NAME.azurecr.io/spectree-api:${{ github.sha }}
+            --image $ACR_NAME.azurecr.io/dispatcher-api:${{ github.sha }}
 ```
 
 #### Deployment Order
@@ -977,10 +977,10 @@ This ensures the database schema is always updated **before** the new applicatio
 | `AZURE_CLIENT_ID` | Service principal app ID for OIDC auth | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
 | `AZURE_TENANT_ID` | Azure AD tenant ID | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
 | `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
-| `SQLSERVER_DATABASE_URL` | SQL Server connection string (sqladmin) | `sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=<PASSWORD>;encrypt=true` |
-| `API_URL` | Public API URL for web build | `https://ca-spectree-dev.azurecontainerapps.io` |
+| `SQLSERVER_DATABASE_URL` | SQL Server connection string (sqladmin) | `sqlserver://sql-dispatcher-dev.database.windows.net:1433;database=sqldb-dispatcher-dev;user=sqladmin;password=<PASSWORD>;encrypt=true` |
+| `API_URL` | Public API URL for web build | `https://ca-dispatcher-dev.azurecontainerapps.io` |
 
-> **⚠️ Important**: The `SQLSERVER_DATABASE_URL` secret must use the `sqladmin` account (not `spectree_app`) because schema changes require ALTER TABLE permissions.
+> **⚠️ Important**: The `SQLSERVER_DATABASE_URL` secret must use the `sqladmin` account (not `dispatcher_app`) because schema changes require ALTER TABLE permissions.
 
 ### Configure GitHub OIDC Authentication
 
@@ -988,7 +988,7 @@ Modern approach using OpenID Connect (no secrets to rotate):
 
 ```bash
 # Create an Azure AD application
-APP_ID=$(az ad app create --display-name "GitHub-SpecTree-OIDC" --query appId -o tsv)
+APP_ID=$(az ad app create --display-name "GitHub-Dispatcher-OIDC" --query appId -o tsv)
 
 # Create a service principal
 az ad sp create --id $APP_ID
@@ -1000,7 +1000,7 @@ SP_OBJECT_ID=$(az ad sp show --id $APP_ID --query id -o tsv)
 az ad app federated-credential create \
   --id $APP_ID \
   --parameters '{
-    "name": "GitHub-SpecTree-Main",
+    "name": "GitHub-Dispatcher-Main",
     "issuer": "https://token.actions.githubusercontent.com",
     "subject": "repo:<YOUR_GITHUB_ORG>/<YOUR_REPO>:ref:refs/heads/main",
     "audiences": ["api://AzureADTokenExchange"]
@@ -1027,7 +1027,7 @@ az role assignment create \
 ```bash
 # Verify private endpoints are configured
 az sql server show \
-  --name sql-spectree-dev \
+  --name sql-dispatcher-dev \
   --resource-group $RESOURCE_GROUP \
   --query publicNetworkAccess
 
@@ -1036,18 +1036,18 @@ az sql server show \
 
 ### 2. Key Vault for Secrets
 
-Never store secrets in environment variables. Use Key Vault with the SpecTree secrets provider system:
+Never store secrets in environment variables. Use Key Vault with the Dispatcher secrets provider system:
 
 #### Application Configuration
 
-SpecTree uses a pluggable secrets provider system (see `packages/api/src/lib/secrets/azure-keyvault-provider.ts`) that requires two environment variables:
+Dispatcher uses a pluggable secrets provider system (see `packages/api/src/lib/secrets/azure-keyvault-provider.ts`) that requires two environment variables:
 
 ```bash
 # Enable Azure Key Vault provider
 export SECRETS_PROVIDER=azure-keyvault
 
 # Specify the Key Vault URL
-export AZURE_KEYVAULT_URL=https://kv-spectree-dev.vault.azure.net
+export AZURE_KEYVAULT_URL=https://kv-dispatcher-dev.vault.azure.net
 ```
 
 #### Authentication Method
@@ -1064,15 +1064,15 @@ Store secrets with hyphenated names (Key Vault naming convention):
 ```bash
 # Store JWT secret
 az keyvault secret set \
-  --vault-name kv-spectree-dev \
+  --vault-name kv-dispatcher-dev \
   --name "JWT-SECRET" \
   --value "$(openssl rand -base64 32)"
 
 # Store database connection string
 az keyvault secret set \
-  --vault-name kv-spectree-dev \
+  --vault-name kv-dispatcher-dev \
   --name "DATABASE-URL" \
-  --value "sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=<PASSWORD>;encrypt=true"
+  --value "sqlserver://sql-dispatcher-dev.database.windows.net:1433;database=sqldb-dispatcher-dev;user=sqladmin;password=<PASSWORD>;encrypt=true"
 ```
 
 **Secret Name Mapping:**
@@ -1088,13 +1088,13 @@ The application automatically maps between environment variable names and Key Va
 
 ```bash
 # Get the Container App's managed identity
-IDENTITY=$(az containerapp show -n ca-spectree-dev -g $RESOURCE_GROUP --query identity.principalId -o tsv)
+IDENTITY=$(az containerapp show -n ca-dispatcher-dev -g $RESOURCE_GROUP --query identity.principalId -o tsv)
 
 # Grant Key Vault Secrets User role
 az role assignment create \
   --role "Key Vault Secrets User" \
   --assignee $IDENTITY \
-  --scope $(az keyvault show -n kv-spectree-dev --query id -o tsv)
+  --scope $(az keyvault show -n kv-dispatcher-dev --query id -o tsv)
 ```
 
 #### Local Development
@@ -1107,7 +1107,7 @@ az login
 
 # Set environment variables
 export SECRETS_PROVIDER=azure-keyvault
-export AZURE_KEYVAULT_URL=https://kv-spectree-dev.vault.azure.net
+export AZURE_KEYVAULT_URL=https://kv-dispatcher-dev.vault.azure.net
 
 # The DefaultAzureCredential will use your Azure CLI credentials
 pnpm dev
@@ -1158,17 +1158,17 @@ env: [
 
 ```bash
 # ⚠️ NEVER commit this to source control!
-export SQL_CONN="sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=YourSecurePassword123!;encrypt=true"
+export SQL_CONN="sqlserver://sql-dispatcher-dev.database.windows.net:1433;database=sqldb-dispatcher-dev;user=sqladmin;password=YourSecurePassword123!;encrypt=true"
 
 # Deploy Container App with secure parameter
 az deployment group create \
   --resource-group $RESOURCE_GROUP \
   --template-file infra/modules/containerApps.bicep \
   --parameters sqlConnectionString="$SQL_CONN" \
-  --parameters baseName=spectree \
+  --parameters baseName=dispatcher \
   --parameters environment=dev \
   --parameters containerImage=$CONTAINER_IMAGE \
-  --parameters keyVaultUri=https://kv-spectree-dev.vault.azure.net \
+  --parameters keyVaultUri=https://kv-dispatcher-dev.vault.azure.net \
   --parameters containerAppsSubnetId=$SUBNET_ID
 
 # Clear the variable from your shell
@@ -1180,13 +1180,13 @@ unset SQL_CONN
 ```bash
 # ✅ Check secret exists (name only, not value)
 az containerapp show \
-  --name ca-spectree-dev \
+  --name ca-dispatcher-dev \
   --resource-group $RESOURCE_GROUP \
   --query "properties.configuration.secrets[?name=='sql-connection-string'].name" -o json
 
 # ✅ Verify environment variable uses secretRef
 az containerapp show \
-  --name ca-spectree-dev \
+  --name ca-dispatcher-dev \
   --resource-group $RESOURCE_GROUP \
   --query "properties.template.containers[0].env[?name=='SQLSERVER_DATABASE_URL']" -o json
 
@@ -1210,11 +1210,11 @@ To rotate the SQL Server password:
 # Update SQL password
 az sql server update \
   --resource-group $RESOURCE_GROUP \
-  --name sql-spectree-dev \
+  --name sql-dispatcher-dev \
   --admin-password "NewSecurePassword456!"
 
 # Redeploy Container App with new connection string
-export SQL_CONN="sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;user=sqladmin;password=NewSecurePassword456!;encrypt=true"
+export SQL_CONN="sqlserver://sql-dispatcher-dev.database.windows.net:1433;database=sqldb-dispatcher-dev;user=sqladmin;password=NewSecurePassword456!;encrypt=true"
 
 az deployment group create \
   --resource-group $RESOURCE_GROUP \
@@ -1233,7 +1233,7 @@ For local development, continue using `.env` files (NOT committed to source cont
 
 ```bash
 # packages/api/.env.local
-SQLSERVER_DATABASE_URL=sqlserver://localhost:1433;database=spectree_dev;user=sa;password=LocalDev123!;encrypt=false
+SQLSERVER_DATABASE_URL=sqlserver://localhost:1433;database=dispatcher_dev;user=sa;password=LocalDev123!;encrypt=false
 ```
 
 #### See Also
@@ -1258,7 +1258,7 @@ For enhanced security, use Azure AD authentication:
 # Set Azure AD only auth (disables SQL auth)
 az sql server ad-only-auth enable \
   --resource-group $RESOURCE_GROUP \
-  --name sql-spectree-dev
+  --name sql-dispatcher-dev
 ```
 
 ### 6. Enable WAF with Azure Front Door (Optional)
@@ -1269,7 +1269,7 @@ For public-facing production deployments:
 # Create Front Door profile with WAF
 az afd profile create \
   --resource-group $RESOURCE_GROUP \
-  --profile-name fd-spectree \
+  --profile-name fd-dispatcher \
   --sku Premium_AzureFrontDoor
 ```
 
@@ -1282,13 +1282,13 @@ az afd profile create \
 ```kusto
 // Container App logs
 ContainerAppConsoleLogs_CL
-| where ContainerAppName_s == "ca-spectree-dev"
+| where ContainerAppName_s == "ca-dispatcher-dev"
 | order by TimeGenerated desc
 | take 100
 
 // HTTP request metrics
 ContainerAppSystemLogs_CL
-| where ContainerAppName_s == "ca-spectree-dev"
+| where ContainerAppName_s == "ca-dispatcher-dev"
 | where Log_s contains "request"
 | order by TimeGenerated desc
 
@@ -1305,7 +1305,7 @@ ContainerAppConsoleLogs_CL
 az monitor metrics alert create \
   --name "High CPU Alert" \
   --resource-group $RESOURCE_GROUP \
-  --scopes "/subscriptions/<sub>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.App/containerApps/ca-spectree-dev" \
+  --scopes "/subscriptions/<sub>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.App/containerApps/ca-dispatcher-dev" \
   --condition "avg Percentage CPU > 80" \
   --action-group "/subscriptions/<sub>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Insights/actionGroups/email-alerts"
 ```
@@ -1315,14 +1315,14 @@ az monitor metrics alert create \
 ```bash
 # Create Application Insights
 az monitor app-insights component create \
-  --app appi-spectree-dev \
+  --app appi-dispatcher-dev \
   --location $LOCATION \
   --resource-group $RESOURCE_GROUP \
   --kind web
 
 # Get instrumentation key
 az monitor app-insights component show \
-  --app appi-spectree-dev \
+  --app appi-dispatcher-dev \
   --resource-group $RESOURCE_GROUP \
   --query instrumentationKey
 ```
@@ -1376,8 +1376,8 @@ az monitor app-insights component show \
 # Configure long-term backup retention
 az sql db ltr-policy set \
   --resource-group $RESOURCE_GROUP \
-  --server sql-spectree-dev \
-  --database sqldb-spectree-dev \
+  --server sql-dispatcher-dev \
+  --database sqldb-dispatcher-dev \
   --weekly-retention P4W \
   --monthly-retention P12M \
   --yearly-retention P5Y \
@@ -1399,23 +1399,23 @@ az sql db ltr-policy set \
 # Restore SQL Database to point in time
 az sql db restore \
   --resource-group $RESOURCE_GROUP \
-  --server sql-spectree-dev \
-  --name sqldb-spectree-dev \
-  --dest-name sqldb-spectree-dev-restored \
+  --server sql-dispatcher-dev \
+  --name sqldb-dispatcher-dev \
+  --dest-name sqldb-dispatcher-dev-restored \
   --time "2024-01-15T00:00:00Z"
 
 # Recover deleted Key Vault
 az keyvault recover \
-  --name kv-spectree-dev \
+  --name kv-dispatcher-dev \
   --resource-group $RESOURCE_GROUP
 
 # Rollback Container App to previous revision
 az containerapp revision list \
-  --name ca-spectree-dev \
+  --name ca-dispatcher-dev \
   --resource-group $RESOURCE_GROUP
 
 az containerapp update \
-  --name ca-spectree-dev \
+  --name ca-dispatcher-dev \
   --resource-group $RESOURCE_GROUP \
   --revision-suffix <previous-revision-suffix>
 ```
@@ -1429,7 +1429,7 @@ az containerapp update \
 ```bash
 # Check logs
 az containerapp logs show \
-  --name ca-spectree-dev \
+  --name ca-dispatcher-dev \
   --resource-group $RESOURCE_GROUP \
   --follow
 
@@ -1441,7 +1441,7 @@ az containerapp logs show \
 
 # Check environment variables
 az containerapp show \
-  --name ca-spectree-dev \
+  --name ca-dispatcher-dev \
   --resource-group $RESOURCE_GROUP \
   --query "properties.template.containers[0].env"
 ```
@@ -1451,7 +1451,7 @@ az containerapp show \
 ```bash
 # Verify private endpoint
 az network private-endpoint show \
-  --name pe-sql-spectree-dev \
+  --name pe-sql-dispatcher-dev \
   --resource-group $RESOURCE_GROUP
 
 # Check DNS resolution from Container App
@@ -1460,7 +1460,7 @@ az network private-endpoint show \
 # Verify firewall rules
 az sql server firewall-rule list \
   --resource-group $RESOURCE_GROUP \
-  --server sql-spectree-dev
+  --server sql-dispatcher-dev
 ```
 
 ### Issue: Key Vault Access Denied
@@ -1468,18 +1468,18 @@ az sql server firewall-rule list \
 ```bash
 # Check managed identity
 az containerapp show \
-  --name ca-spectree-dev \
+  --name ca-dispatcher-dev \
   --resource-group $RESOURCE_GROUP \
   --query identity
 
 # Verify RBAC assignment
 az role assignment list \
-  --scope $(az keyvault show -n kv-spectree-dev --query id -o tsv) \
+  --scope $(az keyvault show -n kv-dispatcher-dev --query id -o tsv) \
   --output table
 
 # Test Key Vault access
 az keyvault secret list \
-  --vault-name kv-spectree-dev
+  --vault-name kv-dispatcher-dev
 ```
 
 ### Issue: Slow Performance / Cold Starts
@@ -1487,13 +1487,13 @@ az keyvault secret list \
 ```bash
 # Set minimum replicas to prevent cold starts
 az containerapp update \
-  --name ca-spectree-dev \
+  --name ca-dispatcher-dev \
   --resource-group $RESOURCE_GROUP \
   --min-replicas 1
 
 # Increase resources
 az containerapp update \
-  --name ca-spectree-dev \
+  --name ca-dispatcher-dev \
   --resource-group $RESOURCE_GROUP \
   --cpu 1.0 \
   --memory 2Gi
@@ -1516,34 +1516,34 @@ cd infra && ./deploy.sh -e dev
 ./deploy.sh -e dev --what-if
 
 # Build and push images
-docker build -t $ACR.azurecr.io/spectree-api:latest -f packages/api/Dockerfile.azure .
-docker push $ACR.azurecr.io/spectree-api:latest
+docker build -t $ACR.azurecr.io/dispatcher-api:latest -f packages/api/Dockerfile.azure .
+docker push $ACR.azurecr.io/dispatcher-api:latest
 
 # Update Container App
-az containerapp update -n ca-spectree-dev -g rg-spectree-dev --image $ACR.azurecr.io/spectree-api:latest
+az containerapp update -n ca-dispatcher-dev -g rg-dispatcher-dev --image $ACR.azurecr.io/dispatcher-api:latest
 ```
 
 ### Monitoring Commands
 
 ```bash
 # View logs
-az containerapp logs show -n ca-spectree-dev -g rg-spectree-dev --follow
+az containerapp logs show -n ca-dispatcher-dev -g rg-dispatcher-dev --follow
 
 # Check revisions
-az containerapp revision list -n ca-spectree-dev -g rg-spectree-dev -o table
+az containerapp revision list -n ca-dispatcher-dev -g rg-dispatcher-dev -o table
 
 # Get app URL
-az containerapp show -n ca-spectree-dev -g rg-spectree-dev --query properties.configuration.ingress.fqdn -o tsv
+az containerapp show -n ca-dispatcher-dev -g rg-dispatcher-dev --query properties.configuration.ingress.fqdn -o tsv
 ```
 
 ### Cleanup Commands
 
 ```bash
 # Delete all resources (DANGER!)
-az group delete --name rg-spectree-dev --yes --no-wait
+az group delete --name rg-dispatcher-dev --yes --no-wait
 
 # Delete specific Container App
-az containerapp delete -n ca-spectree-dev -g rg-spectree-dev --yes
+az containerapp delete -n ca-dispatcher-dev -g rg-dispatcher-dev --yes
 ```
 
 ---
@@ -1592,8 +1592,8 @@ Once the API is deployed to Azure, configure the MCP server to connect to it.
 ```bash
 # Get the API URL
 API_URL=$(az containerapp show \
-  -n ca-spectree-dev \
-  -g rg-spectree-dev \
+  -n ca-dispatcher-dev \
+  -g rg-dispatcher-dev \
   --query properties.configuration.ingress.fqdn -o tsv)
 
 echo "API URL: https://$API_URL"
@@ -1628,12 +1628,12 @@ Update your MCP configuration file (location varies by client):
 ```json
 {
   "mcpServers": {
-    "spectree": {
+    "dispatcher": {
       "command": "node",
-      "args": ["/path/to/spectree/packages/mcp/dist/index.js"],
+      "args": ["/path/to/dispatcher/packages/mcp/dist/index.js"],
       "env": {
         "API_TOKEN": "st_your_token_here",
-        "API_BASE_URL": "https://ca-spectree-dev.azurecontainerapps.io"
+        "API_BASE_URL": "https://ca-dispatcher-dev.azurecontainerapps.io"
       }
     }
   }
@@ -1644,12 +1644,12 @@ Update your MCP configuration file (location varies by client):
 ```json
 {
   "mcpServers": {
-    "spectree": {
+    "dispatcher": {
       "command": "node",
-      "args": ["/path/to/spectree/packages/mcp/dist/index.js"],
+      "args": ["/path/to/dispatcher/packages/mcp/dist/index.js"],
       "env": {
         "API_TOKEN": "st_your_token_here",
-        "API_BASE_URL": "https://ca-spectree-dev.azurecontainerapps.io"
+        "API_BASE_URL": "https://ca-dispatcher-dev.azurecontainerapps.io"
       }
     }
   }
@@ -1658,7 +1658,7 @@ Update your MCP configuration file (location varies by client):
 
 ### Step 3: Verify Connection
 
-Test by asking your AI assistant to list SpecTree epics or features. If connection fails:
+Test by asking your AI assistant to list Dispatcher epics or features. If connection fails:
 
 1. Verify API URL is accessible: `curl https://<api-url>/health`
 2. Check API token hasn't expired
@@ -1673,7 +1673,7 @@ Test by asking your AI assistant to list SpecTree epics or features. If connecti
 | Version | 1.0.0 |
 | Created | 2026-01-30 |
 | Author | AI-generated analysis |
-| Repository | SpecTree |
+| Repository | Dispatcher |
 | Applicable Azure Regions | All regions supporting Container Apps |
 
 ---

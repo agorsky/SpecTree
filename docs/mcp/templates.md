@@ -86,7 +86,7 @@ Results in: `"Implement OAuth Login for auth"`
 
 ## Built-in Templates
 
-SpecTree includes four built-in templates covering common development workflows:
+Dispatcher includes four built-in templates covering common development workflows:
 
 ### 1. Code Feature
 
@@ -146,7 +146,7 @@ Variables: `{{endpointName}}`, `{{resource}}`
 ### List Templates
 
 ```
-spectree__list_templates({ builtInOnly: false })
+dispatcher__list_templates({ builtInOnly: false })
 ```
 
 Returns all available templates with:
@@ -157,7 +157,7 @@ Returns all available templates with:
 ### Preview Template
 
 ```
-spectree__preview_template({
+dispatcher__preview_template({
   templateName: "Code Feature",
   epicName: "User Authentication",
   variables: { featureName: "OAuth Login" }
@@ -169,7 +169,7 @@ Returns preview of what will be created without creating anything.
 ### Create from Template
 
 ```
-spectree__create_from_template({
+dispatcher__create_from_template({
   templateName: "Code Feature",
   epicName: "User Authentication",
   team: "Backend",
@@ -186,7 +186,7 @@ Creates the full hierarchy and returns:
 ### Save as Template
 
 ```
-spectree__save_as_template({
+dispatcher__save_as_template({
   epicId: "epic-uuid",
   templateName: "My Workflow",
   description: "Custom workflow for my team"

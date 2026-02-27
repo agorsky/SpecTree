@@ -1,6 +1,6 @@
 # User Invitation System
 
-SpecTree uses an invitation-based registration system to ensure secure user onboarding. Only administrators can create user accounts by generating invitation codes.
+Dispatcher uses an invitation-based registration system to ensure secure user onboarding. Only administrators can create user accounts by generating invitation codes.
 
 ## Overview
 
@@ -24,7 +24,7 @@ The invitation system provides:
 
 **API Example:**
 ```bash
-curl -X POST https://api.spectree.app/api/v1/admin/invitations \
+curl -X POST https://api.dispatcher.app/api/v1/admin/invitations \
   -H "Authorization: Bearer <admin_token>" \
   -H "Content-Type: application/json" \
   -d '{"email": "newuser@toro.com"}'

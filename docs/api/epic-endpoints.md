@@ -1,6 +1,6 @@
 # Epic API Endpoints
 
-This document describes the API endpoints for managing epics in SpecTree.
+This document describes the API endpoints for managing epics in Dispatcher.
 
 ## Overview
 

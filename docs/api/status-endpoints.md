@@ -1,6 +1,6 @@
 # Status API Endpoints
 
-This document describes the API endpoints for managing workflow statuses in SpecTree.
+This document describes the API endpoints for managing workflow statuses in Dispatcher.
 
 ## Overview
 

@@ -1,21 +1,21 @@
-# SpecTree Automation Tool Strategy
+# Dispatcher Automation Tool Strategy
 
 **Date:** February 6, 2026
-**Purpose:** Input document for an AI planner to create a complete SpecTree epic
-**Consumer:** AI model in a Copilot CLI session with SpecTree MCP access
+**Purpose:** Input document for an AI planner to create a complete Dispatcher epic
+**Consumer:** AI model in a Copilot CLI session with Dispatcher MCP access
 
 ---
 
 ## 1. Preamble & Document Purpose
 
-This document is the **primary input for an AI planner** tasked with creating a SpecTree epic that fully specifies the work to build the SpecTree Automation Tool. The planner should read this document end-to-end, then use SpecTree MCP tools to create the epic:
+This document is the **primary input for an AI planner** tasked with creating a Dispatcher epic that fully specifies the work to build the Dispatcher Automation Tool. The planner should read this document end-to-end, then use Dispatcher MCP tools to create the epic:
 
-- `spectree__create_epic_complete` - Create the full epic/feature/task hierarchy atomically
-- `spectree__set_structured_description` - Add AI instructions, acceptance criteria, files involved
-- `spectree__set_execution_metadata` - Set execution order, dependencies, parallelism
-- `spectree__get_execution_plan` - Verify the generated execution plan is correct
+- `dispatcher__create_epic_complete` - Create the full epic/feature/task hierarchy atomically
+- `dispatcher__set_structured_description` - Add AI instructions, acceptance criteria, files involved
+- `dispatcher__set_execution_metadata` - Set execution order, dependencies, parallelism
+- `dispatcher__get_execution_plan` - Verify the generated execution plan is correct
 
-**Section 8 of this document is the definitive specification.** It contains 10 features organized into 5 execution phases, with fully-specified tasks including AI instructions, acceptance criteria, files involved, and validations. The planner should create the SpecTree epic by translating Section 8 directly - do NOT re-derive or re-interpret the feature/task structure. Every field in Section 8 maps to a SpecTree structured description field.
+**Section 8 of this document is the definitive specification.** It contains 10 features organized into 5 execution phases, with fully-specified tasks including AI instructions, acceptance criteria, files involved, and validations. The planner should create the Dispatcher epic by translating Section 8 directly - do NOT re-derive or re-interpret the feature/task structure. Every field in Section 8 maps to a Dispatcher structured description field.
 
 This document is **self-contained**. An AI in a fresh session should be able to understand everything needed to create the epic without reading other files (though source file references are provided for implementers who will execute the tasks).
 
@@ -25,22 +25,22 @@ This document is **self-contained**. An AI in a fresh session should be able to 
 
 ### 2a. The Manual Workflow That Works
 
-Today, the developer uses a proven 7-step manual workflow for AI-assisted development with SpecTree and Copilot CLI (Claude Opus 4.6):
+Today, the developer uses a proven 7-step manual workflow for AI-assisted development with Dispatcher and Copilot CLI (Claude Opus 4.6):
 
 1. **Conceive** - Developer identifies a body of work (e.g., "build a user activity dashboard")
-2. **Plan iteratively in SpecTree** - Open a Copilot CLI session and iteratively create a structured epic in SpecTree via MCP tools:
-   - Create the epic with `spectree__create_epic_complete`
+2. **Plan iteratively in Dispatcher** - Open a Copilot CLI session and iteratively create a structured epic in Dispatcher via MCP tools:
+   - Create the epic with `dispatcher__create_epic_complete`
    - Review the generated features and tasks
    - Refine: add acceptance criteria, AI instructions, technical notes, files involved
    - Set execution metadata: ordering, dependencies, parallelism groups
-   - Repeat refinement until the execution plan (`spectree__get_execution_plan`) looks right
+   - Repeat refinement until the execution plan (`dispatcher__get_execution_plan`) looks right
 3. **Review the execution plan** - Verify phases, parallelism, and dependency order make sense
 4. **Spawn feature sessions** - Manually open new Copilot CLI terminal sessions, one per feature (or per parallel group)
-5. **Provide context** - Copy-paste the feature identifier and instruct each session to read its requirements from SpecTree
+5. **Provide context** - Copy-paste the feature identifier and instruct each session to read its requirements from Dispatcher
 6. **Monitor and coordinate** - Watch sessions, answer permission prompts, handle failures, manage git branches
-7. **Merge and verify** - Merge feature branches, run validations, mark work complete in SpecTree
+7. **Merge and verify** - Merge feature branches, run validations, mark work complete in Dispatcher
 
-This workflow produces **excellent results**. The structured planning in SpecTree ensures each AI session has clear, detailed requirements. The execution metadata enables intelligent parallelism. The session handoff system provides cross-session continuity.
+This workflow produces **excellent results**. The structured planning in Dispatcher ensures each AI session has clear, detailed requirements. The execution metadata enables intelligent parallelism. The session handoff system provides cross-session continuity.
 
 **But it's tedious and not standardizable.** Steps 2, 4, 5, and 6 require significant manual effort and tacit knowledge. A colleague cannot replicate this workflow without sitting with the developer and learning the patterns.
 
@@ -50,9 +50,9 @@ The automation tool consists of **two capabilities** that together replace the m
 
 #### Planning Pipeline (replaces steps 2-3)
 
-A standardized, repeatable process for turning a natural language description into a fully-specified SpecTree epic. The key innovation is **configurable review gates** - the developer can choose to review at each stage or let the pipeline run autonomously.
+A standardized, repeatable process for turning a natural language description into a fully-specified Dispatcher epic. The key innovation is **configurable review gates** - the developer can choose to review at each stage or let the pipeline run autonomously.
 
-**This is the #1 pain point.** The iterative planning process is where the most tacit knowledge lives. Standardizing it means any colleague can produce high-quality SpecTree epics by running a single command and answering review prompts.
+**This is the #1 pain point.** The iterative planning process is where the most tacit knowledge lives. Standardizing it means any colleague can produce high-quality Dispatcher epics by running a single command and answering review prompts.
 
 The pipeline has 5 stages:
 1. **Analyze** - Read the codebase, understand the request, identify scope
@@ -65,24 +65,24 @@ At each stage, the developer can configure a **review gate**: `auto` (proceed wi
 
 #### Execution Engine (replaces steps 4-7)
 
-An automated orchestrator that reads the execution plan from SpecTree and executes it by spawning Copilot CLI sessions via ACP (Agent Client Protocol). It manages:
-- Session spawning with full SpecTree context injection
+An automated orchestrator that reads the execution plan from Dispatcher and executes it by spawning Copilot CLI sessions via ACP (Agent Client Protocol). It manages:
+- Session spawning with full Dispatcher context injection
 - Parallel execution of independent features
 - Sequential execution of dependent features
 - Git branch management (create, merge, conflict detection)
-- Progress tracking back to SpecTree
+- Progress tracking back to Dispatcher
 - Error handling and retry
 
 ---
 
 ## 3. Existing Assets Inventory
 
-### 3a. SpecTree Platform (Fully Working)
+### 3a. Dispatcher Platform (Fully Working)
 
-The SpecTree platform is production-ready and requires no changes for the automation tool:
+The Dispatcher platform is production-ready and requires no changes for the automation tool:
 
 - **API** (`packages/api/`): Fastify REST API with full CRUD for Epics, Features, Tasks. Includes execution plans, structured descriptions, AI context, decision logs, validation checklists, session handoff, progress tracking, code context linking, templates.
-- **MCP Server** (`packages/mcp/`): 69 registered tools (`spectree__*`) exposing the full API surface to AI agents. Organized into: CRUD operations, execution planning, structured descriptions, AI context, validation, progress tracking, code context, decisions, templates, search, personal scope.
+- **MCP Server** (`packages/mcp/`): 69 registered tools (`dispatcher__*`) exposing the full API surface to AI agents. Organized into: CRUD operations, execution planning, structured descriptions, AI context, validation, progress tracking, code context, decisions, templates, search, personal scope.
 - **Web Frontend** (`packages/web/`): React + Vite + Tailwind + Radix UI dashboard for viewing and managing epics, features, tasks, and progress.
 
 ### 3b. Orchestrator Package (~14,300 lines)
@@ -95,11 +95,11 @@ These modules have zero dependency on the Copilot SDK and can be used as-is:
 
 | Module | File | Lines | What It Does |
 |--------|------|-------|--------------|
-| **SpecTreeClient** | `src/spectree/api-client.ts` | 1,527 | Full HTTP client for SpecTree REST API with retry, timeout, error mapping. Covers teams, epics, features, tasks, execution plans, sessions, progress, code context, decisions, structured descriptions, templates, AI context, validations. |
-| **MCP Bridge** | `src/spectree/mcp-bridge.ts` | 1,007 | 11 Copilot SDK tool definitions wrapping SpecTree operations (log_progress, log_decision, link_code_file, get_task_context, get_code_context, report_blocker, get_ai_context, append_ai_note, run_validation, run_all_validations, get_structured_description). Tool schemas and handlers are reusable even if the SDK wrapper changes. |
+| **DispatcherClient** | `src/dispatcher/api-client.ts` | 1,527 | Full HTTP client for Dispatcher REST API with retry, timeout, error mapping. Covers teams, epics, features, tasks, execution plans, sessions, progress, code context, decisions, structured descriptions, templates, AI context, validations. |
+| **MCP Bridge** | `src/dispatcher/mcp-bridge.ts` | 1,007 | 11 Copilot SDK tool definitions wrapping Dispatcher operations (log_progress, log_decision, link_code_file, get_task_context, get_code_context, report_blocker, get_ai_context, append_ai_note, run_validation, run_all_validations, get_structured_description). Tool schemas and handlers are reusable even if the SDK wrapper changes. |
 | **BranchManager** | `src/git/branch-manager.ts` | 383 | Git branch operations: create, checkout, delete, generate names from identifiers, detect default branch. |
 | **MergeCoordinator** | `src/git/merge-coordinator.ts` | 347 | Merge strategies, conflict detection, merge state management. |
-| **Error System** | `src/errors.ts` | 660 | Typed error hierarchy: OrchestratorError, AgentError, AuthError, NetworkError, SpecTreeAPIError with error codes, serialization, recovery hints. |
+| **Error System** | `src/errors.ts` | 660 | Typed error hierarchy: OrchestratorError, AgentError, AuthError, NetworkError, DispatcherAPIError with error codes, serialization, recovery hints. |
 | **Config System** | `src/config/` | 587 | Configuration loading (env vars, file-based), schemas (Zod), defaults. Manages API URL, tokens, model selection, concurrency settings. |
 | **CLI Framework** | `src/cli/` | 391 | Command parsing, state management, CLI entry points. |
 | **UI Components** | `src/ui/` | 1,412 | Terminal UI: agent status display, progress bars, activity tracker, task-level progress, spinner integration (ora). |
@@ -111,9 +111,9 @@ These modules import from `@github/copilot-sdk` and need to be refactored to use
 | Module | File | Lines | What It Does | Refactor Strategy |
 |--------|------|-------|--------------|-------------------|
 | **AgentPool** | `src/orchestrator/agent-pool.ts` | 795 | Manages concurrent `CopilotSession` objects. Spawn, track, terminate agents. Event-based progress reporting. Pool capacity management. | Replace `CopilotClient.createSession()` with ACP `session/new`. Replace `session.send()` / `session.on()` with ACP `session/prompt` / `session/update`. Keep pool management, event system, capacity logic. |
-| **Orchestrator** | `src/orchestrator/orchestrator.ts` | 1,080 | Top-level coordinator: reads execution plans, manages phases, delegates to PhaseExecutor, handles session lifecycle. | Replace session management with ACP sessions. Keep phase coordination, error handling, SpecTree integration. |
-| **PhaseExecutor** | `src/orchestrator/phase-executor.ts` | 1,063 | Executes a single phase: parallel or sequential items, git branch per item, SpecTree progress tracking, task-level agent spawning. | Replace `agentPool.spawnAgent()` / `agentPool.startAgent()` with ACP session creation. Keep phase logic, git integration, progress tracking. |
-| **PlanGenerator** | `src/orchestrator/plan-generator.ts` | 1,558 | Generates SpecTree epics from natural language using AI. Contains `PLANNER_SYSTEM_PROMPT` (119 lines of proven prompt engineering), response parsing/validation, SpecTree creation logic. | Extract the system prompt and validation logic. The SpecTree creation logic (`createPlanInSpecTree`, `createFeature`, `createTask`) is reusable. Replace `CopilotClient.createSession` + `sendAndWait` with ACP session. |
+| **Orchestrator** | `src/orchestrator/orchestrator.ts` | 1,080 | Top-level coordinator: reads execution plans, manages phases, delegates to PhaseExecutor, handles session lifecycle. | Replace session management with ACP sessions. Keep phase coordination, error handling, Dispatcher integration. |
+| **PhaseExecutor** | `src/orchestrator/phase-executor.ts` | 1,063 | Executes a single phase: parallel or sequential items, git branch per item, Dispatcher progress tracking, task-level agent spawning. | Replace `agentPool.spawnAgent()` / `agentPool.startAgent()` with ACP session creation. Keep phase logic, git integration, progress tracking. |
+| **PlanGenerator** | `src/orchestrator/plan-generator.ts` | 1,558 | Generates Dispatcher epics from natural language using AI. Contains `PLANNER_SYSTEM_PROMPT` (119 lines of proven prompt engineering), response parsing/validation, Dispatcher creation logic. | Extract the system prompt and validation logic. The Dispatcher creation logic (`createPlanInDispatcher`, `createFeature`, `createTask`) is reusable. Replace `CopilotClient.createSession` + `sendAndWait` with ACP session. |
 | **Recovery** | `src/orchestrator/recovery.ts` | 626 | Checkpoint/restore for interrupted orchestration runs. | Adapt to ACP session model. |
 
 #### Key Proven Artifacts to Preserve
@@ -131,7 +131,7 @@ These modules import from `@github/copilot-sdk` and need to be refactored to use
 - **No custom agents** - `.github/agents/` directory does not exist
 - **No custom skills** - `.github/skills/` directory does not exist
 - **No ACP integration** - No code for Agent Client Protocol (JSON-RPC over stdio)
-- **MCP is disabled** - `.github/copilot-instructions.md` has all SpecTree MCP tool instructions commented out due to "TypeError: terminated" errors during large operations
+- **MCP is disabled** - `.github/copilot-instructions.md` has all Dispatcher MCP tool instructions commented out due to "TypeError: terminated" errors during large operations
 
 ---
 
@@ -145,8 +145,8 @@ These modules import from `@github/copilot-sdk` and need to be refactored to use
 │                                                                      │
 │  $ copilot @planner "Build a user activity dashboard"                │
 │  $ copilot @orchestrator "Execute epic ENG-42"                       │
-│  $ spectree plan "Build a user activity dashboard"                   │
-│  $ spectree run ENG-42                                               │
+│  $ dispatcher plan "Build a user activity dashboard"                   │
+│  $ dispatcher run ENG-42                                               │
 └──────────────────┬───────────────────────────┬───────────────────────┘
                    │                           │
           ┌────────▼────────┐         ┌────────▼────────┐
@@ -177,7 +177,7 @@ These modules import from `@github/copilot-sdk` and need to be refactored to use
 
 ### 4a. Planning Pipeline
 
-The Planning Pipeline is implemented as a **Copilot CLI custom agent** (`planner.md`) combined with a **custom skill** (`spectree-planning/SKILL.md`). It runs inside a normal Copilot CLI session and uses SpecTree MCP tools.
+The Planning Pipeline is implemented as a **Copilot CLI custom agent** (`planner.md`) combined with a **custom skill** (`dispatcher-planning/SKILL.md`). It runs inside a normal Copilot CLI session and uses Dispatcher MCP tools.
 
 #### 5-Stage Pipeline
 
@@ -190,14 +190,14 @@ Stage 1: ANALYZE
 Stage 2: DECOMPOSE
   Input:  Analysis from stage 1
   Output: Feature list with execution ordering, dependencies, parallelism
-  Tools:  spectree__create_epic_complete (creates full hierarchy)
+  Tools:  dispatcher__create_epic_complete (creates full hierarchy)
   Gate:   Configurable
 
 Stage 3: DETAIL
   Input:  Created epic with features and tasks
   Output: Every feature and task has: acceptance criteria, AI instructions,
           files involved, technical notes, risk level, effort estimate
-  Tools:  spectree__set_structured_description (for each item)
+  Tools:  dispatcher__set_structured_description (for each item)
   Gate:   Configurable
 
 Stage 4: EVALUATE
@@ -214,7 +214,7 @@ Stage 4: EVALUATE
 Stage 5: VERIFY
   Input:  Evaluated epic
   Output: Execution plan visualization
-  Tools:  spectree__get_execution_plan
+  Tools:  dispatcher__get_execution_plan
   Check:  Phases match intended ordering, no circular deps,
           parallel features don't touch same files
   Gate:   Always review (shows execution plan)
@@ -237,42 +237,42 @@ The developer sets gate behavior via the planning command:
 
 ### 4b. Execution Engine
 
-The Execution Engine is a **programmatic ACP client** that reads execution plans from SpecTree and drives Copilot CLI sessions. It does NOT run inside a Copilot CLI session - it's a Node.js process that controls Copilot CLI externally.
+The Execution Engine is a **programmatic ACP client** that reads execution plans from Dispatcher and drives Copilot CLI sessions. It does NOT run inside a Copilot CLI session - it's a Node.js process that controls Copilot CLI externally.
 
 #### Execution Flow
 
 ```
 1. Read execution plan
-   └── spectree__get_execution_plan(epicId) → phases[]
+   └── dispatcher__get_execution_plan(epicId) → phases[]
 
 2. For each phase:
    ├── Determine execution mode (parallel vs sequential)
    ├── For each item in phase:
    │   ├── Create git branch (via BranchManager)
-   │   ├── Build context prompt (from SpecTree structured descriptions)
+   │   ├── Build context prompt (from Dispatcher structured descriptions)
    │   ├── Spawn Copilot CLI session via ACP
    │   │   └── copilot --acp → JSON-RPC connection
    │   │       └── session/new → session/prompt → stream session/update
-   │   ├── Monitor progress via ACP events + SpecTree polling
-   │   └── On completion: mark done in SpecTree, merge branch
+   │   ├── Monitor progress via ACP events + Dispatcher polling
+   │   └── On completion: mark done in Dispatcher, merge branch
    ├── Wait for all parallel items to complete
    └── Verify phase results before proceeding
 
 3. Post-execution:
-   ├── Run all validations (spectree__run_all_validations)
+   ├── Run all validations (dispatcher__run_all_validations)
    ├── Generate summary
-   └── End SpecTree session with handoff
+   └── End Dispatcher session with handoff
 ```
 
 #### Context Injection
 
-Each ACP session receives a rich prompt built from SpecTree data:
+Each ACP session receives a rich prompt built from Dispatcher data:
 
 ```markdown
 # Task: {TASK_IDENTIFIER} - {TASK_TITLE}
 
 ## Requirements
-{from spectree__get_structured_description}
+{from dispatcher__get_structured_description}
 
 ## Acceptance Criteria
 {from structured description acceptanceCriteria[]}
@@ -284,24 +284,24 @@ Each ACP session receives a rich prompt built from SpecTree data:
 {from structured description filesInvolved[]}
 
 ## Previous Context
-{from spectree__get_ai_context}
+{from dispatcher__get_ai_context}
 
 ## Code Context
-{from spectree__get_code_context}
+{from dispatcher__get_code_context}
 
 ## Decisions Made So Far
-{from spectree__get_decision_context}
+{from dispatcher__get_decision_context}
 
 ## Your Tools
-You have SpecTree MCP tools. Use them to:
-- spectree__log_progress - Report progress
-- spectree__log_decision - Record decisions
-- spectree__link_code_file - Track modified files
-- spectree__run_all_validations - Verify your work
-- spectree__complete_task_with_validation - Validate and complete
+You have Dispatcher MCP tools. Use them to:
+- dispatcher__log_progress - Report progress
+- dispatcher__log_decision - Record decisions
+- dispatcher__link_code_file - Track modified files
+- dispatcher__run_all_validations - Verify your work
+- dispatcher__complete_task_with_validation - Validate and complete
 
 ## When Done
-1. Run spectree__complete_task_with_validation
+1. Run dispatcher__complete_task_with_validation
 2. Ensure all modified files are linked
 3. Leave an AI note summarizing what was done
 ```
@@ -326,7 +326,7 @@ The existing orchestrator's SDK-coupled code (~5,200 lines) will be refactored t
 The Planning Pipeline runs **inside** Copilot CLI as a custom agent rather than as standalone code. This means:
 
 - The planner has full access to the codebase (can read files, search code)
-- It uses SpecTree MCP tools directly (no HTTP client needed)
+- It uses Dispatcher MCP tools directly (no HTTP client needed)
 - It benefits from Copilot CLI's context management
 - The developer interacts with it conversationally (can refine, ask questions)
 
@@ -342,19 +342,19 @@ The Execution Engine runs **outside** Copilot CLI as a Node.js process. This pro
 - Git branch management between sessions
 - Progress tracking and reporting
 
-### SpecTree MCP as Context Backbone
+### Dispatcher MCP as Context Backbone
 
-Both capabilities use SpecTree as their shared data store:
+Both capabilities use Dispatcher as their shared data store:
 
-- Planning Pipeline **writes** to SpecTree (creates epics, features, tasks, structured descriptions)
-- Execution Engine **reads** from SpecTree (execution plans, structured descriptions, AI context)
-- Worker sessions **read and write** to SpecTree (progress, decisions, code context, validations)
+- Planning Pipeline **writes** to Dispatcher (creates epics, features, tasks, structured descriptions)
+- Execution Engine **reads** from Dispatcher (execution plans, structured descriptions, AI context)
+- Worker sessions **read and write** to Dispatcher (progress, decisions, code context, validations)
 
-This is the key architectural insight: **SpecTree provides the persistent memory that ephemeral AI sessions lack.**
+This is the key architectural insight: **Dispatcher provides the persistent memory that ephemeral AI sessions lack.**
 
 ### Re-enable MCP in copilot-instructions.md
 
-The MCP tools are currently disabled in `.github/copilot-instructions.md` due to "TypeError: terminated" errors. This must be fixed and re-enabled as a prerequisite for the automation tool. Without MCP access, neither the Planning Pipeline nor worker sessions can interact with SpecTree.
+The MCP tools are currently disabled in `.github/copilot-instructions.md` due to "TypeError: terminated" errors. This must be fixed and re-enabled as a prerequisite for the automation tool. Without MCP access, neither the Planning Pipeline nor worker sessions can interact with Dispatcher.
 
 ---
 
@@ -366,8 +366,8 @@ All agents are defined in `.github/agents/` as Markdown files with YAML frontmat
 
 ```yaml
 ---
-name: SpecTree Planner
-description: "Creates structured SpecTree epics from natural language descriptions.
+name: Dispatcher Planner
+description: "Creates structured Dispatcher epics from natural language descriptions.
   Runs a 5-stage pipeline: Analyze → Decompose → Detail → Evaluate → Verify.
   Use when the user wants to plan, design, or spec out a feature or body of work."
 tools: ['read', 'search', 'agent', 'web']
@@ -375,11 +375,11 @@ user-invokable: true
 ---
 ```
 
-**Role:** User-invokable agent that takes a natural language description and produces a fully-specified SpecTree epic through the 5-stage planning pipeline. Encodes the iterative refinement process that currently requires tacit knowledge.
+**Role:** User-invokable agent that takes a natural language description and produces a fully-specified Dispatcher epic through the 5-stage planning pipeline. Encodes the iterative refinement process that currently requires tacit knowledge.
 
 **Key behaviors:**
 - Reads the codebase to understand scope and constraints
-- Uses `spectree__create_epic_complete` to create the full hierarchy
+- Uses `dispatcher__create_epic_complete` to create the full hierarchy
 - Sets structured descriptions on every feature and task
 - Evaluates against quality heuristics
 - Generates and verifies the execution plan
@@ -389,8 +389,8 @@ user-invokable: true
 
 ```yaml
 ---
-name: SpecTree Orchestrator
-description: "Executes SpecTree epic execution plans by coordinating feature-worker
+name: Dispatcher Orchestrator
+description: "Executes Dispatcher epic execution plans by coordinating feature-worker
   agents. Reads the execution plan, manages phases, and delegates features to
   sub-agents. Use when the user wants to execute an epic or run a specific phase."
 tools: ['agent', 'execute', 'read']
@@ -399,13 +399,13 @@ user-invokable: true
 ---
 ```
 
-**Role:** User-invokable agent that reads a SpecTree execution plan and delegates feature implementation to sub-agents. This is the Copilot CLI-native orchestration path (alternative to the programmatic ACP engine for simpler use cases).
+**Role:** User-invokable agent that reads a Dispatcher execution plan and delegates feature implementation to sub-agents. This is the Copilot CLI-native orchestration path (alternative to the programmatic ACP engine for simpler use cases).
 
 **Key behaviors:**
-- Reads execution plan from SpecTree
+- Reads execution plan from Dispatcher
 - Spawns feature-worker sub-agents via `#runSubagent` (parallel when safe)
 - Waits for completion, handles errors
-- Updates SpecTree progress after each feature
+- Updates Dispatcher progress after each feature
 - Triggers the reviewer agent after each phase
 
 ### `feature-worker.md` - Feature Implementation Agent
@@ -413,7 +413,7 @@ user-invokable: true
 ```yaml
 ---
 name: Feature Worker
-description: "Implements all tasks within a single SpecTree feature. Receives
+description: "Implements all tasks within a single Dispatcher feature. Receives
   context from the orchestrator including requirements, acceptance criteria,
   and code context. NOT user-invokable - only spawned as a sub-agent."
 tools: ['read', 'edit', 'execute', 'search']
@@ -424,10 +424,10 @@ user-invokable: false
 **Role:** Sub-agent only. Receives a feature identifier and full context, then implements all tasks sequentially within the feature. Each sub-agent works in isolation with its own context window.
 
 **Key behaviors:**
-- Reads structured description and AI instructions from SpecTree
+- Reads structured description and AI instructions from Dispatcher
 - Completes tasks in execution order
 - Runs validations before marking tasks complete
-- Links all modified files to SpecTree
+- Links all modified files to Dispatcher
 - Logs decisions with rationale
 - Leaves AI notes for future sessions
 
@@ -435,8 +435,8 @@ user-invokable: false
 
 ```yaml
 ---
-name: SpecTree Reviewer
-description: "Reviews completed features against their SpecTree acceptance criteria.
+name: Dispatcher Reviewer
+description: "Reviews completed features against their Dispatcher acceptance criteria.
   Runs validations, checks code quality, and verifies requirements are met.
   Use when you want to review a completed feature or task."
 tools: ['read', 'search', 'execute']
@@ -444,7 +444,7 @@ user-invokable: true
 ---
 ```
 
-**Role:** Reviews completed work against acceptance criteria defined in SpecTree. Can be user-invoked or called by the orchestrator after each phase.
+**Role:** Reviews completed work against acceptance criteria defined in Dispatcher. Can be user-invoked or called by the orchestrator after each phase.
 
 **Key behaviors:**
 - Reads acceptance criteria from structured descriptions
@@ -458,9 +458,9 @@ user-invokable: true
 
 All skills are defined in `.github/skills/` as directories containing a `SKILL.md` file.
 
-### `spectree-planning/SKILL.md` - Planning Procedure
+### `dispatcher-planning/SKILL.md` - Planning Procedure
 
-Encodes the full 5-stage planning pipeline as a repeatable procedure. This is loaded by the planner agent but can also be used by any agent that needs to create SpecTree epics.
+Encodes the full 5-stage planning pipeline as a repeatable procedure. This is loaded by the planner agent but can also be used by any agent that needs to create Dispatcher epics.
 
 **Contents:**
 - Stage-by-stage instructions with MCP tool calls
@@ -469,23 +469,23 @@ Encodes the full 5-stage planning pipeline as a repeatable procedure. This is lo
 - Example structured descriptions at each detail level
 - The proven `PLANNER_SYSTEM_PROMPT` structure (from plan-generator.ts) adapted as a planning checklist
 
-### `spectree-session/SKILL.md` - Session Start/End Protocol
+### `dispatcher-session/SKILL.md` - Session Start/End Protocol
 
-Encodes the SpecTree session management workflow that every AI session should follow.
+Encodes the Dispatcher session management workflow that every AI session should follow.
 
 **Contents:**
-- Session start: `spectree__start_session`, read previous context, check progress
-- During work: `spectree__log_progress`, `spectree__log_decision`, `spectree__link_code_file`
-- Session end: `spectree__end_session` with summary, next steps, blockers, decisions
-- Error handling: `spectree__report_blocker` when stuck
+- Session start: `dispatcher__start_session`, read previous context, check progress
+- During work: `dispatcher__log_progress`, `dispatcher__log_decision`, `dispatcher__link_code_file`
+- Session end: `dispatcher__end_session` with summary, next steps, blockers, decisions
+- Error handling: `dispatcher__report_blocker` when stuck
 
-### `spectree-validation/SKILL.md` - Validation Procedures
+### `dispatcher-validation/SKILL.md` - Validation Procedures
 
 Encodes validation workflows for verifying completed work.
 
 **Contents:**
-- How to run `spectree__run_all_validations` and interpret results
-- How to use `spectree__complete_task_with_validation` for atomic validate-and-complete
+- How to run `dispatcher__run_all_validations` and interpret results
+- How to use `dispatcher__complete_task_with_validation` for atomic validate-and-complete
 - Fallback procedures when automated validation isn't sufficient
 - How to add new validation checks when acceptance criteria change
 
@@ -493,7 +493,7 @@ Encodes validation workflows for verifying completed work.
 
 ## 8. Implementation Requirements (10 Features)
 
-> **For the AI planner:** Each feature below maps to one SpecTree feature. Each task maps to one SpecTree task. The structured fields (AI Instructions, Acceptance Criteria, Files Involved, Technical Notes, Risk Level, Estimated Effort, Validations) map directly to `spectree__set_structured_description` and `spectree__add_validation` calls. Translate this section 1:1 into SpecTree items.
+> **For the AI planner:** Each feature below maps to one Dispatcher feature. Each task maps to one Dispatcher task. The structured fields (AI Instructions, Acceptance Criteria, Files Involved, Technical Notes, Risk Level, Estimated Effort, Validations) map directly to `dispatcher__set_structured_description` and `dispatcher__add_validation` calls. Translate this section 1:1 into Dispatcher items.
 
 ---
 
@@ -507,21 +507,21 @@ Encodes validation workflows for verifying completed work.
 **Estimated Effort:** medium
 
 **Description:**
-The SpecTree MCP server (`packages/mcp/`) crashes with "TypeError: terminated" during large operations, particularly `spectree__create_epic_complete` calls that create many features and tasks atomically. The MCP tool instructions in `.github/copilot-instructions.md` are currently wrapped in HTML comment blocks (`<!-- ... -->`) to prevent agents from calling them. This feature fixes the stability issue and re-enables the MCP instructions.
+The Dispatcher MCP server (`packages/mcp/`) crashes with "TypeError: terminated" during large operations, particularly `dispatcher__create_epic_complete` calls that create many features and tasks atomically. The MCP tool instructions in `.github/copilot-instructions.md` are currently wrapped in HTML comment blocks (`<!-- ... -->`) to prevent agents from calling them. This feature fixes the stability issue and re-enables the MCP instructions.
 
 **AI Instructions:**
-1. Start the MCP server locally and reproduce the crash. Run the SpecTree API (`cd packages/api && pnpm dev`), then start the MCP server (`cd packages/mcp && pnpm dev`). Use a Copilot CLI session with MCP loaded to call `spectree__create_epic_complete` with a payload of 7 features and 25 tasks.
+1. Start the MCP server locally and reproduce the crash. Run the Dispatcher API (`cd packages/api && pnpm dev`), then start the MCP server (`cd packages/mcp && pnpm dev`). Use a Copilot CLI session with MCP loaded to call `dispatcher__create_epic_complete` with a payload of 7 features and 25 tasks.
 2. Check `packages/mcp/src/index.ts` for process lifecycle handling. Look for missing error handlers on the MCP server transport, unhandled promise rejections, or missing `process.on('uncaughtException')` handlers.
-3. Check `packages/mcp/src/tools/composite.ts` (the `spectree__create_epic_complete` handler starting at line 186) for long-running operations that might exceed MCP transport timeouts.
+3. Check `packages/mcp/src/tools/composite.ts` (the `dispatcher__create_epic_complete` handler starting at line 186) for long-running operations that might exceed MCP transport timeouts.
 4. The fix likely involves: (a) adding global error handlers to the MCP server process, (b) adding try/catch with proper error responses in tool handlers, (c) adding timeout handling for API calls within tool handlers, (d) possibly chunking the `create_epic_complete` API call on the server side.
-5. After fixing, re-enable MCP instructions in `.github/copilot-instructions.md` by removing the HTML comment wrappers (`<!--` and `-->`) around the two disabled sections: "SpecTree MCP Integration" (lines ~22-362) and "AI Session Context MCP Tools" (lines ~412-554).
+5. After fixing, re-enable MCP instructions in `.github/copilot-instructions.md` by removing the HTML comment wrappers (`<!--` and `-->`) around the two disabled sections: "Dispatcher MCP Integration" (lines ~22-362) and "AI Session Context MCP Tools" (lines ~412-554).
 6. Test reliability by running the full planning workflow 3 times in succession.
 
 **Acceptance Criteria:**
-- [ ] MCP server handles `spectree__create_epic_complete` with 7 features and 25+ tasks without crashing or "TypeError: terminated"
+- [ ] MCP server handles `dispatcher__create_epic_complete` with 7 features and 25+ tasks without crashing or "TypeError: terminated"
 - [ ] MCP server handles 10 consecutive tool calls without process termination
 - [ ] `.github/copilot-instructions.md` has both MCP sections active (not wrapped in HTML comments)
-- [ ] Running `spectree__list_teams` → `spectree__create_epic_complete` → `spectree__get_execution_plan` in one session works reliably
+- [ ] Running `dispatcher__list_teams` → `dispatcher__create_epic_complete` → `dispatcher__get_execution_plan` in one session works reliably
 
 **Files Involved:**
 - `packages/mcp/src/index.ts`
@@ -531,7 +531,7 @@ The SpecTree MCP server (`packages/mcp/`) crashes with "TypeError: terminated" d
 **Technical Notes:**
 - The MCP server uses `@modelcontextprotocol/sdk` and registers tools via `server.registerTool()`. See `packages/mcp/src/tools/` for all tool files.
 - The API client used by MCP tools is in `packages/mcp/src/api-client.ts` (separate from the orchestrator's api-client).
-- The SpecTree API must be running locally for MCP tools to work. Default API URL: `http://localhost:3001`.
+- The Dispatcher API must be running locally for MCP tools to work. Default API URL: `http://localhost:3001`.
 - The MCP token is stored in `packages/mcp/.env`.
 
 #### Task 1.1: Reproduce and Diagnose the TypeError
@@ -542,21 +542,21 @@ The SpecTree MCP server (`packages/mcp/`) crashes with "TypeError: terminated" d
 **Estimated Effort:** small
 **Risk Level:** low
 
-**Description:** Reproduce the "TypeError: terminated" error by calling `spectree__create_epic_complete` via MCP with a large payload. Capture the full error stack trace, identify whether it's a transport timeout, process crash, or unhandled rejection.
+**Description:** Reproduce the "TypeError: terminated" error by calling `dispatcher__create_epic_complete` via MCP with a large payload. Capture the full error stack trace, identify whether it's a transport timeout, process crash, or unhandled rejection.
 
 **AI Instructions:**
-1. Ensure the SpecTree API is running: `cd packages/api && pnpm dev`
+1. Ensure the Dispatcher API is running: `cd packages/api && pnpm dev`
 2. Start the MCP server: `cd packages/mcp && pnpm dev`
 3. Read `packages/mcp/src/index.ts` to understand how the MCP server is initialized and what error handlers exist
 4. Read `packages/mcp/src/tools/composite.ts` to understand the `create_epic_complete` implementation
-5. Trigger the error by calling `spectree__create_epic_complete` with a large payload (7 features, 3-5 tasks each) from a Copilot CLI session with MCP configured
+5. Trigger the error by calling `dispatcher__create_epic_complete` with a large payload (7 features, 3-5 tasks each) from a Copilot CLI session with MCP configured
 6. Capture the error output. Check: Does the MCP process exit? Is it a transport-level error? Is there an unhandled promise rejection?
-7. Log findings using `spectree__log_progress` and `spectree__log_decision` with the diagnosis
+7. Log findings using `dispatcher__log_progress` and `dispatcher__log_decision` with the diagnosis
 
 **Acceptance Criteria:**
 - [ ] Error is reproduced with a documented reproduction case
 - [ ] Root cause category identified (transport timeout / process crash / unhandled rejection / memory)
-- [ ] Findings logged as a decision in SpecTree
+- [ ] Findings logged as a decision in Dispatcher
 
 **Files Involved:**
 - `packages/mcp/src/index.ts`
@@ -659,17 +659,17 @@ The SpecTree MCP server (`packages/mcp/`) crashes with "TypeError: terminated" d
 
 **AI Instructions:**
 1. Open `.github/copilot-instructions.md` and find the two disabled sections:
-   - Section 1: "DISABLED: SpecTree MCP Integration" - approximately lines 22-362, wrapped in `<!-- ... -->`
+   - Section 1: "DISABLED: Dispatcher MCP Integration" - approximately lines 22-362, wrapped in `<!-- ... -->`
    - Section 2: "DISABLED: AI Session Context MCP Tools" - approximately lines 412-554, wrapped in `<!-- ... -->`
 2. Remove the opening `<!--` and closing `-->` comment markers for both sections.
-3. Remove the "TEMPORARY: SpecTree MCP Tools Disabled" header at the top of the file (lines 3-10 approximately).
+3. Remove the "TEMPORARY: Dispatcher MCP Tools Disabled" header at the top of the file (lines 3-10 approximately).
 4. Remove the "DISABLED" labels from the section headers.
 5. Review the re-enabled content for any stale references. Update if needed. Note: don't add documentation for agents/skills yet - that's Feature 9.
 6. Verify the file is valid Markdown after changes.
 
 **Acceptance Criteria:**
 - [ ] No HTML comment wrappers around MCP sections in `.github/copilot-instructions.md`
-- [ ] The "TEMPORARY: SpecTree MCP Tools Disabled" notice is removed
+- [ ] The "TEMPORARY: Dispatcher MCP Tools Disabled" notice is removed
 - [ ] The Quick Reference checklist is visible (not commented out)
 - [ ] The file is valid Markdown
 
@@ -694,16 +694,16 @@ The SpecTree MCP server (`packages/mcp/`) crashes with "TypeError: terminated" d
 **Description:** Run the full MCP planning workflow 3 times to verify stability. Test with progressively larger payloads.
 
 **AI Instructions:**
-1. Start the SpecTree API and MCP server.
-2. Test 1 (small): Call `spectree__list_teams`, then `spectree__create_epic_complete` with 3 features, 2 tasks each. Verify success.
-3. Test 2 (medium): Call `spectree__create_epic_complete` with 5 features, 3 tasks each. Then call `spectree__get_execution_plan` on the created epic. Verify success.
-4. Test 3 (large): Call `spectree__create_epic_complete` with 7 features, 4 tasks each (28 tasks total). Then call `spectree__set_structured_description` on 3 of the features. Then call `spectree__get_execution_plan`. Verify success.
+1. Start the Dispatcher API and MCP server.
+2. Test 1 (small): Call `dispatcher__list_teams`, then `dispatcher__create_epic_complete` with 3 features, 2 tasks each. Verify success.
+3. Test 2 (medium): Call `dispatcher__create_epic_complete` with 5 features, 3 tasks each. Then call `dispatcher__get_execution_plan` on the created epic. Verify success.
+4. Test 3 (large): Call `dispatcher__create_epic_complete` with 7 features, 4 tasks each (28 tasks total). Then call `dispatcher__set_structured_description` on 3 of the features. Then call `dispatcher__get_execution_plan`. Verify success.
 5. If any test fails, log the failure and create a follow-up task.
 6. Clean up test epics after verification.
 
 **Acceptance Criteria:**
 - [ ] All 3 test runs complete without MCP server crashes
-- [ ] `spectree__get_execution_plan` returns valid execution plans for all test epics
+- [ ] `dispatcher__get_execution_plan` returns valid execution plans for all test epics
 - [ ] No "TypeError: terminated" errors observed
 
 **Files Involved:**
@@ -727,12 +727,12 @@ The SpecTree MCP server (`packages/mcp/`) crashes with "TypeError: terminated" d
 **Description:**
 Create 4 custom agent definitions in `.github/agents/`. These Markdown files with YAML frontmatter define specialized AI personas that Copilot CLI auto-selects based on task relevance. The agents are the user-facing interface to the automation tool.
 
-The agents reference SpecTree MCP tools extensively. While they can be written without MCP running, they should be tested after Feature 1 completes.
+The agents reference Dispatcher MCP tools extensively. While they can be written without MCP running, they should be tested after Feature 1 completes.
 
 **AI Instructions:**
 1. Create the `.github/agents/` directory if it doesn't exist.
 2. Each agent file has YAML frontmatter (name, description, tools, agents, user-invokable) followed by Markdown instructions.
-3. The agent instructions should reference specific SpecTree MCP tool names (e.g., `spectree__create_epic_complete`) and include concrete examples of how to call them.
+3. The agent instructions should reference specific Dispatcher MCP tool names (e.g., `dispatcher__create_epic_complete`) and include concrete examples of how to call them.
 4. Refer to Section 6 of this strategy document for the agent specifications.
 5. The YAML `tools` field uses Copilot CLI tool categories: `read`, `edit`, `execute`, `search`, `agent`, `web`, `todo`.
 6. The YAML `agents` field lists other agents this one can invoke via `#runSubagent`.
@@ -765,29 +765,29 @@ The agents reference SpecTree MCP tools extensively. While they can be written w
 **Estimated Effort:** medium
 **Risk Level:** low
 
-**Description:** Create the SpecTree Planner agent that takes natural language descriptions and produces fully-specified SpecTree epics through a 5-stage planning pipeline.
+**Description:** Create the Dispatcher Planner agent that takes natural language descriptions and produces fully-specified Dispatcher epics through a 5-stage planning pipeline.
 
 **AI Instructions:**
 1. Create `.github/agents/planner.md`.
 2. YAML frontmatter:
    ```yaml
    ---
-   name: SpecTree Planner
-   description: "Creates structured SpecTree epics from natural language descriptions. Runs a 5-stage pipeline: Analyze, Decompose, Detail, Evaluate, Verify. Use when the user wants to plan, design, or spec out a feature or body of work."
+   name: Dispatcher Planner
+   description: "Creates structured Dispatcher epics from natural language descriptions. Runs a 5-stage pipeline: Analyze, Decompose, Detail, Evaluate, Verify. Use when the user wants to plan, design, or spec out a feature or body of work."
    tools: ['read', 'search', 'agent', 'web']
    user-invokable: true
    ---
    ```
 3. Markdown body should include:
-   - **Role statement**: "You create comprehensive SpecTree epics from natural language feature requests."
+   - **Role statement**: "You create comprehensive Dispatcher epics from natural language feature requests."
    - **5-stage pipeline** (Analyze → Decompose → Detail → Evaluate → Verify) with specific MCP tool calls at each stage
    - **Stage 1 (Analyze)**: Read relevant codebase files using `read` and `search` tools. Identify scope, affected packages, technical constraints. Output: scope assessment.
-   - **Stage 2 (Decompose)**: Break into features with execution ordering. Call `spectree__list_teams` to get team ID, then `spectree__create_epic_complete` with all features and tasks. Output: created epic.
-   - **Stage 3 (Detail)**: For every feature and task, call `spectree__set_structured_description` with: summary, aiInstructions, acceptanceCriteria (3+ per feature, 2+ per task), filesInvolved, technicalNotes, riskLevel, estimatedEffort.
+   - **Stage 2 (Decompose)**: Break into features with execution ordering. Call `dispatcher__list_teams` to get team ID, then `dispatcher__create_epic_complete` with all features and tasks. Output: created epic.
+   - **Stage 3 (Detail)**: For every feature and task, call `dispatcher__set_structured_description` with: summary, aiInstructions, acceptanceCriteria (3+ per feature, 2+ per task), filesInvolved, technicalNotes, riskLevel, estimatedEffort.
    - **Stage 4 (Evaluate)**: Score the plan against quality heuristics (from Section 10 of the strategy document). Report issues.
-   - **Stage 5 (Verify)**: Call `spectree__get_execution_plan` and verify phases, dependencies, parallelism.
+   - **Stage 5 (Verify)**: Call `dispatcher__get_execution_plan` and verify phases, dependencies, parallelism.
    - **Review gates**: Explain that the user can say "auto" to skip review or "stop" to halt at any stage.
-   - **Rules section**: MUST call `spectree__list_teams` before creating epics. MUST set structured descriptions for ALL items. MUST verify the execution plan at the end.
+   - **Rules section**: MUST call `dispatcher__list_teams` before creating epics. MUST set structured descriptions for ALL items. MUST verify the execution plan at the end.
 4. The planning prompt structure should be adapted from `PLANNER_SYSTEM_PROMPT` in `packages/orchestrator/src/orchestrator/plan-generator.ts` (lines 189-308). This proven prompt defines: complexity levels (trivial/simple/moderate/complex), risk levels (low/medium/high), effort estimates (trivial/small/medium/large/xl), validation types (command/file_exists/file_contains/test_passes/manual), and rules for execution ordering and parallelism.
 
 **Acceptance Criteria:**
@@ -801,8 +801,8 @@ The agents reference SpecTree MCP tools extensively. While they can be written w
 
 **Validations:**
 - `{ "type": "file_exists", "description": "Planner agent file exists", "filePath": ".github/agents/planner.md" }`
-- `{ "type": "file_contains", "description": "References create_epic_complete", "filePath": ".github/agents/planner.md", "searchPattern": "spectree__create_epic_complete" }`
-- `{ "type": "file_contains", "description": "References set_structured_description", "filePath": ".github/agents/planner.md", "searchPattern": "spectree__set_structured_description" }`
+- `{ "type": "file_contains", "description": "References create_epic_complete", "filePath": ".github/agents/planner.md", "searchPattern": "dispatcher__create_epic_complete" }`
+- `{ "type": "file_contains", "description": "References set_structured_description", "filePath": ".github/agents/planner.md", "searchPattern": "dispatcher__set_structured_description" }`
 
 ---
 
@@ -815,34 +815,34 @@ The agents reference SpecTree MCP tools extensively. While they can be written w
 **Estimated Effort:** medium
 **Risk Level:** low
 
-**Description:** Create the SpecTree Orchestrator agent that reads execution plans from SpecTree and delegates feature implementation to sub-agents.
+**Description:** Create the Dispatcher Orchestrator agent that reads execution plans from Dispatcher and delegates feature implementation to sub-agents.
 
 **AI Instructions:**
 1. Create `.github/agents/orchestrator.md`.
 2. YAML frontmatter:
    ```yaml
    ---
-   name: SpecTree Orchestrator
-   description: "Executes SpecTree epic execution plans by coordinating feature-worker agents. Reads the execution plan, manages phases, and delegates features to sub-agents. Use when the user wants to execute an epic or run a specific phase."
+   name: Dispatcher Orchestrator
+   description: "Executes Dispatcher epic execution plans by coordinating feature-worker agents. Reads the execution plan, manages phases, and delegates features to sub-agents. Use when the user wants to execute an epic or run a specific phase."
    tools: ['agent', 'execute', 'read']
    agents: ['feature-worker', 'reviewer']
    user-invokable: true
    ---
    ```
 3. Markdown body should include:
-   - **Role statement**: "You execute SpecTree epics by reading execution plans and delegating feature implementation to feature-worker sub-agents."
+   - **Role statement**: "You execute Dispatcher epics by reading execution plans and delegating feature implementation to feature-worker sub-agents."
    - **Workflow**:
-     1. Call `spectree__get_execution_plan` for the specified epic
+     1. Call `dispatcher__get_execution_plan` for the specified epic
      2. For each phase: identify parallel vs sequential items
-     3. For each feature: gather context by calling `spectree__get_structured_description`, `spectree__get_ai_context`, `spectree__get_code_context`, `spectree__get_decision_context`
+     3. For each feature: gather context by calling `dispatcher__get_structured_description`, `dispatcher__get_ai_context`, `dispatcher__get_code_context`, `dispatcher__get_decision_context`
      4. Spawn feature-worker sub-agents via `#runSubagent` with full context in the prompt
      5. For parallel features: spawn all sub-agents at once
      6. For sequential features: wait for each to complete before starting next
-     7. After each feature completes: call `spectree__complete_work` to mark done
+     7. After each feature completes: call `dispatcher__complete_work` to mark done
      8. After all phases: invoke the reviewer agent to check work
-   - **Context injection template**: Include the full prompt template from Section 4b of this strategy document that injects SpecTree data into sub-agent prompts
-   - **Error handling**: If a sub-agent fails, log the error with `spectree__report_blocker`, skip the feature, and continue with remaining features in the phase
-   - **Rules**: NEVER skip reading the execution plan. ALWAYS inject full SpecTree context. ALWAYS update progress after each feature.
+   - **Context injection template**: Include the full prompt template from Section 4b of this strategy document that injects Dispatcher data into sub-agent prompts
+   - **Error handling**: If a sub-agent fails, log the error with `dispatcher__report_blocker`, skip the feature, and continue with remaining features in the phase
+   - **Rules**: NEVER skip reading the execution plan. ALWAYS inject full Dispatcher context. ALWAYS update progress after each feature.
 
 **Acceptance Criteria:**
 - [ ] `.github/agents/orchestrator.md` exists with valid YAML frontmatter
@@ -856,7 +856,7 @@ The agents reference SpecTree MCP tools extensively. While they can be written w
 **Validations:**
 - `{ "type": "file_exists", "description": "Orchestrator agent file exists", "filePath": ".github/agents/orchestrator.md" }`
 - `{ "type": "file_contains", "description": "Lists feature-worker agent", "filePath": ".github/agents/orchestrator.md", "searchPattern": "feature-worker" }`
-- `{ "type": "file_contains", "description": "References get_execution_plan", "filePath": ".github/agents/orchestrator.md", "searchPattern": "spectree__get_execution_plan" }`
+- `{ "type": "file_contains", "description": "References get_execution_plan", "filePath": ".github/agents/orchestrator.md", "searchPattern": "dispatcher__get_execution_plan" }`
 
 ---
 
@@ -877,23 +877,23 @@ The agents reference SpecTree MCP tools extensively. While they can be written w
    ```yaml
    ---
    name: Feature Worker
-   description: "Implements all tasks within a single SpecTree feature. Receives full context from the orchestrator including requirements, acceptance criteria, and code context. NOT user-invokable - only spawned as a sub-agent by the orchestrator."
+   description: "Implements all tasks within a single Dispatcher feature. Receives full context from the orchestrator including requirements, acceptance criteria, and code context. NOT user-invokable - only spawned as a sub-agent by the orchestrator."
    tools: ['read', 'edit', 'execute', 'search']
    user-invokable: false
    ---
    ```
 3. Markdown body should include:
-   - **Role statement**: "You implement a single SpecTree feature by completing all its tasks in execution order."
+   - **Role statement**: "You implement a single Dispatcher feature by completing all its tasks in execution order."
    - **Expected context**: The orchestrator will provide: feature identifier, task list, structured descriptions, AI instructions, acceptance criteria, files involved, previous AI context, code context, decisions.
    - **Per-task workflow** (adapted from `phase-executor.ts` lines 727-801):
-     1. Call `spectree__start_work` for the task
+     1. Call `dispatcher__start_work` for the task
      2. Read the task's AI instructions carefully
      3. Implement the task according to instructions
-     4. Call `spectree__link_code_file` for every file created or modified
-     5. Call `spectree__log_progress` after each significant step
-     6. Call `spectree__log_decision` for any implementation choices
-     7. Run `spectree__run_all_validations` for the task
-     8. Call `spectree__complete_task_with_validation` to validate and mark done
+     4. Call `dispatcher__link_code_file` for every file created or modified
+     5. Call `dispatcher__log_progress` after each significant step
+     6. Call `dispatcher__log_decision` for any implementation choices
+     7. Run `dispatcher__run_all_validations` for the task
+     8. Call `dispatcher__complete_task_with_validation` to validate and mark done
    - **Progress tracking tool examples** with concrete JSON (adapted from phase-executor.ts):
      ```json
      // Log progress
@@ -929,27 +929,27 @@ The agents reference SpecTree MCP tools extensively. While they can be written w
 **Estimated Effort:** small
 **Risk Level:** low
 
-**Description:** Create the SpecTree Reviewer agent that reviews completed features against their SpecTree acceptance criteria.
+**Description:** Create the Dispatcher Reviewer agent that reviews completed features against their Dispatcher acceptance criteria.
 
 **AI Instructions:**
 1. Create `.github/agents/reviewer.md`.
 2. YAML frontmatter:
    ```yaml
    ---
-   name: SpecTree Reviewer
-   description: "Reviews completed features against their SpecTree acceptance criteria. Runs validations, checks code quality, and verifies requirements are met. Use when you want to review a completed feature or task."
+   name: Dispatcher Reviewer
+   description: "Reviews completed features against their Dispatcher acceptance criteria. Runs validations, checks code quality, and verifies requirements are met. Use when you want to review a completed feature or task."
    tools: ['read', 'search', 'execute']
    user-invokable: true
    ---
    ```
 3. Markdown body should include:
-   - **Role statement**: "You review completed work against acceptance criteria stored in SpecTree."
+   - **Role statement**: "You review completed work against acceptance criteria stored in Dispatcher."
    - **Review workflow**:
-     1. Call `spectree__get_structured_description` for the feature/task
+     1. Call `dispatcher__get_structured_description` for the feature/task
      2. Read the acceptance criteria list
      3. For each criterion: verify it's met by reading the relevant code
-     4. Call `spectree__run_all_validations` to run automated checks
-     5. Call `spectree__get_code_context` to see what files were modified
+     4. Call `dispatcher__run_all_validations` to run automated checks
+     5. Call `dispatcher__get_code_context` to see what files were modified
      6. Review the modified files for code quality
      7. Report findings: passed criteria, failed criteria, code quality issues
    - **Output format**: Structured review report with pass/fail per criterion
@@ -964,7 +964,7 @@ The agents reference SpecTree MCP tools extensively. While they can be written w
 
 **Validations:**
 - `{ "type": "file_exists", "description": "Reviewer agent file exists", "filePath": ".github/agents/reviewer.md" }`
-- `{ "type": "file_contains", "description": "References run_all_validations", "filePath": ".github/agents/reviewer.md", "searchPattern": "spectree__run_all_validations" }`
+- `{ "type": "file_contains", "description": "References run_all_validations", "filePath": ".github/agents/reviewer.md", "searchPattern": "dispatcher__run_all_validations" }`
 
 ---
 
@@ -985,25 +985,25 @@ Create 3 custom skill definitions in `.github/skills/`. Skills are reusable inst
 1. Create the `.github/skills/` directory with subdirectories for each skill.
 2. Each skill is a directory containing a `SKILL.md` file.
 3. Skills don't have YAML frontmatter - they're pure Markdown procedures.
-4. Skills should reference specific SpecTree MCP tool names with concrete call examples.
+4. Skills should reference specific Dispatcher MCP tool names with concrete call examples.
 
 **Acceptance Criteria:**
-- [ ] `.github/skills/spectree-planning/SKILL.md` exists with the 5-stage planning procedure
-- [ ] `.github/skills/spectree-session/SKILL.md` exists with session start/during/end protocol
-- [ ] `.github/skills/spectree-validation/SKILL.md` exists with validation run/interpret/complete workflow
+- [ ] `.github/skills/dispatcher-planning/SKILL.md` exists with the 5-stage planning procedure
+- [ ] `.github/skills/dispatcher-session/SKILL.md` exists with session start/during/end protocol
+- [ ] `.github/skills/dispatcher-validation/SKILL.md` exists with validation run/interpret/complete workflow
 - [ ] Each skill file is self-contained and can be understood without reading other files
 
 **Files Involved:**
-- `.github/skills/spectree-planning/SKILL.md`
-- `.github/skills/spectree-session/SKILL.md`
-- `.github/skills/spectree-validation/SKILL.md`
+- `.github/skills/dispatcher-planning/SKILL.md`
+- `.github/skills/dispatcher-session/SKILL.md`
+- `.github/skills/dispatcher-validation/SKILL.md`
 
 **Technical Notes:**
 - Copilot CLI loads skills from `.github/skills/<name>/SKILL.md`.
 - Skills are loaded contextually when the conversation topic matches.
 - Skills complement agents - an agent provides the persona, a skill provides the procedure.
 
-#### Task 3.1: Create spectree-planning Skill
+#### Task 3.1: Create dispatcher-planning Skill
 
 **Execution Order:** 1
 **Estimated Complexity:** moderate
@@ -1012,16 +1012,16 @@ Create 3 custom skill definitions in `.github/skills/`. Skills are reusable inst
 **Estimated Effort:** medium
 **Risk Level:** low
 
-**Description:** Create the planning procedure skill that encodes the full 5-stage pipeline for creating SpecTree epics.
+**Description:** Create the planning procedure skill that encodes the full 5-stage pipeline for creating Dispatcher epics.
 
 **AI Instructions:**
-1. Create `.github/skills/spectree-planning/SKILL.md`.
+1. Create `.github/skills/dispatcher-planning/SKILL.md`.
 2. Content should encode the 5-stage pipeline from Section 4a of this strategy document:
    - **Stage 1 (Analyze)**: Instructions to read the codebase, identify affected packages, list technical constraints.
-   - **Stage 2 (Decompose)**: Instructions to call `spectree__list_teams`, then `spectree__create_epic_complete` with the full hierarchy. Include the JSON schema expected by `create_epic_complete` (from `packages/mcp/src/tools/composite.ts`): name, team, description, features[] with title, executionOrder, estimatedComplexity, canParallelize, parallelGroup, dependencies, tasks[] with title, executionOrder, estimatedComplexity, structuredDesc.
-   - **Stage 3 (Detail)**: For each feature and task, call `spectree__set_structured_description`. List all fields: summary, aiInstructions, acceptanceCriteria, filesInvolved, functionsToModify, testingStrategy, testFiles, technicalNotes, riskLevel, estimatedEffort.
+   - **Stage 2 (Decompose)**: Instructions to call `dispatcher__list_teams`, then `dispatcher__create_epic_complete` with the full hierarchy. Include the JSON schema expected by `create_epic_complete` (from `packages/mcp/src/tools/composite.ts`): name, team, description, features[] with title, executionOrder, estimatedComplexity, canParallelize, parallelGroup, dependencies, tasks[] with title, executionOrder, estimatedComplexity, structuredDesc.
+   - **Stage 3 (Detail)**: For each feature and task, call `dispatcher__set_structured_description`. List all fields: summary, aiInstructions, acceptanceCriteria, filesInvolved, functionsToModify, testingStrategy, testFiles, technicalNotes, riskLevel, estimatedEffort.
    - **Stage 4 (Evaluate)**: Quality heuristics checklist from Section 10.
-   - **Stage 5 (Verify)**: Call `spectree__get_execution_plan` and validate the output.
+   - **Stage 5 (Verify)**: Call `dispatcher__get_execution_plan` and validate the output.
 3. Include concrete examples of good vs bad structured descriptions (adapted from `.github/copilot-instructions.md` lines 246-293).
 4. Include the complexity/risk/effort scales from `PLANNER_SYSTEM_PROMPT` (plan-generator.ts lines 201-224).
 
@@ -1032,15 +1032,15 @@ Create 3 custom skill definitions in `.github/skills/`. Skills are reusable inst
 - [ ] Skill includes concrete examples of good vs bad structured descriptions
 
 **Files Involved:**
-- `.github/skills/spectree-planning/SKILL.md`
+- `.github/skills/dispatcher-planning/SKILL.md`
 
 **Validations:**
-- `{ "type": "file_exists", "description": "Planning skill exists", "filePath": ".github/skills/spectree-planning/SKILL.md" }`
-- `{ "type": "file_contains", "description": "Contains all 5 stages", "filePath": ".github/skills/spectree-planning/SKILL.md", "searchPattern": "Stage 5" }`
+- `{ "type": "file_exists", "description": "Planning skill exists", "filePath": ".github/skills/dispatcher-planning/SKILL.md" }`
+- `{ "type": "file_contains", "description": "Contains all 5 stages", "filePath": ".github/skills/dispatcher-planning/SKILL.md", "searchPattern": "Stage 5" }`
 
 ---
 
-#### Task 3.2: Create spectree-session Skill
+#### Task 3.2: Create dispatcher-session Skill
 
 **Execution Order:** 1
 **Estimated Complexity:** simple
@@ -1049,24 +1049,24 @@ Create 3 custom skill definitions in `.github/skills/`. Skills are reusable inst
 **Estimated Effort:** small
 **Risk Level:** low
 
-**Description:** Create the session management skill encoding start/during/end protocols for SpecTree-integrated sessions.
+**Description:** Create the session management skill encoding start/during/end protocols for Dispatcher-integrated sessions.
 
 **AI Instructions:**
-1. Create `.github/skills/spectree-session/SKILL.md`.
+1. Create `.github/skills/dispatcher-session/SKILL.md`.
 2. Content should cover three phases:
    - **Session Start**:
-     1. Call `spectree__start_session({ epicId })` to start a session
+     1. Call `dispatcher__start_session({ epicId })` to start a session
      2. Review `previousSession` for continuity (summary, nextSteps, blockers, decisions)
-     3. Call `spectree__get_progress_summary({ epicId })` to see current progress
-     4. Call `spectree__get_blocked_summary({ epicId })` to see blockers
+     3. Call `dispatcher__get_progress_summary({ epicId })` to see current progress
+     4. Call `dispatcher__get_blocked_summary({ epicId })` to see blockers
    - **During Work**:
-     1. Call `spectree__start_work({ id, type })` before working on an item
-     2. Call `spectree__log_progress({ id, type, message, percentComplete })` periodically
-     3. Call `spectree__log_decision({ ... })` for important choices
-     4. Call `spectree__link_code_file({ type, id, filePath })` for modified files
-     5. Call `spectree__complete_work({ id, type, summary })` when done
+     1. Call `dispatcher__start_work({ id, type })` before working on an item
+     2. Call `dispatcher__log_progress({ id, type, message, percentComplete })` periodically
+     3. Call `dispatcher__log_decision({ ... })` for important choices
+     4. Call `dispatcher__link_code_file({ type, id, filePath })` for modified files
+     5. Call `dispatcher__complete_work({ id, type, summary })` when done
    - **Session End**:
-     1. Call `spectree__end_session` with summary, nextSteps, blockers, decisions
+     1. Call `dispatcher__end_session` with summary, nextSteps, blockers, decisions
 3. Include concrete JSON examples for each tool call.
 4. Adapted from the session handoff documentation in `.github/copilot-instructions.md` (disabled section lines ~417-472).
 
@@ -1076,14 +1076,14 @@ Create 3 custom skill definitions in `.github/skills/`. Skills are reusable inst
 - [ ] Skill is self-contained
 
 **Files Involved:**
-- `.github/skills/spectree-session/SKILL.md`
+- `.github/skills/dispatcher-session/SKILL.md`
 
 **Validations:**
-- `{ "type": "file_exists", "description": "Session skill exists", "filePath": ".github/skills/spectree-session/SKILL.md" }`
+- `{ "type": "file_exists", "description": "Session skill exists", "filePath": ".github/skills/dispatcher-session/SKILL.md" }`
 
 ---
 
-#### Task 3.3: Create spectree-validation Skill
+#### Task 3.3: Create dispatcher-validation Skill
 
 **Execution Order:** 1
 **Estimated Complexity:** simple
@@ -1092,20 +1092,20 @@ Create 3 custom skill definitions in `.github/skills/`. Skills are reusable inst
 **Estimated Effort:** small
 **Risk Level:** low
 
-**Description:** Create the validation procedure skill encoding how to run, interpret, and act on SpecTree validation checks.
+**Description:** Create the validation procedure skill encoding how to run, interpret, and act on Dispatcher validation checks.
 
 **AI Instructions:**
-1. Create `.github/skills/spectree-validation/SKILL.md`.
+1. Create `.github/skills/dispatcher-validation/SKILL.md`.
 2. Content:
    - **Validation types**: command, file_exists, file_contains, test_passes, manual
    - **Running validations**:
-     1. Call `spectree__list_validations({ taskId })` to see all checks
-     2. Call `spectree__run_all_validations({ taskId })` to run all at once
-     3. Or `spectree__run_validation({ taskId, checkId })` for individual checks
+     1. Call `dispatcher__list_validations({ taskId })` to see all checks
+     2. Call `dispatcher__run_all_validations({ taskId })` to run all at once
+     3. Or `dispatcher__run_validation({ taskId, checkId })` for individual checks
    - **Interpreting results**: Explain the response format (allPassed, totalChecks, passedChecks, failedChecks, individual results with error/output)
-   - **Completing with validation**: `spectree__complete_task_with_validation({ taskId, summary })` runs all validations and marks complete only if all pass
-   - **Adding new validations**: `spectree__add_validation({ taskId, type, description, command, ... })`
-   - **Manual validations**: `spectree__mark_manual_validated({ taskId, checkId })`
+   - **Completing with validation**: `dispatcher__complete_task_with_validation({ taskId, summary })` runs all validations and marks complete only if all pass
+   - **Adding new validations**: `dispatcher__add_validation({ taskId, type, description, command, ... })`
+   - **Manual validations**: `dispatcher__mark_manual_validated({ taskId, checkId })`
 
 **Acceptance Criteria:**
 - [ ] Skill covers all validation types and their parameters
@@ -1113,10 +1113,10 @@ Create 3 custom skill definitions in `.github/skills/`. Skills are reusable inst
 - [ ] Skill explains result interpretation
 
 **Files Involved:**
-- `.github/skills/spectree-validation/SKILL.md`
+- `.github/skills/dispatcher-validation/SKILL.md`
 
 **Validations:**
-- `{ "type": "file_exists", "description": "Validation skill exists", "filePath": ".github/skills/spectree-validation/SKILL.md" }`
+- `{ "type": "file_exists", "description": "Validation skill exists", "filePath": ".github/skills/dispatcher-validation/SKILL.md" }`
 
 ---
 
@@ -1134,10 +1134,10 @@ Create 3 custom skill definitions in `.github/skills/`. Skills are reusable inst
 Enhance the planner agent (from Feature 2) and planning skill (from Feature 3) with the full iterative workflow, configurable review gates, task scoping heuristics, and the proven planning prompt structure. This feature transforms the basic agent definition into a sophisticated planning pipeline.
 
 **AI Instructions:**
-1. This feature builds on `.github/agents/planner.md` and `.github/skills/spectree-planning/SKILL.md` created in Features 2 and 3.
+1. This feature builds on `.github/agents/planner.md` and `.github/skills/dispatcher-planning/SKILL.md` created in Features 2 and 3.
 2. The key enhancement is encoding the tacit knowledge from the existing `PLANNER_SYSTEM_PROMPT` (plan-generator.ts:189-308) into the agent and skill definitions.
 3. Read the `PLANNER_SYSTEM_PROMPT` carefully - it defines: the JSON response format, complexity/risk/effort scales, validation types, and rules for execution ordering and parallelism.
-4. The enhanced planner should NOT just generate JSON - it should use SpecTree MCP tools interactively to create, refine, and verify the epic.
+4. The enhanced planner should NOT just generate JSON - it should use Dispatcher MCP tools interactively to create, refine, and verify the epic.
 
 **Acceptance Criteria:**
 - [ ] Planner produces epics where every task has: acceptance criteria (2+), AI instructions, files involved
@@ -1147,7 +1147,7 @@ Enhance the planner agent (from Feature 2) and planning skill (from Feature 3) w
 
 **Files Involved:**
 - `.github/agents/planner.md`
-- `.github/skills/spectree-planning/SKILL.md`
+- `.github/skills/dispatcher-planning/SKILL.md`
 
 **Technical Notes:**
 - The planning pipeline runs inside a Copilot CLI session, NOT programmatically. The planner agent has full codebase access via `read` and `search` tools.
@@ -1211,7 +1211,7 @@ Enhance the planner agent (from Feature 2) and planning skill (from Feature 3) w
    - aiInstructions should be detailed enough for implementation without additional context
    - acceptanceCriteria should be specific, measurable, verifiable
    - validations recommended for every task (at least one command check for typecheck/lint)
-3. Add this as a "Decomposition Checklist" section in `.github/skills/spectree-planning/SKILL.md`.
+3. Add this as a "Decomposition Checklist" section in `.github/skills/dispatcher-planning/SKILL.md`.
 4. Frame it as requirements the planner MUST satisfy, not as a JSON format (since the planner uses MCP tools, not JSON output).
 
 **Acceptance Criteria:**
@@ -1221,10 +1221,10 @@ Enhance the planner agent (from Feature 2) and planning skill (from Feature 3) w
 - [ ] Feature/task count guidelines are documented
 
 **Files Involved:**
-- `.github/skills/spectree-planning/SKILL.md`
+- `.github/skills/dispatcher-planning/SKILL.md`
 
 **Validations:**
-- `{ "type": "file_contains", "description": "Complexity scale documented", "filePath": ".github/skills/spectree-planning/SKILL.md", "searchPattern": "trivial.*simple.*moderate.*complex" }`
+- `{ "type": "file_contains", "description": "Complexity scale documented", "filePath": ".github/skills/dispatcher-planning/SKILL.md", "searchPattern": "trivial.*simple.*moderate.*complex" }`
 
 ---
 
@@ -1241,7 +1241,7 @@ Enhance the planner agent (from Feature 2) and planning skill (from Feature 3) w
 **Description:** Add the task scoping heuristics from Section 10 of this strategy document to the planning skill.
 
 **AI Instructions:**
-1. Add a "Task Scoping" section to `.github/skills/spectree-planning/SKILL.md`.
+1. Add a "Task Scoping" section to `.github/skills/dispatcher-planning/SKILL.md`.
 2. Include the heuristics table from Section 10:
    - Acceptance criteria count >= 2 per task
    - AI instructions present and non-empty for every task
@@ -1259,10 +1259,10 @@ Enhance the planner agent (from Feature 2) and planning skill (from Feature 3) w
 - [ ] All 9 heuristics from Section 10 are listed with thresholds and actions
 
 **Files Involved:**
-- `.github/skills/spectree-planning/SKILL.md`
+- `.github/skills/dispatcher-planning/SKILL.md`
 
 **Validations:**
-- `{ "type": "file_contains", "description": "Scoping heuristics present", "filePath": ".github/skills/spectree-planning/SKILL.md", "searchPattern": "125k tokens" }`
+- `{ "type": "file_contains", "description": "Scoping heuristics present", "filePath": ".github/skills/dispatcher-planning/SKILL.md", "searchPattern": "125k tokens" }`
 
 ---
 
@@ -1443,7 +1443,7 @@ Create a new `src/acp/` module in the orchestrator package that implements the A
    - Use `OrchestratorError` from `src/errors.ts` for ACP-specific errors
    - Handle process crash: emit `error` event, reject all pending requests, attempt restart if configured
    - Handle malformed JSON: log and skip
-10. Follow the patterns in `src/spectree/api-client.ts` for retry logic and timeout handling.
+10. Follow the patterns in `src/dispatcher/api-client.ts` for retry logic and timeout handling.
 
 **Acceptance Criteria:**
 - [ ] `AcpClient` class can spawn a `copilot --acp` subprocess
@@ -1593,7 +1593,7 @@ Refactor the 4 SDK-coupled orchestrator modules (~5,200 lines) to use ACP instea
 **AI Instructions:**
 1. The key pattern change throughout: replace `CopilotClient.createSession()` with `AcpSessionManager.createSession()`, replace `session.send()` with `acpSession.send()`, replace `session.on(event, handler)` with `acpSession.on(event, handler)` (same EventEmitter pattern), replace `session.destroy()` with `acpSession.destroy()`.
 2. The ACP session API (from Feature 5) is intentionally designed to mirror the Copilot SDK session API, minimizing the refactoring effort.
-3. Do NOT change the model-agnostic logic: pool management, phase execution, progress tracking, SpecTree integration, git operations, error handling patterns.
+3. Do NOT change the model-agnostic logic: pool management, phase execution, progress tracking, Dispatcher integration, git operations, error handling patterns.
 4. Work through the files in dependency order: agent-pool first (lowest level), then phase-executor (uses agent-pool), then orchestrator (uses phase-executor), then plan-generator (independent).
 
 **Acceptance Criteria:**
@@ -1617,7 +1617,7 @@ Refactor the 4 SDK-coupled orchestrator modules (~5,200 lines) to use ACP instea
 - Key SDK pattern: `session.on('assistant.message_delta', handler)` → ACP equivalent: `acpSession.on('text', handler)`.
 - Key SDK pattern: `session.on('session.idle', handler)` → ACP equivalent: `acpSession.on('complete', handler)`.
 - Key SDK pattern: `session.on('tool.execution_start', handler)` → ACP equivalent: `acpSession.on('tool_call', handler)`.
-- The `MCP Bridge` (`src/spectree/mcp-bridge.ts`) defines tools using `defineTool` from `@github/copilot-sdk`. With ACP, tools are loaded by Copilot CLI from MCP server config, NOT passed to sessions programmatically. The MCP bridge tool definitions may still be useful as documentation/reference but won't be passed to ACP sessions.
+- The `MCP Bridge` (`src/dispatcher/mcp-bridge.ts`) defines tools using `defineTool` from `@github/copilot-sdk`. With ACP, tools are loaded by Copilot CLI from MCP server config, NOT passed to sessions programmatically. The MCP bridge tool definitions may still be useful as documentation/reference but won't be passed to ACP sessions.
 
 #### Task 6.1: Refactor AgentPool
 
@@ -1701,7 +1701,7 @@ Refactor the 4 SDK-coupled orchestrator modules (~5,200 lines) to use ACP instea
 - [ ] PhaseExecutor compiles without errors after AgentPool refactor
 - [ ] No direct references to Copilot SDK types
 - [ ] Phase execution logic (parallel/sequential/task-level) unchanged
-- [ ] Progress tracking and SpecTree integration unchanged
+- [ ] Progress tracking and Dispatcher integration unchanged
 
 **Files Involved:**
 - `packages/orchestrator/src/orchestrator/phase-executor.ts`
@@ -1740,7 +1740,7 @@ Refactor the 4 SDK-coupled orchestrator modules (~5,200 lines) to use ACP instea
    - `PLANNER_SYSTEM_PROMPT` (lines 189-308) - keep as-is
    - `parseAIResponse()` - keep as-is
    - `validatePlannerResponse()` - keep as-is
-   - `createPlanInSpecTree()` - keep as-is (uses SpecTreeClient, not SDK)
+   - `createPlanInDispatcher()` - keep as-is (uses DispatcherClient, not SDK)
    - `buildMarkdownDescription()` - keep as-is
    - All types (PlannerResponse, PlannedFeature, PlannedTask, etc.) - keep as-is
 6. Update the convenience function `generatePlan()` at the bottom (lines 1549-1557) to accept `AcpSessionManager` instead of `CopilotClient`.
@@ -1749,7 +1749,7 @@ Refactor the 4 SDK-coupled orchestrator modules (~5,200 lines) to use ACP instea
 - [ ] No `@github/copilot-sdk` imports in plan-generator.ts
 - [ ] `PLANNER_SYSTEM_PROMPT` preserved exactly as-is
 - [ ] Plan parsing and validation logic preserved exactly as-is
-- [ ] SpecTree creation logic preserved exactly as-is
+- [ ] Dispatcher creation logic preserved exactly as-is
 - [ ] TypeScript compiles without errors
 
 **Files Involved:**
@@ -1777,7 +1777,7 @@ Refactor the 4 SDK-coupled orchestrator modules (~5,200 lines) to use ACP instea
    - Replace CopilotClient references with AcpSessionManager
    - Update constructor to create/accept AcpSessionManager
    - Update the method that creates AgentPool to pass AcpSessionManager instead of CopilotClient and tools
-   - Keep all phase coordination, error handling, and SpecTree integration unchanged
+   - Keep all phase coordination, error handling, and Dispatcher integration unchanged
 2. Open `packages/orchestrator/src/orchestrator/recovery.ts` (626 lines):
    - Replace any CopilotClient/CopilotSession references with ACP types
    - Checkpoint/restore logic for session state may need adaptation since ACP sessions are process-based
@@ -1815,7 +1815,7 @@ Refactor the 4 SDK-coupled orchestrator modules (~5,200 lines) to use ACP instea
 **Estimated Effort:** medium
 
 **Description:**
-Update the orchestrator CLI with new commands for the planning pipeline (`spectree plan`) and validation (`spectree validate`), and update the existing run command to use ACP. The CLI framework is in `packages/orchestrator/src/cli/`.
+Update the orchestrator CLI with new commands for the planning pipeline (`dispatcher plan`) and validation (`dispatcher validate`), and update the existing run command to use ACP. The CLI framework is in `packages/orchestrator/src/cli/`.
 
 **AI Instructions:**
 1. Read the existing CLI structure in `packages/orchestrator/src/cli/` to understand the command framework.
@@ -1823,10 +1823,10 @@ Update the orchestrator CLI with new commands for the planning pipeline (`spectr
 3. New commands should follow the existing patterns for argument parsing, config loading, and error display.
 
 **Acceptance Criteria:**
-- [ ] `spectree plan "<description>"` invokes the planner via ACP and creates a SpecTree epic
-- [ ] `spectree validate <epic-id>` runs all validations for an epic's tasks and reports results
-- [ ] `spectree run <epic-id>` executes an epic via ACP sessions
-- [ ] `spectree run --dry-run <epic-id>` shows the execution plan without executing
+- [ ] `dispatcher plan "<description>"` invokes the planner via ACP and creates a Dispatcher epic
+- [ ] `dispatcher validate <epic-id>` runs all validations for an epic's tasks and reports results
+- [ ] `dispatcher run <epic-id>` executes an epic via ACP sessions
+- [ ] `dispatcher run --dry-run <epic-id>` shows the execution plan without executing
 - [ ] All commands have `--help` documentation
 - [ ] TypeScript compiles without errors
 
@@ -1847,7 +1847,7 @@ Update the orchestrator CLI with new commands for the planning pipeline (`spectr
 **Estimated Effort:** medium
 **Risk Level:** low
 
-**Description:** Add the `spectree plan "<description>"` command that invokes the planner agent via ACP to create a SpecTree epic.
+**Description:** Add the `dispatcher plan "<description>"` command that invokes the planner agent via ACP to create a Dispatcher epic.
 
 **AI Instructions:**
 1. Add a `plan` command handler to the CLI.
@@ -1862,8 +1862,8 @@ Update the orchestrator CLI with new commands for the planning pipeline (`spectr
 5. Handle errors: if ACP connection fails, suggest checking Copilot CLI installation.
 
 **Acceptance Criteria:**
-- [ ] `spectree plan "Build a user preferences API"` creates an epic via the planner agent
-- [ ] `spectree plan --dry-run "..."` shows what would be created without creating
+- [ ] `dispatcher plan "Build a user preferences API"` creates an epic via the planner agent
+- [ ] `dispatcher plan --dry-run "..."` shows what would be created without creating
 - [ ] Progress is displayed in the terminal during planning
 - [ ] Created epic summary is displayed on completion
 
@@ -1884,21 +1884,21 @@ Update the orchestrator CLI with new commands for the planning pipeline (`spectr
 **Estimated Effort:** small
 **Risk Level:** low
 
-**Description:** Add the `spectree validate <epic-id>` command that runs all validations for an epic's tasks.
+**Description:** Add the `dispatcher validate <epic-id>` command that runs all validations for an epic's tasks.
 
 **AI Instructions:**
 1. Add a `validate` command handler to the CLI.
 2. The command takes a required argument: epic ID or name.
 3. Implementation:
-   - Use SpecTreeClient (from `src/spectree/api-client.ts`) to get the epic
+   - Use DispatcherClient (from `src/dispatcher/api-client.ts`) to get the epic
    - List all features and tasks for the epic
-   - For each task with validations: call `spectreeClient.runAllValidations(taskId)`
+   - For each task with validations: call `dispatcherClient.runAllValidations(taskId)`
    - Aggregate results and display a summary table
 4. Output format: table showing task identifier, validation count, passed, failed, status.
 5. Exit code: 0 if all pass, 1 if any fail.
 
 **Acceptance Criteria:**
-- [ ] `spectree validate <epic-id>` runs all validations for the epic
+- [ ] `dispatcher validate <epic-id>` runs all validations for the epic
 - [ ] Output shows per-task validation results
 - [ ] Exit code reflects pass/fail status
 
@@ -1919,7 +1919,7 @@ Update the orchestrator CLI with new commands for the planning pipeline (`spectr
 **Estimated Effort:** medium
 **Risk Level:** medium
 
-**Description:** Update the existing `spectree run <epic-id>` command to use ACP instead of the Copilot SDK, and add `--dry-run`, `--phase`, and `--parallel` flags.
+**Description:** Update the existing `dispatcher run <epic-id>` command to use ACP instead of the Copilot SDK, and add `--dry-run`, `--phase`, and `--parallel` flags.
 
 **AI Instructions:**
 1. Find the existing `run` command in the CLI framework.
@@ -1933,10 +1933,10 @@ Update the orchestrator CLI with new commands for the planning pipeline (`spectr
 4. On completion: show summary of completed/failed features, total duration.
 
 **Acceptance Criteria:**
-- [ ] `spectree run <epic-id>` executes the epic via ACP
-- [ ] `spectree run --dry-run <epic-id>` shows execution plan
-- [ ] `spectree run --phase 2 <epic-id>` executes only phase 2
-- [ ] `spectree run --parallel 2 <epic-id>` limits to 2 concurrent sessions
+- [ ] `dispatcher run <epic-id>` executes the epic via ACP
+- [ ] `dispatcher run --dry-run <epic-id>` shows execution plan
+- [ ] `dispatcher run --phase 2 <epic-id>` executes only phase 2
+- [ ] `dispatcher run --parallel 2 <epic-id>` limits to 2 concurrent sessions
 - [ ] Execution progress is displayed in the terminal
 
 **Files Involved:**
@@ -1972,11 +1972,11 @@ Create shell scripts for headless execution of common workflows, enabling one-co
 - [ ] Scripts exit with appropriate error codes (0 success, 1 failure)
 
 **Files Involved:**
-- `scripts/spectree-plan.sh`
-- `scripts/spectree-run.sh`
-- `scripts/spectree-validate.sh`
+- `scripts/dispatcher-plan.sh`
+- `scripts/dispatcher-run.sh`
+- `scripts/dispatcher-validate.sh`
 
-#### Task 8.1: Create spectree-plan.sh
+#### Task 8.1: Create dispatcher-plan.sh
 
 **Execution Order:** 1
 **Estimated Complexity:** simple
@@ -1988,33 +1988,33 @@ Create shell scripts for headless execution of common workflows, enabling one-co
 **Description:** Create a shell script for headless epic planning.
 
 **AI Instructions:**
-1. Create `scripts/spectree-plan.sh`:
+1. Create `scripts/dispatcher-plan.sh`:
    ```bash
    #!/bin/bash
    set -euo pipefail
 
    # Usage
    if [[ "${1:-}" == "--help" ]] || [[ $# -lt 1 ]]; then
-     echo "Usage: spectree-plan.sh <description> [--team <name>]"
-     echo "Creates a SpecTree epic from a natural language description."
+     echo "Usage: dispatcher-plan.sh <description> [--team <name>]"
+     echo "Creates a Dispatcher epic from a natural language description."
      echo ""
      echo "Environment variables:"
-     echo "  SPECTREE_API_URL  - SpecTree API URL (default: http://localhost:3001)"
-     echo "  SPECTREE_TOKEN    - SpecTree API token"
+     echo "  SPECTREE_API_URL  - Dispatcher API URL (default: http://localhost:3001)"
+     echo "  SPECTREE_TOKEN    - Dispatcher API token"
      exit 0
    fi
 
    DESCRIPTION="$1"
    TEAM="${2:-}"
 
-   PROMPT="Create a SpecTree epic for: ${DESCRIPTION}"
+   PROMPT="Create a Dispatcher epic for: ${DESCRIPTION}"
    if [[ -n "$TEAM" ]]; then
      PROMPT="${PROMPT}. Use team: ${TEAM}"
    fi
 
    copilot -p "@planner ${PROMPT}" --allow-all-tools
    ```
-2. Make executable: `chmod +x scripts/spectree-plan.sh`.
+2. Make executable: `chmod +x scripts/dispatcher-plan.sh`.
 
 **Acceptance Criteria:**
 - [ ] Script exists and is executable
@@ -2022,14 +2022,14 @@ Create shell scripts for headless execution of common workflows, enabling one-co
 - [ ] Script invokes Copilot CLI with the planner agent
 
 **Files Involved:**
-- `scripts/spectree-plan.sh`
+- `scripts/dispatcher-plan.sh`
 
 **Validations:**
-- `{ "type": "file_exists", "description": "Plan script exists", "filePath": "scripts/spectree-plan.sh" }`
+- `{ "type": "file_exists", "description": "Plan script exists", "filePath": "scripts/dispatcher-plan.sh" }`
 
 ---
 
-#### Task 8.2: Create spectree-run.sh and spectree-validate.sh
+#### Task 8.2: Create dispatcher-run.sh and dispatcher-validate.sh
 
 **Execution Order:** 1
 **Estimated Complexity:** simple
@@ -2041,28 +2041,28 @@ Create shell scripts for headless execution of common workflows, enabling one-co
 **Description:** Create shell scripts for headless epic execution and validation.
 
 **AI Instructions:**
-1. Create `scripts/spectree-run.sh` following the same pattern as spectree-plan.sh:
+1. Create `scripts/dispatcher-run.sh` following the same pattern as dispatcher-plan.sh:
    - Takes epic ID as argument
    - Invokes `copilot -p "@orchestrator Execute epic ${EPIC_ID}" --allow-all-tools`
    - Optional `--phase <n>` flag passed through to the prompt
-2. Create `scripts/spectree-validate.sh`:
+2. Create `scripts/dispatcher-validate.sh`:
    - Takes epic ID as argument
-   - Invokes the orchestrator CLI directly: `npx spectree validate "${EPIC_ID}"`
+   - Invokes the orchestrator CLI directly: `npx dispatcher validate "${EPIC_ID}"`
    - (Uses the CLI command from Feature 7, not Copilot CLI, since validation is deterministic)
 3. Make both executable.
 
 **Acceptance Criteria:**
 - [ ] Both scripts exist and are executable
-- [ ] spectree-run.sh invokes the orchestrator agent
-- [ ] spectree-validate.sh runs validation via CLI
+- [ ] dispatcher-run.sh invokes the orchestrator agent
+- [ ] dispatcher-validate.sh runs validation via CLI
 
 **Files Involved:**
-- `scripts/spectree-run.sh`
-- `scripts/spectree-validate.sh`
+- `scripts/dispatcher-run.sh`
+- `scripts/dispatcher-validate.sh`
 
 **Validations:**
-- `{ "type": "file_exists", "description": "Run script exists", "filePath": "scripts/spectree-run.sh" }`
-- `{ "type": "file_exists", "description": "Validate script exists", "filePath": "scripts/spectree-validate.sh" }`
+- `{ "type": "file_exists", "description": "Run script exists", "filePath": "scripts/dispatcher-run.sh" }`
+- `{ "type": "file_exists", "description": "Validate script exists", "filePath": "scripts/dispatcher-validate.sh" }`
 
 ---
 
@@ -2086,8 +2086,8 @@ Update `.github/copilot-instructions.md` to document the custom agents and skill
 **Acceptance Criteria:**
 - [ ] Custom agents section documents `@planner`, `@orchestrator`, `@reviewer` with usage examples
 - [ ] Custom skills section documents available skills
-- [ ] Session Start Checklist includes SpecTree session initialization
-- [ ] Automation Workflow section explains `spectree plan` and `spectree run`
+- [ ] Session Start Checklist includes Dispatcher session initialization
+- [ ] Automation Workflow section explains `dispatcher plan` and `dispatcher run`
 
 **Files Involved:**
 - `.github/copilot-instructions.md`
@@ -2109,8 +2109,8 @@ Update `.github/copilot-instructions.md` to document the custom agents and skill
    ```markdown
    ## Custom Agents
 
-   ### @planner - SpecTree Planning Pipeline
-   Creates structured SpecTree epics from natural language descriptions.
+   ### @planner - Dispatcher Planning Pipeline
+   Creates structured Dispatcher epics from natural language descriptions.
    ```
    Usage: @planner "Build a user activity dashboard"
    ```
@@ -2118,14 +2118,14 @@ Update `.github/copilot-instructions.md` to document the custom agents and skill
    Supports review gates: `@planner --gates=auto "..."` to skip reviews.
 
    ### @orchestrator - Epic Execution
-   Executes SpecTree execution plans by delegating features to sub-agents.
+   Executes Dispatcher execution plans by delegating features to sub-agents.
    ```
    Usage: @orchestrator "Execute epic ENG-42"
    ```
    Reads the execution plan, spawns feature-worker sub-agents in parallel where safe.
 
    ### @reviewer - Acceptance Review
-   Reviews completed features against SpecTree acceptance criteria.
+   Reviews completed features against Dispatcher acceptance criteria.
    ```
    Usage: @reviewer "Review feature ENG-42-1"
    ```
@@ -2159,19 +2159,19 @@ Update `.github/copilot-instructions.md` to document the custom agents and skill
 
 **AI Instructions:**
 1. Add a `## Automation Workflow` section documenting:
-   - `spectree plan "<description>"` - CLI command for planning
-   - `spectree run <epic-id>` - CLI command for execution
-   - `spectree validate <epic-id>` - CLI command for validation
+   - `dispatcher plan "<description>"` - CLI command for planning
+   - `dispatcher run <epic-id>` - CLI command for execution
+   - `dispatcher validate <epic-id>` - CLI command for validation
    - Shell scripts in `scripts/` for headless execution
 2. Update the `SESSION START CHECKLIST` section to add:
-   - Check if working on a SpecTree epic: `spectree__list_epics`
-   - If yes: `spectree__start_session({ epicId })` to initialize session context
+   - Check if working on a Dispatcher epic: `dispatcher__list_epics`
+   - If yes: `dispatcher__start_session({ epicId })` to initialize session context
    - Review previous session context for continuity
-3. Add a `## Custom Skills` section noting the 3 skills: spectree-planning, spectree-session, spectree-validation.
+3. Add a `## Custom Skills` section noting the 3 skills: dispatcher-planning, dispatcher-session, dispatcher-validation.
 
 **Acceptance Criteria:**
 - [ ] Automation Workflow section documents CLI commands and scripts
-- [ ] Session Start Checklist includes SpecTree session initialization
+- [ ] Session Start Checklist includes Dispatcher session initialization
 - [ ] Custom Skills section lists available skills
 
 **Files Involved:**
@@ -2197,11 +2197,11 @@ Validate the entire automation tool end-to-end: use the planner to create an epi
 **AI Instructions:**
 1. This feature depends on ALL other features being complete.
 2. Use a small, well-defined test scenario: "Add a new REST API endpoint for user preferences with CRUD operations."
-3. The test exercises: planning pipeline → SpecTree epic creation → execution engine → ACP sessions → git branches → SpecTree progress tracking → validation → completion.
+3. The test exercises: planning pipeline → Dispatcher epic creation → execution engine → ACP sessions → git branches → Dispatcher progress tracking → validation → completion.
 
 **Acceptance Criteria:**
 - [ ] Planning pipeline creates a well-structured epic from natural language
-- [ ] Execution engine completes all tasks with correct SpecTree progress tracking
+- [ ] Execution engine completes all tasks with correct Dispatcher progress tracking
 - [ ] Git branches are created per feature and merged after completion
 - [ ] Validations pass for all completed tasks
 - [ ] A colleague can run the full workflow using only the quickstart guide
@@ -2211,7 +2211,7 @@ Validate the entire automation tool end-to-end: use the planner to create an epi
 - `packages/orchestrator/tests/e2e/` (test files)
 
 **Technical Notes:**
-- E2E tests require a running SpecTree API, MCP server, and Copilot CLI.
+- E2E tests require a running Dispatcher API, MCP server, and Copilot CLI.
 - Tests may consume Copilot premium requests. Use the smallest possible test scenario.
 - The colleague test is a manual acceptance criterion - document any issues found.
 
@@ -2236,7 +2236,7 @@ Validate the entire automation tool end-to-end: use the planner to create an epi
 4. Document any issues with the planning output.
 
 **Acceptance Criteria:**
-- [ ] Test epic is created in SpecTree via the planner agent
+- [ ] Test epic is created in Dispatcher via the planner agent
 - [ ] Epic has reasonable structure (3-5 features with tasks)
 - [ ] All items have structured descriptions
 - [ ] Execution plan is valid
@@ -2261,22 +2261,22 @@ Validate the entire automation tool end-to-end: use the planner to create an epi
 **Description:** Execute the test epic using the orchestrator and verify all tasks complete correctly.
 
 **AI Instructions:**
-1. Run: `spectree run <test-epic-id>` (or `@orchestrator "Execute epic <test-epic-id>"`)
+1. Run: `dispatcher run <test-epic-id>` (or `@orchestrator "Execute epic <test-epic-id>"`)
 2. Monitor execution:
    - Are ACP sessions being created?
-   - Are worker agents reading task requirements from SpecTree?
-   - Are progress updates appearing in SpecTree?
+   - Are worker agents reading task requirements from Dispatcher?
+   - Are progress updates appearing in Dispatcher?
    - Are git branches being created?
    - Are files being modified?
 3. After completion:
-   - Check SpecTree: are all tasks marked Done?
+   - Check Dispatcher: are all tasks marked Done?
    - Check git: are feature branches created and merged?
-   - Run validations: `spectree validate <test-epic-id>`
+   - Run validations: `dispatcher validate <test-epic-id>`
 4. Document any failures, errors, or issues.
 
 **Acceptance Criteria:**
 - [ ] Execution engine runs all phases of the test epic
-- [ ] All tasks are marked complete in SpecTree
+- [ ] All tasks are marked complete in Dispatcher
 - [ ] Git branches were created and merged
 - [ ] Validations pass
 
@@ -2301,13 +2301,13 @@ Validate the entire automation tool end-to-end: use the planner to create an epi
 
 **AI Instructions:**
 1. Create `docs/automation-quickstart.md` with:
-   - **Prerequisites**: SpecTree API running, MCP server running, Copilot CLI installed, agents and skills in place
+   - **Prerequisites**: Dispatcher API running, MCP server running, Copilot CLI installed, agents and skills in place
    - **Step 1: Plan** - How to run `@planner` with a description
-   - **Step 2: Review** - How to view the epic in SpecTree web UI and verify structure
-   - **Step 3: Execute** - How to run `spectree run <epic-id>`
-   - **Step 4: Verify** - How to run `spectree validate <epic-id>` and review results
+   - **Step 2: Review** - How to view the epic in Dispatcher web UI and verify structure
+   - **Step 3: Execute** - How to run `dispatcher run <epic-id>`
+   - **Step 4: Verify** - How to run `dispatcher validate <epic-id>` and review results
    - **Troubleshooting**: Common issues and solutions
-2. Write for someone who has never used SpecTree or the automation tool.
+2. Write for someone who has never used Dispatcher or the automation tool.
 3. Include screenshots or terminal output examples where helpful.
 4. Based on learnings from Tasks 10.1 and 10.2 - document any gotchas discovered during testing.
 
@@ -2340,8 +2340,8 @@ Validate the entire automation tool end-to-end: use the planner to create an epi
 1. Give the colleague `docs/automation-quickstart.md` and access to the development environment.
 2. The colleague should follow the guide to:
    - Plan an epic using `@planner`
-   - Review the epic in SpecTree
-   - Execute the epic using `spectree run`
+   - Review the epic in Dispatcher
+   - Execute the epic using `dispatcher run`
    - Validate the results
 3. The colleague should NOT receive any verbal guidance - only the quickstart document.
 4. Document all issues:
@@ -2440,10 +2440,10 @@ Each task should be scoped to approximately **one Copilot CLI session (~125k tok
 
 ### Self-Containment Rules
 
-Each task must be **self-contained** - an AI agent should be able to complete it with only the information in SpecTree (structured description, AI instructions, acceptance criteria, files involved) plus codebase access. Specifically:
+Each task must be **self-contained** - an AI agent should be able to complete it with only the information in Dispatcher (structured description, AI instructions, acceptance criteria, files involved) plus codebase access. Specifically:
 
 1. **No implicit dependencies** - If task B requires knowing what task A produced, task B's description must say "Read the output of task A from [specific file/location]"
-2. **Concrete file references** - "Modify the API client" is bad. "Modify `packages/orchestrator/src/spectree/api-client.ts`" is good.
+2. **Concrete file references** - "Modify the API client" is bad. "Modify `packages/orchestrator/src/dispatcher/api-client.ts`" is good.
 3. **Explicit acceptance criteria** - Every task needs at least 2 verifiable acceptance criteria
 4. **AI instructions** - Step-by-step implementation guidance specific enough for a fresh AI session
 
@@ -2472,16 +2472,16 @@ The planning pipeline should evaluate tasks against these heuristics:
 1. **Create a test epic** - Use the planner agent to create an epic for a known scenario (e.g., "Add a new REST endpoint for user preferences with CRUD operations")
 2. **Verify structure** - Epic has 3-7 features, each with 2-5 tasks
 3. **Verify detail** - Every feature and task has structured descriptions with acceptance criteria, AI instructions, files involved
-4. **Verify execution plan** - `spectree__get_execution_plan` returns phases with correct ordering and parallelism
+4. **Verify execution plan** - `dispatcher__get_execution_plan` returns phases with correct ordering and parallelism
 5. **Verify scoping** - Tasks are scoped to ~125k tokens as measured by description + AI instructions length
 
 ### Execution Engine Verification
 
-1. **Execute the test epic** - Run `spectree run <test-epic-id>`
-2. **Verify ACP sessions** - Sessions are spawned correctly, prompts include full SpecTree context
-3. **Verify progress tracking** - SpecTree shows real-time progress updates during execution
+1. **Execute the test epic** - Run `dispatcher run <test-epic-id>`
+2. **Verify ACP sessions** - Sessions are spawned correctly, prompts include full Dispatcher context
+3. **Verify progress tracking** - Dispatcher shows real-time progress updates during execution
 4. **Verify git integration** - Feature branches created, changes committed, branches merged
-5. **Verify completion** - All tasks marked done in SpecTree, validations pass
+5. **Verify completion** - All tasks marked done in Dispatcher, validations pass
 
 ### Integration Verification (Colleague Test)
 
@@ -2489,8 +2489,8 @@ The ultimate test: a colleague who has NOT built the automation tool should be a
 
 1. Read `docs/automation-quickstart.md`
 2. Run `@planner "Build a feature to export dashboard data as CSV"`
-3. Review the generated epic in SpecTree
-4. Run `spectree run <epic-id>`
+3. Review the generated epic in Dispatcher
+4. Run `dispatcher run <epic-id>`
 5. Verify the feature was implemented correctly
 
 If the colleague can do this without asking for help, the automation tool is successful.
@@ -2502,30 +2502,30 @@ If the colleague can do this without asking for help, the automation tool is suc
 ### Appendix A: MCP Tools Quick Reference
 
 **Planning tools** (used by planner agent):
-- `spectree__list_teams` - Discover teams
-- `spectree__create_epic_complete` - Create full epic hierarchy atomically
-- `spectree__set_structured_description` - Set AI instructions, acceptance criteria, etc.
-- `spectree__set_execution_metadata` - Set execution order, dependencies, parallelism
-- `spectree__get_execution_plan` - Generate phased execution plan
-- `spectree__list_templates` / `spectree__create_from_template` - Template-based creation
+- `dispatcher__list_teams` - Discover teams
+- `dispatcher__create_epic_complete` - Create full epic hierarchy atomically
+- `dispatcher__set_structured_description` - Set AI instructions, acceptance criteria, etc.
+- `dispatcher__set_execution_metadata` - Set execution order, dependencies, parallelism
+- `dispatcher__get_execution_plan` - Generate phased execution plan
+- `dispatcher__list_templates` / `dispatcher__create_from_template` - Template-based creation
 
 **Execution tools** (used by worker sessions):
-- `spectree__start_work` / `spectree__complete_work` - Work lifecycle
-- `spectree__log_progress` - Report incremental progress
-- `spectree__log_decision` - Record implementation decisions
-- `spectree__link_code_file` - Track modified files
-- `spectree__run_all_validations` - Verify acceptance criteria
-- `spectree__complete_task_with_validation` - Atomic validate + complete
-- `spectree__append_ai_note` - Leave notes for future sessions
-- `spectree__report_blocker` - Report blocking issues
+- `dispatcher__start_work` / `dispatcher__complete_work` - Work lifecycle
+- `dispatcher__log_progress` - Report incremental progress
+- `dispatcher__log_decision` - Record implementation decisions
+- `dispatcher__link_code_file` - Track modified files
+- `dispatcher__run_all_validations` - Verify acceptance criteria
+- `dispatcher__complete_task_with_validation` - Atomic validate + complete
+- `dispatcher__append_ai_note` - Leave notes for future sessions
+- `dispatcher__report_blocker` - Report blocking issues
 
 **Context tools** (used by any session):
-- `spectree__get_structured_description` - Read requirements
-- `spectree__get_ai_context` - Read previous session context
-- `spectree__get_code_context` - Read linked code artifacts
-- `spectree__get_decision_context` - Read past decisions
-- `spectree__get_progress_summary` - Read epic progress
-- `spectree__search` - Search across all items
+- `dispatcher__get_structured_description` - Read requirements
+- `dispatcher__get_ai_context` - Read previous session context
+- `dispatcher__get_code_context` - Read linked code artifacts
+- `dispatcher__get_decision_context` - Read past decisions
+- `dispatcher__get_progress_summary` - Read epic progress
+- `dispatcher__search` - Search across all items
 
 ### Appendix B: ACP Protocol Reference
 
@@ -2598,8 +2598,8 @@ Files in `packages/orchestrator/src/` that can be reused directly (no SDK depend
 
 | File | Lines | Reuse Strategy |
 |------|-------|----------------|
-| `spectree/api-client.ts` | 1,527 | Use as-is. Full HTTP client for SpecTree API. |
-| `spectree/mcp-bridge.ts` | 1,007 | Adapt tool schemas for agent prompt templates. Handler logic reusable. |
+| `dispatcher/api-client.ts` | 1,527 | Use as-is. Full HTTP client for Dispatcher API. |
+| `dispatcher/mcp-bridge.ts` | 1,007 | Adapt tool schemas for agent prompt templates. Handler logic reusable. |
 | `git/branch-manager.ts` | 383 | Use as-is. Git branch CRUD operations. |
 | `git/merge-coordinator.ts` | 347 | Use as-is. Merge strategies and conflict detection. |
 | `errors.ts` | 660 | Use as-is. Typed error hierarchy with codes and serialization. |
@@ -2639,7 +2639,7 @@ This prompt should be adapted as the foundation of the planning skill's decompos
 
 A 30-line system prompt establishing:
 - Parallel execution context (isolated branches, no cross-agent interference)
-- Available SpecTree tools (log_progress, log_decision, link_code_file, etc.)
+- Available Dispatcher tools (log_progress, log_decision, link_code_file, etc.)
 - Workflow: review → plan → implement → log → test → complete
 
 This prompt should be adapted for the feature-worker agent definition.

@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-The current SpecTree template system is too generic. Templates only support basic fields but are missing the critical fields that SpecTree's own guidelines require AI agents to populate.
+The current Dispatcher template system is too generic. Templates only support basic fields but are missing the critical fields that Dispatcher's own guidelines require AI agents to populate.
 
 ### Current Template Schema (packages/api/src/schemas/template.ts)
 
@@ -24,7 +24,7 @@ templateFeatureSchema = {
 }
 ```
 
-### What SpecTree Guidelines REQUIRE
+### What Dispatcher Guidelines REQUIRE
 
 Per `.github/copilot-instructions.md`, every feature/task MUST have:
 - `estimatedComplexity` - "trivial", "simple", "moderate", "complex"
@@ -185,7 +185,7 @@ const codeFeatureTemplate = {
               "Findings documented in feature description or AI notes",
               "Recommended approach identified"
             ],
-            aiInstructions: "Use spectree__append_ai_note to document findings. Include: what patterns exist, what approach is recommended, any risks identified."
+            aiInstructions: "Use dispatcher__append_ai_note to document findings. Include: what patterns exist, what approach is recommended, any risks identified."
           }
         }
       ]
@@ -310,9 +310,9 @@ const codeFeatureTemplate = {
 
 Create these additional templates in seed.ts:
 
-1. **"SpecTree MCP Tool"** - For adding new MCP tools
+1. **"Dispatcher MCP Tool"** - For adding new MCP tools
    - Features: Schema, Service, Route, MCP Tool, Tests
-   - Pre-filled with SpecTree-specific patterns
+   - Pre-filled with Dispatcher-specific patterns
 
 2. **"Database Migration"** - For schema changes
    - Features: Design Schema, Create Migration, Update Services, Update Types
@@ -340,8 +340,8 @@ Create these additional templates in seed.ts:
    ```
 
 3. **Verify templates**:
-   - Use `spectree__list_templates()` to see all templates
-   - Use `spectree__preview_template({ templateName: "Code Feature", epicName: "Test", variables: { topic: "Test Feature" } })` to preview
+   - Use `dispatcher__list_templates()` to see all templates
+   - Use `dispatcher__preview_template({ templateName: "Code Feature", epicName: "Test", variables: { topic: "Test Feature" } })` to preview
    - Verify structured descriptions appear in preview
 
 4. **Create from template and verify**:
@@ -357,7 +357,7 @@ Create these additional templates in seed.ts:
 2. `packages/api/src/services/templateService.ts` - Apply new fields during creation
 3. `packages/api/prisma/seed.ts` - Update built-in templates with rich content
 
-## SpecTree Epic to Create
+## Dispatcher Epic to Create
 
 Create an epic "Enhanced Template System" in the Engineering team with features:
 
@@ -371,7 +371,7 @@ Create an epic "Enhanced Template System" in the Engineering team with features:
    - Rewrite all 4 built-in templates with rich content
    
 4. **Add Domain-Specific Templates** (executionOrder: 4, complexity: moderate)
-   - Add SpecTree MCP Tool, Database Migration, React Component templates
+   - Add Dispatcher MCP Tool, Database Migration, React Component templates
 
 5. **Test & Validate** (executionOrder: 5, complexity: simple)
    - Verify templates work end-to-end

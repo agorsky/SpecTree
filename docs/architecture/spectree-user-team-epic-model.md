@@ -1,6 +1,6 @@
-# SpecTree User, Team, and Epic Model
+# Dispatcher User, Team, and Epic Model
 
-This document provides a comprehensive overview of how SpecTree currently handles users, teams, and epics, including their relationships, creation, management, and configuration. This is intended as a reference for planning feature expansions.
+This document provides a comprehensive overview of how Dispatcher currently handles users, teams, and epics, including their relationships, creation, management, and configuration. This is intended as a reference for planning feature expansions.
 
 ---
 
@@ -21,7 +21,7 @@ This document provides a comprehensive overview of how SpecTree currently handle
 
 ## Entity Overview
 
-SpecTree is a project management tool with a hierarchical data model:
+Dispatcher is a project management tool with a hierarchical data model:
 
 ```
 User ─────────────────────────────────────────────────────────────────┐
@@ -623,7 +623,7 @@ Epics support manual ordering via `sortOrder` (Float):
 
 ### Authentication Methods
 
-SpecTree supports two authentication methods:
+Dispatcher supports two authentication methods:
 
 #### 1. JWT Tokens
 
@@ -739,7 +739,7 @@ fastify.post(
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              SpecTree Data Model                            │
+│                              Dispatcher Data Model                            │
 └─────────────────────────────────────────────────────────────────────────────┘
 
   ┌─────────┐                    ┌─────────────┐                  ┌──────────┐
@@ -917,7 +917,7 @@ fastify.post(
 
 ## Summary
 
-SpecTree currently implements a comprehensive user/team/epic model:
+Dispatcher currently implements a comprehensive user/team/epic model:
 
 - **Users** are created via invite-only registration with email/password
 - **Teams** are isolated organizational units with their own statuses

@@ -1,11 +1,11 @@
-# Deep Analysis: SpecTree AI Framework Compliance
+# Deep Analysis: Dispatcher AI Framework Compliance
 
 > **Context**: Analysis performed within GitHub Copilot CLI using Claude Opus model  
 > **Date**: February 2026
 
 ## Executive Summary
 
-After analyzing the SpecTree framework, instruction files, MCP tools, and documentation, I've identified **fundamental structural challenges** that prevent consistent 100% compliance by AI agents (including Opus in Copilot CLI).
+After analyzing the Dispatcher framework, instruction files, MCP tools, and documentation, I've identified **fundamental structural challenges** that prevent consistent 100% compliance by AI agents (including Opus in Copilot CLI).
 
 ---
 
@@ -19,7 +19,7 @@ The framework provides instructions through **7+ different sources**:
 |--------|-------|-------------|
 | `.github/copilot-instructions.md` | 660 | Auto-loaded by Copilot CLI |
 | `CLAUDE.md` | 384 | **ALSO** auto-loaded by Copilot CLI |
-| `spectree__get_instructions` tool | ~800 | Agent must call it |
+| `dispatcher__get_instructions` tool | ~800 | Agent must call it |
 | MCP tool descriptions | ~200 | When tools listed |
 | `docs/MCP/*.md` files | ~2000+ | Agent must read |
 | `ai-native-epic-workflow-guide.md` | 387 | Agent must read |
@@ -53,10 +53,10 @@ The two instruction files combined contain **1,044 lines of dense instructions**
 The framework relies entirely on **honor-system compliance**. The MCP tools don't enforce:
 
 ```
-❌ Can call spectree__create_feature WITHOUT executionOrder
-❌ Can call spectree__complete_work WITHOUT running validations first
-❌ Can skip spectree__start_session entirely
-❌ Can ignore spectree__set_structured_description completely
+❌ Can call dispatcher__create_feature WITHOUT executionOrder
+❌ Can call dispatcher__complete_work WITHOUT running validations first
+❌ Can skip dispatcher__start_session entirely
+❌ Can ignore dispatcher__set_structured_description completely
 ```
 
 **Root Cause**: The API accepts incomplete data without validation failures.
@@ -72,27 +72,27 @@ Models naturally minimize tool calls when not under specific constraint pressure
 
 ### C. **Context Window Thrashing**
 
-A complete SpecTree workflow involves:
+A complete Dispatcher workflow involves:
 1. Read CLAUDE.md (in system prompt)
 2. Read custom instructions (in system prompt)  
-3. Call `spectree__get_instructions` (returns 32KB)
-4. Call `spectree__list_teams` before epic creation
-5. Call `spectree__list_templates` before creation
+3. Call `dispatcher__get_instructions` (returns 32KB)
+4. Call `dispatcher__list_teams` before epic creation
+5. Call `dispatcher__list_templates` before creation
 6. For each feature: `create_feature`, `set_structured_description`
 7. For each task: `create_task`, `set_structured_description`
-8. Call `spectree__get_execution_plan` to verify
+8. Call `dispatcher__get_execution_plan` to verify
 
 **By step 4-5, the initial instructions have scrolled far out of the model's attention window**.
 
 ### D. **Ambiguous Trigger Conditions**
 
-The instructions say to use SpecTree when user asks to "build, implement, create, or develop". But:
+The instructions say to use Dispatcher when user asks to "build, implement, create, or develop". But:
 
-- "Fix this bug" - SpecTree? Maybe? 
-- "Add a unit test" - SpecTree? Probably not?
-- "Refactor this code" - SpecTree? The instructions aren't clear.
+- "Fix this bug" - Dispatcher? Maybe? 
+- "Add a unit test" - Dispatcher? Probably not?
+- "Refactor this code" - Dispatcher? The instructions aren't clear.
 
-The "When NOT to Use SpecTree" section lists exceptions but doesn't define clear thresholds.
+The "When NOT to Use Dispatcher" section lists exceptions but doesn't define clear thresholds.
 
 ---
 
@@ -160,12 +160,12 @@ if (isCreatingViaMCP && !description?.includes("## Acceptance Criteria")) {
 Replace 1,044 lines across two files with a single checklist at the top of `.github/copilot-instructions.md`:
 
 ```markdown
-## SpecTree Quick Reference (ALWAYS READ FIRST)
+## Dispatcher Quick Reference (ALWAYS READ FIRST)
 
 Before ANY implementation task:
-□ spectree__list_teams() - verify team exists
-□ spectree__start_session({ epicId }) - if continuing work
-□ spectree__list_templates() - use template for new epics
+□ dispatcher__list_teams() - verify team exists
+□ dispatcher__start_session({ epicId }) - if continuing work
+□ dispatcher__list_templates() - use template for new epics
 
 After creating epic:
 □ Every feature has executionOrder + estimatedComplexity
@@ -173,12 +173,12 @@ After creating epic:
 □ Every feature/task has set_structured_description called
 
 Before completing work:
-□ spectree__run_all_validations()
-□ spectree__link_code_file() for modified files
-□ spectree__log_decision() for any choices made
+□ dispatcher__run_all_validations()
+□ dispatcher__link_code_file() for modified files
+□ dispatcher__log_decision() for any choices made
 
 At session end:
-□ spectree__end_session() with summary + nextSteps
+□ dispatcher__end_session() with summary + nextSteps
 ```
 
 #### 4. **Composite MCP Tools**
@@ -186,7 +186,7 @@ At session end:
 Create single tools that enforce multi-step workflows:
 
 ```typescript
-spectree__create_epic_complete({
+dispatcher__create_epic_complete({
   name: "My Epic",
   team: "Engineering", 
   features: [
@@ -219,11 +219,11 @@ Session States: NONE → STARTED → WORKING → COMPLETING → ENDED
 
 #### 6. **Progress Checkpoint Reminders**
 
-Have `spectree__log_progress` automatically called every N tool calls:
+Have `dispatcher__log_progress` automatically called every N tool calls:
 
 ```
 After 10 tool calls since last progress log:
-"⚠️ Consider calling spectree__log_progress to checkpoint your work"
+"⚠️ Consider calling dispatcher__log_progress to checkpoint your work"
 ```
 
 #### 7. **Instruction Embedding in Tool Responses**
@@ -244,11 +244,11 @@ Include relevant instructions in tool responses:
 Instead of documentation the agent must read, create a **guided workflow tool**:
 
 ```typescript
-spectree__get_next_required_action({ context: "creating_epic" })
-// Returns: "Call spectree__list_templates() - templates must be used for epic creation"
+dispatcher__get_next_required_action({ context: "creating_epic" })
+// Returns: "Call dispatcher__list_templates() - templates must be used for epic creation"
 
-spectree__get_next_required_action({ context: "feature_created", featureId: "COM-123" })  
-// Returns: "Call spectree__set_structured_description({ id: 'COM-123', ... }) - all features need structured descriptions"
+dispatcher__get_next_required_action({ context: "feature_created", featureId: "COM-123" })  
+// Returns: "Call dispatcher__set_structured_description({ id: 'COM-123', ... }) - all features need structured descriptions"
 ```
 
 The agent asks "what should I do next" and gets specific instruction.
@@ -309,7 +309,7 @@ To get closer to 100% compliance:
 
 ## Conclusion
 
-The SpecTree framework is **well-designed for human users** who can read documentation and follow procedures. But AI agents aren't humans - they're probabilistic systems that require:
+The Dispatcher framework is **well-designed for human users** who can read documentation and follow procedures. But AI agents aren't humans - they're probabilistic systems that require:
 
 1. **Single source of truth** (one instruction file, not two)
 2. **Enforcement over guidance** (validation gates)

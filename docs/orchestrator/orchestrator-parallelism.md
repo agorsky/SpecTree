@@ -9,7 +9,7 @@
 | Feature-level parallelism | ✅ Implemented | Multiple features run in parallel via AgentPool |
 | Task-level agent spawning | ✅ Implemented | Each task gets fresh Copilot session (34KB phase-executor) |
 | Task parallel execution | ✅ Implemented | Tasks in same parallelGroup run simultaneously |
-| Task-level SpecTree tracking | ✅ Implemented | Full start_work/complete_work per task |
+| Task-level Dispatcher tracking | ✅ Implemented | Full start_work/complete_work per task |
 | CLI flag | ✅ Implemented | `--no-task-level-agents` to disable |
 | Progress events | ✅ Implemented | Complete event system with real-time updates |
 | Agent pool management | ✅ Implemented | 800-line implementation managing concurrent sessions |
@@ -23,17 +23,17 @@
 **After:** Each task spawns a fresh Copilot agent with clean context. This ensures:
 - No context compaction within features
 - Better focus - each agent only sees its specific task
-- Proper SpecTree progress tracking at the task level
+- Proper Dispatcher progress tracking at the task level
 - Tasks marked with `canParallelize: true` and same `parallelGroup` run simultaneously
 
 ### CLI Usage
 
 ```bash
 # Default behavior: task-level agents enabled (recommended)
-spectree-agent run "Build user dashboard"
+dispatcher-agent run "Build user dashboard"
 
 # Disable task-level agents (single agent per feature, old behavior)
-spectree-agent run "Build user dashboard" --no-task-level-agents
+dispatcher-agent run "Build user dashboard" --no-task-level-agents
 ```
 
 ---
@@ -56,7 +56,7 @@ The orchestrator emits real-time events for UI and CLI consumption:
 ### User Feedback
 
 - The CLI and UI display parallel agent status, progress bars, and merge status after parallel phases.
-- Progress is also tracked in the SpecTree backend using dedicated MCP tools (`spectree__start_work`, `spectree__log_progress`, `spectree__complete_work`).
+- Progress is also tracked in the Dispatcher backend using dedicated MCP tools (`dispatcher__start_work`, `dispatcher__log_progress`, `dispatcher__complete_work`).
 
 See [docs/mcp/progress-tracking.md](../mcp/progress-tracking.md) for API and tool details.
 
@@ -69,7 +69,7 @@ See [docs/mcp/progress-tracking.md](../mcp/progress-tracking.md) for API and too
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Orchestrator                            │
-│  - Loads execution plan from SpecTree API                       │
+│  - Loads execution plan from Dispatcher API                       │
 │  - Groups features into phases based on dependencies            │
 │  - Coordinates parallel vs sequential execution                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -115,7 +115,7 @@ See [docs/mcp/progress-tracking.md](../mcp/progress-tracking.md) for API and too
 
 ### 1. Execution Plan Structure
 
-The SpecTree API returns an execution plan organized into **phases**:
+The Dispatcher API returns an execution plan organized into **phases**:
 
 ```typescript
 interface ExecutionPlan {
@@ -647,7 +647,7 @@ private async executeFeatureWithTaskLevelAgents(
   
   // 2. Sort by execution order
   // 3. Group by parallelGroup - same group runs simultaneously
-  // 4. For each task: spawn fresh agent, execute, track in SpecTree
+  // 4. For each task: spawn fresh agent, execute, track in Dispatcher
   // 5. Return aggregated results
 }
 ```
@@ -824,7 +824,7 @@ private async executeSingleItem(
 
 **File:** `packages/orchestrator/src/orchestrator/plan-generator.ts`
 
-The plan generator already captures task-level parallelization data. No changes needed for plan generation, but the SpecTree API client needs to pass this data through.
+The plan generator already captures task-level parallelization data. No changes needed for plan generation, but the Dispatcher API client needs to pass this data through.
 
 #### 5. Git Branch Strategy
 
@@ -927,4 +927,4 @@ After parallel tasks complete:
 
 - [Orchestrator Architecture](./orchestrator-architecture.md)
 - [Orchestrator Implementation Briefing](./orchestrator-implementation-briefing.md)
-- [Platform Analysis for SpecTree Orchestrator](../archive/analysis/platform-analysis-for-spectree-orchestrator.md)
+- [Platform Analysis for Dispatcher Orchestrator](../archive/analysis/platform-analysis-for-dispatcher-orchestrator.md)

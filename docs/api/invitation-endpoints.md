@@ -313,7 +313,7 @@ Excluded characters (to prevent confusion):
 
 ```bash
 # 1. Admin creates invitation
-curl -X POST https://api.spectree.app/api/v1/admin/invitations \
+curl -X POST https://api.dispatcher.app/api/v1/admin/invitations \
   -H "Authorization: Bearer <admin_token>" \
   -H "Content-Type: application/json" \
   -d '{"email": "newuser@toro.com"}'
@@ -323,7 +323,7 @@ curl -X POST https://api.spectree.app/api/v1/admin/invitations \
 # 2. Admin shares code with user out-of-band
 
 # 3. User activates account
-curl -X POST https://api.spectree.app/api/v1/auth/activate \
+curl -X POST https://api.dispatcher.app/api/v1/auth/activate \
   -H "Content-Type: application/json" \
   -d '{
     "email": "newuser@toro.com",
@@ -335,7 +335,7 @@ curl -X POST https://api.spectree.app/api/v1/auth/activate \
 # Response includes user data and JWT tokens
 
 # 4. Admin can verify invitation was used
-curl -X GET "https://api.spectree.app/api/v1/admin/invitations?status=used" \
+curl -X GET "https://api.dispatcher.app/api/v1/admin/invitations?status=used" \
   -H "Authorization: Bearer <admin_token>"
 ```
 

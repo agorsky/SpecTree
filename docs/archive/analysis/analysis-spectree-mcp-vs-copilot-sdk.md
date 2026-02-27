@@ -1,26 +1,26 @@
-# Analysis: SpecTree MCP Framework vs GitHub Copilot SDK
+# Analysis: Dispatcher MCP Framework vs GitHub Copilot SDK
 
-## What You've Built with SpecTree MCP
+## What You've Built with Dispatcher MCP
 
-Your SpecTree MCP framework is a sophisticated **tool-based approach** to controlling AI agent behavior. Here's what it does:
+Your Dispatcher MCP framework is a sophisticated **tool-based approach** to controlling AI agent behavior. Here's what it does:
 
 ### Current Architecture
 
 ```
 ┌──────────────────┐     Tool Calls     ┌──────────────────┐
-│   Copilot CLI    │ ←────────────────→ │   SpecTree MCP   │
+│   Copilot CLI    │ ←────────────────→ │   Dispatcher MCP   │
 │   (AI Agent)     │   JSON-RPC/stdio   │   Server         │
 └──────────────────┘                    └──────────────────┘
         ↓                                       ↓
    Uses custom                            HTTP API calls
    instructions                                 ↓
    (.github/copilot-                    ┌──────────────────┐
-   instructions.md)                     │   SpecTree API   │
+   instructions.md)                     │   Dispatcher API   │
                                         │   (REST/Prisma)  │
                                         └──────────────────┘
 ```
 
-### What SpecTree MCP Provides (60+ tools)
+### What Dispatcher MCP Provides (60+ tools)
 
 1. **Project Management** - Epics, Features, Tasks CRUD
 2. **Session Management** - `start_session`, `end_session`, handoff context
@@ -77,10 +77,10 @@ Your Application
 2. **Custom Agents**
    ```typescript
    customAgents: [{
-     name: "spectree-worker",
-     displayName: "SpecTree Worker",
-     description: "Works on SpecTree features",
-     prompt: "You follow the SpecTree workflow..."
+     name: "dispatcher-worker",
+     displayName: "Dispatcher Worker",
+     description: "Works on Dispatcher features",
+     prompt: "You follow the Dispatcher workflow..."
    }]
    ```
 
@@ -96,10 +96,10 @@ Your Application
 4. **MCP Server Integration**
    ```typescript
    mcpServers: {
-     spectree: {
+     dispatcher: {
        type: "stdio",
        command: "node",
-       args: ["/path/to/spectree-mcp/dist/index.js"],
+       args: ["/path/to/dispatcher-mcp/dist/index.js"],
        env: { API_TOKEN: "..." }
      }
    }
@@ -131,19 +131,19 @@ Currently, you rely on:
 
 ### What SDK Could Enable
 
-With the Copilot SDK, you could build a **SpecTree Agent Orchestrator**:
+With the Copilot SDK, you could build a **Dispatcher Agent Orchestrator**:
 
 ```typescript
-// spectree-orchestrator.ts
+// dispatcher-orchestrator.ts
 import { CopilotClient, defineTool } from "@github/copilot-sdk";
 
 // Create controlled session
 const client = new CopilotClient();
 const session = await client.createSession({
   model: "gpt-4.1",
-  tools: spectreeTools,  // Your MCP tools exposed as SDK tools
+  tools: dispatcherTools,  // Your MCP tools exposed as SDK tools
   customAgents: [{
-    name: "spectree-worker",
+    name: "dispatcher-worker",
     prompt: SPECTREE_AGENT_PROMPT,
   }],
 });
@@ -151,15 +151,15 @@ const session = await client.createSession({
 // FORCED workflow - you control the loop
 async function runSpectreeWorkflow(epicId: string, userRequest: string) {
   // 1. FORCE session start (you call it, not the AI)
-  const sessionData = await spectreeApi.startSession(epicId);
+  const sessionData = await dispatcherApi.startSession(epicId);
   
   // 2. FORCE context loading
-  const context = await spectreeApi.getProgressSummary(epicId);
+  const context = await dispatcherApi.getProgressSummary(epicId);
   
   // 3. INJECT context into AI prompt
   const response = await session.sendAndWait({
     prompt: `
-      ## Session Context (from SpecTree)
+      ## Session Context (from Dispatcher)
       ${JSON.stringify(context)}
       
       ## User Request
@@ -167,7 +167,7 @@ async function runSpectreeWorkflow(epicId: string, userRequest: string) {
       
       ## Instructions
       Based on the context above, work on the next task.
-      Use spectree tools to track your progress.
+      Use dispatcher tools to track your progress.
     `
   });
   
@@ -178,7 +178,7 @@ async function runSpectreeWorkflow(epicId: string, userRequest: string) {
   });
   
   // 5. FORCE session end (you control when)
-  await spectreeApi.endSession(epicId, extractSummary(response));
+  await dispatcherApi.endSession(epicId, extractSummary(response));
 }
 ```
 
@@ -205,15 +205,15 @@ Use SDK just to ensure sessions are properly started/ended:
 ```typescript
 // Your orchestrator wraps the workflow
 async function controlledSession(epicId: string, task: string) {
-  await spectree.startSession(epicId);  // Guaranteed
+  await dispatcher.startSession(epicId);  // Guaranteed
   
   try {
     const session = await client.createSession({
-      mcpServers: { spectree: {...} }
+      mcpServers: { dispatcher: {...} }
     });
     await session.sendAndWait({ prompt: task });
   } finally {
-    await spectree.endSession(epicId);  // Guaranteed
+    await dispatcher.endSession(epicId);  // Guaranteed
   }
 }
 ```
@@ -228,12 +228,12 @@ class SpectreeOrchestrator {
   
   async executeEpic(epicId: string) {
     // Get execution plan
-    const plan = await spectree.getExecutionPlan(epicId);
+    const plan = await dispatcher.getExecutionPlan(epicId);
     
     for (const phase of plan.phases) {
       for (const item of phase.items) {
         // Start work (forced)
-        await spectree.startWork(item.id, item.type);
+        await dispatcher.startWork(item.id, item.type);
         
         // Let AI do the actual coding
         await this.aiSession.sendAndWait({
@@ -241,12 +241,12 @@ class SpectreeOrchestrator {
         });
         
         // Run validations (forced)
-        const validations = await spectree.runAllValidations(item.id);
+        const validations = await dispatcher.runAllValidations(item.id);
         
         if (validations.allPassed) {
-          await spectree.completeWork(item.id);
+          await dispatcher.completeWork(item.id);
         } else {
-          await spectree.reportBlocker(item.id, validations.failures);
+          await dispatcher.reportBlocker(item.id, validations.failures);
         }
       }
     }
@@ -260,7 +260,7 @@ Let AI work freely but with enforcement:
 
 ```typescript
 // Custom tool that wraps every AI tool call
-const guardedTool = defineTool("spectree_action", {
+const guardedTool = defineTool("dispatcher_action", {
   handler: async (args) => {
     // VALIDATE the action makes sense
     if (args.action === "complete_work" && !await hasPassedValidations(args.id)) {
@@ -270,8 +270,8 @@ const guardedTool = defineTool("spectree_action", {
     // LOG everything
     await auditLog.record(args);
     
-    // FORWARD to actual SpecTree
-    return await spectree[args.action](args);
+    // FORWARD to actual Dispatcher
+    return await dispatcher[args.action](args);
   }
 });
 ```
@@ -292,7 +292,7 @@ The **Copilot SDK could absolutely give you full control** over the workflow you
 
 ### What You'd Build
 
-A **SpecTree Agent Runner** application that:
+A **Dispatcher Agent Runner** application that:
 1. Exposes your existing MCP tools to the SDK
 2. Wraps every session in proper start/end lifecycle
 3. Loads context and injects it (rather than hoping AI fetches it)
@@ -317,8 +317,8 @@ A **SpecTree Agent Runner** application that:
 1. **Install SDK**: `npm install @github/copilot-sdk`
 2. **Create wrapper**: `packages/orchestrator/` that imports MCP tools
 3. **Build session runner**: Start/end lifecycle guarantee
-4. **Add context injection**: Load SpecTree context, inject into prompts
+4. **Add context injection**: Load Dispatcher context, inject into prompts
 5. **Add monitoring**: Log and validate tool calls
-6. **Create CLI/API**: `spectree-agent work [epic]`
+6. **Create CLI/API**: `dispatcher-agent work [epic]`
 
 Would you like me to prototype any of these approaches?

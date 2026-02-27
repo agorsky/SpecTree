@@ -1,12 +1,12 @@
 # Git Release Flow Strategy (Desktop + Mobile)
 
 > **⚠️ FUTURE WORKFLOW NOTICE**  
-> **Current Status**: This document describes a **planned future workflow** for when SpecTree reaches production maturity with customer deployments, QA/Lab validation cycles, and multiple release trains.
+> **Current Status**: This document describes a **planned future workflow** for when Dispatcher reaches production maturity with customer deployments, QA/Lab validation cycles, and multiple release trains.
 >
-> **Current Workflow**: SpecTree currently uses trunk-based development with continuous deployment from `main`. See [`CONTRIBUTING.md`](../../CONTRIBUTING.md) for the current workflow.
+> **Current Workflow**: Dispatcher currently uses trunk-based development with continuous deployment from `main`. See [`CONTRIBUTING.md`](../../CONTRIBUTING.md) for the current workflow.
 >
 > **When This Applies**: This release train workflow will be adopted when:
-> - SpecTree has production customers requiring stable releases
+> - Dispatcher has production customers requiring stable releases
 > - QA/Lab validation cycles are established (4–6 weeks)
 > - Multiple versions need concurrent support
 > - Release branches and RC tags become necessary

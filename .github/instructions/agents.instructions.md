@@ -14,7 +14,7 @@ Agent files use YAML frontmatter with these fields:
 ---
 name: Agent Display Name
 description: "What the agent does"
-tools: ['read', 'search', 'spectree/*']  # Tool allowlist
+tools: ['read', 'search', 'dispatcher/*']  # Tool allowlist
 agents: ['sub-agent-name']               # Sub-agents it can spawn
 user-invokable: true                     # Whether user can invoke directly
 ---
@@ -22,7 +22,7 @@ user-invokable: true                     # Whether user can invoke directly
 
 ## Tool Access Rules
 
-- MCP tools require explicit `server-name/*` syntax (e.g., `spectree/*`)
+- MCP tools require explicit `server-name/*` syntax (e.g., `dispatcher/*`)
 - Omitting `tools` grants access to ALL tools — always set explicitly
 - The `planner` agent must NEVER have `agent` in its tools list — it must not spawn sub-agents (especially the orchestrator)
 - The `feature-worker` must have `user-invokable: false` — it's only spawned by the orchestrator

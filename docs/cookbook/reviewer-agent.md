@@ -8,7 +8,7 @@ The reviewer agent validates implementations against acceptance criteria, checks
 
 ## Prerequisites
 
-- **Reviewer agent installed:** `spectree install @spectree/orchestrator` (includes reviewer)
+- **Reviewer agent installed:** `dispatcher install @dispatcher/orchestrator` (includes reviewer)
 - **Completed feature or task** to review
 - **Acceptance criteria defined** on features/tasks
 - **Git working directory clean** (all changes committed)
@@ -24,12 +24,12 @@ The reviewer agent validates implementations against acceptance criteria, checks
 
 The reviewer agent:
 
-1. **Reads acceptance criteria** — From SpecTree structured descriptions
+1. **Reads acceptance criteria** — From Dispatcher structured descriptions
 2. **Analyzes code changes** — Reviews files linked to the feature/task
 3. **Runs validation checks** — Executes automated tests and checks
 4. **Checks code quality** — Linting, patterns, conventions
 5. **Provides feedback** — Structured report with issues and suggestions
-6. **Updates SpecTree** — Logs review notes and blocker status
+6. **Updates Dispatcher** — Logs review notes and blocker status
 
 ---
 
@@ -47,7 +47,7 @@ Before review, ensure:
 **Check status:**
 
 ```
-@spectree get feature ENG-42-1
+@dispatcher get feature ENG-42-1
 ```
 
 Verify all tasks are marked "Done" or "In Progress".
@@ -188,7 +188,7 @@ Acceptance Criteria: 3/4 met
 
 Next Steps:
   1. Fix blockers listed above
-  2. Run validations again: @spectree run validations for feature ENG-42-1
+  2. Run validations again: @dispatcher run validations for feature ENG-42-1
   3. Request another review: @reviewer review feature ENG-42-1
 ```
 
@@ -258,12 +258,12 @@ Remaining (Low Priority):
 Recommendation: Create follow-up task for rate limiting before release.
 ```
 
-### Step 9: Update SpecTree
+### Step 9: Update Dispatcher
 
 The reviewer automatically logs review notes:
 
 ```
-@spectree get ai context for feature ENG-42-1
+@dispatcher get ai context for feature ENG-42-1
 ```
 
 **Shows reviewer notes:**
@@ -351,7 +351,7 @@ const data: any = await fetchData();
 **Solution:** Link only relevant files to the feature:
 
 ```
-@spectree link file to feature ENG-42-1 "packages/api/src/routes/preferences.ts"
+@dispatcher link file to feature ENG-42-1 "packages/api/src/routes/preferences.ts"
 ```
 
 ### Reviewer Reports Completed
@@ -378,10 +378,10 @@ Before implementation, write specific, testable criteria:
 
 ### 2. Link All Modified Files
 
-Use `spectree__link_code_file` during implementation:
+Use `dispatcher__link_code_file` during implementation:
 
 ```
-@spectree link file to task ENG-42-1-1 "packages/api/prisma/schema.prisma"
+@dispatcher link file to task ENG-42-1-1 "packages/api/prisma/schema.prisma"
 ```
 
 Helps reviewer understand scope.
@@ -406,7 +406,7 @@ Prioritize issues:
 If you disagree with reviewer feedback, log why:
 
 ```
-@spectree log decision for feature ENG-42-1 "Decided not to add rate limiting in this PR" with rationale "Out of scope, will be addressed in separate epic"
+@dispatcher log decision for feature ENG-42-1 "Decided not to add rate limiting in this PR" with rationale "Out of scope, will be addressed in separate epic"
 ```
 
 ---
@@ -418,7 +418,7 @@ After successful review:
 ✅ All validation checks passed  
 ✅ Code quality issues addressed or documented  
 ✅ Acceptance criteria met  
-✅ Review notes logged in SpecTree  
+✅ Review notes logged in Dispatcher  
 ✅ Feature ready to merge  
 
 **Time saved:** 20-30 minutes per feature vs. manual code review

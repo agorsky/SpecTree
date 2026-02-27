@@ -1,6 +1,6 @@
 # Migration Guide: Direct Database to API Authentication
 
-This guide helps you migrate your SpecTree MCP configuration from the legacy direct database access to the new secure API-based authentication.
+This guide helps you migrate your Dispatcher MCP configuration from the legacy direct database access to the new secure API-based authentication.
 
 ---
 
@@ -37,7 +37,7 @@ The new architecture routes all MCP requests through the API server, providing:
 
 Before starting, ensure you have:
 
-- [ ] SpecTree API server installed and accessible
+- [ ] Dispatcher API server installed and accessible
 - [ ] Access to generate an API token (via web UI or existing JWT)
 - [ ] Access to edit your MCP configuration file
 - [ ] Node.js 18+ installed
@@ -48,10 +48,10 @@ Before starting, ensure you have:
 
 ### Step 1: Start the API Server
 
-If you're running SpecTree locally, start the API server:
+If you're running Dispatcher locally, start the API server:
 
 ```bash
-cd /path/to/spectree/packages/api
+cd /path/to/dispatcher/packages/api
 pnpm dev
 # Server running at http://localhost:3001
 ```
@@ -67,7 +67,7 @@ curl http://localhost:3001/api/v1/health
 
 #### Option A: Via Web UI (Recommended)
 
-1. Open the SpecTree web application in your browser
+1. Open the Dispatcher web application in your browser
 2. Navigate to **Settings → API Tokens**
 3. Click **Generate New Token**
 4. Enter a descriptive name (e.g., "Copilot MCP")
@@ -125,11 +125,11 @@ Open your MCP configuration file:
 ```json
 {
   "mcpServers": {
-    "spectree": {
+    "dispatcher": {
       "command": "node",
-      "args": ["/path/to/spectree/packages/mcp/dist/index.js"],
+      "args": ["/path/to/dispatcher/packages/mcp/dist/index.js"],
       "env": {
-        "DATABASE_URL": "file:/path/to/spectree/packages/api/prisma/data/spectree.db"
+        "DATABASE_URL": "file:/path/to/dispatcher/packages/api/prisma/data/dispatcher.db"
       }
     }
   }
@@ -141,9 +141,9 @@ Open your MCP configuration file:
 ```json
 {
   "mcpServers": {
-    "spectree": {
+    "dispatcher": {
       "command": "node",
-      "args": ["/path/to/spectree/packages/mcp/dist/index.js"],
+      "args": ["/path/to/dispatcher/packages/mcp/dist/index.js"],
       "env": {
         "API_TOKEN": "st_K7xH2mPqR5vN8sT1wY4zA6bC9dE0fG3hI...",
         "API_BASE_URL": "http://localhost:3001"
@@ -164,7 +164,7 @@ Open your MCP configuration file:
 
 2. **Test with a simple command** – Ask Copilot to list projects:
    ```
-   List all projects in SpecTree
+   List all projects in Dispatcher
    ```
 
 3. **Verify the response** – You should see your projects listed
@@ -248,7 +248,7 @@ For more troubleshooting help, see the [MCP README](../../packages/mcp/README.md
 
 **Yes.** The MCP server now requires a running API server to function. If the API server stops, MCP operations will fail with connection errors.
 
-For local development, start the API server before using Copilot with SpecTree:
+For local development, start the API server before using Copilot with Dispatcher:
 ```bash
 cd packages/api && pnpm dev
 ```
@@ -304,9 +304,9 @@ After successful migration:
    rm ~/.config/github-copilot/mcp.json.backup
    ```
 
-2. **Learn about all capabilities** – Ask the AI to call `spectree__get_instructions` or read the [Tools Reference](./tools-reference.md)
+2. **Learn about all capabilities** – Ask the AI to call `dispatcher__get_instructions` or read the [Tools Reference](./tools-reference.md)
 
-3. **Explore the new features** – The API provides consistent, authenticated access to all SpecTree operations
+3. **Explore the new features** – The API provides consistent, authenticated access to all Dispatcher operations
 
 4. **Set up additional tokens** – Create separate tokens for different devices or use cases
 

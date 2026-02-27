@@ -1,8 +1,8 @@
-# SpecTree Orchestrator Architecture
+# Dispatcher Orchestrator Architecture
 
 > **Version:** 1.0  
 > **Last Updated:** 2026-02-10  
-> **Package:** `@spectree/orchestrator`  
+> **Package:** `@dispatcher/orchestrator`  
 > **Implementation Status:** ✅ **~90% COMPLETE** (All core features implemented and functional)
 
 ## 🎯 Implementation Status
@@ -13,7 +13,7 @@
 | Orchestrator Core | ✅ Complete | 33KB main controller, 34KB phase executor |
 | Agent Pool | ✅ Complete | 800 lines managing concurrent sessions |
 | Git Integration | ✅ Complete | Branch manager + merge coordinator |
-| SpecTree Integration | ✅ Complete | 43KB API client, 31KB MCP bridge |
+| Dispatcher Integration | ✅ Complete | 43KB API client, 31KB MCP bridge |
 | UI Components | ✅ Complete | Progress displays, agent status |
 | Configuration | ✅ Complete | User/project config merging |
 | Error Handling | ✅ Complete | Comprehensive error types + recovery |
@@ -26,13 +26,13 @@
 
 ## Overview
 
-The SpecTree Orchestrator is a CLI tool that coordinates multiple AI agents to implement software features in parallel. It bridges the gap between natural language project descriptions and structured, executed development work.
+The Dispatcher Orchestrator is a CLI tool that coordinates multiple AI agents to implement software features in parallel. It bridges the gap between natural language project descriptions and structured, executed development work.
 
 ### Purpose
 
 Enable developers to:
 1. Describe projects/epics in natural language
-2. Automatically create structured execution plans in SpecTree
+2. Automatically create structured execution plans in Dispatcher
 3. Execute work using parallel AI agents when tasks are independent
 4. Track all progress, decisions, and handoffs automatically
 
@@ -42,7 +42,7 @@ Enable developers to:
 - **Branch-per-Agent**: Each parallel agent works on its own git branch to prevent conflicts
 - **Phase-based Execution**: Work is organized into phases with dependency awareness
 - **Automatic Merging**: Completed branches are merged after each phase
-- **Progress Tracking**: All work is tracked in SpecTree with real-time updates
+- **Progress Tracking**: All work is tracked in Dispatcher with real-time updates
 - **Session Continuity**: Handoff context preserved for resuming interrupted work
 
 ---
@@ -71,7 +71,7 @@ Enable developers to:
 │  │                    src/orchestrator/orchestrator.ts                  │    │
 │  │                                                                      │    │
 │  │  • Executes complete epics via phased execution                      │    │
-│  │  • Manages session lifecycle with SpecTree                           │    │
+│  │  • Manages session lifecycle with Dispatcher                           │    │
 │  │  • Coordinates branch merging between phases                         │    │
 │  │  • Emits progress events for UI consumption                          │    │
 │  └─────────────────────────────┬───────────────────────────────────────┘    │
@@ -95,15 +95,15 @@ Enable developers to:
           │                      │                      │
           ▼                      ▼                      ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   SpecTree      │    │      Git        │    │    Copilot      │
+│   Dispatcher      │    │      Git        │    │    Copilot      │
 │   Client        │    │    Manager      │    │      SDK        │
 │                 │    │                 │    │                 │
 │ API calls to    │    │ Branch/merge    │    │ AI agent        │
-│ SpecTree REST   │    │ operations      │    │ sessions        │
+│ Dispatcher REST   │    │ operations      │    │ sessions        │
 │ API             │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 │                      │                      │
-│ src/spectree/        │ src/git/             │ @github/copilot-sdk
+│ src/dispatcher/        │ src/git/             │ @github/copilot-sdk
 │ api-client.ts        │ branch-manager.ts    │
 │ mcp-bridge.ts        │ merge-coordinator.ts │
 └──────────────────────┴──────────────────────┴───────────────────
@@ -122,7 +122,7 @@ Entry point for user interaction. Built with [Commander.js](https://github.com/t
 | `run <prompt>` | `commands/run.ts` | Create and execute new epic from natural language |
 | `continue <epic>` | `commands/continue.ts` | Resume work on existing epic |
 | `status` | `commands/status.ts` | Display current orchestration status |
-| `auth` | `commands/auth.ts` | Authenticate with SpecTree API |
+| `auth` | `commands/auth.ts` | Authenticate with Dispatcher API |
 
 **Key Responsibilities:**
 - Parse command-line arguments and options
@@ -136,7 +136,7 @@ Main orchestration controller that coordinates all components.
 
 ```typescript
 interface OrchestratorOptions {
-  client: SpecTreeClient;      // API client for SpecTree
+  client: DispatcherClient;      // API client for Dispatcher
   tools: Tool<unknown>[];      // Agent tools (from MCP bridge)
   maxAgents?: number;          // Max concurrent agents (default: 4)
   copilotClient?: CopilotClient;
@@ -147,13 +147,13 @@ interface OrchestratorOptions {
 interface RunOptions {
   sequential?: boolean;        // Force sequential execution
   fromFeature?: string;        // Start from specific feature
-  sessionId?: string;          // Associate with SpecTree session
+  sessionId?: string;          // Associate with Dispatcher session
   baseBranch?: string;         // Base branch for feature branches
 }
 ```
 
 **Responsibilities:**
-- Load execution plan from SpecTree
+- Load execution plan from Dispatcher
 - Process phases in order
 - Coordinate PhaseExecutor for each phase
 - Merge branches between phases
@@ -168,7 +168,7 @@ Executes a single phase from the execution plan.
 interface PhaseExecutorOptions {
   agentPool: AgentPool;
   branchManager: BranchManager;
-  specTreeClient: SpecTreeClient;
+  specTreeClient: DispatcherClient;
   sessionId?: string;
   baseBranch?: string;
 }
@@ -184,7 +184,7 @@ interface PhaseExecutorOptions {
 **Responsibilities:**
 - Create git branches for parallel items
 - Spawn agents via AgentPool
-- Track item progress in SpecTree (start_work, complete_work)
+- Track item progress in Dispatcher (start_work, complete_work)
 - Aggregate results from all items in phase
 
 ### 4. Agent Pool (`src/orchestrator/agent-pool.ts`)
@@ -195,7 +195,7 @@ Manages multiple concurrent Copilot SDK sessions.
 interface AgentPoolOptions {
   maxAgents: number;              // Pool size limit
   tools: Tool<unknown>[];         // Tools for each agent
-  specTreeClient: SpecTreeClient;
+  specTreeClient: DispatcherClient;
   copilotClient?: CopilotClient;
   model?: string;                 // Copilot model (default from config)
 }
@@ -226,13 +226,13 @@ Creates epic structure from natural language prompts.
 **Flow:**
 1. Take user's natural language description
 2. Use Copilot SDK to analyze and structure
-3. Create epic, features, and tasks via SpecTree API
+3. Create epic, features, and tasks via Dispatcher API
 4. Set execution metadata (order, parallelism, dependencies)
 5. Return created epic ID
 
-### 6. SpecTree Client (`src/spectree/api-client.ts`)
+### 6. Dispatcher Client (`src/dispatcher/api-client.ts`)
 
-HTTP client for the SpecTree REST API.
+HTTP client for the Dispatcher REST API.
 
 **Features:**
 - Bearer token authentication
@@ -252,9 +252,9 @@ HTTP client for the SpecTree REST API.
 | **Decisions** | `logDecision`, `getDecisions` |
 | **Code Context** | `linkCodeFile`, `linkBranch`, `linkCommit` |
 
-### 7. MCP Bridge (`src/spectree/mcp-bridge.ts`)
+### 7. MCP Bridge (`src/dispatcher/mcp-bridge.ts`)
 
-Wraps SpecTree operations as Copilot SDK tools for agents.
+Wraps Dispatcher operations as Copilot SDK tools for agents.
 
 **Agent Tools (5):**
 
@@ -301,15 +301,15 @@ Multi-source configuration with priority merging.
 **Config Priority (highest to lowest):**
 1. CLI arguments
 2. Environment variables (`SPECTREE_*`)
-3. Project config (`.spectree.json` in repo root)
-4. User config (`~/.spectree/config.json`)
+3. Project config (`.dispatcher.json` in repo root)
+4. User config (`~/.dispatcher/config.json`)
 5. Default values
 
 **Key Configuration:**
 
 ```typescript
 interface Config {
-  apiUrl: string;              // SpecTree API URL
+  apiUrl: string;              // Dispatcher API URL
   defaultTeam?: string;        // Default team for new epics
   maxConcurrentAgents: number; // Max parallel agents (default: 4)
   autoMerge: boolean;          // Auto-merge after phases (default: true)
@@ -336,7 +336,7 @@ Typed error classes with recovery hints.
 | `NetworkError` | Connection/timeout issues |
 | `AgentError` | Agent spawn/execution failures |
 | `MergeConflictError` | Git merge conflicts |
-| `SpecTreeAPIError` | API response errors |
+| `DispatcherAPIError` | API response errors |
 | `ConfigError` | Configuration issues |
 
 **Error Codes:**
@@ -374,7 +374,7 @@ Terminal-based progress display.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 1. User: spectree-agent run "Build auth system with OAuth and MFA"          │
+│ 1. User: dispatcher-agent run "Build auth system with OAuth and MFA"          │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -382,7 +382,7 @@ Terminal-based progress display.
 │ 2. Plan Generator                                                            │
 │    • Parse natural language prompt                                           │
 │    • Use Copilot SDK to structure into epic/features/tasks                   │
-│    • Call SpecTree API to create entities                                    │
+│    • Call Dispatcher API to create entities                                    │
 │    • Set execution metadata (order, parallelism, dependencies)               │
 │    └─► Returns: epicId                                                       │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -390,7 +390,7 @@ Terminal-based progress display.
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 3. Load Execution Plan                                                       │
-│    • SpecTree API: GET /api/v1/epics/{id}/execution-plan                     │
+│    • Dispatcher API: GET /api/v1/epics/{id}/execution-plan                     │
 │    └─► Returns: phases with parallelism info                                 │
 │                                                                              │
 │    {                                                                         │
@@ -410,9 +410,9 @@ Terminal-based progress display.
 │    │  For each item in parallel:                                        │    │
 │    │    • Create branch: feature/{identifier}                           │    │
 │    │    • Spawn agent via AgentPool                                     │    │
-│    │    • Mark start_work in SpecTree                                   │    │
+│    │    • Mark start_work in Dispatcher                                   │    │
 │    │    • Agent executes task (uses tools)                              │    │
-│    │    • Mark complete_work in SpecTree                                │    │
+│    │    • Mark complete_work in Dispatcher                                │    │
 │    │                                                                    │    │
 │    │  Wait for all agents: Promise.all([...])                           │    │
 │    │                                                                    │    │
@@ -441,14 +441,14 @@ Terminal-based progress display.
 │    │  • Save checkpoint state                                           │    │
 │    │  • Display conflicting files                                       │    │
 │    │  • User resolves manually                                          │    │
-│    │  • spectree-agent continue to resume                               │    │
+│    │  • dispatcher-agent continue to resume                               │    │
 │    └────────────────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 6. Completion                                                                │
-│    • End SpecTree session (save handoff context)                             │
+│    • End Dispatcher session (save handoff context)                             │
 │    • Display final summary                                                   │
 │    • Return RunResult with completed/failed items                            │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -508,12 +508,12 @@ Phase with canRunInParallel=true, 3 items
 
 ### Custom Agent Tools
 
-Add custom tools for agents in `src/spectree/mcp-bridge.ts`:
+Add custom tools for agents in `src/dispatcher/mcp-bridge.ts`:
 
 ```typescript
 import { defineTool } from "@github/copilot-sdk";
 
-export function createCustomTools(client: SpecTreeClient): Tool<unknown>[] {
+export function createCustomTools(client: DispatcherClient): Tool<unknown>[] {
   return [
     defineTool({
       name: "my_custom_tool",
@@ -540,7 +540,7 @@ Implement custom phase execution by extending `PhaseExecutor`:
 
 ```typescript
 import { PhaseExecutor, type PhaseResult } from "./phase-executor.js";
-import type { ExecutionPhase } from "../spectree/api-client.js";
+import type { ExecutionPhase } from "../dispatcher/api-client.js";
 
 export class CustomPhaseExecutor extends PhaseExecutor {
   /**
@@ -586,7 +586,7 @@ Extend configuration by modifying `src/config/loader.ts`:
 ```typescript
 // Add a new config source, e.g., from a remote server
 export async function loadRemoteConfig(): Promise<PartialUserConfig> {
-  const response = await fetch("https://config.example.com/spectree");
+  const response = await fetch("https://config.example.com/dispatcher");
   return response.json();
 }
 
@@ -606,9 +606,9 @@ export function mergeConfig(cliOverrides?: CliOverrides): Config {
 
 ## API Contracts
 
-### SpecTree REST API
+### Dispatcher REST API
 
-All API types are defined in `packages/orchestrator/src/spectree/api-client.ts`.
+All API types are defined in `packages/orchestrator/src/dispatcher/api-client.ts`.
 
 **Base URL:** Configurable via `apiUrl` config (default: `http://localhost:3001`)
 
@@ -700,10 +700,10 @@ packages/orchestrator/
 │   │   ├── index.ts             # Command exports
 │   │   ├── state.ts             # CLI state management
 │   │   └── commands/
-│   │       ├── run.ts           # spectree-agent run
-│   │       ├── continue.ts      # spectree-agent continue
-│   │       ├── status.ts        # spectree-agent status
-│   │       └── auth.ts          # spectree-agent auth
+│   │       ├── run.ts           # dispatcher-agent run
+│   │       ├── continue.ts      # dispatcher-agent continue
+│   │       ├── status.ts        # dispatcher-agent status
+│   │       └── auth.ts          # dispatcher-agent auth
 │   │
 │   ├── orchestrator/
 │   │   ├── index.ts             # Orchestrator exports
@@ -718,8 +718,8 @@ packages/orchestrator/
 │   │   ├── branch-manager.ts    # Branch create/checkout
 │   │   └── merge-coordinator.ts # Branch merging
 │   │
-│   ├── spectree/
-│   │   ├── index.ts             # SpecTree exports
+│   ├── dispatcher/
+│   │   ├── index.ts             # Dispatcher exports
 │   │   ├── api-client.ts        # REST API client
 │   │   └── mcp-bridge.ts        # Agent tools (Copilot SDK format)
 │   │
@@ -769,9 +769,9 @@ packages/orchestrator/
 | Document | Path | Description |
 |----------|------|-------------|
 | Implementation Briefing | `/docs/orchestrator-implementation-briefing.md` | Full implementation spec |
-| MCP Tools Reference | `/docs/mcp/tools-reference.md` | All SpecTree MCP tools |
+| MCP Tools Reference | `/docs/mcp/tools-reference.md` | All Dispatcher MCP tools |
 | Session Handoff | `/docs/mcp/session-handoff.md` | Session management details |
-| Copilot SDK Analysis | `/docs/archive/analysis/analysis-spectree-mcp-vs-copilot-sdk.md` | SDK capabilities (archived) |
+| Copilot SDK Analysis | `/docs/archive/analysis/analysis-dispatcher-mcp-vs-copilot-sdk.md` | SDK capabilities (archived) |
 | User Documentation | `/packages/orchestrator/README.md` | User guide |
 
 ---
@@ -782,9 +782,9 @@ packages/orchestrator/
 |------|------------|
 | **Agent** | A Copilot SDK session executing a single task |
 | **Agent Pool** | Manager for concurrent SDK sessions |
-| **Execution Plan** | Phases with items and parallelism info from SpecTree |
+| **Execution Plan** | Phases with items and parallelism info from Dispatcher |
 | **Phase** | Group of items that execute together (parallel or sequential) |
 | **Parallel Group** | Items that can safely execute concurrently |
 | **Checkpoint** | Saved state for crash recovery |
 | **Handoff** | Session summary for continuity between sessions |
-| **MCP Bridge** | Adapter exposing SpecTree operations as SDK tools |
+| **MCP Bridge** | Adapter exposing Dispatcher operations as SDK tools |

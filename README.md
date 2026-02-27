@@ -8,8 +8,8 @@ Project Management & Issue Tracking Platform
 - [What's New (v0.2.0)](#whats-new-v020)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
-  - [Using Dispatcher in Your Project](#using-spectree-in-your-project)
-  - [Developing Dispatcher](#developing-spectree)
+  - [Using Dispatcher in Your Project](#using-dispatcher-in-your-project)
+  - [Developing Dispatcher](#developing-dispatcher)
 - [Project Structure](#project-structure)
 - [Environment Variables](#environment-variables)
 - [Development](#development)
@@ -177,7 +177,7 @@ Once installed, the typical workflow is:
 
 ### Developing Dispatcher
 
-To work on SpecTree itself, clone the repo and set up the development environment:
+To work on Dispatcher itself, clone the repo and set up the development environment:
 
 ```bash
 # 1. Clone the repository
@@ -191,8 +191,8 @@ pnpm install
 cp .env.example .env
 
 # 4. Create the database and seed initial data
-pnpm --filter @spectree/api db:push
-pnpm --filter @spectree/api db:seed
+pnpm --filter @dispatcher/api db:push
+pnpm --filter @dispatcher/api db:seed
 
 # 5. Build all packages
 pnpm build
@@ -204,12 +204,12 @@ pnpm dev
 After these steps:
 - **API server** runs at http://localhost:3001
 - **Web app** runs at http://localhost:5173
-- **Database** is at `packages/api/prisma/data/spectree.db`
+- **Database** is at `packages/api/prisma/data/dispatcher.db`
 
 ## Project Structure
 
 ```
-SpecTree/
+Dispatcher/
 ├── packages/
 │   ├── api/          # Fastify backend API
 │   │   ├── src/      # Source code
@@ -239,13 +239,13 @@ SpecTree/
 ### Package Dependencies
 
 ```
-@spectree/shared  ─── No dependencies (base package)
+@dispatcher/shared  ─── No dependencies (base package)
        │
-       ├── @spectree/api         (depends on shared)
-       ├── @spectree/web         (depends on shared)
-       └── @spectree/mcp         (depends on shared)
+       ├── @dispatcher/api         (depends on shared)
+       ├── @dispatcher/web         (depends on shared)
+       └── @dispatcher/mcp         (depends on shared)
 
-@spectree/orchestrator ─── Standalone (own REST client/MCP bridge, no internal deps)
+@dispatcher/orchestrator ─── Standalone (own REST client/MCP bridge, no internal deps)
 ```
 
 ## Environment Variables
@@ -260,7 +260,7 @@ cp .env.example .env
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DATABASE_URL` | `file:./data/spectree.db` | SQLite database file path (relative to prisma directory) |
+| `DATABASE_URL` | `file:./data/dispatcher.db` | SQLite database file path (relative to prisma directory) |
 | `API_PORT` | `3001` | API server port |
 | `API_HOST` | `0.0.0.0` | API server bind address |
 | `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
@@ -305,40 +305,40 @@ Docker is only needed for containerized deployment, not for local development:
 
 ```bash
 # Generate Prisma client
-pnpm --filter @spectree/api db:generate
+pnpm --filter @dispatcher/api db:generate
 
 # Push schema changes to database (development)
-pnpm --filter @spectree/api db:push
+pnpm --filter @dispatcher/api db:push
 
 # Create a migration
-pnpm --filter @spectree/api db:migrate
+pnpm --filter @dispatcher/api db:migrate
 
 # Deploy migrations (production)
-pnpm --filter @spectree/api db:migrate:deploy
+pnpm --filter @dispatcher/api db:migrate:deploy
 
 # Open Prisma Studio (database GUI)
-pnpm --filter @spectree/api db:studio
+pnpm --filter @dispatcher/api db:studio
 
 # Seed the database
-pnpm --filter @spectree/api db:seed
+pnpm --filter @dispatcher/api db:seed
 ```
 
 ### Running Individual Packages
 
 ```bash
 # Build a specific package
-pnpm --filter @spectree/api build
-pnpm --filter @spectree/web build
-pnpm --filter @spectree/mcp build
-pnpm --filter @spectree/orchestrator build
+pnpm --filter @dispatcher/api build
+pnpm --filter @dispatcher/web build
+pnpm --filter @dispatcher/mcp build
+pnpm --filter @dispatcher/orchestrator build
 
 # Run a specific package in dev mode
-pnpm --filter @spectree/api dev
-pnpm --filter @spectree/web dev
+pnpm --filter @dispatcher/api dev
+pnpm --filter @dispatcher/web dev
 
 # Run tests for a specific package
-pnpm --filter @spectree/api test
-pnpm --filter @spectree/orchestrator test
+pnpm --filter @dispatcher/api test
+pnpm --filter @dispatcher/orchestrator test
 ```
 
 ### Database Backup & Restore
@@ -351,12 +351,12 @@ The database is a single SQLite file, making backup and restore simple:
 ./scripts/backup-db.sh
 ```
 
-Backups are stored in `./backups/` with timestamp filenames (e.g., `spectree_20240115_143052.db`).
+Backups are stored in `./backups/` with timestamp filenames (e.g., `dispatcher_20240115_143052.db`).
 
 #### Restoring from Backup
 
 ```bash
-./scripts/restore-db.sh ./backups/spectree_YYYYMMDD_HHMMSS.db
+./scripts/restore-db.sh ./backups/dispatcher_YYYYMMDD_HHMMSS.db
 ```
 
 #### Manual Backup
@@ -364,13 +364,13 @@ Backups are stored in `./backups/` with timestamp filenames (e.g., `spectree_202
 For a quick manual backup, simply copy the database file:
 
 ```bash
-cp packages/api/prisma/data/spectree.db packages/api/prisma/data/spectree-backup.db
+cp packages/api/prisma/data/dispatcher.db packages/api/prisma/data/dispatcher-backup.db
 ```
 
 ### SQLite Database Notes
 
-- **File location**: `packages/api/prisma/data/spectree.db`
-- **View data**: Use Prisma Studio with `pnpm --filter @spectree/api db:studio`
+- **File location**: `packages/api/prisma/data/dispatcher.db`
+- **View data**: Use Prisma Studio with `pnpm --filter @dispatcher/api db:studio`
 - **Portability**: The database is a single file—easy to backup, copy, or share
 - **No server needed**: No separate database process required for development
 
@@ -395,9 +395,9 @@ pnpm test
 pnpm test:watch
 
 # Run tests for a specific package
-pnpm --filter @spectree/api test
-pnpm --filter @spectree/web test
-pnpm --filter @spectree/mcp test
+pnpm --filter @dispatcher/api test
+pnpm --filter @dispatcher/web test
+pnpm --filter @dispatcher/mcp test
 
 # Run tests with coverage
 pnpm test -- --coverage
@@ -595,27 +595,27 @@ GET /api/v1/me/blocked
 
 ## MCP Server with Claude Code
 
-The SpecTree MCP server enables AI assistants like Claude to interact with the project management platform through secure API token authentication.
+The Dispatcher MCP server enables AI assistants like Claude to interact with the project management platform through secure API token authentication.
 
 ### Orchestrator CLI
 
-SpecTree includes a powerful CLI tool (`@spectree/orchestrator`) for parallel AI agent execution:
+Dispatcher includes a powerful CLI tool (`@dispatcher/orchestrator`) for parallel AI agent execution:
 
 ```bash
 # Install globally
-npm install -g @spectree/orchestrator
+npm install -g @dispatcher/orchestrator
 
 # Authenticate
-spectree-agent auth --token st_your-token-here
+dispatcher-agent auth --token st_your-token-here
 
 # Create and execute epic from natural language
-spectree-agent run "Build user authentication with OAuth" --team Engineering
+dispatcher-agent run "Build user authentication with OAuth" --team Engineering
 
 # Resume existing epic
-spectree-agent continue "User Authentication"
+dispatcher-agent continue "User Authentication"
 
 # Check progress
-spectree-agent status
+dispatcher-agent status
 ```
 
 **Key Features:**
@@ -646,7 +646,7 @@ See [`packages/orchestrator/README.md`](./packages/orchestrator/README.md) for f
 #### 1. Build the MCP Server
 
 ```bash
-pnpm --filter @spectree/mcp build
+pnpm --filter @dispatcher/mcp build
 ```
 
 #### 2. Start the API Server
@@ -665,7 +665,7 @@ Create a token via the API (requires a JWT from login):
 # Login to get a JWT
 curl -X POST http://localhost:3001/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@spectree.dev","password":"Password123!"}'
+  -d '{"email":"admin@dispatcher.dev","password":"Password123!"}'
 
 # Create an API token (use the accessToken from login response)
 curl -X POST http://localhost:3001/api/v1/tokens \
@@ -686,7 +686,7 @@ Add the MCP server to your Claude Code configuration (`~/.claude/settings.json` 
     "dispatcher": {
       "type": "stdio",
       "command": "node",
-      "args": ["/path/to/SpecTree/packages/mcp/dist/index.js"],
+      "args": ["/path/to/Dispatcher/packages/mcp/dist/index.js"],
       "env": {
         "API_TOKEN": "st_your_token_here",
         "API_BASE_URL": "http://localhost:3001"
@@ -696,23 +696,23 @@ Add the MCP server to your Claude Code configuration (`~/.claude/settings.json` 
 }
 ```
 
-> **⚠️ Security Note**: The `API_TOKEN` provides authenticated access to SpecTree. Keep it secure and never commit it to version control.
+> **⚠️ Security Note**: The `API_TOKEN` provides authenticated access to Dispatcher. Keep it secure and never commit it to version control.
 
 ### Verifying MCP Connection
 
 After configuring, restart Claude Code and verify the connection:
 
 1. The MCP server should appear in the list of available tools
-2. Ask Claude to list epics: "List all epics in SpecTree"
+2. Ask Claude to list epics: "List all epics in Dispatcher"
 
 ### MCP Server Development
 
 ```bash
 # Run MCP server in watch mode (rebuilds on changes)
-pnpm --filter @spectree/mcp dev
+pnpm --filter @dispatcher/mcp dev
 
 # Run MCP server directly
-pnpm --filter @spectree/mcp start
+pnpm --filter @dispatcher/mcp start
 ```
 
 ### Available MCP Tools
@@ -720,80 +720,80 @@ pnpm --filter @spectree/mcp start
 | Tool | Description |
 |------|-------------|
 | **Search** | |
-| `spectree__search` | Unified search across features and tasks with all filter options |
+| `dispatcher__search` | Unified search across features and tasks with all filter options |
 | **Epics** | |
-| `spectree__list_epics` | List epics with optional team/scope filtering |
-| `spectree__get_epic` | Get epic details by ID or name |
-| `spectree__create_epic` | Create a new team-scoped epic |
-| `spectree__reorder_epic` | Change epic position within its team |
+| `dispatcher__list_epics` | List epics with optional team/scope filtering |
+| `dispatcher__get_epic` | Get epic details by ID or name |
+| `dispatcher__create_epic` | Create a new team-scoped epic |
+| `dispatcher__reorder_epic` | Change epic position within its team |
 | **Features** | |
-| `spectree__list_features` | List features with optional filters |
-| `spectree__get_feature` | Get feature details by ID or identifier |
-| `spectree__create_feature` | Create a new feature in a project |
-| `spectree__update_feature` | Update feature title, status, assignee, etc. |
-| `spectree__reorder_feature` | Change feature position within its project |
+| `dispatcher__list_features` | List features with optional filters |
+| `dispatcher__get_feature` | Get feature details by ID or identifier |
+| `dispatcher__create_feature` | Create a new feature in a project |
+| `dispatcher__update_feature` | Update feature title, status, assignee, etc. |
+| `dispatcher__reorder_feature` | Change feature position within its project |
 | **Tasks** | |
-| `spectree__list_tasks` | List tasks with optional filters |
-| `spectree__get_task` | Get task details by ID or identifier |
-| `spectree__create_task` | Create a new task under a feature |
-| `spectree__update_task` | Update task title, status, assignee, etc. |
-| `spectree__reorder_task` | Change task position within its feature |
+| `dispatcher__list_tasks` | List tasks with optional filters |
+| `dispatcher__get_task` | Get task details by ID or identifier |
+| `dispatcher__create_task` | Create a new task under a feature |
+| `dispatcher__update_task` | Update task title, status, assignee, etc. |
+| `dispatcher__reorder_task` | Change task position within its feature |
 | **Statuses** | |
-| `spectree__list_statuses` | List workflow statuses for a team |
-| `spectree__get_status` | Get status details by ID or name |
+| `dispatcher__list_statuses` | List workflow statuses for a team |
+| `dispatcher__get_status` | Get status details by ID or name |
 | **Personal Scope** | |
-| `spectree__get_personal_scope` | Get user's personal scope info (creates if needed) |
-| `spectree__list_personal_projects` | List epics in personal scope |
-| `spectree__create_personal_project` | Create an epic in personal scope |
-| `spectree__list_personal_statuses` | List workflow statuses in personal scope |
+| `dispatcher__get_personal_scope` | Get user's personal scope info (creates if needed) |
+| `dispatcher__list_personal_projects` | List epics in personal scope |
+| `dispatcher__create_personal_project` | Create an epic in personal scope |
+| `dispatcher__list_personal_statuses` | List workflow statuses in personal scope |
 | **Execution Planning** | |
-| `spectree__get_execution_plan` | Get ordered execution plan for an epic |
-| `spectree__set_execution_metadata` | Set execution order, parallelization, dependencies |
-| `spectree__mark_blocked` | Mark feature/task as blocked by another |
-| `spectree__mark_unblocked` | Remove a blocker from feature/task |
+| `dispatcher__get_execution_plan` | Get ordered execution plan for an epic |
+| `dispatcher__set_execution_metadata` | Set execution order, parallelization, dependencies |
+| `dispatcher__mark_blocked` | Mark feature/task as blocked by another |
+| `dispatcher__mark_unblocked` | Remove a blocker from feature/task |
 | **AI Context** | |
-| `spectree__get_ai_context` | Get AI context for cross-session continuity |
-| `spectree__set_ai_context` | Set structured context for successor sessions |
-| `spectree__append_ai_note` | Append observation/decision/blocker notes |
+| `dispatcher__get_ai_context` | Get AI context for cross-session continuity |
+| `dispatcher__set_ai_context` | Set structured context for successor sessions |
+| `dispatcher__append_ai_note` | Append observation/decision/blocker notes |
 | **Templates** | |
-| `spectree__list_templates` | List available implementation plan templates |
-| `spectree__get_template` | Get template details and variables |
-| `spectree__preview_template` | Preview what will be created from template |
-| `spectree__create_from_template` | Create epic/features/tasks from template |
-| `spectree__save_as_template` | Save existing epic structure as template |
+| `dispatcher__list_templates` | List available implementation plan templates |
+| `dispatcher__get_template` | Get template details and variables |
+| `dispatcher__preview_template` | Preview what will be created from template |
+| `dispatcher__create_from_template` | Create epic/features/tasks from template |
+| `dispatcher__save_as_template` | Save existing epic structure as template |
 | **Structured Descriptions** | |
-| `spectree__get_structured_description` | Get parsed structured description |
-| `spectree__set_structured_description` | Replace entire structured description |
-| `spectree__update_section` | Update single section of structured description |
-| `spectree__add_acceptance_criterion` | Append acceptance criterion to list |
-| `spectree__link_file` | Add file path to filesInvolved |
-| `spectree__add_external_link` | Add external URL reference |
+| `dispatcher__get_structured_description` | Get parsed structured description |
+| `dispatcher__set_structured_description` | Replace entire structured description |
+| `dispatcher__update_section` | Update single section of structured description |
+| `dispatcher__add_acceptance_criterion` | Append acceptance criterion to list |
+| `dispatcher__link_file` | Add file path to filesInvolved |
+| `dispatcher__add_external_link` | Add external URL reference |
 | **Code Context** | |
-| `spectree__link_code_file` | Link a source file to feature/task |
-| `spectree__unlink_code_file` | Remove a file link |
-| `spectree__link_function` | Link a function (filePath:functionName) |
-| `spectree__link_branch` | Set git branch for feature/task |
-| `spectree__link_commit` | Add commit SHA to feature/task |
-| `spectree__link_pr` | Link pull request to feature/task |
-| `spectree__get_code_context` | Get all code context for feature/task |
+| `dispatcher__link_code_file` | Link a source file to feature/task |
+| `dispatcher__unlink_code_file` | Remove a file link |
+| `dispatcher__link_function` | Link a function (filePath:functionName) |
+| `dispatcher__link_branch` | Set git branch for feature/task |
+| `dispatcher__link_commit` | Add commit SHA to feature/task |
+| `dispatcher__link_pr` | Link pull request to feature/task |
+| `dispatcher__get_code_context` | Get all code context for feature/task |
 | **Decision Log** | |
-| `spectree__log_decision` | Record a decision with rationale |
-| `spectree__list_decisions` | List decisions with filters |
-| `spectree__search_decisions` | Search decisions by text |
-| `spectree__get_decision_context` | Get decisions for task/feature context |
+| `dispatcher__log_decision` | Record a decision with rationale |
+| `dispatcher__list_decisions` | List decisions with filters |
+| `dispatcher__search_decisions` | Search decisions by text |
+| `dispatcher__get_decision_context` | Get decisions for task/feature context |
 | **Help** | |
-| `spectree__get_instructions` | Get usage instructions and best practices |
+| `dispatcher__get_instructions` | Get usage instructions and best practices |
 
 ### Getting Started (AI Agents)
 
-AI agents can call `spectree__get_instructions` to learn about SpecTree capabilities and recommended workflows. This tool returns comprehensive guidance on:
+AI agents can call `dispatcher__get_instructions` to learn about Dispatcher capabilities and recommended workflows. This tool returns comprehensive guidance on:
 
 - Available tools and their usage
 - Execution metadata for planning work
 - Search and filtering capabilities
 - Recommended workflow patterns
 
-> **Example**: `spectree__get_instructions({ topic: "execution" })` returns guidance on planning dependencies and parallel work.
+> **Example**: `dispatcher__get_instructions({ topic: "execution" })` returns guidance on planning dependencies and parallel work.
 
 ### Execution Metadata
 
@@ -807,7 +807,7 @@ Features and Tasks support execution metadata to help AI agents plan work:
 
 > **📚 Full Documentation**: See [`docs/mcp/execution-metadata.md`](./docs/mcp/execution-metadata.md)
 
-### Search Tool (`spectree__search`)
+### Search Tool (`dispatcher__search`)
 
 The search tool provides powerful filtering capabilities for AI assistants:
 
@@ -835,16 +835,16 @@ Local development uses SQLite, a file-based database that requires no separate s
 
 ```bash
 # Database location
-packages/api/prisma/data/spectree.db
+packages/api/prisma/data/dispatcher.db
 
 # Create database and apply schema
-pnpm --filter @spectree/api db:push
+pnpm --filter @dispatcher/api db:push
 
 # Seed initial data
-pnpm --filter @spectree/api db:seed
+pnpm --filter @dispatcher/api db:seed
 
 # View data with Prisma Studio
-pnpm --filter @spectree/api db:studio
+pnpm --filter @dispatcher/api db:studio
 ```
 
 ### Production (Azure SQL)
@@ -855,11 +855,11 @@ Production deployments use Azure SQL. Azure SQL databases use private endpoints 
 
 ### Local Deployment (Docker)
 
-Run SpecTree locally with Docker using SQLite — no cloud accounts or external databases needed.
+Run Dispatcher locally with Docker using SQLite — no cloud accounts or external databases needed.
 
 ```bash
 docker-compose -f docker-compose.local.yml up -d --build   # start
-open http://localhost                                        # admin@spectree.dev / Password123!
+open http://localhost                                        # admin@dispatcher.dev / Password123!
 ```
 
 - **[Local Docker Deployment Guide](./docs/guides/local-docker-deployment.md)** — Complete setup, configuration, architecture deep dive, and troubleshooting
@@ -899,7 +899,7 @@ cd infra
 |--------|-------------|
 | `-e, --environment` | Environment: `dev`, `staging`, or `prod` (required) |
 | `-l, --location` | Azure region (default: `eastus`) |
-| `-n, --name` | Base resource name (default: `spectree`) |
+| `-n, --name` | Base resource name (default: `dispatcher`) |
 | `-s, --subscription` | Azure subscription ID |
 | `--what-if` | Preview changes without deploying |
 | `--validate` | Validate templates only |
@@ -931,7 +931,7 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 
 **Solutions**:
 1. Rebuild all packages: `pnpm build`
-2. Regenerate Prisma client: `pnpm --filter @spectree/api db:generate`
+2. Regenerate Prisma client: `pnpm --filter @dispatcher/api db:generate`
 3. Restart TypeScript server in your IDE
 
 #### Database issues
@@ -939,9 +939,9 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 **Symptoms**: Database file not found or connection errors
 
 **Solutions**:
-1. Ensure database exists: `pnpm --filter @spectree/api db:push`
-2. Check file exists: `ls packages/api/prisma/data/spectree.db`
-3. Verify DATABASE_URL in `.env`: should be `file:./data/spectree.db`
+1. Ensure database exists: `pnpm --filter @dispatcher/api db:push`
+2. Check file exists: `ls packages/api/prisma/data/dispatcher.db`
+3. Verify DATABASE_URL in `.env`: should be `file:./data/dispatcher.db`
 4. Reset database: delete the db file and run `db:push` again
 
 #### MCP server not appearing in Claude Code
@@ -949,7 +949,7 @@ For detailed Azure infrastructure documentation, see [`infra/README.md`](./infra
 **Symptoms**: Tools not available after configuration
 
 **Solutions**:
-1. Verify MCP server is built: `pnpm --filter @spectree/mcp build`
+1. Verify MCP server is built: `pnpm --filter @dispatcher/mcp build`
 2. Ensure API server is running: `pnpm dev`
 3. Verify `API_TOKEN` is set correctly in MCP config (starts with `st_`)
 4. Check configuration path is correct and absolute
@@ -1019,4 +1019,4 @@ Additional documentation is available in the `docs/` directory:
 | [MCP Documentation](./docs/mcp/) | MCP server setup, authentication, and security |
 | [Azure Deployment Guide](./docs/deployment/azure-deployment-guide.md) | Production deployment to Azure |
 | [Local Docker Deployment Guide](./docs/guides/local-docker-deployment.md) | Complete guide: setup, configuration, architecture, and troubleshooting for local Docker |
-| [Local Deployment Quick Start](./docs/local-deployment.md) | Condensed quick-start for running SpecTree locally with Docker |
+| [Local Deployment Quick Start](./docs/local-deployment.md) | Condensed quick-start for running Dispatcher locally with Docker |

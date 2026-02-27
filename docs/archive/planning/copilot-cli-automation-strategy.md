@@ -1,4 +1,4 @@
-# Copilot CLI Automation Strategy for SpecTree
+# Copilot CLI Automation Strategy for Dispatcher
 
 **Date:** February 6, 2026
 **Author:** Analysis by Claude Opus 4.6
@@ -23,19 +23,19 @@
 
 ## Executive Summary
 
-Your instinct is correct: **SpecTree + Copilot CLI can achieve Claude Code-level orchestration, and you're closer than you think.** But the approach needs a fundamental shift.
+Your instinct is correct: **Dispatcher + Copilot CLI can achieve Claude Code-level orchestration, and you're closer than you think.** But the approach needs a fundamental shift.
 
-The current SpecTree orchestrator (`packages/orchestrator/`) was designed as a custom Copilot SDK application that programmatically spawns and manages `CopilotSession` objects. This was the right design for late 2025. But as of January 2026, Copilot CLI has shipped native features that make most of that custom orchestration unnecessary:
+The current Dispatcher orchestrator (`packages/orchestrator/`) was designed as a custom Copilot SDK application that programmatically spawns and manages `CopilotSession` objects. This was the right design for late 2025. But as of January 2026, Copilot CLI has shipped native features that make most of that custom orchestration unnecessary:
 
 | Capability You Built | Native Copilot CLI Equivalent (Jan 2026+) |
 |---|---|
 | `AgentPool` (parallel sessions) | `#runSubagent` with parallel execution |
 | `PhaseExecutor` (phase sequencing) | Custom agents with `agents:` field + orchestrator agent |
-| `MCP Bridge` (SpecTree tools for agents) | MCP server loaded directly via `--additional-mcp-config` or agent YAML |
-| `PlanGenerator` (prompt → epic) | Built-in Plan agent + SpecTree MCP tools |
+| `MCP Bridge` (Dispatcher tools for agents) | MCP server loaded directly via `--additional-mcp-config` or agent YAML |
+| `PlanGenerator` (prompt → epic) | Built-in Plan agent + Dispatcher MCP tools |
 | Progress tracking | `log_progress` / `append_ai_note` via MCP tools |
 
-**The recommendation: Stop building a Copilot SDK application. Start building Copilot CLI agents and skills that leverage #runSubagent for orchestration, with SpecTree as the context backbone via MCP.**
+**The recommendation: Stop building a Copilot SDK application. Start building Copilot CLI agents and skills that leverage #runSubagent for orchestration, with Dispatcher as the context backbone via MCP.**
 
 ---
 
@@ -43,7 +43,7 @@ The current SpecTree orchestrator (`packages/orchestrator/`) was designed as a c
 
 ### What Exists Today
 
-**SpecTree Platform (Working)**
+**Dispatcher Platform (Working)**
 - REST API with full CRUD for Epics/Features/Tasks
 - Execution plans with parallelism metadata, dependencies, and phasing
 - MCP server exposing 50+ tools for AI agent access
@@ -54,26 +54,26 @@ The current SpecTree orchestrator (`packages/orchestrator/`) was designed as a c
 - CLI tool using Copilot SDK (`@github/copilot-sdk`)
 - `AgentPool` for parallel `CopilotSession` management (up to 4 agents)
 - `PhaseExecutor` for phase-based execution
-- `MCP Bridge` wrapping 11 SpecTree operations as Copilot SDK tools
+- `MCP Bridge` wrapping 11 Dispatcher operations as Copilot SDK tools
 - Git branch management and merge coordination
 - Currently not in production use
 
 **MCP Integration (Disabled)**
-- `.github/copilot-instructions.md` has SpecTree MCP usage **commented out** due to "TypeError: terminated" errors
+- `.github/copilot-instructions.md` has Dispatcher MCP usage **commented out** due to "TypeError: terminated" errors
 - Agents told to use `plan.md` files instead
 - The MCP server itself works -- the issue was stability under large operations
 
 ### The Gap
 
-You have a sophisticated project management backend (SpecTree) and a half-built custom orchestrator, but **no working automation pipeline**. Meanwhile, Copilot CLI has evolved to provide most of the orchestration primitives natively. The custom orchestrator is solving a problem that Copilot CLI now solves out of the box.
+You have a sophisticated project management backend (Dispatcher) and a half-built custom orchestrator, but **no working automation pipeline**. Meanwhile, Copilot CLI has evolved to provide most of the orchestration primitives natively. The custom orchestrator is solving a problem that Copilot CLI now solves out of the box.
 
 ---
 
 ## What You're Doing Right
 
-### 1. SpecTree as the Single Source of Truth
+### 1. Dispatcher as the Single Source of Truth
 
-This is the biggest thing you got right. Having a structured, queryable, API-driven project management system that AI agents can read from and write to is exactly what's needed. Neither Claude Code nor Copilot CLI provide this natively. SpecTree gives you:
+This is the biggest thing you got right. Having a structured, queryable, API-driven project management system that AI agents can read from and write to is exactly what's needed. Neither Claude Code nor Copilot CLI provide this natively. Dispatcher gives you:
 
 - **Persistent context** that survives session boundaries
 - **Structured requirements** (acceptance criteria, AI instructions, technical notes)
@@ -89,7 +89,7 @@ The `executionOrder`, `estimatedComplexity`, `dependencies`, and `canRunInParall
 
 ### 3. MCP Server Architecture
 
-Exposing SpecTree via MCP rather than direct database access is the right architectural choice. It means any AI agent system (Copilot CLI, Claude Code, VS Code Copilot, custom tools) can consume SpecTree. The 50+ tool surface area is comprehensive.
+Exposing Dispatcher via MCP rather than direct database access is the right architectural choice. It means any AI agent system (Copilot CLI, Claude Code, VS Code Copilot, custom tools) can consume Dispatcher. The 50+ tool surface area is comprehensive.
 
 ### 4. Session Handoff Design
 
@@ -115,7 +115,7 @@ The `start_session` / `end_session` / `append_ai_note` / `get_ai_context` patter
 
 ### 2. Disabling MCP Tools in copilot-instructions.md
 
-**Problem:** The SpecTree MCP tools are commented out in `.github/copilot-instructions.md`, forcing agents to use `plan.md` files. This completely bypasses SpecTree's value proposition.
+**Problem:** The Dispatcher MCP tools are commented out in `.github/copilot-instructions.md`, forcing agents to use `plan.md` files. This completely bypasses Dispatcher's value proposition.
 
 **Root cause:** "TypeError: terminated" errors during large operations. This is likely the MCP server process crashing under load, not a fundamental design flaw.
 
@@ -124,7 +124,7 @@ The `start_session` / `end_session` / `append_ai_note` / `get_ai_context` patter
 - Progress tracking
 - Decision audit trails
 - Execution plan awareness
-- All the SpecTree metadata you carefully designed
+- All the Dispatcher metadata you carefully designed
 
 **Fix:** Debug the MCP stability issue (likely a process timeout or memory issue), then re-enable. In the meantime, load the MCP server with conservative settings (smaller batch sizes, retry logic).
 
@@ -133,7 +133,7 @@ The `start_session` / `end_session` / `append_ai_note` / `get_ai_context` patter
 **Problem:** You have zero custom agents and zero skills defined. This means Copilot CLI has no project-specific knowledge beyond `.github/copilot-instructions.md`.
 
 **Impact:** Every session, Copilot starts cold. It doesn't know:
-- How to use SpecTree effectively
+- How to use Dispatcher effectively
 - Your project's execution patterns
 - How to plan work using your templates
 - How to hand off between sessions
@@ -144,13 +144,13 @@ The `start_session` / `end_session` / `append_ai_note` / `get_ai_context` patter
 
 **Problem:** You're manually creating new Copilot CLI sessions for each piece of work, manually providing context, and manually managing what gets done when.
 
-**Impact:** This is the exact workflow you built SpecTree to eliminate. You have execution plans with dependency graphs, but you're not using them to drive automated session creation.
+**Impact:** This is the exact workflow you built Dispatcher to eliminate. You have execution plans with dependency graphs, but you're not using them to drive automated session creation.
 
 **Fix:** Use `#runSubagent` delegation or scripted headless mode to automate session creation.
 
 ### 5. Not Using Copilot CLI's Headless Mode for Automation
 
-**Problem:** `copilot -p "prompt" --allow-all-tools` can execute tasks non-interactively. Combined with SpecTree MCP tools, you could script entire execution plans.
+**Problem:** `copilot -p "prompt" --allow-all-tools` can execute tasks non-interactively. Combined with Dispatcher MCP tools, you could script entire execution plans.
 
 **Impact:** Missing easy automation wins for routine tasks (running validations, updating progress, checking for blockers).
 
@@ -211,14 +211,14 @@ However, there IS an alternative pattern for task-level parallelism when tasks w
 ┌─────────────────────────────────────────────────────────────────┐
 │ ORCHESTRATOR AGENT (.github/agents/orchestrator.md)             │
 │                                                                 │
-│ 1. Reads execution plan from SpecTree (spectree__get_execution_ │
+│ 1. Reads execution plan from Dispatcher (dispatcher__get_execution_ │
 │    plan)                                                        │
 │ 2. For each PHASE:                                              │
 │    a. Identifies parallel vs sequential features                │
 │    b. Spawns Feature Agents via #runSubagent (parallel if safe) │
 │    c. Waits for all Feature Agents to complete                  │
 │    d. Triggers branch merges (if parallel)                      │
-│ 3. Updates SpecTree progress after each phase                   │
+│ 3. Updates Dispatcher progress after each phase                   │
 │ 4. Handles errors and reports blockers                          │
 └─────────────────────────────────────────────────────────────────┘
          │                    │                    │
@@ -270,7 +270,7 @@ Use Architecture A for features with sequential tasks, and Architecture B for fe
 // Pseudocode for the orchestrator agent's logic
 for (const phase of executionPlan.phases) {
   const featurePromises = phase.items.map(async (feature) => {
-    const tasks = await spectree__list_tasks({ featureId: feature.id });
+    const tasks = await dispatcher__list_tasks({ featureId: feature.id });
     const hasParallelTasks = tasks.some(t => !t.dependencies?.length);
 
     if (hasParallelTasks && tasks.length > 1) {
@@ -296,7 +296,7 @@ for (const phase of executionPlan.phases) {
 
 ### Context Injection Strategy
 
-Since sub-agents don't inherit parent context, you must explicitly inject everything they need. SpecTree makes this possible:
+Since sub-agents don't inherit parent context, you must explicitly inject everything they need. Dispatcher makes this possible:
 
 ```markdown
 ## Sub-Agent Prompt Template
@@ -304,7 +304,7 @@ Since sub-agents don't inherit parent context, you must explicitly inject everyt
 You are working on task {TASK_IDENTIFIER}: {TASK_TITLE}
 
 ### Requirements
-{STRUCTURED_DESCRIPTION from spectree__get_structured_description}
+{STRUCTURED_DESCRIPTION from dispatcher__get_structured_description}
 
 ### Acceptance Criteria
 {ACCEPTANCE_CRITERIA from structured description}
@@ -313,29 +313,29 @@ You are working on task {TASK_IDENTIFIER}: {TASK_TITLE}
 {AI_INSTRUCTIONS from structured description}
 
 ### Previous Session Context
-{AI_CONTEXT from spectree__get_ai_context}
+{AI_CONTEXT from dispatcher__get_ai_context}
 
 ### Related Code
-{CODE_CONTEXT from spectree__get_code_context}
+{CODE_CONTEXT from dispatcher__get_code_context}
 
 ### Decisions Made So Far
-{DECISIONS from spectree__get_decision_context}
+{DECISIONS from dispatcher__get_decision_context}
 
 ### Your MCP Tools
-You have access to SpecTree MCP tools. Use them to:
-- spectree__log_progress - Report your progress
-- spectree__log_decision - Record implementation decisions
-- spectree__link_code_file - Report files you modify
-- spectree__append_ai_note - Leave notes for future sessions
-- spectree__run_all_validations - Verify your work
+You have access to Dispatcher MCP tools. Use them to:
+- dispatcher__log_progress - Report your progress
+- dispatcher__log_decision - Record implementation decisions
+- dispatcher__link_code_file - Report files you modify
+- dispatcher__append_ai_note - Leave notes for future sessions
+- dispatcher__run_all_validations - Verify your work
 
 ### When You're Done
-1. Run spectree__run_all_validations to verify acceptance criteria
-2. Use spectree__link_code_file for every file you modified
-3. Use spectree__append_ai_note with a summary of what you did
+1. Run dispatcher__run_all_validations to verify acceptance criteria
+2. Use dispatcher__link_code_file for every file you modified
+3. Use dispatcher__append_ai_note with a summary of what you did
 ```
 
-This is the key insight: **SpecTree provides the persistent memory that sub-agents lack.** Each sub-agent reads its context from SpecTree at the start, does its work, and writes its results back to SpecTree. The next sub-agent (or the next session) picks up where it left off.
+This is the key insight: **Dispatcher provides the persistent memory that sub-agents lack.** Each sub-agent reads its context from Dispatcher at the start, does its work, and writes its results back to Dispatcher. The next sub-agent (or the next session) picks up where it left off.
 
 ---
 
@@ -351,45 +351,45 @@ This is the key insight: **SpecTree provides the persistent memory that sub-agen
 .github/agents/
 ├── orchestrator.md        # Reads execution plans, delegates to sub-agents
 ├── feature-worker.md      # Completes a feature's tasks sequentially
-├── planner.md             # Creates SpecTree epics from natural language
+├── planner.md             # Creates Dispatcher epics from natural language
 ├── reviewer.md            # Reviews completed features against acceptance criteria
-└── session-manager.md     # Handles session start/end with SpecTree handoff
+└── session-manager.md     # Handles session start/end with Dispatcher handoff
 ```
 
 **Example: `orchestrator.md`**
 ```yaml
 ---
-name: SpecTree Orchestrator
-description: "Executes SpecTree epic execution plans by delegating features to sub-agents.
+name: Dispatcher Orchestrator
+description: "Executes Dispatcher epic execution plans by delegating features to sub-agents.
   Use when the user wants to execute an epic, run a phase, or automate feature implementation."
 tools: ['agent', 'read', 'execute', 'edit', 'search']
 agents: ['feature-worker', 'reviewer']
 ---
 
-# SpecTree Orchestrator Agent
+# Dispatcher Orchestrator Agent
 
-You orchestrate the execution of SpecTree epics by reading execution plans
+You orchestrate the execution of Dispatcher epics by reading execution plans
 and delegating work to feature-worker sub-agents.
 
 ## Workflow
 
-1. Call spectree__get_execution_plan for the specified epic
+1. Call dispatcher__get_execution_plan for the specified epic
 2. For each phase in the plan:
    a. Identify which features can run in parallel (canRunInParallel: true)
    b. For each feature, prepare context by calling:
-      - spectree__get_structured_description
-      - spectree__get_ai_context
-      - spectree__get_code_context
-      - spectree__get_decision_context
+      - dispatcher__get_structured_description
+      - dispatcher__get_ai_context
+      - dispatcher__get_code_context
+      - dispatcher__get_decision_context
    c. Spawn feature-worker sub-agents with full context
    d. Wait for completion
-   e. Call spectree__complete_work for each completed feature
+   e. Call dispatcher__complete_work for each completed feature
 3. After all phases complete, generate summary
 
 ## Rules
 - NEVER skip reading the execution plan
-- ALWAYS inject full SpecTree context into sub-agent prompts
-- ALWAYS update SpecTree progress after each feature completes
+- ALWAYS inject full Dispatcher context into sub-agent prompts
+- ALWAYS update Dispatcher progress after each feature completes
 - If a sub-agent fails, log the error and continue with other features
 ```
 
@@ -397,7 +397,7 @@ and delegating work to feature-worker sub-agents.
 ```yaml
 ---
 name: Feature Worker
-description: "Completes all tasks within a single SpecTree feature. Receives full context
+description: "Completes all tasks within a single Dispatcher feature. Receives full context
   from the orchestrator including requirements, acceptance criteria, and code context."
 tools: ['read', 'edit', 'execute', 'search']
 user-invokable: false
@@ -418,13 +418,13 @@ You will receive:
 ## Workflow
 1. Read the feature requirements carefully
 2. For each task (in executionOrder):
-   a. Call spectree__start_work for the task
+   a. Call dispatcher__start_work for the task
    b. Implement according to AI instructions
-   c. Run spectree__run_all_validations
-   d. Call spectree__link_code_file for modified files
-   e. Call spectree__log_decision for any implementation choices
-   f. Call spectree__complete_work with summary
-3. After all tasks: call spectree__append_ai_note with feature summary
+   c. Run dispatcher__run_all_validations
+   d. Call dispatcher__link_code_file for modified files
+   e. Call dispatcher__log_decision for any implementation choices
+   f. Call dispatcher__complete_work with summary
+3. After all tasks: call dispatcher__append_ai_note with feature summary
 
 ## Rules
 - MUST complete tasks in executionOrder
@@ -441,14 +441,14 @@ You will receive:
 
 ```
 .github/skills/
-├── spectree-planning/
-│   └── SKILL.md           # How to create a SpecTree epic from requirements
-├── spectree-session/
+├── dispatcher-planning/
+│   └── SKILL.md           # How to create a Dispatcher epic from requirements
+├── dispatcher-session/
 │   └── SKILL.md           # Session start/end protocol
-├── spectree-validation/
+├── dispatcher-validation/
 │   └── SKILL.md           # How to run and interpret validations
-└── code-review-spectree/
-    └── SKILL.md           # Review against SpecTree acceptance criteria
+└── code-review-dispatcher/
+    └── SKILL.md           # Review against Dispatcher acceptance criteria
 ```
 
 ### 3. Headless Mode for Scripted Execution
@@ -463,13 +463,13 @@ You will receive:
 EPIC_ID=$1
 
 # Step 1: Get execution plan
-PLAN=$(copilot -p "Using spectree MCP tools, get the execution plan for epic $EPIC_ID and output it as JSON" --allow-all-tools --silent)
+PLAN=$(copilot -p "Using dispatcher MCP tools, get the execution plan for epic $EPIC_ID and output it as JSON" --allow-all-tools --silent)
 
 # Step 2: For each feature in the plan
 echo "$PLAN" | jq -r '.phases[].items[].identifier' | while read FEATURE_ID; do
   echo "Starting feature: $FEATURE_ID"
 
-  copilot -p "Complete all tasks for SpecTree feature $FEATURE_ID.
+  copilot -p "Complete all tasks for Dispatcher feature $FEATURE_ID.
     1. Read the feature's structured description and AI instructions
     2. Complete each task in order
     3. Run validations
@@ -478,7 +478,7 @@ echo "$PLAN" | jq -r '.phases[].items[].identifier' | while read FEATURE_ID; do
     6. Mark complete" \
     --allow-all-tools \
     --agent feature-worker \
-    --additional-mcp-config ./mcp-spectree.json
+    --additional-mcp-config ./mcp-dispatcher.json
 
   echo "Completed feature: $FEATURE_ID"
 done
@@ -491,8 +491,8 @@ done
 **When to use:** For features that don't need immediate local results. The coding agent works in the background while you continue other work.
 
 ```
-/delegate Complete SpecTree feature ENG-42. Read the structured description
-and AI instructions from SpecTree MCP, implement all tasks, run validations,
+/delegate Complete Dispatcher feature ENG-42. Read the structured description
+and AI instructions from Dispatcher MCP, implement all tasks, run validations,
 and link all modified files.
 ```
 
@@ -522,9 +522,9 @@ copilot --resume <session-id>
 copilot --resume
 ```
 
-Combined with SpecTree's session handoff system, this gives you two layers of continuity:
+Combined with Dispatcher's session handoff system, this gives you two layers of continuity:
 - **Copilot session state** (conversation history, permissions)
-- **SpecTree session state** (structured progress, decisions, context)
+- **Dispatcher session state** (structured progress, decisions, context)
 
 ---
 
@@ -534,7 +534,7 @@ You have three options. Here's the honest assessment:
 
 ### Option 1: Abandon the Custom Orchestrator, Go Full Copilot CLI Native
 
-**Approach:** Delete `packages/orchestrator/`. Define everything as `.github/agents/` and `.github/skills/`. Use `#runSubagent` for parallelism. Use SpecTree MCP for context.
+**Approach:** Delete `packages/orchestrator/`. Define everything as `.github/agents/` and `.github/skills/`. Use `#runSubagent` for parallelism. Use Dispatcher MCP for context.
 
 **Pros:**
 - Zero maintenance on orchestration infrastructure
@@ -594,12 +594,12 @@ Use a thin ACP-based orchestrator for deterministic phase management, but let Co
 ```
 Your Orchestrator (ACP Client)
   │
-  ├── Reads execution plan from SpecTree API
+  ├── Reads execution plan from Dispatcher API
   ├── Manages phase sequencing and dependencies
   ├── For each feature:
   │     └── Sends prompt to Copilot CLI via ACP
   │         └── Copilot CLI loads the feature-worker agent
-  │             └── Agent uses SpecTree MCP tools
+  │             └── Agent uses Dispatcher MCP tools
   │             └── Agent may use #runSubagent for subtasks
   ├── Waits for completion via ACP streaming events
   ├── Handles errors, retries, and blockers
@@ -612,7 +612,7 @@ Your Orchestrator (ACP Client)
 
 ### Phase 0: Quick Wins (Do This Week)
 
-1. **Fix SpecTree MCP stability**
+1. **Fix Dispatcher MCP stability**
    - Investigate "TypeError: terminated" errors
    - Likely cause: process timeout or unhandled promise rejection
    - Add retry logic and graceful error handling
@@ -621,20 +621,20 @@ Your Orchestrator (ACP Client)
 2. **Create basic `.github/agents/`**
    ```
    .github/agents/
-   ├── planner.md           # Creates SpecTree epics
+   ├── planner.md           # Creates Dispatcher epics
    └── session-manager.md   # Session start/end protocol
    ```
 
 3. **Create basic `.github/skills/`**
    ```
    .github/skills/
-   └── spectree-workflow/
-       └── SKILL.md          # Core SpecTree usage patterns
+   └── dispatcher-workflow/
+       └── SKILL.md          # Core Dispatcher usage patterns
    ```
 
 4. **Test `#runSubagent` manually**
    - Open Copilot CLI session
-   - Ask it to complete a simple SpecTree task using a sub-agent
+   - Ask it to complete a simple Dispatcher task using a sub-agent
    - Verify MCP tools work within sub-agents
    - Measure premium request consumption
 
@@ -644,17 +644,17 @@ Your Orchestrator (ACP Client)
    - `orchestrator.md` - Reads execution plans, delegates features
    - `feature-worker.md` - Completes a feature's tasks (sub-agent only)
    - `reviewer.md` - Reviews against acceptance criteria
-   - `planner.md` - Creates SpecTree epics from requirements
+   - `planner.md` - Creates Dispatcher epics from requirements
 
 2. **Create the skill suite:**
-   - `spectree-planning/SKILL.md` - Epic creation workflow
-   - `spectree-session/SKILL.md` - Session start/end protocol
-   - `spectree-validation/SKILL.md` - Validation procedures
+   - `dispatcher-planning/SKILL.md` - Epic creation workflow
+   - `dispatcher-session/SKILL.md` - Session start/end protocol
+   - `dispatcher-validation/SKILL.md` - Validation procedures
 
 3. **Test end-to-end with a real feature:**
-   - Create a small SpecTree epic (2-3 features, 2-3 tasks each)
+   - Create a small Dispatcher epic (2-3 features, 2-3 tasks each)
    - Use the orchestrator agent to execute it
-   - Verify sub-agents complete tasks and update SpecTree
+   - Verify sub-agents complete tasks and update Dispatcher
 
 ### Phase 2: Scripted Automation (2-3 Weeks)
 
@@ -683,10 +683,10 @@ Only if Phase 1-2 reveals that you need more deterministic control:
    - Handles `session/update` streaming events
    - Responds to `session/request_permission` automatically
 
-2. **Integrate with SpecTree execution plans:**
-   - Read plans from SpecTree API
+2. **Integrate with Dispatcher execution plans:**
+   - Read plans from Dispatcher API
    - Map features to ACP sessions
-   - Track completion via both ACP events and SpecTree API
+   - Track completion via both ACP events and Dispatcher API
 
 3. **Add git coordination:**
    - Branch creation before each parallel feature
@@ -695,17 +695,17 @@ Only if Phase 1-2 reveals that you need more deterministic control:
 
 ### Phase 4: Mature Automation (Ongoing)
 
-1. **Copilot CLI plugin for SpecTree:**
+1. **Copilot CLI plugin for Dispatcher:**
    - Package agents + skills + MCP config as an installable plugin
-   - `copilot /plugin install spectree/copilot-plugin`
-   - Makes SpecTree orchestration available in any repo
+   - `copilot /plugin install dispatcher/copilot-plugin`
+   - Makes Dispatcher orchestration available in any repo
 
 2. **CI/CD integration:**
-   - GitHub Actions workflow that executes SpecTree epics
+   - GitHub Actions workflow that executes Dispatcher epics
    - Triggered by issue assignment or label
 
 3. **Multi-repo support:**
-   - SpecTree features that span multiple repositories
+   - Dispatcher features that span multiple repositories
    - Each sub-agent works in its own repo clone
 
 ---
@@ -782,7 +782,7 @@ Key JSON-RPC methods:
 - `session/request_permission` - Permission gate (callback)
 - `session/load` - Resume session
 
-### SpecTree MCP Tools Available to Agents
+### Dispatcher MCP Tools Available to Agents
 
 **Planning:** `list_epics`, `get_epic`, `create_epic`, `get_execution_plan`, `list_templates`, `create_from_template`
 
@@ -798,16 +798,16 @@ Key JSON-RPC methods:
 
 ## Key Takeaways
 
-1. **SpecTree is the right idea.** A structured, AI-queryable project management system is exactly what multi-session AI workflows need. Don't abandon it.
+1. **Dispatcher is the right idea.** A structured, AI-queryable project management system is exactly what multi-session AI workflows need. Don't abandon it.
 
 2. **The custom orchestrator was ahead of its time.** Copilot CLI now provides most of what you built. Pivot to native features instead of maintaining custom infrastructure.
 
 3. **`#runSubagent` is your parallel execution primitive.** It's the Copilot CLI equivalent of Claude Code's Task tool. Use it for feature-level parallelism.
 
-4. **Context injection via SpecTree MCP is the secret weapon.** Sub-agents are context-isolated by design, but SpecTree provides persistent memory. Read context from SpecTree at sub-agent start, write results back at end. This is how you achieve cross-session continuity without context window limitations.
+4. **Context injection via Dispatcher MCP is the secret weapon.** Sub-agents are context-isolated by design, but Dispatcher provides persistent memory. Read context from Dispatcher at sub-agent start, write results back at end. This is how you achieve cross-session continuity without context window limitations.
 
 5. **Start with agents and skills, add ACP later.** You can get 80% of the automation value with zero custom code by defining the right `.github/agents/` and `.github/skills/`. Only build the ACP orchestrator if you need deterministic control over phasing and dependencies.
 
-6. **Fix the MCP stability issue first.** Everything depends on agents being able to read from and write to SpecTree. The commented-out MCP tools are the biggest blocker.
+6. **Fix the MCP stability issue first.** Everything depends on agents being able to read from and write to Dispatcher. The commented-out MCP tools are the biggest blocker.
 
 7. **Premium request costs are real.** Each sub-agent invocation costs ~2 premium requests. An epic with 5 features and 3 tasks each could consume 30+ premium requests. Monitor and optimize.

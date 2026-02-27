@@ -10,19 +10,19 @@ The Skill Pack system consists of four primary components that work together to 
 
 ```mermaid
 graph TB
-    CLI[SpecTree CLI] -->|HTTP| Registry[Registry API]
+    CLI[Dispatcher CLI] -->|HTTP| Registry[Registry API]
     Registry -->|Read/Write| DB[(Database)]
     CLI -->|File Operations| FS[.github/ Directory]
     MCP[MCP Server] -->|Read| FS
     Copilot[GitHub Copilot] -->|Executes| FS
-    MCP -->|SpecTree Tools| Registry
+    MCP -->|Dispatcher Tools| Registry
     
     subgraph "Developer Workflow"
         CLI
         FS
     end
     
-    subgraph "SpecTree Backend"
+    subgraph "Dispatcher Backend"
         Registry
         DB
     end
@@ -61,7 +61,7 @@ Each pack version has a JSON manifest defining its contents:
 
 ```typescript
 interface SkillPackManifest {
-  name: string;              // "@spectree/planning"
+  name: string;              // "@dispatcher/planning"
   version: string;           // "1.2.3" (semver)
   description?: string;      // Human-readable description
   
@@ -78,12 +78,12 @@ interface SkillPackManifest {
   }>;
   
   instructions?: Array<{
-    name: string;            // "spectree-context"
+    name: string;            // "dispatcher-context"
     path: string;            // "instructions/context.md"
     description?: string;
   }>;
   
-  dependencies?: Record<string, string>;  // "@spectree/core": "^1.0.0"
+  dependencies?: Record<string, string>;  // "@dispatcher/core": "^1.0.0"
 }
 ```
 
@@ -91,7 +91,7 @@ interface SkillPackManifest {
 
 ```json
 {
-  "name": "@spectree/planning",
+  "name": "@dispatcher/planning",
   "version": "1.2.0",
   "description": "AI agents for epic planning and decomposition",
   "agents": [
@@ -115,13 +115,13 @@ interface SkillPackManifest {
   ],
   "instructions": [
     {
-      "name": "spectree-context",
-      "path": "instructions/spectree-context.md",
-      "description": "Core SpecTree concepts and conventions"
+      "name": "dispatcher-context",
+      "path": "instructions/dispatcher-context.md",
+      "description": "Core Dispatcher concepts and conventions"
     }
   ],
   "dependencies": {
-    "@spectree/core": "^1.0.0"
+    "@dispatcher/core": "^1.0.0"
   }
 }
 ```
@@ -133,7 +133,7 @@ Installed packs follow this directory structure:
 ```
 .github/
 ├── copilot-instructions/
-│   └── @spectree/
+│   └── @dispatcher/
 │       └── planning/
 │           ├── agents/
 │           │   ├── planner.md
@@ -141,8 +141,8 @@ Installed packs follow this directory structure:
 │           ├── skills/
 │           │   └── epic-decomposition.md
 │           └── instructions/
-│               └── spectree-context.md
-└── .spectree/
+│               └── dispatcher-context.md
+└── .dispatcher/
     └── manifest.json          # Local installation record
 ```
 
@@ -258,12 +258,12 @@ The command-line interface manages local pack installations and integrates with 
 
 | Command | Description | Example |
 |---------|-------------|---------|
-| `spectree install <pack>` | Install a pack from registry | `spectree install @spectree/planning` |
-| `spectree list` | List installed packs | `spectree list` |
-| `spectree list --available` | List all available packs | `spectree list --available` |
-| `spectree update <pack>` | Update pack to latest version | `spectree update @spectree/planning` |
-| `spectree update --all` | Update all packs | `spectree update --all` |
-| `spectree publish <path>` | Publish pack to registry | `spectree publish ./my-pack` |
+| `dispatcher install <pack>` | Install a pack from registry | `dispatcher install @dispatcher/planning` |
+| `dispatcher list` | List installed packs | `dispatcher list` |
+| `dispatcher list --available` | List all available packs | `dispatcher list --available` |
+| `dispatcher update <pack>` | Update pack to latest version | `dispatcher update @dispatcher/planning` |
+| `dispatcher update --all` | Update all packs | `dispatcher update --all` |
+| `dispatcher publish <path>` | Publish pack to registry | `dispatcher publish ./my-pack` |
 
 ### Installation Flow
 
@@ -274,41 +274,41 @@ sequenceDiagram
     participant Registry
     participant FS as File System
     
-    User->>CLI: spectree install @spectree/planning
-    CLI->>Registry: GET /skill-packs/@spectree/planning
+    User->>CLI: dispatcher install @dispatcher/planning
+    CLI->>Registry: GET /skill-packs/@dispatcher/planning
     Registry-->>CLI: Pack metadata
     CLI->>Registry: GET /skill-packs/:id/versions/latest
     Registry-->>CLI: Version manifest
     CLI->>Registry: GET /skill-packs/:id/files/:version
     Registry-->>CLI: Pack files (zip)
     CLI->>FS: Extract to .github/copilot-instructions/
-    CLI->>FS: Update .spectree/manifest.json
+    CLI->>FS: Update .dispatcher/manifest.json
     CLI->>Registry: POST /skill-packs/:id/install
     Registry-->>CLI: Installation recorded
-    CLI-->>User: Installed @spectree/planning@1.2.0
+    CLI-->>User: Installed @dispatcher/planning@1.2.0
 ```
 
 ### Local Manifest
 
-The CLI maintains `.spectree/manifest.json` to track installed packs:
+The CLI maintains `.dispatcher/manifest.json` to track installed packs:
 
 ```json
 {
   "version": "1.0.0",
   "packs": {
-    "@spectree/planning": {
+    "@dispatcher/planning": {
       "version": "1.2.0",
       "installedAt": "2026-02-16T12:00:00Z",
       "files": [
-        ".github/copilot-instructions/@spectree/planning/agents/planner.md",
-        ".github/copilot-instructions/@spectree/planning/skills/epic-decomposition.md"
+        ".github/copilot-instructions/@dispatcher/planning/agents/planner.md",
+        ".github/copilot-instructions/@dispatcher/planning/skills/epic-decomposition.md"
       ]
     },
-    "@spectree/orchestrator": {
+    "@dispatcher/orchestrator": {
       "version": "0.5.0",
       "installedAt": "2026-02-15T09:30:00Z",
       "files": [
-        ".github/copilot-instructions/@spectree/orchestrator/agents/orchestrator.md"
+        ".github/copilot-instructions/@dispatcher/orchestrator/agents/orchestrator.md"
       ]
     }
   }
@@ -319,7 +319,7 @@ The CLI maintains `.spectree/manifest.json` to track installed packs:
 
 **Update Detection:**
 
-1. CLI reads `.spectree/manifest.json` to get installed versions
+1. CLI reads `.dispatcher/manifest.json` to get installed versions
 2. Queries registry for latest versions: `GET /skill-packs?ids=...`
 3. Compares versions using semver
 4. Reports available updates
@@ -342,13 +342,13 @@ The MCP server exposes pack management tools for AI agents to discover, install,
 
 | Tool | Purpose | When to Use |
 |------|---------|-------------|
-| `spectree__list_skill_packs` | List available packs from registry | Discovery, browsing catalog |
-| `spectree__get_skill_pack` | Get details about a specific pack | Before installation |
-| `spectree__install_skill_pack` | Install pack by ID/name and version | Initial setup, adding capabilities |
-| `spectree__update_skill_pack` | Update pack to new version | Maintenance, applying fixes |
-| `spectree__list_installed_packs` | List locally installed packs | Status checks, auditing |
-| `spectree__get_pack_manifest` | Get manifest for a specific version | Understanding pack contents |
-| `spectree__sync_local_packs` | Detect drift between local and registry | Cleanup, drift detection |
+| `dispatcher__list_skill_packs` | List available packs from registry | Discovery, browsing catalog |
+| `dispatcher__get_skill_pack` | Get details about a specific pack | Before installation |
+| `dispatcher__install_skill_pack` | Install pack by ID/name and version | Initial setup, adding capabilities |
+| `dispatcher__update_skill_pack` | Update pack to new version | Maintenance, applying fixes |
+| `dispatcher__list_installed_packs` | List locally installed packs | Status checks, auditing |
+| `dispatcher__get_pack_manifest` | Get manifest for a specific version | Understanding pack contents |
+| `dispatcher__sync_local_packs` | Detect drift between local and registry | Cleanup, drift detection |
 
 ### Guided Workflow Tools
 
@@ -356,15 +356,15 @@ The MCP server provides composite tools that guide AI agents through complete wo
 
 ```typescript
 // Example: Guided pack installation
-spectree__manage_skill_packs({
+dispatcher__manage_skill_packs({
   action: "install",
-  id: "@spectree/planning",
+  id: "@dispatcher/planning",
   version: "1.2.0"
 })
 
 // Returns:
 {
-  "message": "Installed @spectree/planning@1.2.0",
+  "message": "Installed @dispatcher/planning@1.2.0",
   "installedFiles": [...],
   "nextSteps": [
     "Review installed agents in .github/copilot-instructions",
@@ -379,18 +379,18 @@ spectree__manage_skill_packs({
 An AI agent can install packs autonomously:
 
 ````markdown
-**User:** "Set up SpecTree planning capabilities"
+**User:** "Set up Dispatcher planning capabilities"
 
 **Agent:** I'll install the planning skill pack:
 
 ```typescript
-spectree__install_skill_pack({
-  id: "@spectree/planning",
+dispatcher__install_skill_pack({
+  id: "@dispatcher/planning",
   version: "latest"
 })
 ```
 
-Installed `@spectree/planning@1.2.0` with:
+Installed `@dispatcher/planning@1.2.0` with:
 - @planner agent for epic decomposition
 - @plan-reviewer agent for validation
 - Epic decomposition skill
@@ -426,7 +426,7 @@ flowchart TD
 **Post-Installation Validation:**
 
 1. Verify all files were written successfully
-2. Check `.spectree/manifest.json` is valid JSON
+2. Check `.dispatcher/manifest.json` is valid JSON
 3. Confirm no file conflicts with existing packs
 4. Validate file permissions
 
@@ -457,13 +457,13 @@ stateDiagram-v2
 The MCP server includes enforcement reminders in tool responses:
 
 ```typescript
-// Example response from spectree__list_installed_packs
+// Example response from dispatcher__list_installed_packs
 {
   "packs": [...],
   "reminders": [
     "✅ 3 packs installed and up-to-date",
-    "⚠️ @spectree/orchestrator has an update available (0.5.0 → 0.6.0)",
-    "💡 Consider running `spectree update @spectree/orchestrator`"
+    "⚠️ @dispatcher/orchestrator has an update available (0.5.0 → 0.6.0)",
+    "💡 Consider running `dispatcher update @dispatcher/orchestrator`"
   ]
 }
 ```
@@ -521,7 +521,7 @@ my-custom-pack/
     }
   ],
   "dependencies": {
-    "@spectree/core": "^1.0.0"
+    "@dispatcher/core": "^1.0.0"
   }
 }
 ```
@@ -530,26 +530,26 @@ my-custom-pack/
 
 ```bash
 # From your custom pack directory
-spectree publish .
+dispatcher publish .
 ```
 
 **4. Installation:**
 
 ```bash
 # On other machines
-spectree install @myorg/custom-pack
+dispatcher install @myorg/custom-pack
 ```
 
 ### Distribution Models
 
 **Public Registry:**
-- Publish to SpecTree registry for community use
-- Requires review for `@spectree/` namespace
+- Publish to Dispatcher registry for community use
+- Requires review for `@dispatcher/` namespace
 - Open source encouraged
 
 **Private Registry:**
 - Host your own registry instance
-- Use `--registry` flag: `spectree install @myorg/pack --registry https://registry.myorg.com`
+- Use `--registry` flag: `dispatcher install @myorg/pack --registry https://registry.myorg.com`
 - Corporate/proprietary content
 
 **Git-based:**

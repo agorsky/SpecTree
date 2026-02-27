@@ -1,6 +1,6 @@
 # Advanced API Endpoints Reference
 
-This document provides a quick reference for advanced SpecTree API endpoints including sessions, decisions, code context, and other specialized features.
+This document provides a quick reference for advanced Dispatcher API endpoints including sessions, decisions, code context, and other specialized features.
 
 ## Overview
 

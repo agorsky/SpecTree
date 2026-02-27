@@ -20,7 +20,7 @@ Log a decision when:
 
 ## MCP Tools
 
-### `spectree__log_decision`
+### `dispatcher__log_decision`
 
 Record a new decision with its rationale.
 
@@ -55,7 +55,7 @@ Record a new decision with its rationale.
 
 **Example:**
 ```typescript
-await spectree__log_decision({
+await dispatcher__log_decision({
   epicId: "550e8400-e29b-41d4-a716-446655440000",
   featureId: "optional-feature-uuid",
   question: "Which state management library to use?",
@@ -67,7 +67,7 @@ await spectree__log_decision({
 });
 ```
 
-### `spectree__list_decisions`
+### `dispatcher__list_decisions`
 
 Get decisions filtered by context.
 
@@ -86,13 +86,13 @@ Get decisions filtered by context.
 **Example:**
 ```typescript
 // Get all architecture decisions for an epic
-const { decisions } = await spectree__list_decisions({
+const { decisions } = await dispatcher__list_decisions({
   epicId: "550e8400-e29b-41d4-a716-446655440000",
   category: "architecture"
 });
 ```
 
-### `spectree__search_decisions`
+### `dispatcher__search_decisions`
 
 Find decisions by searching question, decision, and rationale text.
 
@@ -108,12 +108,12 @@ Find decisions by searching question, decision, and rationale text.
 **Example:**
 ```typescript
 // Find all decisions about authentication
-const { decisions } = await spectree__search_decisions({
+const { decisions } = await dispatcher__search_decisions({
   query: "authentication"
 });
 ```
 
-### `spectree__get_decision_context`
+### `dispatcher__get_decision_context`
 
 Get all decisions related to current work, organized by scope.
 
@@ -133,7 +133,7 @@ One of `taskId` or `featureId` is required.
 **Example:**
 ```typescript
 // Get all decisions relevant to current task
-const context = await spectree__get_decision_context({
+const context = await dispatcher__get_decision_context({
   taskId: "COM-123-1"
 });
 // context.taskDecisions - Decisions for this specific task

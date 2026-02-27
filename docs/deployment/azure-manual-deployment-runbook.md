@@ -1,8 +1,8 @@
 # Azure Manual Deployment Runbook
 
-> **Operational guide for manual deployment of SpecTree to Azure**
+> **Operational guide for manual deployment of Dispatcher to Azure**
 >
-> This runbook provides step-by-step procedures for deploying SpecTree to Azure Container Apps without CI/CD automation. Use this when CI/CD pipelines are unavailable or for emergency deployments.
+> This runbook provides step-by-step procedures for deploying Dispatcher to Azure Container Apps without CI/CD automation. Use this when CI/CD pipelines are unavailable or for emergency deployments.
 
 ---
 
@@ -61,8 +61,8 @@ Complete ALL items before proceeding with deployment. Missing prerequisites will
 
 - [ ] ACR name identified
   ```bash
-  export ACR_NAME="<your-acr-name>"  # e.g., "acrspectreedev"
-  export RESOURCE_GROUP="rg-spectree-dev"
+  export ACR_NAME="<your-acr-name>"  # e.g., "acrdispatcherdev"
+  export RESOURCE_GROUP="rg-dispatcher-dev"
   ```
 
 - [ ] ACR login successful
@@ -80,8 +80,8 @@ Complete ALL items before proceeding with deployment. Missing prerequisites will
 
 - [ ] SQL Server name identified
   ```bash
-  export SQL_SERVER="sql-spectree-dev"
-  export SQL_DATABASE="sqldb-spectree-dev"
+  export SQL_SERVER="sql-dispatcher-dev"
+  export SQL_DATABASE="sqldb-dispatcher-dev"
   ```
 
 - [ ] SQL admin credentials available
@@ -100,7 +100,7 @@ Complete ALL items before proceeding with deployment. Missing prerequisites will
 
 - [ ] Container App name identified
   ```bash
-  export CONTAINER_APP="ca-spectree-dev"
+  export CONTAINER_APP="ca-dispatcher-dev"
   ```
 
 - [ ] Current revision identified (for potential rollback)
@@ -136,7 +136,7 @@ Complete ALL items before proceeding with deployment. Missing prerequisites will
 
 - [ ] Git repository up to date
   ```bash
-  cd /path/to/SpecTree
+  cd /path/to/Dispatcher
   git status
   git pull origin main  # or appropriate branch
   ```
@@ -206,23 +206,23 @@ The `Dockerfile.azure` is specifically configured for Azure deployment with SQL 
 
 ```bash
 # Navigate to repository root
-cd /path/to/SpecTree
+cd /path/to/Dispatcher
 
 # Verify you're in the correct directory
 ls -la packages/api/Dockerfile.azure
 
 # Build API image using Dockerfile.azure
 # This uses the SQL Server Prisma schema (schema.sqlserver.prisma)
-docker build -t spectree-api:latest -f packages/api/Dockerfile.azure .
+docker build -t dispatcher-api:latest -f packages/api/Dockerfile.azure .
 
-# Expected output: Successfully built and tagged spectree-api:latest
+# Expected output: Successfully built and tagged dispatcher-api:latest
 # Build time: ~2-5 minutes depending on your machine
 ```
 
 **What Dockerfile.azure does:**
 - Uses Node.js 22 Alpine base image
 - Installs pnpm via corepack
-- Builds shared package first (@spectree/shared)
+- Builds shared package first (@dispatcher/shared)
 - Generates Prisma client for SQL Server (`schema.sqlserver.prisma`)
 - Compiles TypeScript to production build
 - Creates optimized production image with only runtime dependencies
@@ -234,13 +234,13 @@ docker build -t spectree-api:latest -f packages/api/Dockerfile.azure .
 
 ```bash
 # Tag with version number (recommended for production)
-docker tag spectree-api:latest $ACR_NAME.azurecr.io/spectree-api:v$(date +%Y%m%d-%H%M%S)
+docker tag dispatcher-api:latest $ACR_NAME.azurecr.io/dispatcher-api:v$(date +%Y%m%d-%H%M%S)
 
 # Tag as latest (for easy reference)
-docker tag spectree-api:latest $ACR_NAME.azurecr.io/spectree-api:latest
+docker tag dispatcher-api:latest $ACR_NAME.azurecr.io/dispatcher-api:latest
 
 # Verify tags
-docker images | grep spectree-api
+docker images | grep dispatcher-api
 ```
 
 **Tagging Strategy:**
@@ -253,20 +253,20 @@ docker images | grep spectree-api
 
 ```bash
 # Push versioned image
-docker push $ACR_NAME.azurecr.io/spectree-api:v$(date +%Y%m%d-%H%M%S)
+docker push $ACR_NAME.azurecr.io/dispatcher-api:v$(date +%Y%m%d-%H%M%S)
 
 # Push latest tag
-docker push $ACR_NAME.azurecr.io/spectree-api:latest
+docker push $ACR_NAME.azurecr.io/dispatcher-api:latest
 
 # Expected output:
-# The push refers to repository [<acr-name>.azurecr.io/spectree-api]
+# The push refers to repository [<acr-name>.azurecr.io/dispatcher-api]
 # v<timestamp>: digest: sha256:... size: ...
 # latest: digest: sha256:... size: ...
 
 # Verify image is in ACR
 az acr repository show-tags \
   --name $ACR_NAME \
-  --repository spectree-api \
+  --repository dispatcher-api \
   --orderby time_desc \
   --output table
 
@@ -316,7 +316,7 @@ pnpm run db:push:sqlserver
 # Expected output:
 # Environment variables loaded from .env
 # Prisma schema loaded from prisma/schema.sqlserver.prisma
-# Datasource "db": SQL Server database "sqldb-spectree-dev" at "sql-spectree-dev.database.windows.net:1433"
+# Datasource "db": SQL Server database "sqldb-dispatcher-dev" at "sql-dispatcher-dev.database.windows.net:1433"
 # 
 # Your database is now in sync with your Prisma schema. Done in Xms
 
@@ -356,7 +356,7 @@ az sql server firewall-rule list \
 az containerapp update \
   --name $CONTAINER_APP \
   --resource-group $RESOURCE_GROUP \
-  --image $ACR_NAME.azurecr.io/spectree-api:latest
+  --image $ACR_NAME.azurecr.io/dispatcher-api:latest
 
 # Expected output:
 # Container app '<container-app-name>' updated successfully.
@@ -386,8 +386,8 @@ az containerapp revision list \
 # Expected output shows new revision as 'Active' and old revision as 'Inactive'
 # Revision Name                                    Active    Created
 # -----------------------------------------------  --------  --------------------------
-# ca-spectree-dev--<new-revision>                  True      2026-02-09T18:20:00.000000+00:00
-# ca-spectree-dev--<old-revision>                  False     2026-02-09T17:00:00.000000+00:00
+# ca-dispatcher-dev--<new-revision>                  True      2026-02-09T18:20:00.000000+00:00
+# ca-dispatcher-dev--<old-revision>                  False     2026-02-09T17:00:00.000000+00:00
 
 # View live logs to verify application startup
 az containerapp logs show \
@@ -532,7 +532,7 @@ az sql server firewall-rule create \
 #   "endIpAddress": "xxx.xxx.xxx.xxx",
 #   "id": "/subscriptions/.../firewallRules/TempDeployment-...",
 #   "name": "TempDeployment-user-20260209-1420",
-#   "resourceGroup": "rg-spectree-dev",
+#   "resourceGroup": "rg-dispatcher-dev",
 #   "startIpAddress": "xxx.xxx.xxx.xxx",
 #   "type": "Microsoft.Sql/servers/firewallRules"
 # }
@@ -755,8 +755,8 @@ az containerapp revision list \
 # Expected output:
 # Revision Name                              Active    Created                      Traffic Weight
 # -----------------------------------------  --------  ---------------------------  --------------
-# ca-spectree-dev--<new-revision>            True      2026-02-09T18:21:00+00:00    100%
-# ca-spectree-dev--<old-revision>            False     2026-02-09T17:00:00+00:00    0%
+# ca-dispatcher-dev--<new-revision>            True      2026-02-09T18:21:00+00:00    100%
+# ca-dispatcher-dev--<old-revision>            False     2026-02-09T17:00:00+00:00    0%
 
 # Verify revision details
 az containerapp revision show \
@@ -884,7 +884,7 @@ az containerapp show \
   --query "properties.template.containers[0].image" \
   --output tsv
 
-# Expected: <acr-name>.azurecr.io/spectree-api:latest (or your version tag)
+# Expected: <acr-name>.azurecr.io/dispatcher-api:latest (or your version tag)
 
 # Verify image exists in ACR
 IMAGE_TAG=$(az containerapp show \
@@ -895,7 +895,7 @@ IMAGE_TAG=$(az containerapp show \
 
 az acr repository show-tags \
   --name $ACR_NAME \
-  --repository spectree-api \
+  --repository dispatcher-api \
   --output table | grep $IMAGE_TAG
 
 # Expected: Tag should be listed
@@ -951,11 +951,11 @@ docker system prune -a --volumes
 
 # Problem: Network timeout during pnpm install
 # Solution: Retry build with longer timeout
-docker build --network=host -t spectree-api:latest -f packages/api/Dockerfile.azure .
+docker build --network=host -t dispatcher-api:latest -f packages/api/Dockerfile.azure .
 
 # Problem: Build cache issues
 # Solution: Build without cache
-docker build --no-cache -t spectree-api:latest -f packages/api/Dockerfile.azure .
+docker build --no-cache -t dispatcher-api:latest -f packages/api/Dockerfile.azure .
 ```
 
 ### Issue 2: ACR Push Fails
@@ -986,11 +986,11 @@ curl -I https://$ACR_NAME.azurecr.io/v2/
 
 # Problem: Image size too large
 # Solution: Check image size and increase timeout
-docker images spectree-api:latest
+docker images dispatcher-api:latest
 # If > 1GB, push may take several minutes
 
 # Push with verbose output
-docker push --log-level debug $ACR_NAME.azurecr.io/spectree-api:latest
+docker push --log-level debug $ACR_NAME.azurecr.io/dispatcher-api:latest
 ```
 
 ### Issue 3: SQL Firewall Rule Not Working
@@ -1087,12 +1087,12 @@ cd ../..
 # Solution: Verify image exists
 az acr repository show \
   --name $ACR_NAME \
-  --repository spectree-api \
+  --repository dispatcher-api \
   --output table
 
 az acr repository show-tags \
   --name $ACR_NAME \
-  --repository spectree-api \
+  --repository dispatcher-api \
   --output table
 
 # Problem: Container App doesn't have ACR pull permission
@@ -1215,7 +1215,7 @@ az containerapp update \
 
 # Error: "Cannot find module"
 # Solution: Dependencies missing - rebuild image
-docker build --no-cache -t spectree-api:latest -f packages/api/Dockerfile.azure .
+docker build --no-cache -t dispatcher-api:latest -f packages/api/Dockerfile.azure .
 
 # Error: "Port 3001 is already in use"
 # Solution: This shouldn't happen in Container Apps (isolated containers)
@@ -1357,14 +1357,14 @@ az containerapp logs show \
 az login
 az account set --subscription "<subscription>"
 export ACR_NAME="<acr-name>"
-export RESOURCE_GROUP="rg-spectree-dev"
-export SQL_SERVER="sql-spectree-dev"
-export CONTAINER_APP="ca-spectree-dev"
+export RESOURCE_GROUP="rg-dispatcher-dev"
+export SQL_SERVER="sql-dispatcher-dev"
+export CONTAINER_APP="ca-dispatcher-dev"
 
 # Build and push
-docker build -t spectree-api:latest -f packages/api/Dockerfile.azure .
-docker tag spectree-api:latest $ACR_NAME.azurecr.io/spectree-api:latest
-docker push $ACR_NAME.azurecr.io/spectree-api:latest
+docker build -t dispatcher-api:latest -f packages/api/Dockerfile.azure .
+docker tag dispatcher-api:latest $ACR_NAME.azurecr.io/dispatcher-api:latest
+docker push $ACR_NAME.azurecr.io/dispatcher-api:latest
 
 # Deploy schema
 az sql server firewall-rule create --resource-group $RESOURCE_GROUP --server $SQL_SERVER --name "TempDeploy-$(whoami)" --start-ip-address $(curl -s ifconfig.me) --end-ip-address $(curl -s ifconfig.me)
@@ -1372,7 +1372,7 @@ cd packages/api && pnpm run db:push:sqlserver && cd ../..
 az sql server firewall-rule delete --resource-group $RESOURCE_GROUP --server $SQL_SERVER --name "TempDeploy-$(whoami)"
 
 # Update app
-az containerapp update --name $CONTAINER_APP --resource-group $RESOURCE_GROUP --image $ACR_NAME.azurecr.io/spectree-api:latest
+az containerapp update --name $CONTAINER_APP --resource-group $RESOURCE_GROUP --image $ACR_NAME.azurecr.io/dispatcher-api:latest
 
 # Verify
 curl -i https://$(az containerapp show --name $CONTAINER_APP --resource-group $RESOURCE_GROUP --query properties.configuration.ingress.fqdn -o tsv)/health
@@ -1397,11 +1397,11 @@ Update these for your environment:
 
 | Resource | Default Name | Environment Variable |
 |----------|-------------|---------------------|
-| Resource Group | `rg-spectree-dev` | `$RESOURCE_GROUP` |
-| Container App | `ca-spectree-dev` | `$CONTAINER_APP` |
-| SQL Server | `sql-spectree-dev` | `$SQL_SERVER` |
-| SQL Database | `sqldb-spectree-dev` | `$SQL_DATABASE` |
-| ACR | `acrspectreedev` | `$ACR_NAME` |
+| Resource Group | `rg-dispatcher-dev` | `$RESOURCE_GROUP` |
+| Container App | `ca-dispatcher-dev` | `$CONTAINER_APP` |
+| SQL Server | `sql-dispatcher-dev` | `$SQL_SERVER` |
+| SQL Database | `sqldb-dispatcher-dev` | `$SQL_DATABASE` |
+| ACR | `acrdispatcherdev` | `$ACR_NAME` |
 
 ---
 
@@ -1421,5 +1421,5 @@ See [github-actions-azure-setup.md](./github-actions-azure-setup.md) for CI/CD a
 
 **Document Version**: 1.0  
 **Last Updated**: 2026-02-09  
-**Maintained By**: SpecTree Team
+**Maintained By**: Dispatcher Team
 

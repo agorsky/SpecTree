@@ -1,12 +1,12 @@
-# SpecTree Automation Tool — Quickstart Guide
+# Dispatcher Automation Tool — Quickstart Guide
 
-This guide walks you through the full SpecTree automation workflow: planning an epic from a natural language description, executing it with AI agents, and validating the results. No prior SpecTree knowledge is required.
+This guide walks you through the full Dispatcher automation workflow: planning an epic from a natural language description, executing it with AI agents, and validating the results. No prior Dispatcher knowledge is required.
 
 ## What You'll Do
 
-1. **Plan** — Describe a feature in natural language. The planner agent analyzes the codebase, decomposes the work into features and tasks, and creates a structured SpecTree epic.
-2. **Review** — Inspect the generated epic in the SpecTree web UI. Verify the structure, execution order, and acceptance criteria before committing to execution.
-3. **Execute** — The orchestrator spawns AI agents (via ACP/Copilot CLI) to implement each feature. Tasks are tracked in SpecTree with real-time progress updates.
+1. **Plan** — Describe a feature in natural language. The planner agent analyzes the codebase, decomposes the work into features and tasks, and creates a structured Dispatcher epic.
+2. **Review** — Inspect the generated epic in the Dispatcher web UI. Verify the structure, execution order, and acceptance criteria before committing to execution.
+3. **Execute** — The orchestrator spawns AI agents (via ACP/Copilot CLI) to implement each feature. Tasks are tracked in Dispatcher with real-time progress updates.
 4. **Validate** — Run automated validation checks against completed tasks to verify acceptance criteria are met.
 
 ---
@@ -15,7 +15,7 @@ This guide walks you through the full SpecTree automation workflow: planning an 
 
 Before starting, make sure these services are running:
 
-### 1. SpecTree API
+### 1. Dispatcher API
 
 ```bash
 cd packages/api
@@ -29,14 +29,14 @@ curl http://localhost:3001/health
 # Expected: {"status":"ok"}
 ```
 
-### 2. SpecTree MCP Server
+### 2. Dispatcher MCP Server
 
 ```bash
 cd packages/mcp
 pnpm dev
 ```
 
-The MCP server connects AI agents to SpecTree tools. Verify the `.env` file in `packages/mcp/` contains a valid `API_TOKEN`.
+The MCP server connects AI agents to Dispatcher tools. Verify the `.env` file in `packages/mcp/` contains a valid `API_TOKEN`.
 
 ### 3. Copilot CLI
 
@@ -53,7 +53,7 @@ If you don't have it installed, follow the [GitHub Copilot CLI setup guide](http
 The automation tool uses custom agents and skills defined in:
 
 - `.github/agents/` — planner, orchestrator, feature-worker, reviewer, request-formulator, plan-reviewer
-- `.github/skills/` — spectree-planning, spectree-session, spectree-validation, spectree-plan-review
+- `.github/skills/` — dispatcher-planning, dispatcher-session, dispatcher-validation, dispatcher-plan-review
 
 These files are already committed to the repository. No setup required.
 
@@ -86,13 +86,13 @@ copilot -p '@planner "Add a REST API endpoint at /api/v1/preferences with GET an
 ### Option B: Shell Script
 
 ```bash
-./scripts/spectree-plan.sh "Add a REST API endpoint at /api/v1/preferences with GET and PUT operations for user preferences. Store preferences in a Prisma model. Validate with Zod schemas." --team Engineering
+./scripts/dispatcher-plan.sh "Add a REST API endpoint at /api/v1/preferences with GET and PUT operations for user preferences. Store preferences in a Prisma model. Validate with Zod schemas." --team Engineering
 ```
 
 ### Option C: CLI Command
 
 ```bash
-spectree-agent plan "Add a REST API endpoint at /api/v1/preferences with GET and PUT operations for user preferences." --team Engineering
+dispatcher-agent plan "Add a REST API endpoint at /api/v1/preferences with GET and PUT operations for user preferences." --team Engineering
 ```
 
 ### What Happens
@@ -103,7 +103,7 @@ The planner agent:
 2. **Decomposes** the request into 3-5 features (e.g., database model, validation schemas, route handlers, tests)
 3. **Creates tasks** under each feature with acceptance criteria and AI instructions
 4. **Sets execution metadata** — execution order, parallelism groups, complexity estimates
-5. **Creates the epic** in SpecTree via MCP tools
+5. **Creates the epic** in Dispatcher via MCP tools
 
 ### Expected Output
 
@@ -139,7 +139,7 @@ Summary: 4 features with 8 tasks
 Parallel Groups: api-layer
 
 Epic ID: 88cec40c-...
-Continue with: spectree-agent run 88cec40c-...
+Continue with: dispatcher-agent run 88cec40c-...
 ```
 
 Note the **Epic ID** — you'll need it for the next steps.
@@ -148,7 +148,7 @@ Note the **Epic ID** — you'll need it for the next steps.
 
 ## Step 2: Review
 
-Before executing, review the generated epic in the SpecTree web UI.
+Before executing, review the generated epic in the Dispatcher web UI.
 
 ### Open the Web UI
 
@@ -169,7 +169,7 @@ Navigate to `http://localhost:5173` and find your epic. Check:
 
 ### Modify if Needed
 
-You can edit features and tasks directly in the SpecTree UI before execution. Common adjustments:
+You can edit features and tasks directly in the Dispatcher UI before execution. Common adjustments:
 
 - Remove unnecessary tasks
 - Add missing acceptance criteria
@@ -185,13 +185,13 @@ Run the orchestrator to execute the epic. Each feature is implemented by an AI a
 ### Option A: CLI Command (Recommended)
 
 ```bash
-spectree-agent run <epic-id>
+dispatcher-agent run <epic-id>
 ```
 
 ### Option B: Shell Script
 
 ```bash
-./scripts/spectree-run.sh <epic-id>
+./scripts/dispatcher-run.sh <epic-id>
 ```
 
 ### Option C: Dry Run (Preview Only)
@@ -199,7 +199,7 @@ spectree-agent run <epic-id>
 See the execution plan without actually running anything:
 
 ```bash
-spectree-agent run <epic-id> --dry-run
+dispatcher-agent run <epic-id> --dry-run
 ```
 
 ### Execution Modes
@@ -213,17 +213,17 @@ spectree-agent run <epic-id> --dry-run
 
 ### What Happens During Execution
 
-1. **Session starts** — A SpecTree session is created to track this execution run
+1. **Session starts** — A Dispatcher session is created to track this execution run
 2. **Phase execution** — Features are executed in order, respecting dependencies
 3. **ACP sessions** — Each task spawns a Copilot CLI session via ACP (Agent Client Protocol)
 4. **Git branches** — Feature branches are created for parallel work
-5. **Progress tracking** — SpecTree is updated in real-time as tasks complete
+5. **Progress tracking** — Dispatcher is updated in real-time as tasks complete
 6. **Branch merging** — Completed feature branches are merged back
 
 ### Terminal Output During Execution
 
 ```
-SpecTree Parallel Agent Orchestrator
+Dispatcher Parallel Agent Orchestrator
 
   Executing epic...
 
@@ -264,13 +264,13 @@ After execution, run the validator to check all acceptance criteria.
 ### Run Validations
 
 ```bash
-spectree-agent validate <epic-id>
+dispatcher-agent validate <epic-id>
 ```
 
 Or with the shell script:
 
 ```bash
-./scripts/spectree-validate.sh <epic-id>
+./scripts/dispatcher-validate.sh <epic-id>
 ```
 
 ### Expected Output
@@ -322,17 +322,17 @@ cd packages/mcp && pnpm dev &
 cd packages/web && pnpm dev &
 
 # 2. Plan
-spectree-agent plan "Add a REST API endpoint at /api/v1/preferences with GET and PUT for user preferences. Prisma model. Zod validation." --team Engineering
+dispatcher-agent plan "Add a REST API endpoint at /api/v1/preferences with GET and PUT for user preferences. Prisma model. Zod validation." --team Engineering
 # Output: Epic ID: abc123...
 
 # 3. Review in UI
 open http://localhost:5173
 
 # 4. Execute
-spectree-agent run abc123...
+dispatcher-agent run abc123...
 
 # 5. Validate
-spectree-agent validate abc123...
+dispatcher-agent validate abc123...
 
 # 6. Review the generated code
 git log --oneline
@@ -343,11 +343,11 @@ git diff main
 
 ## Troubleshooting
 
-### "SpecTree MCP is not connected"
+### "Dispatcher MCP is not connected"
 
-The AI agent cannot reach SpecTree tools. Check:
+The AI agent cannot reach Dispatcher tools. Check:
 
-1. Is the SpecTree API running? (`curl http://localhost:3001/health`)
+1. Is the Dispatcher API running? (`curl http://localhost:3001/health`)
 2. Is the MCP server running? (`cd packages/mcp && pnpm dev`)
 3. Is the `API_TOKEN` set in `packages/mcp/.env`?
 
@@ -360,7 +360,7 @@ export API_BASE_URL=http://localhost:3001
 ### "Authentication Error" / "Missing token"
 
 ```bash
-spectree-agent auth --token <your-token>
+dispatcher-agent auth --token <your-token>
 ```
 
 Or set the environment variable:
@@ -375,7 +375,7 @@ List available teams:
 
 ```bash
 # Via MCP (in Copilot CLI)
-# Call spectree__list_teams
+# Call dispatcher__list_teams
 
 # Or check the API directly
 curl -H "Authorization: Bearer <token>" http://localhost:3001/api/v1/teams
@@ -385,11 +385,11 @@ curl -H "Authorization: Bearer <token>" http://localhost:3001/api/v1/teams
 
 ```bash
 # Check status
-spectree-agent status
+dispatcher-agent status
 
 # Cancel and retry
 Ctrl+C
-spectree-agent run <epic-id>  # Resumes from last completed task
+dispatcher-agent run <epic-id>  # Resumes from last completed task
 ```
 
 ### "TypeError: terminated" from MCP server
@@ -440,7 +440,7 @@ git commit -m "Resolve merge conflicts"
 ## Tips
 
 - **Start small**: Use a simple, well-scoped description for your first run. Complex multi-system changes may need manual intervention.
-- **Review before executing**: Always check the generated plan in the SpecTree UI. It's much easier to fix the plan than to fix generated code.
+- **Review before executing**: Always check the generated plan in the Dispatcher UI. It's much easier to fix the plan than to fix generated code.
 - **Use `--dry-run`**: Preview the execution plan before committing to a full run.
-- **Monitor progress**: Watch the terminal output and SpecTree UI during execution to catch issues early.
+- **Monitor progress**: Watch the terminal output and Dispatcher UI during execution to catch issues early.
 - **Copilot premium requests**: Each task consumes Copilot premium requests. Keep task count reasonable (5-15 tasks per epic).

@@ -1,7 +1,7 @@
-# SpecTree Documentation Index
+# Dispatcher Documentation Index
 
 > **Last Updated:** February 2026 (v0.2.0)  
-> **Purpose:** Central index for all SpecTree documentation
+> **Purpose:** Central index for all Dispatcher documentation
 
 ---
 
@@ -25,11 +25,11 @@
 
 | Document | Description | For |
 |----------|-------------|-----|
-| [quick-start.md](./quick-start.md) | **⚡ Quick Start** — Install and verify SpecTree in <5 minutes | Everyone |
+| [quick-start.md](./quick-start.md) | **⚡ Quick Start** — Install and verify Dispatcher in <5 minutes | Everyone |
 | [troubleshooting.md](./troubleshooting.md) | **🔧 Troubleshooting** — Solutions for common installation and usage issues | Everyone |
 | [guides/setup-guide.md](./guides/setup-guide.md) | Complete setup instructions for local development | New developers |
-| [guides/automation-quickstart.md](./guides/automation-quickstart.md) | Quick start guide for using SpecTree automation | AI/automation users |
-| [guides/spectree-platform-briefing-for-ai-agents.md](./guides/spectree-platform-briefing-for-ai-agents.md) | **🤖 Platform Briefing** — Comprehensive overview for external AI agents evaluating SpecTree integration | AI agents/architects |
+| [guides/automation-quickstart.md](./guides/automation-quickstart.md) | Quick start guide for using Dispatcher automation | AI/automation users |
+| [guides/dispatcher-platform-briefing-for-ai-agents.md](./guides/dispatcher-platform-briefing-for-ai-agents.md) | **🤖 Platform Briefing** — Comprehensive overview for external AI agents evaluating Dispatcher integration | AI agents/architects |
 | [guides/mcp-auth-fix-summary.md](./guides/mcp-auth-fix-summary.md) | Troubleshooting MCP authentication issues | Developers |
 
 ---
@@ -51,7 +51,7 @@
 | Document | Status | Notes |
 |----------|--------|-------|
 | [skill-packs.md](./architecture/skill-packs.md) | Current | **Skill Pack system architecture** — registry, CLI, MCP tools, versioning |
-| [spectree-user-team-epic-model.md](./architecture/spectree-user-team-epic-model.md) | Current |
+| [dispatcher-user-team-epic-model.md](./architecture/dispatcher-user-team-epic-model.md) | Current |
 | [identity-collaboration-vnext-implementation-reference.md](./architecture/identity-collaboration-vnext-implementation-reference.md) | Implemented ✅ |
 | [user-invitation-system.md](./architecture/user-invitation-system.md) | Current |
 
@@ -71,7 +71,7 @@
 
 | Document | Description |
 |----------|-------------|
-| [cookbook/README.md](./cookbook/README.md) | **📚 Workflow Cookbook** — Step-by-step guides for common SpecTree workflows |
+| [cookbook/README.md](./cookbook/README.md) | **📚 Workflow Cookbook** — Step-by-step guides for common Dispatcher workflows |
 | [cookbook/first-epic.md](./cookbook/first-epic.md) | Creating your first epic (~10 minutes) |
 | [cookbook/planner-agent.md](./cookbook/planner-agent.md) | Using the planner agent (~15 minutes) |
 | [cookbook/validation-checks.md](./cookbook/validation-checks.md) | Setting up validation checks (~10 minutes) |
@@ -105,7 +105,7 @@
 
 ## 🤖 MCP Server
 
-SpecTree provides a Model Context Protocol (MCP) server that exposes 60+ tools for AI agents.
+Dispatcher provides a Model Context Protocol (MCP) server that exposes 60+ tools for AI agents.
 
 | Document | Description |
 |----------|-------------|
@@ -135,7 +135,7 @@ SpecTree provides a Model Context Protocol (MCP) server that exposes 60+ tools f
 
 ## 🎯 Orchestrator
 
-The orchestrator runs parallel AI agents to execute SpecTree epics automatically.
+The orchestrator runs parallel AI agents to execute Dispatcher epics automatically.
 
 | Document | Description |
 |----------|-------------|
@@ -211,7 +211,7 @@ Located in [archive/planning/](./archive/planning/):
 |----------|--------|-------|
 | [platform-improvements-plan-COMPLETED.md](./archive/planning/platform-improvements-plan-COMPLETED.md) | ✅ Completed | All 5 epics implemented (MCP consolidation, SSE, test isolation, viz, changelog) |
 | [template-enhancement-instructions-COMPLETED.md](./archive/planning/template-enhancement-instructions-COMPLETED.md) | ✅ Completed | Template system enhanced with structured descriptions |
-| [spectree-automation-tool-strategy.md](./archive/planning/spectree-automation-tool-strategy.md) | 📜 Historical | Original automation tool strategy (128KB) |
+| [dispatcher-automation-tool-strategy.md](./archive/planning/dispatcher-automation-tool-strategy.md) | 📜 Historical | Original automation tool strategy (128KB) |
 | [copilot-cli-automation-strategy.md](./archive/planning/copilot-cli-automation-strategy.md) | 📜 Historical | Copilot CLI integration strategy |
 | [automation-epic-prompts.md](./archive/planning/automation-epic-prompts.md) | 📜 Historical | Automation epic prompt templates |
 | [ai-enhancement-proposals.md](./archive/planning/ai-enhancement-proposals.md) | 📜 Historical | AI enhancement proposals |
@@ -223,9 +223,9 @@ Located in [archive/analysis/](./archive/analysis/):
 
 | Document | Status | Notes |
 |----------|--------|-------|
-| [analysis-spectree-mcp-vs-copilot-sdk.md](./archive/analysis/analysis-spectree-mcp-vs-copilot-sdk.md) | 📜 Historical | MCP vs Copilot SDK comparison (chose MCP) |
+| [analysis-dispatcher-mcp-vs-copilot-sdk.md](./archive/analysis/analysis-dispatcher-mcp-vs-copilot-sdk.md) | 📜 Historical | MCP vs Copilot SDK comparison (chose MCP) |
 | [ai-framework-compliance-analysis.md](./archive/analysis/ai-framework-compliance-analysis.md) | 📜 Historical | Analysis of AI agent instruction compliance |
-| [platform-analysis-for-spectree-orchestrator.md](./archive/analysis/platform-analysis-for-spectree-orchestrator.md) | 📜 Historical | Platform choice analysis for orchestrator |
+| [platform-analysis-for-dispatcher-orchestrator.md](./archive/analysis/platform-analysis-for-dispatcher-orchestrator.md) | 📜 Historical | Platform choice analysis for orchestrator |
 
 ---
 
@@ -233,7 +233,7 @@ Located in [archive/analysis/](./archive/analysis/):
 
 ### By Use Case
 
-**"I need to set up SpecTree locally"**  
+**"I need to set up Dispatcher locally"**  
 → [quick-start.md](./quick-start.md) (5 minute install)  
 → [guides/setup-guide.md](./guides/setup-guide.md) (complete guide)
 
@@ -289,7 +289,7 @@ These documents track documentation quality, validation, and audit results:
 | Document | Description |
 |----------|-------------|
 | [instruction-audit.md](./instruction-audit.md) | Instruction files audit report (overlaps, contradictions) |
-| [validation-report.md](./validation-report.md) | SpecTree external adoption validation report |
+| [validation-report.md](./validation-report.md) | Dispatcher external adoption validation report |
 | [CONVENTIONS.md](./CONVENTIONS.md) | Documentation naming and versioning conventions |
 
 ---

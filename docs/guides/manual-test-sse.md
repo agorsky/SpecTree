@@ -13,20 +13,20 @@ MCP Tool → Service Layer → Event Emission → SSE Endpoint → Frontend Even
 
 1. **API Server Running**
    ```bash
-   cd /path/to/SpecTree
-   pnpm dev --filter @spectree/api
+   cd /path/to/Dispatcher
+   pnpm dev --filter @dispatcher/api
    ```
    Server should be accessible at `http://localhost:3001`
 
 2. **Web App Running**
    ```bash
-   cd /path/to/SpecTree
-   pnpm dev --filter @spectree/web
+   cd /path/to/Dispatcher
+   pnpm dev --filter @dispatcher/web
    ```
    Web app should be accessible at `http://localhost:5173`
 
 3. **MCP Tools Accessible**
-   - Option A: Use Claude Desktop with SpecTree MCP server configured
+   - Option A: Use Claude Desktop with Dispatcher MCP server configured
    - Option B: Use CLI tools (if available)
    - Option C: Use test script to call MCP endpoints directly
 
@@ -51,7 +51,7 @@ Verify that changing a feature's status via MCP tool immediately updates the UI 
    - Filter for "events" to see SSE connection
 
 2. **Execute MCP Tool:**
-   - Via MCP: Call `spectree__update_feature`
+   - Via MCP: Call `dispatcher__update_feature`
      ```javascript
      {
        "id": "ENG-XX", // Use actual feature identifier
@@ -91,7 +91,7 @@ Verify that logging progress on a task via MCP tool updates the task detail page
    - Keep browser DevTools → Network tab open
 
 2. **Execute MCP Tool:**
-   - Via MCP: Call `spectree__log_progress`
+   - Via MCP: Call `dispatcher__log_progress`
      ```javascript
      {
        "id": "ENG-XX-1", // Use actual task identifier
@@ -129,7 +129,7 @@ Verify that creating a new feature via MCP tool causes it to appear in the featu
    - Keep browser on this page (do NOT refresh)
 
 2. **Execute MCP Tool:**
-   - Via MCP: Call `spectree__create_feature`
+   - Via MCP: Call `dispatcher__create_feature`
      ```javascript
      {
        "title": "SSE Test Feature - Auto Refresh",
@@ -181,7 +181,7 @@ Verify that the UI recovers gracefully when API server is restarted.
 4. **Simulate Reconnection:**
    - Restart the API server:
      ```bash
-     pnpm dev --filter @spectree/api
+     pnpm dev --filter @dispatcher/api
      ```
    - Wait for server to be ready (watch console logs)
 

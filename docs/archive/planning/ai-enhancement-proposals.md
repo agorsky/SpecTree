@@ -1,10 +1,10 @@
-# SpecTree AI Enhancement Proposals
+# Dispatcher AI Enhancement Proposals
 
 > **Author:** Copilot CLI Analysis Session  
 > **Date:** February 2026  
 > **Status:** Proposal  
 
-This document captures comprehensive proposals for transforming SpecTree into an AI-native collaboration platform with tools designed specifically for how AI agents think and work.
+This document captures comprehensive proposals for transforming Dispatcher into an AI-native collaboration platform with tools designed specifically for how AI agents think and work.
 
 ---
 
@@ -12,16 +12,16 @@ This document captures comprehensive proposals for transforming SpecTree into an
 
 ### Problem Statement
 
-When using SpecTree as a scratchpad for AI-assisted implementation planning, several pain points emerge:
+When using Dispatcher as a scratchpad for AI-assisted implementation planning, several pain points emerge:
 
-1. **Manual Context Transfer** - Must explain SpecTree to each AI session and ensure descriptions have enough detail for other sessions to understand
+1. **Manual Context Transfer** - Must explain Dispatcher to each AI session and ensure descriptions have enough detail for other sessions to understand
 2. **No Execution Ordering** - Must manually ask AI for task sequence and parallelization opportunities
 3. **Manual Status Updates** - Must explicitly remind AI to update statuses after completing work
 4. **Session Fragmentation** - Creating new sessions for each task loses continuity and context
 
 ### Goals
 
-1. Make SpecTree **AI-aware** - tools designed for how AI agents think and work
+1. Make Dispatcher **AI-aware** - tools designed for how AI agents think and work
 2. Enable **seamless session handoffs** - context transfers automatically between AI sessions
 3. Provide **intelligent execution planning** - dependencies, ordering, and parallelization built-in
 4. Create **natural progress tracking** - status updates become part of the workflow, not an afterthought
@@ -78,15 +78,15 @@ model Task {
 
 #### New MCP Tools
 
-1. **spectree__get_execution_plan** - Returns ordered list of features/tasks with parallel groups
+1. **dispatcher__get_execution_plan** - Returns ordered list of features/tasks with parallel groups
    - Input: `{ epicId: string }`
    - Output: `{ phases: [{ order: 1, items: [feature1, feature2], canRunInParallel: true }] }`
 
-2. **spectree__mark_blocked** - Mark a feature/task as blocked by another
+2. **dispatcher__mark_blocked** - Mark a feature/task as blocked by another
    - Input: `{ id, blockedById }`
    - Updates dependencies field
 
-3. **spectree__mark_unblocked** - Remove a dependency
+3. **dispatcher__mark_unblocked** - Remove a dependency
    - Input: `{ id, unblockedFromId }`
 
 #### Implementation Files
@@ -110,7 +110,7 @@ model Task {
 1. Add execution metadata fields to Prisma schema
 2. Add Zod validation for execution metadata
 3. Update services to handle execution metadata
-4. Create `spectree__get_execution_plan` MCP tool
+4. Create `dispatcher__get_execution_plan` MCP tool
 
 #### AI Benefit
 
@@ -165,15 +165,15 @@ interface AiNote {
 
 #### New MCP Tools
 
-1. **spectree__append_ai_note** - Add context without overwriting
+1. **dispatcher__append_ai_note** - Add context without overwriting
    - Input: `{ id, type, noteType, content, sessionId? }`
    - Appends to aiNotes array
 
-2. **spectree__get_ai_context** - Retrieve full AI context
+2. **dispatcher__get_ai_context** - Retrieve full AI context
    - Input: `{ id, type }`
    - Returns: `{ aiContext, aiNotes, lastAiSessionId, lastAiUpdateAt }`
 
-3. **spectree__set_ai_context** - Set the structured context field
+3. **dispatcher__set_ai_context** - Set the structured context field
    - Input: `{ id, type, context }`
    - Replaces aiContext field
 
@@ -225,7 +225,7 @@ Currently, AI sessions often forget to update task status after completing work.
 
 Create tools specifically designed for progress tracking:
 
-1. **spectree__start_work** - Begin working on an item
+1. **dispatcher__start_work** - Begin working on an item
    - Input: `{ id, type: "feature" | "task" }`
    - Actions:
      - Sets status to "In Progress"
@@ -233,7 +233,7 @@ Create tools specifically designed for progress tracking:
      - Optionally appends AI note about starting work
    - Returns: Confirmation with item details
 
-2. **spectree__complete_work** - Finish an item
+2. **dispatcher__complete_work** - Finish an item
    - Input: `{ id, type, summary?: string }`
    - Actions:
      - Sets status to "Done"
@@ -242,14 +242,14 @@ Create tools specifically designed for progress tracking:
      - Optionally appends summary as AI note
    - Returns: Confirmation with timing info
 
-3. **spectree__log_progress** - Note progress without status change
+3. **dispatcher__log_progress** - Note progress without status change
    - Input: `{ id, type, message: string, percentComplete?: number }`
    - Actions:
      - Appends message to AI notes
      - Updates optional percentComplete field
    - Use case: Long-running tasks with incremental progress
 
-4. **spectree__report_blocker** - Mark blocked
+4. **dispatcher__report_blocker** - Mark blocked
    - Input: `{ id, type, reason: string, blockedById?: string }`
    - Actions:
      - Sets status to "Blocked" (or adds blocked label)
@@ -274,12 +274,12 @@ Add to Feature and Task models:
 Update existing tool descriptions to include progress reminders:
 
 ```typescript
-// In spectree__update_task
+// In dispatcher__update_task
 description: `Update task details. 
 
 TIP: After completing significant work on a task, consider using:
-- spectree__complete_work to mark it done
-- spectree__log_progress to note partial progress`
+- dispatcher__complete_work to mark it done
+- dispatcher__log_progress to note partial progress`
 ```
 
 #### Implementation Files
@@ -298,9 +298,9 @@ TIP: After completing significant work on a task, consider using:
 
 1. Add timing fields to Prisma schema
 2. Create progressService with timing logic
-3. Implement `spectree__start_work` MCP tool
-4. Implement `spectree__complete_work` MCP tool
-5. Implement `spectree__log_progress` and `spectree__report_blocker` tools
+3. Implement `dispatcher__start_work` MCP tool
+4. Implement `dispatcher__complete_work` MCP tool
+5. Implement `dispatcher__log_progress` and `dispatcher__report_blocker` tools
 6. Update existing tool descriptions with progress hints
 
 #### AI Benefit
@@ -378,18 +378,18 @@ interface TemplateTask {
 
 #### New MCP Tools
 
-1. **spectree__list_templates** - Show available templates
+1. **dispatcher__list_templates** - Show available templates
    - Returns: `{ templates: [{ name, description, featureCount }] }`
 
-2. **spectree__preview_template** - See what will be created
+2. **dispatcher__preview_template** - See what will be created
    - Input: `{ templateName, variables: { topic: "Payment Processing" } }`
    - Returns: Preview of epic/feature/task structure
 
-3. **spectree__create_from_template** - Generate plan from template
+3. **dispatcher__create_from_template** - Generate plan from template
    - Input: `{ templateName, epicName, teamId, variables: { topic: "Payment Processing" } }`
    - Creates full structure and returns epic with all features/tasks
 
-4. **spectree__save_as_template** - Save current structure as template
+4. **dispatcher__save_as_template** - Save current structure as template
    - Input: `{ epicId, templateName, description }`
    - Extracts structure from existing epic
 
@@ -409,9 +409,9 @@ interface TemplateTask {
 1. Design and create PlanTemplate Prisma model
 2. Create templateService with CRUD operations
 3. Create template variable substitution engine
-4. Implement `spectree__list_templates` and `spectree__preview_template`
-5. Implement `spectree__create_from_template`
-6. Implement `spectree__save_as_template`
+4. Implement `dispatcher__list_templates` and `dispatcher__preview_template`
+5. Implement `dispatcher__create_from_template`
+6. Implement `dispatcher__save_as_template`
 7. Create built-in templates in seed data
 
 #### AI Benefit
@@ -463,7 +463,7 @@ model AiSession {
 
 #### Workflow
 
-1. **Start Session**: AI calls `spectree__start_session(epicId)`
+1. **Start Session**: AI calls `dispatcher__start_session(epicId)`
    - Creates AiSession record
    - Returns previous session summary if exists
    - Returns current epic status
@@ -472,34 +472,34 @@ model AiSession {
    - When items are updated, log to `session.itemsWorkedOn`
    - Decisions logged to `session.decisions`
 
-3. **End Session**: AI calls `spectree__end_session(summary, nextSteps)`
+3. **End Session**: AI calls `dispatcher__end_session(summary, nextSteps)`
    - Records session end
    - Stores handoff information
    - Returns session summary
 
 #### New MCP Tools
 
-1. **spectree__start_session**
+1. **dispatcher__start_session**
    - Input: `{ epicId, sessionId?: string }`
    - Creates session, returns:
      - Previous session handoff (if any)
      - Epic progress summary
      - Suggested next actions
 
-2. **spectree__end_session**
+2. **dispatcher__end_session**
    - Input: `{ summary: string, nextSteps: string[], blockers?: string[], contextBlob?: string }`
    - Finalizes session record
    - Returns confirmation
 
-3. **spectree__get_last_session**
+3. **dispatcher__get_last_session**
    - Input: `{ epicId }`
    - Returns previous session details
 
-4. **spectree__get_session_history**
+4. **dispatcher__get_session_history**
    - Input: `{ epicId, limit?: number }`
    - Returns all sessions with summaries
 
-5. **spectree__log_session_work**
+5. **dispatcher__log_session_work**
    - Input: `{ itemId, itemType, action }`
    - Records work done (called automatically by other tools)
 
@@ -518,9 +518,9 @@ model AiSession {
 
 1. Create AiSession Prisma model
 2. Create sessionService with lifecycle management
-3. Implement `spectree__start_session` MCP tool
-4. Implement `spectree__end_session` MCP tool
-5. Implement `spectree__get_last_session` and `get_session_history`
+3. Implement `dispatcher__start_session` MCP tool
+4. Implement `dispatcher__end_session` MCP tool
+5. Implement `dispatcher__get_last_session` and `get_session_history`
 6. Integrate session tracking into existing tools
 
 #### AI Benefit
@@ -585,20 +585,20 @@ interface StructuredDescription {
 
 #### New MCP Tools
 
-1. **spectree__get_structured_description**
+1. **dispatcher__get_structured_description**
    - Input: `{ id, type }`
    - Returns: Parsed StructuredDescription object
 
-2. **spectree__update_section**
+2. **dispatcher__update_section**
    - Input: `{ id, type, section, value }`
    - Update specific section without touching others
-   - e.g., `spectree__update_section(taskId, "task", "filesInvolved", ["a.ts", "b.ts"])`
+   - e.g., `dispatcher__update_section(taskId, "task", "filesInvolved", ["a.ts", "b.ts"])`
 
-3. **spectree__add_acceptance_criterion**
+3. **dispatcher__add_acceptance_criterion**
    - Input: `{ id, type, criterion }`
    - Append to acceptanceCriteria array
 
-4. **spectree__link_file**
+4. **dispatcher__link_file**
    - Input: `{ id, type, filePath }`
    - Add file to filesInvolved
 
@@ -617,8 +617,8 @@ interface StructuredDescription {
 1. Design StructuredDescription TypeScript interface
 2. Add structuredDesc JSON field to Prisma schema
 3. Create Zod schema for structured description validation
-4. Implement `spectree__get_structured_description` tool
-5. Implement `spectree__update_section` tool
+4. Implement `dispatcher__get_structured_description` tool
+5. Implement `dispatcher__update_section` tool
 6. Implement convenience tools for common sections
 
 #### AI Benefit
@@ -666,31 +666,31 @@ model Task {
 
 #### New MCP Tools
 
-1. **spectree__link_file** - Associate file with task
+1. **dispatcher__link_file** - Associate file with task
    - Input: `{ taskId, filePath, reason?: string }`
    - Adds to relatedFiles
 
-2. **spectree__link_function** - Associate function
+2. **dispatcher__link_function** - Associate function
    - Input: `{ taskId, filePath, functionName, reason?: string }`
    - Adds to relatedFunctions as "file:function"
 
-3. **spectree__link_branch** - Set git branch
+3. **dispatcher__link_branch** - Set git branch
    - Input: `{ taskId, branchName }`
    - Sets gitBranch field
 
-4. **spectree__link_commit** - Record commit
+4. **dispatcher__link_commit** - Record commit
    - Input: `{ taskId, commitSha, message?: string }`
    - Appends to gitCommits
 
-5. **spectree__link_pr** - Link pull request
+5. **dispatcher__link_pr** - Link pull request
    - Input: `{ taskId, prNumber, prUrl }`
    - Sets gitPrNumber and gitPrUrl
 
-6. **spectree__get_code_context** - Get all linked code artifacts
+6. **dispatcher__get_code_context** - Get all linked code artifacts
    - Input: `{ taskId }`
    - Returns: `{ files, functions, branch, commits, pr }`
 
-7. **spectree__auto_discover_files** (advanced)
+7. **dispatcher__auto_discover_files** (advanced)
    - Input: `{ taskId, keywords: string[] }`
    - Uses grep/glob to find related files and suggests linking
 
@@ -711,7 +711,7 @@ model Task {
 2. Create codeContextService for managing code links
 3. Implement file and function linking tools
 4. Implement git integration tools
-5. Implement `spectree__get_code_context` retrieval tool
+5. Implement `dispatcher__get_code_context` retrieval tool
 6. Add auto-discovery tool (stretch goal)
 
 #### AI Benefit
@@ -775,25 +775,25 @@ model Task {
 
 #### New MCP Tools
 
-1. **spectree__add_validation** - Add check to task
+1. **dispatcher__add_validation** - Add check to task
    - Input: `{ taskId, type, description, command?, filePath?, ... }`
    - Appends to validationChecks
 
-2. **spectree__list_validations** - See all checks for task
+2. **dispatcher__list_validations** - See all checks for task
    - Input: `{ taskId }`
    - Returns: `ValidationCheck[]`
 
-3. **spectree__run_validation** - Execute a single check
+3. **dispatcher__run_validation** - Execute a single check
    - Input: `{ taskId, checkId }`
    - Runs the check, updates status
    - Returns: `{ passed: boolean, error?: string }`
 
-4. **spectree__run_all_validations** - Execute all checks
+4. **dispatcher__run_all_validations** - Execute all checks
    - Input: `{ taskId }`
    - Runs all checks sequentially
    - Returns: `{ passed: number, failed: number, results: [...] }`
 
-5. **spectree__mark_manual_validated** - Mark manual check complete
+5. **dispatcher__mark_manual_validated** - Mark manual check complete
    - Input: `{ taskId, checkId, notes?: string }`
    - For checks that require human verification
 
@@ -822,8 +822,8 @@ For automated checks, implement safe execution:
 2. Create validationService with check management
 3. Implement validation executor for command checks
 4. Implement file existence and content checks
-5. Implement `spectree__add_validation` and list tools
-6. Implement `spectree__run_validation` and run_all tools
+5. Implement `dispatcher__add_validation` and list tools
+6. Implement `dispatcher__run_validation` and run_all tools
 7. Add security considerations for command execution
 
 #### AI Benefit
@@ -849,7 +849,7 @@ Currently requires multiple API calls and manual aggregation.
 
 ### Proposed Solution
 
-#### spectree__get_progress_summary Tool
+#### dispatcher__get_progress_summary Tool
 
 Single tool that returns comprehensive status:
 
@@ -910,15 +910,15 @@ interface ProgressSummary {
 
 #### Additional Summary Tools
 
-1. **spectree__get_daily_summary**
+1. **dispatcher__get_daily_summary**
    - Returns work done today across all epics
    - Useful for standup-style updates
 
-2. **spectree__get_my_work**
+2. **dispatcher__get_my_work**
    - Returns items assigned to current user/session
    - Prioritized by execution order
 
-3. **spectree__get_blocked_summary**
+3. **dispatcher__get_blocked_summary**
    - All blocked items across epics with reasons
 
 #### API Endpoint
@@ -939,9 +939,9 @@ interface ProgressSummary {
 1. Design ProgressSummary interface
 2. Create summaryService with aggregation logic
 3. Add `GET /epics/:id/progress-summary` endpoint
-4. Implement `spectree__get_progress_summary` tool
-5. Implement `spectree__get_my_work` tool
-6. Implement `spectree__get_blocked_summary` tool
+4. Implement `dispatcher__get_progress_summary` tool
+5. Implement `dispatcher__get_my_work` tool
+6. Implement `dispatcher__get_blocked_summary` tool
 
 #### AI Benefit
 
@@ -997,19 +997,19 @@ model Decision {
 
 #### New MCP Tools
 
-1. **spectree__log_decision** - Record a decision
+1. **dispatcher__log_decision** - Record a decision
    - Input: `{ epicId, featureId?, taskId?, question, decision, rationale, alternatives?, category? }`
    - Creates Decision record
 
-2. **spectree__list_decisions** - Get decisions for context
+2. **dispatcher__list_decisions** - Get decisions for context
    - Input: `{ epicId?, featureId?, taskId?, category? }`
    - Returns: `Decision[]` (newest first)
 
-3. **spectree__search_decisions** - Find relevant decisions
+3. **dispatcher__search_decisions** - Find relevant decisions
    - Input: `{ query: string, epicId? }`
    - Full-text search in question/decision/rationale
 
-4. **spectree__get_decision_context** - Get decisions related to current work
+4. **dispatcher__get_decision_context** - Get decisions related to current work
    - Input: `{ taskId }`
    - Returns decisions for the task, its feature, and epic
    - Provides full decision history context
@@ -1044,9 +1044,9 @@ AI should log decisions when:
 1. Create Decision Prisma model
 2. Create decisionService with CRUD operations
 3. Add decision API endpoints
-4. Implement `spectree__log_decision` tool
-5. Implement `spectree__list_decisions` tool
-6. Implement `spectree__get_decision_context` tool
+4. Implement `dispatcher__log_decision` tool
+5. Implement `dispatcher__list_decisions` tool
+6. Implement `dispatcher__get_decision_context` tool
 
 #### AI Benefit
 
@@ -1097,7 +1097,7 @@ AI should log decisions when:
 
 ### Migration Path
 
-For existing SpecTree data:
+For existing Dispatcher data:
 - New fields default to null/empty
 - Existing descriptions remain unchanged
 - Structured data populated on update
@@ -1109,41 +1109,41 @@ For existing SpecTree data:
 
 | Tool Name | Category | Description |
 |-----------|----------|-------------|
-| `spectree__get_execution_plan` | Execution | Get ordered task list with parallel groups |
-| `spectree__mark_blocked` | Execution | Mark item blocked by another |
-| `spectree__mark_unblocked` | Execution | Remove dependency |
-| `spectree__append_ai_note` | AI Context | Add note without overwriting |
-| `spectree__get_ai_context` | AI Context | Retrieve full AI context |
-| `spectree__set_ai_context` | AI Context | Set structured context |
-| `spectree__start_work` | Progress | Begin working on item |
-| `spectree__complete_work` | Progress | Finish item with summary |
-| `spectree__log_progress` | Progress | Note incremental progress |
-| `spectree__report_blocker` | Progress | Mark item blocked |
-| `spectree__list_templates` | Templates | Show available templates |
-| `spectree__preview_template` | Templates | Preview template expansion |
-| `spectree__create_from_template` | Templates | Generate plan from template |
-| `spectree__save_as_template` | Templates | Save structure as template |
-| `spectree__start_session` | Sessions | Begin AI session |
-| `spectree__end_session` | Sessions | End session with handoff |
-| `spectree__get_last_session` | Sessions | Get previous session |
-| `spectree__get_session_history` | Sessions | Get all sessions |
-| `spectree__get_structured_description` | Descriptions | Get parsed description |
-| `spectree__update_section` | Descriptions | Update specific section |
-| `spectree__add_acceptance_criterion` | Descriptions | Add criterion |
-| `spectree__link_file` | Code Context | Associate file with task |
-| `spectree__link_function` | Code Context | Associate function |
-| `spectree__link_branch` | Code Context | Set git branch |
-| `spectree__link_commit` | Code Context | Record commit |
-| `spectree__link_pr` | Code Context | Link pull request |
-| `spectree__get_code_context` | Code Context | Get all linked artifacts |
-| `spectree__add_validation` | Validation | Add check to task |
-| `spectree__list_validations` | Validation | See all checks |
-| `spectree__run_validation` | Validation | Execute single check |
-| `spectree__run_all_validations` | Validation | Execute all checks |
-| `spectree__get_progress_summary` | Summary | Get epic progress overview |
-| `spectree__get_my_work` | Summary | Get assigned items |
-| `spectree__get_blocked_summary` | Summary | Get all blocked items |
-| `spectree__log_decision` | Decisions | Record a decision |
-| `spectree__list_decisions` | Decisions | Get decisions with filters |
-| `spectree__search_decisions` | Decisions | Search decision history |
-| `spectree__get_decision_context` | Decisions | Get related decisions |
+| `dispatcher__get_execution_plan` | Execution | Get ordered task list with parallel groups |
+| `dispatcher__mark_blocked` | Execution | Mark item blocked by another |
+| `dispatcher__mark_unblocked` | Execution | Remove dependency |
+| `dispatcher__append_ai_note` | AI Context | Add note without overwriting |
+| `dispatcher__get_ai_context` | AI Context | Retrieve full AI context |
+| `dispatcher__set_ai_context` | AI Context | Set structured context |
+| `dispatcher__start_work` | Progress | Begin working on item |
+| `dispatcher__complete_work` | Progress | Finish item with summary |
+| `dispatcher__log_progress` | Progress | Note incremental progress |
+| `dispatcher__report_blocker` | Progress | Mark item blocked |
+| `dispatcher__list_templates` | Templates | Show available templates |
+| `dispatcher__preview_template` | Templates | Preview template expansion |
+| `dispatcher__create_from_template` | Templates | Generate plan from template |
+| `dispatcher__save_as_template` | Templates | Save structure as template |
+| `dispatcher__start_session` | Sessions | Begin AI session |
+| `dispatcher__end_session` | Sessions | End session with handoff |
+| `dispatcher__get_last_session` | Sessions | Get previous session |
+| `dispatcher__get_session_history` | Sessions | Get all sessions |
+| `dispatcher__get_structured_description` | Descriptions | Get parsed description |
+| `dispatcher__update_section` | Descriptions | Update specific section |
+| `dispatcher__add_acceptance_criterion` | Descriptions | Add criterion |
+| `dispatcher__link_file` | Code Context | Associate file with task |
+| `dispatcher__link_function` | Code Context | Associate function |
+| `dispatcher__link_branch` | Code Context | Set git branch |
+| `dispatcher__link_commit` | Code Context | Record commit |
+| `dispatcher__link_pr` | Code Context | Link pull request |
+| `dispatcher__get_code_context` | Code Context | Get all linked artifacts |
+| `dispatcher__add_validation` | Validation | Add check to task |
+| `dispatcher__list_validations` | Validation | See all checks |
+| `dispatcher__run_validation` | Validation | Execute single check |
+| `dispatcher__run_all_validations` | Validation | Execute all checks |
+| `dispatcher__get_progress_summary` | Summary | Get epic progress overview |
+| `dispatcher__get_my_work` | Summary | Get assigned items |
+| `dispatcher__get_blocked_summary` | Summary | Get all blocked items |
+| `dispatcher__log_decision` | Decisions | Record a decision |
+| `dispatcher__list_decisions` | Decisions | Get decisions with filters |
+| `dispatcher__search_decisions` | Decisions | Search decision history |
+| `dispatcher__get_decision_context` | Decisions | Get related decisions |

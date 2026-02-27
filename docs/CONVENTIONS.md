@@ -100,7 +100,7 @@ The following 18 files currently exist at `docs/` root and need to be moved:
 
 #### Architecture (2 files)
 - `identity-collaboration-vnext-implementation-reference.md` → `architecture/identity-collaboration-vnext-implementation-reference.md`
-- `spectree-user-team-epic-model.md` → `architecture/spectree-user-team-epic-model.md`
+- `dispatcher-user-team-epic-model.md` → `architecture/dispatcher-user-team-epic-model.md`
 
 #### Guides (2 files)
 - `SETUP_GUIDE.md` → `guides/setup-guide.md` *(rename to lowercase)*
@@ -206,7 +206,7 @@ Track progress using this checklist. Complete migrations in order by folder to m
 
 #### Architecture Files (2 files)
 - [ ] Move `identity-collaboration-vnext-implementation-reference.md` → `architecture/`
-- [ ] Move `spectree-user-team-epic-model.md` → `architecture/`
+- [ ] Move `dispatcher-user-team-epic-model.md` → `architecture/`
 
 #### Guides Files (2 files)
 - [ ] Move & rename `SETUP_GUIDE.md` → `guides/setup-guide.md`
@@ -270,4 +270,4 @@ Track progress using this checklist. Complete migrations in order by folder to m
 ---
 
 *Last updated: 2026-02-10*
-*Maintained by: SpecTree Engineering Team*
+*Maintained by: Dispatcher Engineering Team*

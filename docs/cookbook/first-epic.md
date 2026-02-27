@@ -1,6 +1,6 @@
 # Creating Your First Epic
 
-Learn how to create a SpecTree epic from scratch using MCP tools. This guide walks you through planning a simple feature, creating the epic structure, and understanding the core concepts.
+Learn how to create a Dispatcher epic from scratch using MCP tools. This guide walks you through planning a simple feature, creating the epic structure, and understanding the core concepts.
 
 **Time Estimate:** ~10 minutes
 
@@ -8,13 +8,13 @@ Learn how to create a SpecTree epic from scratch using MCP tools. This guide wal
 
 ## Prerequisites
 
-- SpecTree installed and running locally
-- GitHub Copilot configured with SpecTree MCP server
+- Dispatcher installed and running locally
+- GitHub Copilot configured with Dispatcher MCP server
 - Basic understanding of project management concepts (epics, features, tasks)
 
 **Verify setup:**
 ```
-@spectree list teams
+@dispatcher list teams
 ```
 
 You should see a list of available teams (or "Engineering" if using default setup).
@@ -41,7 +41,7 @@ We'll create an epic for adding a simple user preferences API:
 List available teams and select one:
 
 ```
-@spectree list teams
+@dispatcher list teams
 ```
 
 **Expected output:**
@@ -59,11 +59,11 @@ For this guide, we'll use **Engineering**.
 Use the MCP tool to create a new epic:
 
 ```
-@spectree create an epic named "User Preferences API" for team Engineering with description "Add REST API endpoints and UI for user preferences like theme, language, and notifications"
+@dispatcher create an epic named "User Preferences API" for team Engineering with description "Add REST API endpoints and UI for user preferences like theme, language, and notifications"
 ```
 
 **What happens:**
-- SpecTree creates a new epic record
+- Dispatcher creates a new epic record
 - Assigns it to the Engineering team
 - Generates an identifier (e.g., `ENG-42`)
 - Sets status to "Backlog"
@@ -82,7 +82,7 @@ Next: Add features to the epic
 Create a feature for the API endpoints:
 
 ```
-@spectree add feature to epic ENG-42 titled "REST API endpoints for preferences" with description "Implement GET /api/v1/preferences and PUT /api/v1/preferences with Zod validation"
+@dispatcher add feature to epic ENG-42 titled "REST API endpoints for preferences" with description "Implement GET /api/v1/preferences and PUT /api/v1/preferences with Zod validation"
 ```
 
 **Expected output:**
@@ -97,15 +97,15 @@ Create a feature for the API endpoints:
 Break down the feature into actionable tasks:
 
 ```
-@spectree add task to feature ENG-42-1 titled "Define Prisma schema for UserPreferences model"
+@dispatcher add task to feature ENG-42-1 titled "Define Prisma schema for UserPreferences model"
 
-@spectree add task to feature ENG-42-1 titled "Create Zod validation schemas for preferences"
+@dispatcher add task to feature ENG-42-1 titled "Create Zod validation schemas for preferences"
 
-@spectree add task to feature ENG-42-1 titled "Implement GET endpoint handler"
+@dispatcher add task to feature ENG-42-1 titled "Implement GET endpoint handler"
 
-@spectree add task to feature ENG-42-1 titled "Implement PUT endpoint handler"
+@dispatcher add task to feature ENG-42-1 titled "Implement PUT endpoint handler"
 
-@spectree add task to feature ENG-42-1 titled "Add unit tests for endpoints"
+@dispatcher add task to feature ENG-42-1 titled "Add unit tests for endpoints"
 ```
 
 **Tip:** Use descriptive task titles that clearly state what needs to be done.
@@ -115,7 +115,7 @@ Break down the feature into actionable tasks:
 Add execution order and complexity estimates to guide implementation:
 
 ```
-@spectree set execution metadata for feature ENG-42-1 with executionOrder 1, complexity moderate, can parallelize false
+@dispatcher set execution metadata for feature ENG-42-1 with executionOrder 1, complexity moderate, can parallelize false
 ```
 
 **Why this matters:**
@@ -128,14 +128,14 @@ Add execution order and complexity estimates to guide implementation:
 Provide detailed AI instructions for each task:
 
 ```
-@spectree set structured description for task ENG-42-1-1 with summary "Define Prisma schema for UserPreferences model" and aiInstructions "Add a new UserPreferences model to packages/api/prisma/schema.prisma with fields: userId (unique), theme (string), language (string), emailNotifications (boolean), pushNotifications (boolean). Run npx prisma db push after adding the model."
+@dispatcher set structured description for task ENG-42-1-1 with summary "Define Prisma schema for UserPreferences model" and aiInstructions "Add a new UserPreferences model to packages/api/prisma/schema.prisma with fields: userId (unique), theme (string), language (string), emailNotifications (boolean), pushNotifications (boolean). Run npx prisma db push after adding the model."
 ```
 
 Repeat for other tasks with appropriate instructions.
 
 ### Step 7: Review in the UI
 
-Open SpecTree web UI to verify your epic:
+Open Dispatcher web UI to verify your epic:
 
 1. Navigate to http://localhost:5173/epics
 2. Find your epic (e.g., ENG-42)
@@ -147,13 +147,13 @@ Open SpecTree web UI to verify your epic:
 Define how you'll know the work is complete:
 
 ```
-@spectree add acceptance criterion to feature ENG-42-1 "GET endpoint returns user preferences with 200 status"
+@dispatcher add acceptance criterion to feature ENG-42-1 "GET endpoint returns user preferences with 200 status"
 
-@spectree add acceptance criterion to feature ENG-42-1 "PUT endpoint updates preferences and returns 200 status"
+@dispatcher add acceptance criterion to feature ENG-42-1 "PUT endpoint updates preferences and returns 200 status"
 
-@spectree add acceptance criterion to feature ENG-42-1 "Invalid requests return 400 with error details"
+@dispatcher add acceptance criterion to feature ENG-42-1 "Invalid requests return 400 with error details"
 
-@spectree add acceptance criterion to feature ENG-42-1 "All endpoints have unit test coverage"
+@dispatcher add acceptance criterion to feature ENG-42-1 "All endpoints have unit test coverage"
 ```
 
 ---
@@ -170,7 +170,7 @@ After completing all steps, you should have:
 
 **Verify:**
 ```
-@spectree get epic ENG-42
+@dispatcher get epic ENG-42
 ```
 
 ---
@@ -180,12 +180,12 @@ After completing all steps, you should have:
 ### "Team not found"
 
 **Problem:** Specified team doesn't exist  
-**Solution:** Run `@spectree list teams` to see available teams, or create a new team in the UI
+**Solution:** Run `@dispatcher list teams` to see available teams, or create a new team in the UI
 
 ### "Feature created but no tasks visible"
 
 **Problem:** Tasks were created but not appearing  
-**Solution:** Refresh the UI or run `@spectree get feature ENG-42-1` to verify tasks exist
+**Solution:** Refresh the UI or run `@dispatcher get feature ENG-42-1` to verify tasks exist
 
 ### "Cannot set execution metadata"
 
@@ -216,4 +216,4 @@ Now that you have an epic structure:
 ✅ Adding structured descriptions for AI implementation  
 ✅ Defining acceptance criteria for validation  
 
-**Pro Tip:** Use templates to speed this up! See `@spectree list templates` for pre-built epic structures.
+**Pro Tip:** Use templates to speed this up! See `@dispatcher list templates` for pre-built epic structures.

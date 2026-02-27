@@ -1,6 +1,6 @@
 # What's New
 
-This directory contains release notes for SpecTree versions.
+This directory contains release notes for Dispatcher versions.
 
 ## Purpose
 
@@ -24,7 +24,7 @@ Release notes follow the naming pattern: `vX.Y.Z.md`
 
 ### Version Number Format
 
-SpecTree follows [Semantic Versioning](https://semver.org/):
+Dispatcher follows [Semantic Versioning](https://semver.org/):
 - **MAJOR.MINOR.PATCH** (e.g., 1.2.3)
 - **MAJOR:** Breaking changes or incompatible API changes
 - **MINOR:** New features in a backwards-compatible manner
@@ -104,7 +104,7 @@ List of contributors for this release.
 
 ---
 
-*Released under the SpecTree project. All rights reserved.*
+*Released under the Dispatcher project. All rights reserved.*
 ```
 
 ## Standard Sections
@@ -170,4 +170,4 @@ Release notes MUST match the version in `package.json`. See `docs/CONVENTIONS.md
 ---
 
 *Last updated: February 2026 (v0.2.0)*
-*Maintained by: SpecTree Engineering Team*
+*Maintained by: Dispatcher Engineering Team*

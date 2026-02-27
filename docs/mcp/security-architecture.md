@@ -1,8 +1,8 @@
 # Security Architecture
 
-> **SpecTree MCP Integration Security Model**
+> **Dispatcher MCP Integration Security Model**
 >
-> This document explains the security architecture for MCP (Model Context Protocol) integration with SpecTree, detailing the authentication flow, threat model, and security benefits of the API-based approach.
+> This document explains the security architecture for MCP (Model Context Protocol) integration with Dispatcher, detailing the authentication flow, threat model, and security benefits of the API-based approach.
 
 ---
 
@@ -20,14 +20,14 @@
 
 ## Executive Summary
 
-SpecTree has implemented a secure API-based authentication system for MCP integration, replacing direct database access with token-authenticated API requests. This architectural change provides:
+Dispatcher has implemented a secure API-based authentication system for MCP integration, replacing direct database access with token-authenticated API requests. This architectural change provides:
 
 - **Defense in depth** — Multiple security layers between external tools and data
 - **Separation of concerns** — MCP tools have no database access; all operations go through the API
 - **Auditability** — All requests are authenticated and can be logged
 - **Revocability** — Access can be instantly revoked by invalidating tokens
 
-This architecture ensures that AI assistants and automation tools can safely interact with SpecTree without exposing database credentials or allowing unrestricted data access.
+This architecture ensures that AI assistants and automation tools can safely interact with Dispatcher without exposing database credentials or allowing unrestricted data access.
 
 ---
 
@@ -95,7 +95,7 @@ Benefits:
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 
   1. User generates API token          2. Token configured              3. MCP sends request
-     in SpecTree UI                       in MCP settings                  with Bearer token
+     in Dispatcher UI                       in MCP settings                  with Bearer token
          │                                     │                                │
          ▼                                     ▼                                ▼
 ┌─────────────────┐                  ┌─────────────────┐              ┌─────────────────┐
@@ -129,7 +129,7 @@ Benefits:
 
 ### Step-by-Step Flow
 
-1. **Token Generation** — User creates an API token through the SpecTree web interface
+1. **Token Generation** — User creates an API token through the Dispatcher web interface
 2. **Secure Storage** — Token is SHA-256 hashed; only the hash is stored in the database
 3. **Configuration** — User configures MCP with the plaintext token (shown only once)
 4. **Request** — MCP sends API requests with `Authorization: Bearer st_xxx` header
@@ -164,7 +164,7 @@ API tokens use cryptographically secure random generation:
 |----------|-------|
 | Random bytes | 32 bytes (256 bits of entropy) |
 | Encoding | Base64URL (URL-safe, no padding) |
-| Prefix | `st_` (SpecTree identifier) |
+| Prefix | `st_` (Dispatcher identifier) |
 | Example | `st_K7xH2mPqR5vN8sT1wY4zA6bC9dE0fG3hI...` |
 
 ### Token Storage

@@ -1,6 +1,6 @@
 # Local Docker Deployment Guide
 
-Complete reference for setting up, configuring, and using SpecTree's local Docker deployment. This guide targets both human developers and AI agents who need to understand the full system.
+Complete reference for setting up, configuring, and using Dispatcher's local Docker deployment. This guide targets both human developers and AI agents who need to understand the full system.
 
 ---
 
@@ -39,7 +39,7 @@ Complete reference for setting up, configuring, and using SpecTree's local Docke
 
 ## Overview
 
-The local Docker deployment provides a **fully self-contained** SpecTree instance using:
+The local Docker deployment provides a **fully self-contained** Dispatcher instance using:
 
 - **SQLite** as the database (single file, no external server)
 - **Two containers**: API (Node.js/Fastify) and Web (nginx serving React)
@@ -99,9 +99,9 @@ The local Docker deployment creates **parallel artifacts** — it does not touch
 │   └───────────────┬───────────────┘                     │
 │                   │                                     │
 │   ┌───────────────▼───────────────┐                     │
-│   │  Named Volume: spectree-data  │                     │
+│   │  Named Volume: dispatcher-data  │                     │
 │   │  Mounted at /app/data/        │                     │
-│   │  - spectree.db (SQLite)       │                     │
+│   │  - dispatcher.db (SQLite)       │                     │
 │   │  - .seeded (sentinel file)    │                     │
 │   └───────────────────────────────┘                     │
 │                                                         │
@@ -125,7 +125,7 @@ The local Docker deployment creates **parallel artifacts** — it does not touch
 | **~2 GB disk** | For Docker images (first build) |
 | **Ports 80 and 3001** | Must be free on your machine |
 
-> **Node.js and pnpm are NOT required** to run SpecTree in Docker. You only need them for the convenience scripts (`pnpm docker:local:*`) or to run the MCP server on the host.
+> **Node.js and pnpm are NOT required** to run Dispatcher in Docker. You only need them for the convenience scripts (`pnpm docker:local:*`) or to run the MCP server on the host.
 
 ---
 
@@ -134,7 +134,7 @@ The local Docker deployment creates **parallel artifacts** — it does not touch
 ```bash
 # 1. Clone the repository
 git clone <repo-url>
-cd SpecTree
+cd Dispatcher
 
 # 2. Build and start everything
 docker-compose -f docker-compose.local.yml up -d --build
@@ -147,7 +147,7 @@ open http://localhost
 
 | Field | Value |
 |---|---|
-| Email | `admin@spectree.dev` |
+| Email | `admin@dispatcher.dev` |
 | Password | `Password123!` |
 
 ---
@@ -163,7 +163,7 @@ Multi-stage Docker build for the API with SQLite support.
 **Stage 1 — Builder:**
 1. Installs native build tools (`python3`, `make`, `g++`) required for `bcrypt`
 2. Runs `pnpm install --frozen-lockfile` for all dependencies
-3. Builds the `@spectree/shared` package first (API depends on it)
+3. Builds the `@dispatcher/shared` package first (API depends on it)
 4. Generates the **SQLite** Prisma client from `prisma/schema.prisma` (NOT `schema.sqlserver.prisma`)
 5. Compiles TypeScript using `tsconfig.docker.json` (includes seed scripts)
 6. Copies the generated Prisma client into the `dist/` output
@@ -214,7 +214,7 @@ Bash script that runs on every container start:
 
 ```
 1. mkdir -p /app/data        # Ensure volume mount point exists
-2. export DATABASE_URL=...   # Set to file:/app/data/spectree.db
+2. export DATABASE_URL=...   # Set to file:/app/data/dispatcher.db
 3. prisma db push            # Idempotent schema sync (safe every time)
 4. if [ ! -f .seeded ]       # First-boot check
      → node seed.js          #   Run seed script
@@ -243,7 +243,7 @@ Two services with no profile flags — `docker-compose up` starts everything:
 - Builds from `packages/api/Dockerfile.local` with repo root as build context
 - Exposes port `3001` to host
 - Health check: `wget --spider -q http://localhost:3001/api/health` every 10s
-- Named volume `spectree-data` mounted at `/app/data`
+- Named volume `dispatcher-data` mounted at `/app/data`
 - `start_period: 30s` allows time for schema push and seeding before health checks begin
 - Restart policy: `unless-stopped`
 
@@ -253,7 +253,7 @@ Two services with no profile flags — `docker-compose up` starts everything:
 - `depends_on: api` with `condition: service_healthy` — won't start until API is ready
 - Restart policy: `unless-stopped`
 
-**`spectree-data` volume:**
+**`dispatcher-data` volume:**
 - Docker named volume that persists SQLite database and sentinel file
 - Survives `docker-compose down` and `docker-compose restart`
 - Removed only by `docker-compose down -v`
@@ -271,7 +271,7 @@ Set in `docker-compose.local.yml` under the `api` service:
 | `NODE_ENV` | `production` | Runtime mode |
 | `PORT` | `3001` | API listen port |
 | `HOST` | `0.0.0.0` | API bind address (all interfaces for Docker) |
-| `DATABASE_URL` | `file:/app/data/spectree.db` | SQLite database location on the volume |
+| `DATABASE_URL` | `file:/app/data/dispatcher.db` | SQLite database location on the volume |
 | `JWT_SECRET` | `local-dev-jwt-secret-change-in-production` | JWT signing secret (fine for local use) |
 | `CORS_ORIGIN` | `http://localhost` | Allowed CORS origin (no port — web runs on 80) |
 
@@ -288,7 +288,7 @@ Set in `docker-compose.local.yml` under the `api` service:
 
 | Volume Name | Mount Path | Contents |
 |---|---|---|
-| `spectree-data` | `/app/data/` | `spectree.db` (SQLite) + `.seeded` (sentinel) |
+| `dispatcher-data` | `/app/data/` | `dispatcher.db` (SQLite) + `.seeded` (sentinel) |
 
 ---
 
@@ -301,7 +301,7 @@ On the very first start (or after `down -v`), the entrypoint:
 
 | Entity | Details |
 |---|---|
-| **Admin user** | `admin@spectree.dev` / `Password123!` (global admin) |
+| **Admin user** | `admin@dispatcher.dev` / `Password123!` (global admin) |
 | **Engineering team** | Key: `ENG`, with admin membership for the admin user |
 | **Workflow statuses** | Backlog, Todo, In Progress, Done, Canceled (for team and personal scope) |
 | **Personal scope** | Private workspace for the admin user |
@@ -353,8 +353,8 @@ The MCP server runs on the **host machine** (not inside Docker) and connects to 
 ### Option 1: Direct Run
 
 ```bash
-# From the SpecTree repo root
-pnpm --filter @spectree/mcp build
+# From the Dispatcher repo root
+pnpm --filter @dispatcher/mcp build
 API_TOKEN="st_your_token_here" API_BASE_URL="http://localhost:3001" node packages/mcp/dist/index.js
 ```
 
@@ -365,10 +365,10 @@ For Claude Code, GitHub Copilot, or other MCP-compatible tools:
 ```json
 {
   "mcpServers": {
-    "spectree": {
+    "dispatcher": {
       "type": "stdio",
       "command": "node",
-      "args": ["/path/to/SpecTree/packages/mcp/dist/index.js"],
+      "args": ["/path/to/Dispatcher/packages/mcp/dist/index.js"],
       "env": {
         "API_TOKEN": "st_your_token_here",
         "API_BASE_URL": "http://localhost:3001"
@@ -390,7 +390,7 @@ Or via the API:
 # 1. Get a JWT
 JWT=$(curl -s -X POST http://localhost:3001/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@spectree.dev","password":"Password123!"}' | jq -r '.accessToken')
+  -d '{"email":"admin@dispatcher.dev","password":"Password123!"}' | jq -r '.accessToken')
 
 # 2. Create an API token
 curl -X POST http://localhost:3001/api/v1/tokens \
@@ -574,7 +574,7 @@ The web container starts immediately, but the API needs 15–30 seconds for sche
 docker-compose -f docker-compose.local.yml logs -f api
 ```
 
-Look for `Starting SpecTree API...` — once you see that, the UI is ready.
+Look for `Starting Dispatcher API...` — once you see that, the UI is ready.
 
 ### Seed failures
 
@@ -646,8 +646,8 @@ docker-compose -f docker-compose.local.yml restart api
 docker-compose -f docker-compose.local.yml up -d --build api
 
 # Check disk usage of Docker volumes
-docker system df -v | grep spectree
+docker system df -v | grep dispatcher
 
 # Inspect the named volume
-docker volume inspect spectree_spectree-data
+docker volume inspect dispatcher_dispatcher-data
 ```

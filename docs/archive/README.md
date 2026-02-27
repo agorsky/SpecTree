@@ -1,4 +1,4 @@
-# SpecTree Documentation Archive
+# Dispatcher Documentation Archive
 
 > **Purpose:** This directory contains historical planning documents, strategy analyses, and proposals that have been completed or superseded.
 
@@ -42,7 +42,7 @@ These documents guided feature implementation and have been marked as completed:
 |----------|--------|----------------|-------|
 | [platform-improvements-plan-COMPLETED.md](./planning/platform-improvements-plan-COMPLETED.md) | ✅ Completed | Feb 2025 | All 5 epics implemented: MCP consolidation, SSE updates, test DB isolation, execution plan viz, entity changelog |
 | [template-enhancement-instructions-COMPLETED.md](./planning/template-enhancement-instructions-COMPLETED.md) | ✅ Completed | Feb 2025 | Template system enhanced with structured descriptions and complexity estimates |
-| [spectree-automation-tool-strategy.md](./planning/spectree-automation-tool-strategy.md) | 📜 Historical | Feb 2025 | Original 128KB strategy document for automation framework |
+| [dispatcher-automation-tool-strategy.md](./planning/dispatcher-automation-tool-strategy.md) | 📜 Historical | Feb 2025 | Original 128KB strategy document for automation framework |
 | [copilot-cli-automation-strategy.md](./planning/copilot-cli-automation-strategy.md) | 📜 Historical | Feb 2025 | Copilot CLI integration strategy and approach |
 | [automation-epic-prompts.md](./planning/automation-epic-prompts.md) | 📜 Historical | Feb 2025 | Templates for automation epic creation |
 | [ai-enhancement-proposals.md](./planning/ai-enhancement-proposals.md) | 📜 Historical | Various | Collection of AI enhancement proposals |
@@ -60,9 +60,9 @@ These documents captured technical analysis and decision-making:
 
 | Document | Decision Made | Date | Outcome |
 |----------|--------------|------|---------|
-| [analysis-spectree-mcp-vs-copilot-sdk.md](./analysis/analysis-spectree-mcp-vs-copilot-sdk.md) | MCP vs Copilot SDK | Feb 2025 | Chose MCP approach |
+| [analysis-dispatcher-mcp-vs-copilot-sdk.md](./analysis/analysis-dispatcher-mcp-vs-copilot-sdk.md) | MCP vs Copilot SDK | Feb 2025 | Chose MCP approach |
 | [ai-framework-compliance-analysis.md](./analysis/ai-framework-compliance-analysis.md) | AI instruction compliance | Feb 2025 | Led to instruction consolidation |
-| [platform-analysis-for-spectree-orchestrator.md](./analysis/platform-analysis-for-spectree-orchestrator.md) | Platform choice | Feb 2025 | Chose CLI + Web Dashboard |
+| [platform-analysis-for-dispatcher-orchestrator.md](./analysis/platform-analysis-for-dispatcher-orchestrator.md) | Platform choice | Feb 2025 | Chose CLI + Web Dashboard |
 
 ---
 

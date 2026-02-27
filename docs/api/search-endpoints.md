@@ -1,10 +1,10 @@
 # Search & Query API Endpoints
 
-This document describes the search and query endpoints for finding features and tasks in SpecTree.
+This document describes the search and query endpoints for finding features and tasks in Dispatcher.
 
 ## Overview
 
-SpecTree provides a unified search endpoint that can search across features, tasks, or both simultaneously. The search supports full-text search, filtering by status/assignee/epic, and date range queries.
+Dispatcher provides a unified search endpoint that can search across features, tasks, or both simultaneously. The search supports full-text search, filtering by status/assignee/epic, and date range queries.
 
 ## Authentication
 

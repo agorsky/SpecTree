@@ -1,10 +1,10 @@
 # Feature API Endpoints
 
-This document describes the API endpoints for managing features in SpecTree.
+This document describes the API endpoints for managing features in Dispatcher.
 
 ## Overview
 
-Features are the primary work items in SpecTree, similar to issues in other project management tools. Each feature belongs to an epic, has an auto-generated identifier (e.g., `ENG-42`), and can contain multiple tasks. Features support rich metadata including status, assignee, structured descriptions, AI context, code context, and progress tracking.
+Features are the primary work items in Dispatcher, similar to issues in other project management tools. Each feature belongs to an epic, has an auto-generated identifier (e.g., `ENG-42`), and can contain multiple tasks. Features support rich metadata including status, assignee, structured descriptions, AI context, code context, and progress tracking.
 
 ## Authentication
 

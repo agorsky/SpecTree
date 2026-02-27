@@ -1,9 +1,9 @@
 # Validation Checklists
 
 > **⚠️ DEPRECATION NOTICE:**  
-> The individual validation tools (`spectree__add_validation`, `spectree__list_validations`, `spectree__run_validation`, `spectree__run_all_validations`, `spectree__mark_manual_validated`, `spectree__remove_validation`, `spectree__reset_validations`) are **DEPRECATED**.  
+> The individual validation tools (`dispatcher__add_validation`, `dispatcher__list_validations`, `dispatcher__run_validation`, `dispatcher__run_all_validations`, `dispatcher__mark_manual_validated`, `dispatcher__remove_validation`, `dispatcher__reset_validations`) are **DEPRECATED**.  
 >  
-> **Use instead:** `spectree__manage_validations` with action-based routing:
+> **Use instead:** `dispatcher__manage_validations` with action-based routing:
 > - `action='add'` - Add validation check
 > - `action='list'` - List all validations
 > - `action='run'` - Run single validation
@@ -12,9 +12,9 @@
 > - `action='remove'` - Remove validation
 > - `action='reset'` - Reset all to pending
 >
-> **Or use:** `spectree__complete_task_with_validation` to validate and complete atomically.
+> **Or use:** `dispatcher__complete_task_with_validation` to validate and complete atomically.
 >
-> See [Tools Reference](./tools-reference.md#spectree__manage_validations) for complete documentation.
+> See [Tools Reference](./tools-reference.md#dispatcher__manage_validations) for complete documentation.
 
 Validation Checklists define executable acceptance criteria for tasks. They allow AI agents and developers to verify that work is truly "done" by running automated checks.
 
@@ -95,11 +95,11 @@ Requires human verification - cannot be auto-run.
 
 ### Adding Validations
 
-**`spectree__add_validation`** - Add a validation check to a task.
+**`dispatcher__add_validation`** - Add a validation check to a task.
 
 ```typescript
 // Add a command check
-await spectree__add_validation({
+await dispatcher__add_validation({
   taskId: "COM-123-1",
   type: "command",
   description: "Build succeeds",
@@ -107,7 +107,7 @@ await spectree__add_validation({
 });
 
 // Add a file exists check
-await spectree__add_validation({
+await dispatcher__add_validation({
   taskId: "COM-123-1",
   type: "file_exists",
   description: "New service file created",
@@ -115,7 +115,7 @@ await spectree__add_validation({
 });
 
 // Add a manual check
-await spectree__add_validation({
+await dispatcher__add_validation({
   taskId: "COM-123-1",
   type: "manual",
   description: "Reviewed by team lead"
@@ -124,10 +124,10 @@ await spectree__add_validation({
 
 ### Listing Validations
 
-**`spectree__list_validations`** - List all checks for a task with status summary.
+**`dispatcher__list_validations`** - List all checks for a task with status summary.
 
 ```typescript
-const result = await spectree__list_validations({
+const result = await dispatcher__list_validations({
   taskId: "COM-123-1"
 });
 
@@ -147,20 +147,20 @@ const result = await spectree__list_validations({
 
 ### Running Validations
 
-**`spectree__run_validation`** - Run a single validation check.
+**`dispatcher__run_validation`** - Run a single validation check.
 
 ```typescript
-const result = await spectree__run_validation({
+const result = await dispatcher__run_validation({
   taskId: "COM-123-1",
   checkId: "550e8400-e29b-41d4-a716-446655440000",
   workingDirectory: "/path/to/project"
 });
 ```
 
-**`spectree__run_all_validations`** - Run all automated checks.
+**`dispatcher__run_all_validations`** - Run all automated checks.
 
 ```typescript
-const result = await spectree__run_all_validations({
+const result = await dispatcher__run_all_validations({
   taskId: "COM-123-1",
   stopOnFailure: true,  // Stop after first failure
   workingDirectory: "/path/to/project"
@@ -180,10 +180,10 @@ const result = await spectree__run_all_validations({
 
 ### Manual Verification
 
-**`spectree__mark_manual_validated`** - Mark a manual check as passed.
+**`dispatcher__mark_manual_validated`** - Mark a manual check as passed.
 
 ```typescript
-await spectree__mark_manual_validated({
+await dispatcher__mark_manual_validated({
   taskId: "COM-123-1",
   checkId: "550e8400-e29b-41d4-a716-446655440000",
   notes: "Verified mobile layout looks correct"
@@ -192,19 +192,19 @@ await spectree__mark_manual_validated({
 
 ### Managing Validations
 
-**`spectree__remove_validation`** - Remove a validation check.
+**`dispatcher__remove_validation`** - Remove a validation check.
 
 ```typescript
-await spectree__remove_validation({
+await dispatcher__remove_validation({
   taskId: "COM-123-1",
   checkId: "550e8400-e29b-41d4-a716-446655440000"
 });
 ```
 
-**`spectree__reset_validations`** - Reset all checks to pending.
+**`dispatcher__reset_validations`** - Reset all checks to pending.
 
 ```typescript
-await spectree__reset_validations({
+await dispatcher__reset_validations({
   taskId: "COM-123-1"
 });
 ```
@@ -217,17 +217,17 @@ When starting a task, define validation checks as executable acceptance criteria
 
 ```typescript
 // Start work on task
-await spectree__start_work({ id: "COM-123-1", type: "task" });
+await dispatcher__start_work({ id: "COM-123-1", type: "task" });
 
 // Define what "done" looks like
-await spectree__add_validation({
+await dispatcher__add_validation({
   taskId: "COM-123-1",
   type: "test_passes",
   description: "New feature has tests",
   testCommand: "pnpm test --filter newFeature"
 });
 
-await spectree__add_validation({
+await dispatcher__add_validation({
   taskId: "COM-123-1",
   type: "command",
   description: "No type errors",
@@ -241,13 +241,13 @@ Before marking work complete, run all validations:
 
 ```typescript
 // Check if work is done
-const result = await spectree__run_all_validations({
+const result = await dispatcher__run_all_validations({
   taskId: "COM-123-1",
   workingDirectory: process.cwd()
 });
 
 if (result.allPassed) {
-  await spectree__complete_work({
+  await dispatcher__complete_work({
     id: "COM-123-1",
     type: "task",
     summary: "All validations passed"

@@ -1,16 +1,16 @@
 # AI Session Context
 
 > **⚠️ DEPRECATION NOTICE:**  
-> The individual AI context tools (`spectree__get_ai_context`, `spectree__set_ai_context`, `spectree__append_ai_note`) are **DEPRECATED**.  
+> The individual AI context tools (`dispatcher__get_ai_context`, `dispatcher__set_ai_context`, `dispatcher__append_ai_note`) are **DEPRECATED**.  
 >  
-> **Use instead:** `spectree__manage_ai_context` with action-based routing:
+> **Use instead:** `dispatcher__manage_ai_context` with action-based routing:
 > - `action='get_context'` - Retrieve AI context and notes
 > - `action='set_context'` - Replace entire context
 > - `action='append_note'` - Add a note
 >
-> See [Tools Reference](./tools-reference.md#spectree__manage_ai_context) for complete documentation.
+> See [Tools Reference](./tools-reference.md#dispatcher__manage_ai_context) for complete documentation.
 
-This guide explains how AI agents can use SpecTree's AI context features for cross-session continuity and knowledge transfer.
+This guide explains how AI agents can use Dispatcher's AI context features for cross-session continuity and knowledge transfer.
 
 ---
 
@@ -54,7 +54,7 @@ interface AiNote {
 
 ## MCP Tools
 
-### spectree__get_ai_context
+### dispatcher__get_ai_context
 
 Retrieve all AI context for a feature or task.
 
@@ -85,7 +85,7 @@ Retrieve all AI context for a feature or task.
 }
 ```
 
-### spectree__set_ai_context
+### dispatcher__set_ai_context
 
 Set or update the structured AI context field.
 
@@ -98,7 +98,7 @@ Set or update the structured AI context field.
 }
 ```
 
-### spectree__append_ai_note
+### dispatcher__append_ai_note
 
 Add a note to the AI notes array. Notes are append-only.
 
@@ -134,7 +134,7 @@ Choose the appropriate note type for each entry:
 
 1. **Always read context first:**
    ```json
-   spectree__get_ai_context({ "id": "COM-123", "type": "feature" })
+   dispatcher__get_ai_context({ "id": "COM-123", "type": "feature" })
    ```
 
 2. **Review notes for:**
@@ -163,7 +163,7 @@ Choose the appropriate note type for each entry:
 
 1. **Update structured context:**
    ```json
-   spectree__set_ai_context({
+   dispatcher__set_ai_context({
      "id": "COM-123",
      "type": "feature",
      "context": "## Status\nPartially complete\n\n## Completed\n- Database schema\n- API routes\n\n## Remaining\n- Frontend components\n- Tests",
@@ -173,7 +173,7 @@ Choose the appropriate note type for each entry:
 
 2. **Leave a next-step note:**
    ```json
-   spectree__append_ai_note({
+   dispatcher__append_ai_note({
      "id": "COM-123",
      "type": "feature",
      "noteType": "next-step",

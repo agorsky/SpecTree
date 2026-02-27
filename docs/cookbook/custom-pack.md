@@ -9,9 +9,9 @@ Build organization-specific skill packs with custom agents, skills, and instruct
 ## Prerequisites
 
 - **Understanding of Skill Pack structure** — Read [Architecture Overview](../architecture/skill-packs.md)
-- **SpecTree CLI installed** — `spectree --version`
+- **Dispatcher CLI installed** — `dispatcher --version`
 - **Existing agents/skills** to package (or create new ones)
-- **Access to SpecTree registry** (for publishing)
+- **Access to Dispatcher registry** (for publishing)
 
 **Skills needed:**
 - Writing Markdown documentation
@@ -53,7 +53,7 @@ Contents:
   - Agent: @acme-deployer (handles deployment workflow)
   - Skill: deployment-checklist (step-by-step guide)
   - Instructions: acme-conventions (coding standards)
-Dependencies: @spectree/core (for MCP tools)
+Dependencies: @dispatcher/core (for MCP tools)
 ```
 
 ### Step 2: Create Pack Directory
@@ -125,7 +125,7 @@ touch pack.json
     }
   ],
   "dependencies": {
-    "@spectree/core": "^1.0.0"
+    "@dispatcher/core": "^1.0.0"
   },
   "keywords": [
     "deployment",
@@ -163,7 +163,7 @@ Deploy applications to Acme's Kubernetes clusters following company standards:
 ## Available Tools
 
 You have access to:
-- SpecTree MCP tools (via @spectree/core dependency)
+- Dispatcher MCP tools (via @dispatcher/core dependency)
 - Acme deployment conventions (instructions/acme-conventions.md)
 - Deployment checklist (skills/deployment-checklist.md)
 
@@ -192,7 +192,7 @@ When asked to deploy:
    - Run smoke tests
 
 5. **Document:**
-   - Log deployment in SpecTree
+   - Log deployment in Dispatcher
    - Update deployment tracker
    - Notify team
 
@@ -212,7 +212,7 @@ You should:
 - **NEVER deploy to production without explicit confirmation**
 - Always run pre-deployment checks
 - Fail fast on errors, don't retry blindly
-- Log all actions in SpecTree for audit trail
+- Log all actions in Dispatcher for audit trail
 
 ## Error Handling
 
@@ -220,7 +220,7 @@ If deployment fails:
 1. Capture error details
 2. Rollback if possible
 3. Report to user with clear explanation
-4. Log incident in SpecTree
+4. Log incident in Dispatcher
 ```
 
 ### Step 5: Create Skill
@@ -294,7 +294,7 @@ curl https://<app-name>.<env>.acme.com/health
 
 ### 5. Update Documentation
 
-- Log deployment in SpecTree: `@spectree log progress`
+- Log deployment in Dispatcher: `@dispatcher log progress`
 - Update deployment tracker spreadsheet
 - Notify team in Slack
 
@@ -448,7 +448,7 @@ Standardized deployment workflows for Acme Corp projects.
 ## Installation
 
 \`\`\`bash
-spectree install @acme/deployment
+dispatcher install @acme/deployment
 \`\`\`
 
 ## Usage
@@ -465,7 +465,7 @@ Agents can reference the checklist during deployments.
 
 ## Requirements
 
-- @spectree/core@^1.0.0
+- @dispatcher/core@^1.0.0
 
 ## Support
 
@@ -478,13 +478,13 @@ Install your pack locally for testing:
 
 ```bash
 # From pack directory
-spectree install .
+dispatcher install .
 ```
 
 **Verify installation:**
 
 ```bash
-spectree list
+dispatcher list
 ```
 
 Should show `@acme/deployment@1.0.0` installed.
@@ -502,7 +502,7 @@ Should show help text from your agent.
 Use CLI to check for issues:
 
 ```bash
-spectree validate .
+dispatcher validate .
 ```
 
 **Checks:**
@@ -518,7 +518,7 @@ spectree validate .
 Once tested, publish:
 
 ```bash
-spectree publish .
+dispatcher publish .
 ```
 
 **What happens:**
@@ -547,10 +547,10 @@ Registering...
 🎉 Successfully published!
 
 Install with:
-  spectree install @acme/deployment
+  dispatcher install @acme/deployment
 
 View in registry:
-  https://spectree.dev/packs/@acme/deployment
+  https://dispatcher.dev/packs/@acme/deployment
 ```
 
 ---
@@ -570,7 +570,7 @@ After making changes:
 
 3. Publish new version:
    ```bash
-   spectree publish .
+   dispatcher publish .
    ```
 
 ### Semantic Versioning
@@ -605,7 +605,7 @@ Test before stable release:
 
 ### Missing Dependencies
 
-**Problem:** Agent uses SpecTree tools but `@spectree/core` not in dependencies  
+**Problem:** Agent uses Dispatcher tools but `@dispatcher/core` not in dependencies  
 **Solution:** Add all required packs to `dependencies`
 
 ### Circular Dependencies
@@ -653,7 +653,7 @@ Show concrete usage examples in documentation.
 After creating and publishing:
 
 ✅ Custom pack published to registry  
-✅ Pack installable via `spectree install @your-org/pack-name`  
+✅ Pack installable via `dispatcher install @your-org/pack-name`  
 ✅ Agents/skills work in GitHub Copilot  
 ✅ Team can use your custom workflows  
 

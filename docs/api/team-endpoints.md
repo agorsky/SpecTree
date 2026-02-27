@@ -1,6 +1,6 @@
 # Team API Endpoints
 
-This document describes the API endpoints for managing teams in SpecTree.
+This document describes the API endpoints for managing teams in Dispatcher.
 
 ## Overview
 

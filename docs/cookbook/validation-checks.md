@@ -9,12 +9,12 @@ Validation checks are executable acceptance criteria that verify tasks are compl
 ## Prerequisites
 
 - **Epic with tasks created** — See [Creating Your First Epic](./first-epic.md)
-- **SpecTree MCP configured** — Validation tools available
+- **Dispatcher MCP configured** — Validation tools available
 - **Tasks with acceptance criteria** — Define what "done" means
 
 **Verify MCP tools:**
 ```
-@spectree help validations
+@dispatcher help validations
 ```
 
 ---
@@ -71,7 +71,7 @@ Add checks that verify each acceptance criterion:
 Verify the route file was created:
 
 ```
-@spectree add validation to task ENG-42-1-3 type file_exists with description "Route file exists" and filePath "packages/api/src/routes/preferences.ts"
+@dispatcher add validation to task ENG-42-1-3 type file_exists with description "Route file exists" and filePath "packages/api/src/routes/preferences.ts"
 ```
 
 #### Check 2: Test Passes
@@ -79,7 +79,7 @@ Verify the route file was created:
 Verify unit tests run successfully:
 
 ```
-@spectree add validation to task ENG-42-1-3 type test_passes with description "Unit tests pass" and testCommand "pnpm --filter @spectree/api test --run preferences"
+@dispatcher add validation to task ENG-42-1-3 type test_passes with description "Unit tests pass" and testCommand "pnpm --filter @dispatcher/api test --run preferences"
 ```
 
 #### Check 3: File Contains Pattern
@@ -87,7 +87,7 @@ Verify unit tests run successfully:
 Verify the route handler is exported:
 
 ```
-@spectree add validation to task ENG-42-1-3 type file_contains with description "Route handler exported" and filePath "packages/api/src/routes/preferences.ts" and searchPattern "export default function preferencesRoutes"
+@dispatcher add validation to task ENG-42-1-3 type file_contains with description "Route handler exported" and filePath "packages/api/src/routes/preferences.ts" and searchPattern "export default function preferencesRoutes"
 ```
 
 #### Check 4: Linting Passes
@@ -95,7 +95,7 @@ Verify the route handler is exported:
 Verify code follows style guidelines:
 
 ```
-@spectree add validation to task ENG-42-1-3 type command with description "Linting passes" and command "pnpm --filter @spectree/api lint"
+@dispatcher add validation to task ENG-42-1-3 type command with description "Linting passes" and command "pnpm --filter @dispatcher/api lint"
 ```
 
 ### Step 3: Review Validation Checks
@@ -103,7 +103,7 @@ Verify code follows style guidelines:
 List all checks for the task:
 
 ```
-@spectree list validations for task ENG-42-1-3
+@dispatcher list validations for task ENG-42-1-3
 ```
 
 **Expected output:**
@@ -115,14 +115,14 @@ Validation Checks for ENG-42-1-3:
    File: packages/api/src/routes/preferences.ts
 
 2. ⏳ test_passes: Unit tests pass
-   Command: pnpm --filter @spectree/api test --run preferences
+   Command: pnpm --filter @dispatcher/api test --run preferences
 
 3. ⏳ file_contains: Route handler exported
    File: packages/api/src/routes/preferences.ts
    Pattern: export default function preferencesRoutes
 
 4. ⏳ command: Linting passes
-   Command: pnpm --filter @spectree/api lint
+   Command: pnpm --filter @dispatcher/api lint
 
 Status: 1 passed, 3 pending
 ```
@@ -132,12 +132,12 @@ Status: 1 passed, 3 pending
 After implementing the task, run all checks:
 
 ```
-@spectree run all validations for task ENG-42-1-3
+@dispatcher run all validations for task ENG-42-1-3
 ```
 
 **What happens:**
 
-SpecTree executes each check in order:
+Dispatcher executes each check in order:
 1. Checks if file exists ✅
 2. Runs test command ✅
 3. Searches file for pattern ✅
@@ -187,13 +187,13 @@ If checks fail:
 **Re-run a specific check:**
 
 ```
-@spectree run validation <checkId> for task ENG-42-1-3
+@dispatcher run validation <checkId> for task ENG-42-1-3
 ```
 
 **Reset all checks to pending:**
 
 ```
-@spectree reset validations for task ENG-42-1-3
+@dispatcher reset validations for task ENG-42-1-3
 ```
 
 ### Step 6: Complete Task with Validation
@@ -201,7 +201,7 @@ If checks fail:
 Once all checks pass, complete the task:
 
 ```
-@spectree complete task ENG-42-1-3 with validation
+@dispatcher complete task ENG-42-1-3 with validation
 ```
 
 **What happens:**
@@ -219,7 +219,7 @@ Once all checks pass, complete the task:
 Set a timeout (default: 30 seconds, max: 5 minutes):
 
 ```
-@spectree add validation type command with description "Build succeeds" and command "pnpm build" and timeoutMs 120000
+@dispatcher add validation type command with description "Build succeeds" and command "pnpm build" and timeoutMs 120000
 ```
 
 ### Expected Exit Code
@@ -227,7 +227,7 @@ Set a timeout (default: 30 seconds, max: 5 minutes):
 Expect non-zero exit codes:
 
 ```
-@spectree add validation type command with description "Grep finds pattern" and command "grep 'TODO' src/**/*.ts" and expectedExitCode 1
+@dispatcher add validation type command with description "Grep finds pattern" and command "grep 'TODO' src/**/*.ts" and expectedExitCode 1
 ```
 
 ### Multiple File Checks
@@ -235,9 +235,9 @@ Expect non-zero exit codes:
 Verify multiple files exist:
 
 ```
-@spectree add validation type file_exists with description "Model file exists" and filePath "packages/api/prisma/schema.prisma"
+@dispatcher add validation type file_exists with description "Model file exists" and filePath "packages/api/prisma/schema.prisma"
 
-@spectree add validation type file_contains with description "UserPreferences model defined" and filePath "packages/api/prisma/schema.prisma" and searchPattern "model UserPreferences"
+@dispatcher add validation type file_contains with description "UserPreferences model defined" and filePath "packages/api/prisma/schema.prisma" and searchPattern "model UserPreferences"
 ```
 
 ### Manual Verification
@@ -245,13 +245,13 @@ Verify multiple files exist:
 For UI/visual checks:
 
 ```
-@spectree add validation type manual with description "Preferences page displays correctly in browser"
+@dispatcher add validation type manual with description "Preferences page displays correctly in browser"
 ```
 
 **To complete:**
 
 ```
-@spectree mark manual validation <checkId> for task ENG-42-1-3 validated with notes "Verified in Chrome, Firefox, Safari"
+@dispatcher mark manual validation <checkId> for task ENG-42-1-3 validated with notes "Verified in Chrome, Firefox, Safari"
 ```
 
 ---
@@ -277,7 +277,7 @@ For UI/visual checks:
 **Solution:** Specify `workingDirectory` parameter:
 
 ```
-@spectree add validation type test_passes with testCommand "pnpm test" and workingDirectory "/Users/you/project"
+@dispatcher add validation type test_passes with testCommand "pnpm test" and workingDirectory "/Users/you/project"
 ```
 
 ### Regex Pattern Doesn't Match

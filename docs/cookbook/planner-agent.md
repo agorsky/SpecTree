@@ -1,6 +1,6 @@
 # Using the Planner Agent
 
-The planner agent decomposes natural language requirements into structured SpecTree epics with features, tasks, execution metadata, and AI instructions. This guide shows you how to use it effectively.
+The planner agent decomposes natural language requirements into structured Dispatcher epics with features, tasks, execution metadata, and AI instructions. This guide shows you how to use it effectively.
 
 **Time Estimate:** ~15 minutes
 
@@ -8,9 +8,9 @@ The planner agent decomposes natural language requirements into structured SpecT
 
 ## Prerequisites
 
-- **Planner agent installed:** Run `spectree install @spectree/planning` or `@spectree/full`
-- **SpecTree running:** API at http://localhost:3001
-- **GitHub Copilot configured** with SpecTree MCP server
+- **Planner agent installed:** Run `dispatcher install @dispatcher/planning` or `@dispatcher/full`
+- **Dispatcher running:** API at http://localhost:3001
+- **GitHub Copilot configured** with Dispatcher MCP server
 - **A requirement to plan** — Can be a feature description, user story, or technical spec
 
 **Verify planner is available:**
@@ -28,7 +28,7 @@ The planner agent:
 2. **Decomposes the requirement** — Breaks it into features and tasks
 3. **Adds execution metadata** — Sets order, dependencies, complexity
 4. **Generates AI instructions** — Writes implementation guidance for each task
-5. **Creates the epic** — Stores everything in SpecTree
+5. **Creates the epic** — Stores everything in Dispatcher
 
 ---
 
@@ -122,7 +122,7 @@ The planner will revise and ask again.
 
 ### Step 4: Planner Creates the Epic
 
-Once confirmed, the planner creates everything in SpecTree:
+Once confirmed, the planner creates everything in Dispatcher:
 
 ```
 ✅ Created epic ENG-43: Notification System
@@ -134,7 +134,7 @@ Once confirmed, the planner creates everything in SpecTree:
 Epic ready for review: http://localhost:5173/epics/ENG-43
 ```
 
-### Step 5: Review in SpecTree UI
+### Step 5: Review in Dispatcher UI
 
 Open the epic in the web UI:
 
@@ -155,7 +155,7 @@ You can manually adjust:
 **Using MCP tools:**
 
 ```
-@spectree update task ENG-43-1-1 with description "More detailed task description here"
+@dispatcher update task ENG-43-1-1 with description "More detailed task description here"
 ```
 
 **Using UI:**
@@ -217,7 +217,7 @@ Provide additional context by referencing files:
 ### Wrong Execution Order
 
 **Problem:** Dependencies are incorrect  
-**Solution:** Manually adjust via `@spectree set execution metadata` or in the UI
+**Solution:** Manually adjust via `@dispatcher set execution metadata` or in the UI
 
 ### Planner Doesn't Understand Requirement
 
@@ -262,7 +262,7 @@ After successful planning:
 
 ✅ How to invoke the planner agent with requirements  
 ✅ Reviewing and confirming epic structures  
-✅ Refining plans in SpecTree UI  
+✅ Refining plans in Dispatcher UI  
 ✅ Best practices for writing clear requirements  
 
 **Pro Tip:** The planner learns from your codebase. The more consistent your code patterns, the better its suggestions.

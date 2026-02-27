@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The Identity & Collaboration vNext project transformed SpecTree from an "everyone sees everything" model to a proper identity system with:
+The Identity & Collaboration vNext project transformed Dispatcher from an "everyone sees everything" model to a proper identity system with:
 
 1. **Personal Scopes** - Each user has a private container for personal work
 2. **Invite-Only Teams** - Users must be explicitly added to teams (no auto-join)
@@ -28,7 +28,7 @@ The Identity & Collaboration vNext project transformed SpecTree from an "everyon
 
 ## Design Reference
 
-**Note:** The original design specification `docs/DESIGN-REFERENCES/spectree-vnext-identity-collaboration-migration.md` was used during implementation but is no longer maintained. This document serves as the canonical reference for the implemented identity and collaboration system.
+**Note:** The original design specification `docs/DESIGN-REFERENCES/dispatcher-vnext-identity-collaboration-migration.md` was used during implementation but is no longer maintained. This document serves as the canonical reference for the implemented identity and collaboration system.
 
 ---
 
@@ -286,10 +286,10 @@ if (membership.role === "admin") {
 
 | Tool | Description |
 |------|-------------|
-| `spectree__get_personal_scope` | Get user's personal scope info |
-| `spectree__list_personal_projects` | List personal projects |
-| `spectree__create_personal_project` | Create a personal project |
-| `spectree__list_personal_statuses` | List personal statuses |
+| `dispatcher__get_personal_scope` | Get user's personal scope info |
+| `dispatcher__list_personal_projects` | List personal projects |
+| `dispatcher__create_personal_project` | Create a personal project |
+| `dispatcher__list_personal_statuses` | List personal statuses |
 
 ### API Client Updates
 
@@ -482,7 +482,7 @@ packages/mcp/src/tools/index.ts                      # Registers personal tools
 
 ### Issue: Personal projects not showing in MCP
 **Cause:** API token doesn't have access or wrong endpoint  
-**Solution:** Use `spectree__list_personal_projects` tool, ensure valid API token
+**Solution:** Use `dispatcher__list_personal_projects` tool, ensure valid API token
 
 ### Issue: 404 on /me/scope endpoint
 **Cause:** User not authenticated or invalid token  

@@ -1,6 +1,6 @@
 # Running Orchestrated Implementation
 
-The SpecTree orchestrator executes epics automatically using parallel AI agents. This guide shows you how to run orchestrated implementation, monitor progress, and handle issues.
+The Dispatcher orchestrator executes epics automatically using parallel AI agents. This guide shows you how to run orchestrated implementation, monitor progress, and handle issues.
 
 **Time Estimate:** ~30 minutes (for your first orchestration)
 
@@ -8,12 +8,12 @@ The SpecTree orchestrator executes epics automatically using parallel AI agents.
 
 ## Prerequisites
 
-- **Orchestrator installed:** `spectree install @spectree/orchestrator` or `@spectree/full`
+- **Orchestrator installed:** `dispatcher install @dispatcher/orchestrator` or `@dispatcher/full`
 - **Epic ready for execution:**
   - Features with execution order set
   - Tasks with structured descriptions and AI instructions
   - Validation checks defined (optional but recommended)
-- **SpecTree API running:** http://localhost:3001
+- **Dispatcher API running:** http://localhost:3001
 - **GitHub Copilot CLI available:** `copilot --version`
 
 **Verify orchestrator is ready:**
@@ -30,7 +30,7 @@ The orchestrator:
 1. **Loads the epic** — Retrieves features, tasks, dependencies
 2. **Creates execution plan** — Groups features into phases based on dependencies
 3. **Spawns worker agents** — One agent per feature (parallel execution)
-4. **Monitors progress** — Tracks task completion via SpecTree MCP
+4. **Monitors progress** — Tracks task completion via Dispatcher MCP
 5. **Runs validation** — Verifies acceptance criteria for each task
 6. **Handles failures** — Retries or marks blockers
 7. **Reports results** — Summarizes what was completed
@@ -70,7 +70,7 @@ Phase 3: Final features
 Verify the epic is ready:
 
 ```
-@spectree get progress summary for epic ENG-42
+@dispatcher get progress summary for epic ENG-42
 ```
 
 **Check for:**
@@ -83,10 +83,10 @@ Verify the epic is ready:
 
 ```
 # Set missing execution order
-@spectree set execution metadata for feature ENG-42-1 with executionOrder 1
+@dispatcher set execution metadata for feature ENG-42-1 with executionOrder 1
 
 # Add missing AI instructions
-@spectree set structured description for task ENG-42-1-1 with aiInstructions "..."
+@dispatcher set structured description for task ENG-42-1-1 with aiInstructions "..."
 ```
 
 ### Step 2: Start a Session
@@ -98,7 +98,7 @@ Begin an orchestration session:
 ```
 
 **What happens:**
-- Creates session record in SpecTree
+- Creates session record in Dispatcher
 - Retrieves epic structure and execution plan
 - Shows phases and feature grouping
 - Confirms before starting execution
@@ -153,7 +153,7 @@ While orchestration runs, monitor in real-time:
 
 **In terminal:** Watch the live output
 
-**In SpecTree UI:** 
+**In Dispatcher UI:** 
 1. Open http://localhost:5173/epics/ENG-42
 2. See tasks moving from "Backlog" → "In Progress" → "Done"
 3. View AI notes and progress updates
@@ -161,7 +161,7 @@ While orchestration runs, monitor in real-time:
 **Using MCP:**
 
 ```
-@spectree get progress summary for epic ENG-42
+@dispatcher get progress summary for epic ENG-42
 ```
 
 ### Step 5: Review Phase Completion
@@ -200,7 +200,7 @@ Orchestrator pausing Phase 1...
 
 1. **Fix manually and resume:**
    - Fix the failing tests
-   - Run `@spectree run validations for task ENG-42-1-3`
+   - Run `@dispatcher run validations for task ENG-42-1-3`
    - Tell orchestrator to continue: `@orchestrator resume`
 
 2. **Skip the task:**
@@ -256,7 +256,7 @@ After orchestration:
 
 2. **Review modified files:**
    ```
-   @spectree get code context for feature ENG-42-1
+   @dispatcher get code context for feature ENG-42-1
    ```
 
 3. **Run integration tests:**
@@ -335,7 +335,7 @@ Useful for debugging or partial re-runs.
 **Solution:** Remove circular dependencies:
 
 ```
-@spectree set execution metadata for feature ENG-42-2 with dependencies []
+@dispatcher set execution metadata for feature ENG-42-2 with dependencies []
 ```
 
 ### Worker Agent Timeout
@@ -373,7 +373,7 @@ Helps the orchestrator plan and report accurately.
 Before orchestration, manually run validation checks:
 
 ```
-@spectree run all validations for task ENG-42-1-1
+@dispatcher run all validations for task ENG-42-1-1
 ```
 
 Fix any issues before automatic execution.

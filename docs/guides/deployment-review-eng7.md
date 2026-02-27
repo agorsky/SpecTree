@@ -1,4 +1,4 @@
-# SpecTree Documentation & Infrastructure Review - ENG-7
+# Dispatcher Documentation & Infrastructure Review - ENG-7
 
 **Review Date:** 2026-02-10  
 **Reviewed By:** AI Agent  
@@ -46,7 +46,7 @@ git log --all --full-history -- infra/.env.azure  # Confirmed: NO history
 ```bash
 SQL_ADMIN_LOGIN=sqladmin
 SQL_ADMIN_PASSWORD=<SQL_ADMIN_PASSWORD>           # REAL PASSWORD (not shown here)
-SQL_APP_USER_LOGIN=spectree_app
+SQL_APP_USER_LOGIN=dispatcher_app
 SQL_APP_USER_PASSWORD=<SQL_APP_USER_PASSWORD>     # REAL PASSWORD (not shown here)
 AZURE_AD_OBJECT_ID=<AZURE_AD_OBJECT_ID>
 AZURE_AD_EMAIL=<AZURE_AD_EMAIL>
@@ -74,11 +74,11 @@ AZURE_AD_EMAIL=<AZURE_AD_EMAIL>
 
 **Verified Sections:**
 - ✅ **Resource naming matches Bicep templates:**
-  - Resource Group: `rg-spectree-dev` ✓
-  - Container Registry: `acrspectreedev` ✓
-  - SQL Server: `sql-spectree-dev` ✓
-  - Container Apps: `ca-spectree-dev`, `ca-spectree-web-dev` ✓
-  - Key Vault: `kv-spectree-dev` ✓
+  - Resource Group: `rg-dispatcher-dev` ✓
+  - Container Registry: `acrdispatcherdev` ✓
+  - SQL Server: `sql-dispatcher-dev` ✓
+  - Container Apps: `ca-dispatcher-dev`, `ca-dispatcher-web-dev` ✓
+  - Key Vault: `kv-dispatcher-dev` ✓
 
 - ✅ **Container Apps secret pattern documented correctly:**
   - Uses `@secure()` parameters ✓
@@ -115,10 +115,10 @@ AZURE_AD_EMAIL=<AZURE_AD_EMAIL>
   - Workflow has `permissions: id-token: write` ✓
 
 - ✅ **Resource Names:**
-  - ACR_NAME: `acrspectreedev` ✓
-  - RESOURCE_GROUP: `rg-spectree-dev` ✓
-  - API_CONTAINER_APP: `ca-spectree-dev` ✓
-  - WEB_CONTAINER_APP: `ca-spectree-web-dev` ✓
+  - ACR_NAME: `acrdispatcherdev` ✓
+  - RESOURCE_GROUP: `rg-dispatcher-dev` ✓
+  - API_CONTAINER_APP: `ca-dispatcher-dev` ✓
+  - WEB_CONTAINER_APP: `ca-dispatcher-web-dev` ✓
 
 - ✅ **Build Process:**
   - API: `packages/api/Dockerfile.azure` ✓
@@ -213,7 +213,7 @@ const databaseUrl = await getSecret('DATABASE_URL');
 **Verified:**
 - ✅ API service on port 3001 ✓
 - ✅ Web service on port 80 ✓
-- ✅ SQLite for local dev: `DATABASE_URL=file:/app/data/spectree.db` ✓
+- ✅ SQLite for local dev: `DATABASE_URL=file:/app/data/dispatcher.db` ✓
 - ✅ Profiles: `full` for both services ✓
 - ✅ CORS origin: `http://localhost:5173` ✓
 
@@ -340,7 +340,7 @@ const databaseUrl = await getSecret('DATABASE_URL');
 
 **All acceptance criteria met.** ✅
 
-The SpecTree deployment and infrastructure documentation is **accurate, comprehensive, and secure**. No credentials were found in tracked files. The single security concern (`infra/.env.azure`) is properly mitigated by `.gitignore` and is now documented in `infra/SECURITY.md`.
+The Dispatcher deployment and infrastructure documentation is **accurate, comprehensive, and secure**. No credentials were found in tracked files. The single security concern (`infra/.env.azure`) is properly mitigated by `.gitignore` and is now documented in `infra/SECURITY.md`.
 
 All implementation patterns described in documentation are correctly implemented in the codebase:
 - Bicep templates match documented architecture

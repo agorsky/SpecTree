@@ -1,6 +1,6 @@
 # Secrets Provider Configuration
 
-SpecTree supports pluggable secrets providers for secure secret management.
+Dispatcher supports pluggable secrets providers for secure secret management.
 
 ## Available Providers
 
@@ -50,7 +50,7 @@ When using Azure Key Vault, secret names are automatically mapped:
 ```bash
 # Using Azure CLI
 az keyvault create \
-  --name kv-spectree-dev \
+  --name kv-dispatcher-dev \
   --resource-group your-resource-group \
   --location eastus \
   --sku standard
@@ -87,7 +87,7 @@ az role assignment create \
 ```bash
 # Add JWT secret
 az keyvault secret set \
-  --vault-name kv-spectree-dev \
+  --vault-name kv-dispatcher-dev \
   --name JWT-SECRET \
   --value "your-secure-jwt-secret"
 ```
@@ -156,6 +156,6 @@ The provider defaults to environment variables, so existing tests continue to wo
 
 ```bash
 SECRETS_PROVIDER=azure-keyvault \
-AZURE_KEYVAULT_URL=https://kv-spectree-dev.vault.azure.net \
+AZURE_KEYVAULT_URL=https://kv-dispatcher-dev.vault.azure.net \
 npm run dev
 ```

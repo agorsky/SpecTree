@@ -1,4 +1,4 @@
-# SpecTree Automation Tool — Agent Prompts Runbook
+# Dispatcher Automation Tool — Agent Prompts Runbook
 
 Epic ID: `88cec40c-0ab4-4a6e-afba-ac01f9113b30`
 
@@ -22,14 +22,14 @@ Phase 5:  Terminal A → ENG-22                        (final validation)
 - [ ] Review code written by each agent
 - [ ] Run tests (`pnpm test` in affected packages)
 - [ ] Commit the work (`/commit` or manual)
-- [ ] Confirm SpecTree feature statuses are updated to "Done"
+- [ ] Confirm Dispatcher feature statuses are updated to "Done"
 - [ ] Check for any issues before starting next phase
 
 ## MCP Requirement
 
 Every prompt includes an MCP connectivity check as the very first step. If the
-agent cannot call `spectree__list_teams`, it will stop immediately rather than
-attempting to implement code without SpecTree tracking. Make sure the SpecTree
+agent cannot call `dispatcher__list_teams`, it will stop immediately rather than
+attempting to implement code without Dispatcher tracking. Make sure the Dispatcher
 API is running (`cd packages/api && pnpm dev`) before starting any prompt.
 
 ---
@@ -42,29 +42,29 @@ API is running (`cd packages/api && pnpm dev`) before starting any prompt.
 
 ```
 CRITICAL — MCP CONNECTIVITY CHECK:
-Before doing ANYTHING else, call spectree__list_teams to verify SpecTree MCP
+Before doing ANYTHING else, call dispatcher__list_teams to verify Dispatcher MCP
 is connected. If this call fails or the tool is not available, STOP IMMEDIATELY
-and tell me: "SpecTree MCP is not connected. Cannot proceed."
+and tell me: "Dispatcher MCP is not connected. Cannot proceed."
 Do NOT attempt to implement anything without MCP access.
 
-BRANCH CHECK: You must be on branch "feature/spectree-automation-tool".
+BRANCH CHECK: You must be on branch "feature/dispatcher-automation-tool".
 Run: git branch --show-current
-If you are on a different branch, run: git checkout feature/spectree-automation-tool
+If you are on a different branch, run: git checkout feature/dispatcher-automation-tool
 Do NOT create new branches.
 
-You are implementing a feature from the "SpecTree Automation Tool" epic
+You are implementing a feature from the "Dispatcher Automation Tool" epic
 (ID: 88cec40c-0ab4-4a6e-afba-ac01f9113b30).
 
 YOUR TASK: Implement feature ENG-13 (MCP Stability Fix & Re-enablement).
 
 BEFORE YOU START:
-1. Call spectree__get_feature with identifier "ENG-13" to read the full description,
+1. Call dispatcher__get_feature with identifier "ENG-13" to read the full description,
    AI Instructions, and Acceptance Criteria
-2. Call spectree__get_structured_description for ENG-13 (type: feature) to see
+2. Call dispatcher__get_structured_description for ENG-13 (type: feature) to see
    detailed acceptance criteria and files involved
-3. Read docs/spectree-automation-tool-strategy.md Section 8 for the detailed
+3. Read docs/dispatcher-automation-tool-strategy.md Section 8 for the detailed
    task breakdown (Tasks 1.1 through 1.4)
-4. Set ENG-13 status to "In Progress" using spectree__update_feature with
+4. Set ENG-13 status to "In Progress" using dispatcher__update_feature with
    statusId: "24b55d5a-ab41-4b22-a6dd-8b62c127eabe"
 
 SCOPE — Only modify these files:
@@ -82,7 +82,7 @@ IMPLEMENTATION GUIDANCE:
 
 WHEN COMPLETE:
 1. Verify ALL acceptance criteria from the feature description are met
-2. Set ENG-13 status to "Done" using spectree__update_feature with
+2. Set ENG-13 status to "Done" using dispatcher__update_feature with
    statusId: "d3cd5620-f550-4603-a394-fd53f172d04b"
 3. Summarize what you changed and any issues encountered
 
@@ -103,29 +103,29 @@ Do NOT move to other features. Focus only on ENG-13.
 
 ```
 CRITICAL — MCP CONNECTIVITY CHECK:
-Before doing ANYTHING else, call spectree__list_teams to verify SpecTree MCP
+Before doing ANYTHING else, call dispatcher__list_teams to verify Dispatcher MCP
 is connected. If this call fails or the tool is not available, STOP IMMEDIATELY
-and tell me: "SpecTree MCP is not connected. Cannot proceed."
+and tell me: "Dispatcher MCP is not connected. Cannot proceed."
 Do NOT attempt to implement anything without MCP access.
 
-BRANCH CHECK: You must be on branch "feature/spectree-automation-tool".
+BRANCH CHECK: You must be on branch "feature/dispatcher-automation-tool".
 Run: git branch --show-current
-If you are on a different branch, run: git checkout feature/spectree-automation-tool
+If you are on a different branch, run: git checkout feature/dispatcher-automation-tool
 Do NOT create new branches.
 
-You are implementing a feature from the "SpecTree Automation Tool" epic
+You are implementing a feature from the "Dispatcher Automation Tool" epic
 (ID: 88cec40c-0ab4-4a6e-afba-ac01f9113b30).
 
 YOUR TASK: Implement feature ENG-14 (Custom Agents).
 
 BEFORE YOU START:
-1. Call spectree__list_features for this epic and confirm ENG-13 status is Done.
+1. Call dispatcher__list_features for this epic and confirm ENG-13 status is Done.
    If ENG-13 is NOT Done, STOP and tell me.
-2. Call spectree__get_feature with identifier "ENG-14" to read the full description,
+2. Call dispatcher__get_feature with identifier "ENG-14" to read the full description,
    AI Instructions, and Acceptance Criteria
-3. Call spectree__get_structured_description for ENG-14 (type: feature)
-4. Read docs/spectree-automation-tool-strategy.md Section 8 for tasks 2.1-2.4
-5. Set ENG-14 status to "In Progress" using spectree__update_feature with
+3. Call dispatcher__get_structured_description for ENG-14 (type: feature)
+4. Read docs/dispatcher-automation-tool-strategy.md Section 8 for tasks 2.1-2.4
+5. Set ENG-14 status to "In Progress" using dispatcher__update_feature with
    statusId: "24b55d5a-ab41-4b22-a6dd-8b62c127eabe"
 
 SCOPE — Only create/modify files in:
@@ -138,14 +138,14 @@ IMPLEMENTATION GUIDANCE:
 - Create the .github/agents/ directory
 - Each agent file has YAML frontmatter (name, description, tools, agents,
   user-invokable) followed by Markdown instructions
-- Reference specific SpecTree MCP tool names with concrete call examples
+- Reference specific Dispatcher MCP tool names with concrete call examples
 - Set user-invokable: false for feature-worker (sub-agent only)
-- Read Section 6 of docs/spectree-automation-tool-strategy.md for agent specs
+- Read Section 6 of docs/dispatcher-automation-tool-strategy.md for agent specs
 - YAML tools field uses: read, edit, execute, search, agent, web, todo
 
 WHEN COMPLETE:
 1. Verify ALL acceptance criteria from the feature description are met
-2. Set ENG-14 status to "Done" using spectree__update_feature with
+2. Set ENG-14 status to "Done" using dispatcher__update_feature with
    statusId: "d3cd5620-f550-4603-a394-fd53f172d04b"
 3. Summarize what you created
 
@@ -158,46 +158,46 @@ Do NOT modify files outside .github/agents/. Do NOT move to other features.
 
 ```
 CRITICAL — MCP CONNECTIVITY CHECK:
-Before doing ANYTHING else, call spectree__list_teams to verify SpecTree MCP
+Before doing ANYTHING else, call dispatcher__list_teams to verify Dispatcher MCP
 is connected. If this call fails or the tool is not available, STOP IMMEDIATELY
-and tell me: "SpecTree MCP is not connected. Cannot proceed."
+and tell me: "Dispatcher MCP is not connected. Cannot proceed."
 Do NOT attempt to implement anything without MCP access.
 
-BRANCH CHECK: You must be on branch "feature/spectree-automation-tool".
+BRANCH CHECK: You must be on branch "feature/dispatcher-automation-tool".
 Run: git branch --show-current
-If you are on a different branch, run: git checkout feature/spectree-automation-tool
+If you are on a different branch, run: git checkout feature/dispatcher-automation-tool
 Do NOT create new branches.
 
-You are implementing a feature from the "SpecTree Automation Tool" epic
+You are implementing a feature from the "Dispatcher Automation Tool" epic
 (ID: 88cec40c-0ab4-4a6e-afba-ac01f9113b30).
 
 YOUR TASK: Implement feature ENG-15 (Custom Skills).
 
 BEFORE YOU START:
-1. Call spectree__list_features for this epic and confirm ENG-13 status is Done.
+1. Call dispatcher__list_features for this epic and confirm ENG-13 status is Done.
    If ENG-13 is NOT Done, STOP and tell me.
-2. Call spectree__get_feature with identifier "ENG-15" to read the full description,
+2. Call dispatcher__get_feature with identifier "ENG-15" to read the full description,
    AI Instructions, and Acceptance Criteria
-3. Call spectree__get_structured_description for ENG-15 (type: feature)
-4. Read docs/spectree-automation-tool-strategy.md Section 8 for tasks 3.1-3.3
-5. Set ENG-15 status to "In Progress" using spectree__update_feature with
+3. Call dispatcher__get_structured_description for ENG-15 (type: feature)
+4. Read docs/dispatcher-automation-tool-strategy.md Section 8 for tasks 3.1-3.3
+5. Set ENG-15 status to "In Progress" using dispatcher__update_feature with
    statusId: "24b55d5a-ab41-4b22-a6dd-8b62c127eabe"
 
 SCOPE — Only create/modify files in:
-- .github/skills/spectree-planning/SKILL.md
-- .github/skills/spectree-session/SKILL.md
-- .github/skills/spectree-validation/SKILL.md
+- .github/skills/dispatcher-planning/SKILL.md
+- .github/skills/dispatcher-session/SKILL.md
+- .github/skills/dispatcher-validation/SKILL.md
 
 IMPLEMENTATION GUIDANCE:
 - Create the .github/skills/ directory with subdirectories for each skill
 - Each skill is a directory containing a SKILL.md file
 - Skills are pure Markdown procedures (no YAML frontmatter)
-- Reference specific SpecTree MCP tool names with concrete call examples
+- Reference specific Dispatcher MCP tool names with concrete call examples
 - Each skill must be self-contained and understandable without other files
 
 WHEN COMPLETE:
 1. Verify ALL acceptance criteria from the feature description are met
-2. Set ENG-15 status to "Done" using spectree__update_feature with
+2. Set ENG-15 status to "Done" using dispatcher__update_feature with
    statusId: "d3cd5620-f550-4603-a394-fd53f172d04b"
 3. Summarize what you created
 
@@ -210,30 +210,30 @@ Do NOT modify files outside .github/skills/. Do NOT move to other features.
 
 ```
 CRITICAL — MCP CONNECTIVITY CHECK:
-Before doing ANYTHING else, call spectree__list_teams to verify SpecTree MCP
+Before doing ANYTHING else, call dispatcher__list_teams to verify Dispatcher MCP
 is connected. If this call fails or the tool is not available, STOP IMMEDIATELY
-and tell me: "SpecTree MCP is not connected. Cannot proceed."
+and tell me: "Dispatcher MCP is not connected. Cannot proceed."
 Do NOT attempt to implement anything without MCP access.
 
-BRANCH CHECK: You must be on branch "feature/spectree-automation-tool".
+BRANCH CHECK: You must be on branch "feature/dispatcher-automation-tool".
 Run: git branch --show-current
-If you are on a different branch, run: git checkout feature/spectree-automation-tool
+If you are on a different branch, run: git checkout feature/dispatcher-automation-tool
 Do NOT create new branches.
 
-You are implementing a feature from the "SpecTree Automation Tool" epic
+You are implementing a feature from the "Dispatcher Automation Tool" epic
 (ID: 88cec40c-0ab4-4a6e-afba-ac01f9113b30).
 
 YOUR TASK: Implement feature ENG-17 (ACP Integration Layer).
 
 BEFORE YOU START:
-1. Call spectree__list_features for this epic and confirm ENG-13 status is Done.
+1. Call dispatcher__list_features for this epic and confirm ENG-13 status is Done.
    If ENG-13 is NOT Done, STOP and tell me.
-2. Call spectree__get_feature with identifier "ENG-17" to read the full description,
+2. Call dispatcher__get_feature with identifier "ENG-17" to read the full description,
    AI Instructions, and Acceptance Criteria
-3. Call spectree__get_structured_description for ENG-17 (type: feature)
-4. Read docs/spectree-automation-tool-strategy.md Section 8 for tasks 5.1-5.4
+3. Call dispatcher__get_structured_description for ENG-17 (type: feature)
+4. Read docs/dispatcher-automation-tool-strategy.md Section 8 for tasks 5.1-5.4
    and Appendix B for the ACP protocol reference
-5. Set ENG-17 status to "In Progress" using spectree__update_feature with
+5. Set ENG-17 status to "In Progress" using dispatcher__update_feature with
    statusId: "24b55d5a-ab41-4b22-a6dd-8b62c127eabe"
 
 SCOPE — Only create/modify files in:
@@ -256,7 +256,7 @@ IMPLEMENTATION GUIDANCE:
 WHEN COMPLETE:
 1. Run: cd packages/orchestrator && npx tsc --noEmit (must compile cleanly)
 2. Verify ALL acceptance criteria from the feature description are met
-3. Set ENG-17 status to "Done" using spectree__update_feature with
+3. Set ENG-17 status to "Done" using dispatcher__update_feature with
    statusId: "d3cd5620-f550-4603-a394-fd53f172d04b"
 4. Summarize what you created
 
@@ -278,34 +278,34 @@ other features.
 
 ```
 CRITICAL — MCP CONNECTIVITY CHECK:
-Before doing ANYTHING else, call spectree__list_teams to verify SpecTree MCP
+Before doing ANYTHING else, call dispatcher__list_teams to verify Dispatcher MCP
 is connected. If this call fails or the tool is not available, STOP IMMEDIATELY
-and tell me: "SpecTree MCP is not connected. Cannot proceed."
+and tell me: "Dispatcher MCP is not connected. Cannot proceed."
 Do NOT attempt to implement anything without MCP access.
 
-BRANCH CHECK: You must be on branch "feature/spectree-automation-tool".
+BRANCH CHECK: You must be on branch "feature/dispatcher-automation-tool".
 Run: git branch --show-current
-If you are on a different branch, run: git checkout feature/spectree-automation-tool
+If you are on a different branch, run: git checkout feature/dispatcher-automation-tool
 Do NOT create new branches.
 
-You are implementing a feature from the "SpecTree Automation Tool" epic
+You are implementing a feature from the "Dispatcher Automation Tool" epic
 (ID: 88cec40c-0ab4-4a6e-afba-ac01f9113b30).
 
 YOUR TASK: Implement feature ENG-16 (Planning Pipeline Agent Enhancement).
 
 BEFORE YOU START:
-1. Call spectree__list_features for this epic and confirm ENG-14 AND ENG-15
+1. Call dispatcher__list_features for this epic and confirm ENG-14 AND ENG-15
    statuses are both Done. If either is NOT Done, STOP and tell me.
-2. Call spectree__get_feature with identifier "ENG-16" to read the full description,
+2. Call dispatcher__get_feature with identifier "ENG-16" to read the full description,
    AI Instructions, and Acceptance Criteria
-3. Call spectree__get_structured_description for ENG-16 (type: feature)
-4. Read docs/spectree-automation-tool-strategy.md Section 8 for tasks 4.1-4.4
-5. Set ENG-16 status to "In Progress" using spectree__update_feature with
+3. Call dispatcher__get_structured_description for ENG-16 (type: feature)
+4. Read docs/dispatcher-automation-tool-strategy.md Section 8 for tasks 4.1-4.4
+5. Set ENG-16 status to "In Progress" using dispatcher__update_feature with
    statusId: "24b55d5a-ab41-4b22-a6dd-8b62c127eabe"
 
 SCOPE — Only modify these files:
 - .github/agents/planner.md (created in ENG-14)
-- .github/skills/spectree-planning/SKILL.md (created in ENG-15)
+- .github/skills/dispatcher-planning/SKILL.md (created in ENG-15)
 
 IMPLEMENTATION GUIDANCE:
 - This feature ENHANCES files created in Phase 2 — read them first
@@ -314,12 +314,12 @@ IMPLEMENTATION GUIDANCE:
   agent and skill definitions
 - Add: iterative workflow, configurable review gates (auto/review/stop),
   task scoping heuristics, quality evaluation checks
-- The planner should use SpecTree MCP tools interactively, not just generate JSON
+- The planner should use Dispatcher MCP tools interactively, not just generate JSON
 - Review gates are conversational: present results, wait for user approval
 
 WHEN COMPLETE:
 1. Verify ALL acceptance criteria from the feature description are met
-2. Set ENG-16 status to "Done" using spectree__update_feature with
+2. Set ENG-16 status to "Done" using dispatcher__update_feature with
    statusId: "d3cd5620-f550-4603-a394-fd53f172d04b"
 3. Summarize what you enhanced
 
@@ -332,30 +332,30 @@ Do NOT modify files outside the two listed above. Do NOT move to other features.
 
 ```
 CRITICAL — MCP CONNECTIVITY CHECK:
-Before doing ANYTHING else, call spectree__list_teams to verify SpecTree MCP
+Before doing ANYTHING else, call dispatcher__list_teams to verify Dispatcher MCP
 is connected. If this call fails or the tool is not available, STOP IMMEDIATELY
-and tell me: "SpecTree MCP is not connected. Cannot proceed."
+and tell me: "Dispatcher MCP is not connected. Cannot proceed."
 Do NOT attempt to implement anything without MCP access.
 
-BRANCH CHECK: You must be on branch "feature/spectree-automation-tool".
+BRANCH CHECK: You must be on branch "feature/dispatcher-automation-tool".
 Run: git branch --show-current
-If you are on a different branch, run: git checkout feature/spectree-automation-tool
+If you are on a different branch, run: git checkout feature/dispatcher-automation-tool
 Do NOT create new branches.
 
-You are implementing a feature from the "SpecTree Automation Tool" epic
+You are implementing a feature from the "Dispatcher Automation Tool" epic
 (ID: 88cec40c-0ab4-4a6e-afba-ac01f9113b30).
 
 YOUR TASK: Implement feature ENG-18 (Orchestrator Refactor — SDK to ACP).
 
 BEFORE YOU START:
-1. Call spectree__list_features for this epic and confirm ENG-17 status is Done.
+1. Call dispatcher__list_features for this epic and confirm ENG-17 status is Done.
    If ENG-17 is NOT Done, STOP and tell me.
-2. Call spectree__get_feature with identifier "ENG-18" to read the full description,
+2. Call dispatcher__get_feature with identifier "ENG-18" to read the full description,
    AI Instructions, and Acceptance Criteria
-3. Call spectree__get_structured_description for ENG-18 (type: feature)
-4. Read docs/spectree-automation-tool-strategy.md Section 8 for tasks 6.1-6.5
+3. Call dispatcher__get_structured_description for ENG-18 (type: feature)
+4. Read docs/dispatcher-automation-tool-strategy.md Section 8 for tasks 6.1-6.5
 5. Read the ACP module created in ENG-17: packages/orchestrator/src/acp/
-6. Set ENG-18 status to "In Progress" using spectree__update_feature with
+6. Set ENG-18 status to "In Progress" using dispatcher__update_feature with
    statusId: "24b55d5a-ab41-4b22-a6dd-8b62c127eabe"
 
 SCOPE — Only modify these files:
@@ -375,14 +375,14 @@ IMPLEMENTATION GUIDANCE:
   tool.execution_start→tool_call, tool.execution_complete→tool_result
 - Work in dependency order: agent-pool → phase-executor → orchestrator → plan-generator
 - Do NOT change model-agnostic logic: pool management, phase execution,
-  progress tracking, SpecTree integration, git operations, error handling
+  progress tracking, Dispatcher integration, git operations, error handling
 - Remove @github/copilot-sdk from package.json dependencies
 
 WHEN COMPLETE:
 1. Run: cd packages/orchestrator && npx tsc --noEmit (must compile cleanly)
 2. Run: cd packages/orchestrator && pnpm test (existing tests must pass with mocked ACP)
 3. Verify no imports from @github/copilot-sdk remain
-4. Set ENG-18 status to "Done" using spectree__update_feature with
+4. Set ENG-18 status to "Done" using dispatcher__update_feature with
    statusId: "d3cd5620-f550-4603-a394-fd53f172d04b"
 5. Summarize what you refactored
 
@@ -404,35 +404,35 @@ Do NOT modify files outside the listed scope. Do NOT move to other features.
 
 ```
 CRITICAL — MCP CONNECTIVITY CHECK:
-Before doing ANYTHING else, call spectree__list_teams to verify SpecTree MCP
+Before doing ANYTHING else, call dispatcher__list_teams to verify Dispatcher MCP
 is connected. If this call fails or the tool is not available, STOP IMMEDIATELY
-and tell me: "SpecTree MCP is not connected. Cannot proceed."
+and tell me: "Dispatcher MCP is not connected. Cannot proceed."
 Do NOT attempt to implement anything without MCP access.
 
-BRANCH CHECK: You must be on branch "feature/spectree-automation-tool".
+BRANCH CHECK: You must be on branch "feature/dispatcher-automation-tool".
 Run: git branch --show-current
-If you are on a different branch, run: git checkout feature/spectree-automation-tool
+If you are on a different branch, run: git checkout feature/dispatcher-automation-tool
 Do NOT create new branches.
 
-You are implementing a feature from the "SpecTree Automation Tool" epic
+You are implementing a feature from the "Dispatcher Automation Tool" epic
 (ID: 88cec40c-0ab4-4a6e-afba-ac01f9113b30).
 
 YOUR TASK: Implement feature ENG-20 (Shell Scripts for Automation).
 
 BEFORE YOU START:
-1. Call spectree__list_features for this epic and confirm ENG-14 AND ENG-15
+1. Call dispatcher__list_features for this epic and confirm ENG-14 AND ENG-15
    statuses are both Done. If either is NOT Done, STOP and tell me.
-2. Call spectree__get_feature with identifier "ENG-20" to read the full description,
+2. Call dispatcher__get_feature with identifier "ENG-20" to read the full description,
    AI Instructions, and Acceptance Criteria
-3. Call spectree__get_structured_description for ENG-20 (type: feature)
-4. Read docs/spectree-automation-tool-strategy.md Section 8 for tasks 8.1-8.3
-5. Set ENG-20 status to "In Progress" using spectree__update_feature with
+3. Call dispatcher__get_structured_description for ENG-20 (type: feature)
+4. Read docs/dispatcher-automation-tool-strategy.md Section 8 for tasks 8.1-8.3
+5. Set ENG-20 status to "In Progress" using dispatcher__update_feature with
    statusId: "24b55d5a-ab41-4b22-a6dd-8b62c127eabe"
 
 SCOPE — Only create/modify files in:
-- scripts/spectree-plan.sh
-- scripts/spectree-run.sh
-- scripts/spectree-validate.sh
+- scripts/dispatcher-plan.sh
+- scripts/dispatcher-run.sh
+- scripts/dispatcher-validate.sh
 
 IMPLEMENTATION GUIDANCE:
 - Create the scripts/ directory at project root if needed
@@ -444,7 +444,7 @@ IMPLEMENTATION GUIDANCE:
 
 WHEN COMPLETE:
 1. Verify ALL acceptance criteria from the feature description are met
-2. Set ENG-20 status to "Done" using spectree__update_feature with
+2. Set ENG-20 status to "Done" using dispatcher__update_feature with
    statusId: "d3cd5620-f550-4603-a394-fd53f172d04b"
 3. Summarize what you created
 
@@ -457,31 +457,31 @@ Do NOT modify files outside scripts/. Do NOT move to other features.
 
 ```
 CRITICAL — MCP CONNECTIVITY CHECK:
-Before doing ANYTHING else, call spectree__list_teams to verify SpecTree MCP
+Before doing ANYTHING else, call dispatcher__list_teams to verify Dispatcher MCP
 is connected. If this call fails or the tool is not available, STOP IMMEDIATELY
-and tell me: "SpecTree MCP is not connected. Cannot proceed."
+and tell me: "Dispatcher MCP is not connected. Cannot proceed."
 Do NOT attempt to implement anything without MCP access.
 
-BRANCH CHECK: You must be on branch "feature/spectree-automation-tool".
+BRANCH CHECK: You must be on branch "feature/dispatcher-automation-tool".
 Run: git branch --show-current
-If you are on a different branch, run: git checkout feature/spectree-automation-tool
+If you are on a different branch, run: git checkout feature/dispatcher-automation-tool
 Do NOT create new branches.
 
-You are implementing a feature from the "SpecTree Automation Tool" epic
+You are implementing a feature from the "Dispatcher Automation Tool" epic
 (ID: 88cec40c-0ab4-4a6e-afba-ac01f9113b30).
 
 YOUR TASK: Implement feature ENG-21 (Copilot Instructions Update).
 
 BEFORE YOU START:
-1. Call spectree__list_features for this epic and confirm ENG-13, ENG-14, AND
+1. Call dispatcher__list_features for this epic and confirm ENG-13, ENG-14, AND
    ENG-15 statuses are all Done. If any is NOT Done, STOP and tell me.
-2. Call spectree__get_feature with identifier "ENG-21" to read the full description,
+2. Call dispatcher__get_feature with identifier "ENG-21" to read the full description,
    AI Instructions, and Acceptance Criteria
-3. Call spectree__get_structured_description for ENG-21 (type: feature)
-4. Read docs/spectree-automation-tool-strategy.md Section 8 for tasks 9.1-9.3
+3. Call dispatcher__get_structured_description for ENG-21 (type: feature)
+4. Read docs/dispatcher-automation-tool-strategy.md Section 8 for tasks 9.1-9.3
 5. Read .github/agents/ to see what agents were created in ENG-14
 6. Read .github/skills/ to see what skills were created in ENG-15
-7. Set ENG-21 status to "In Progress" using spectree__update_feature with
+7. Set ENG-21 status to "In Progress" using dispatcher__update_feature with
    statusId: "24b55d5a-ab41-4b22-a6dd-8b62c127eabe"
 
 SCOPE — Only modify:
@@ -491,13 +491,13 @@ IMPLEMENTATION GUIDANCE:
 - Do NOT re-do MCP re-enablement (that was ENG-13). Only ADD new content.
 - Add: Custom Agents section documenting @planner, @orchestrator, @reviewer
 - Add: Custom Skills section documenting available skills
-- Add: Session Start Checklist with SpecTree session initialization
-- Add: Automation Workflow section explaining spectree plan and spectree run
+- Add: Session Start Checklist with Dispatcher session initialization
+- Add: Automation Workflow section explaining dispatcher plan and dispatcher run
 - Include usage examples for each agent
 
 WHEN COMPLETE:
 1. Verify ALL acceptance criteria from the feature description are met
-2. Set ENG-21 status to "Done" using spectree__update_feature with
+2. Set ENG-21 status to "Done" using dispatcher__update_feature with
    statusId: "d3cd5620-f550-4603-a394-fd53f172d04b"
 3. Summarize what you added
 
@@ -511,31 +511,31 @@ Do NOT move to other features.
 
 ```
 CRITICAL — MCP CONNECTIVITY CHECK:
-Before doing ANYTHING else, call spectree__list_teams to verify SpecTree MCP
+Before doing ANYTHING else, call dispatcher__list_teams to verify Dispatcher MCP
 is connected. If this call fails or the tool is not available, STOP IMMEDIATELY
-and tell me: "SpecTree MCP is not connected. Cannot proceed."
+and tell me: "Dispatcher MCP is not connected. Cannot proceed."
 Do NOT attempt to implement anything without MCP access.
 
-BRANCH CHECK: You must be on branch "feature/spectree-automation-tool".
+BRANCH CHECK: You must be on branch "feature/dispatcher-automation-tool".
 Run: git branch --show-current
-If you are on a different branch, run: git checkout feature/spectree-automation-tool
+If you are on a different branch, run: git checkout feature/dispatcher-automation-tool
 Do NOT create new branches.
 
-You are implementing a feature from the "SpecTree Automation Tool" epic
+You are implementing a feature from the "Dispatcher Automation Tool" epic
 (ID: 88cec40c-0ab4-4a6e-afba-ac01f9113b30).
 
 YOUR TASK: Implement feature ENG-19 (CLI Command Updates).
 
 BEFORE YOU START:
-1. Call spectree__list_features for this epic and confirm ENG-17 AND ENG-18
+1. Call dispatcher__list_features for this epic and confirm ENG-17 AND ENG-18
    statuses are both Done. If either is NOT Done, STOP and tell me.
-2. Call spectree__get_feature with identifier "ENG-19" to read the full description,
+2. Call dispatcher__get_feature with identifier "ENG-19" to read the full description,
    AI Instructions, and Acceptance Criteria
-3. Call spectree__get_structured_description for ENG-19 (type: feature)
-4. Read docs/spectree-automation-tool-strategy.md Section 8 for tasks 7.1-7.3
+3. Call dispatcher__get_structured_description for ENG-19 (type: feature)
+4. Read docs/dispatcher-automation-tool-strategy.md Section 8 for tasks 7.1-7.3
 5. Read existing CLI: packages/orchestrator/src/cli/index.ts and state.ts
 6. Read the ACP module: packages/orchestrator/src/acp/
-7. Set ENG-19 status to "In Progress" using spectree__update_feature with
+7. Set ENG-19 status to "In Progress" using dispatcher__update_feature with
    statusId: "24b55d5a-ab41-4b22-a6dd-8b62c127eabe"
 
 SCOPE — Only modify files in:
@@ -543,10 +543,10 @@ SCOPE — Only modify files in:
 - packages/orchestrator/src/cli/state.ts
 
 IMPLEMENTATION GUIDANCE:
-- Add: spectree plan "<description>" — invokes planner via ACP, creates epic
-- Add: spectree validate <epic-id> — runs all validations, reports results
-- Update: spectree run <epic-id> — execute epic via ACP sessions
-- Add: spectree run --dry-run <epic-id> — show plan without executing
+- Add: dispatcher plan "<description>" — invokes planner via ACP, creates epic
+- Add: dispatcher validate <epic-id> — runs all validations, reports results
+- Update: dispatcher run <epic-id> — execute epic via ACP sessions
+- Add: dispatcher run --dry-run <epic-id> — show plan without executing
 - All commands need --help documentation
 - Follow existing patterns for argument parsing, config loading, error display
 - Use config system from src/config/ and UI components from src/ui/
@@ -554,7 +554,7 @@ IMPLEMENTATION GUIDANCE:
 WHEN COMPLETE:
 1. Run: cd packages/orchestrator && npx tsc --noEmit (must compile cleanly)
 2. Verify ALL acceptance criteria from the feature description are met
-3. Set ENG-19 status to "Done" using spectree__update_feature with
+3. Set ENG-19 status to "Done" using dispatcher__update_feature with
    statusId: "d3cd5620-f550-4603-a394-fd53f172d04b"
 4. Summarize what you implemented
 
@@ -576,30 +576,30 @@ Do NOT move to other features.
 
 ```
 CRITICAL — MCP CONNECTIVITY CHECK:
-Before doing ANYTHING else, call spectree__list_teams to verify SpecTree MCP
+Before doing ANYTHING else, call dispatcher__list_teams to verify Dispatcher MCP
 is connected. If this call fails or the tool is not available, STOP IMMEDIATELY
-and tell me: "SpecTree MCP is not connected. Cannot proceed."
+and tell me: "Dispatcher MCP is not connected. Cannot proceed."
 Do NOT attempt to implement anything without MCP access.
 
-BRANCH CHECK: You must be on branch "feature/spectree-automation-tool".
+BRANCH CHECK: You must be on branch "feature/dispatcher-automation-tool".
 Run: git branch --show-current
-If you are on a different branch, run: git checkout feature/spectree-automation-tool
+If you are on a different branch, run: git checkout feature/dispatcher-automation-tool
 Do NOT create new branches.
 
-You are implementing the FINAL feature from the "SpecTree Automation Tool" epic
+You are implementing the FINAL feature from the "Dispatcher Automation Tool" epic
 (ID: 88cec40c-0ab4-4a6e-afba-ac01f9113b30).
 
 YOUR TASK: Implement feature ENG-22 (End-to-End Testing).
 
 BEFORE YOU START:
-1. Call spectree__list_features for this epic and confirm ALL features ENG-13
+1. Call dispatcher__list_features for this epic and confirm ALL features ENG-13
    through ENG-21 have status Done. If ANY feature is NOT Done, STOP and list
    which features are incomplete.
-2. Call spectree__get_feature with identifier "ENG-22" to read the full description,
+2. Call dispatcher__get_feature with identifier "ENG-22" to read the full description,
    AI Instructions, and Acceptance Criteria
-3. Call spectree__get_structured_description for ENG-22 (type: feature)
-4. Read docs/spectree-automation-tool-strategy.md Section 8 for tasks 10.1-10.3
-5. Set ENG-22 status to "In Progress" using spectree__update_feature with
+3. Call dispatcher__get_structured_description for ENG-22 (type: feature)
+4. Read docs/dispatcher-automation-tool-strategy.md Section 8 for tasks 10.1-10.3
+5. Set ENG-22 status to "In Progress" using dispatcher__update_feature with
    statusId: "24b55d5a-ab41-4b22-a6dd-8b62c127eabe"
 
 SCOPE — Create/modify files in:
@@ -610,16 +610,16 @@ IMPLEMENTATION GUIDANCE:
 - Use test scenario: "Add a new REST API endpoint for user preferences with
   CRUD operations"
 - Test the full pipeline: planning → epic creation → execution → ACP sessions →
-  git branches → SpecTree progress tracking → validation → completion
+  git branches → Dispatcher progress tracking → validation → completion
 - Write docs/automation-quickstart.md with step-by-step guide a developer can
   follow without prior knowledge
 - Write E2E test files that exercise the key integration points
-- E2E tests require running SpecTree API, MCP server, and Copilot CLI
+- E2E tests require running Dispatcher API, MCP server, and Copilot CLI
 - Use smallest possible test scenario to minimize Copilot premium request usage
 
 WHEN COMPLETE:
 1. Verify ALL acceptance criteria from the feature description are met
-2. Set ENG-22 status to "Done" using spectree__update_feature with
+2. Set ENG-22 status to "Done" using dispatcher__update_feature with
    statusId: "d3cd5620-f550-4603-a394-fd53f172d04b"
 3. Provide a full summary of the E2E test results and quickstart guide contents
 
@@ -648,7 +648,7 @@ This is the final feature. When ENG-22 is Done, the entire epic is complete.
 ### Session Crash (agent error, network issue)
 
 If a session crashes mid-feature:
-1. Check SpecTree — the feature status tells you where it stopped
+1. Check Dispatcher — the feature status tells you where it stopped
 2. Check `git status` — see what files were partially modified
 3. Re-run the same prompt. The agent will see the feature is "In Progress"
    and the partially-written code, and can continue from where it left off.
@@ -675,12 +675,12 @@ and `/compact` fails with "Conversation too long":
 
 ```
 CRITICAL — MCP CONNECTIVITY CHECK:
-Before doing ANYTHING else, call spectree__list_teams to verify SpecTree MCP
+Before doing ANYTHING else, call dispatcher__list_teams to verify Dispatcher MCP
 is connected. If this call fails or the tool is not available, STOP IMMEDIATELY
-and tell me: "SpecTree MCP is not connected. Cannot proceed."
+and tell me: "Dispatcher MCP is not connected. Cannot proceed."
 Do NOT attempt to implement anything without MCP access.
 
-You are CONTINUING a partially-completed feature from the "SpecTree Automation
+You are CONTINUING a partially-completed feature from the "Dispatcher Automation
 Tool" epic (ID: 88cec40c-0ab4-4a6e-afba-ac01f9113b30).
 
 CONTEXT: The previous session ran out of context window while implementing
@@ -694,7 +694,7 @@ WHAT'S LEFT:
 2. Run TypeScript compilation check: cd packages/orchestrator && npx tsc --noEmit
 3. Run tests: cd packages/orchestrator && pnpm test
 4. Fix any compilation or test failures
-5. Set ENG-XX status to "Done" using spectree__update_feature with
+5. Set ENG-XX status to "Done" using dispatcher__update_feature with
    statusId: "d3cd5620-f550-4603-a394-fd53f172d04b"
 6. Summarize the final state
 
@@ -727,25 +727,25 @@ it into two prompts. For example, split ENG-18 into:
 ### Branch Issues
 
 If an agent creates an unexpected branch (e.g., `feature/COM-1-sequential-1-items`
-instead of `feature/spectree-automation-tool`), you have two options:
+instead of `feature/dispatcher-automation-tool`), you have two options:
 
 1. **Merge the changes back:**
    ```bash
-   git checkout feature/spectree-automation-tool
+   git checkout feature/dispatcher-automation-tool
    git merge feature/COM-1-sequential-1-items
    ```
 
 2. **Cherry-pick specific commits:**
    ```bash
-   git checkout feature/spectree-automation-tool
+   git checkout feature/dispatcher-automation-tool
    git cherry-pick <commit-hash>
    ```
 
 Always verify you're on the correct branch before starting a new prompt. Add
 this to the prompt if needed:
 ```
-IMPORTANT: You must work on branch "feature/spectree-automation-tool".
+IMPORTANT: You must work on branch "feature/dispatcher-automation-tool".
 If you are on a different branch, switch to it first:
-git checkout feature/spectree-automation-tool
+git checkout feature/dispatcher-automation-tool
 Do NOT create new branches.
 ```

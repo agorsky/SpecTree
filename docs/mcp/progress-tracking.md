@@ -1,17 +1,17 @@
 # Auto-Progress Tracking Tools
 
-This document describes the purpose-built MCP tools for automatic progress tracking in SpecTree.
+This document describes the purpose-built MCP tools for automatic progress tracking in Dispatcher.
 
 > **⚠️ DEPRECATION NOTICE:**  
-> The individual tools documented here (`spectree__start_work`, `spectree__complete_work`, `spectree__log_progress`, `spectree__report_blocker`) are **DEPRECATED**.  
+> The individual tools documented here (`dispatcher__start_work`, `dispatcher__complete_work`, `dispatcher__log_progress`, `dispatcher__report_blocker`) are **DEPRECATED**.  
 >  
-> **Use instead:** `spectree__manage_progress` with action-based routing:
+> **Use instead:** `dispatcher__manage_progress` with action-based routing:
 > - `action='start_work'` - Begin working on an item
 > - `action='complete_work'` - Mark item as complete
 > - `action='log_progress'` - Record incremental progress
 > - `action='report_blocker'` - Report blockage
 >
-> See [Tools Reference](./tools-reference.md#spectree__manage_progress) for complete documentation.
+> See [Tools Reference](./tools-reference.md#dispatcher__manage_progress) for complete documentation.
 
 ## Overview
 
@@ -29,7 +29,7 @@ These dedicated tools solve this by:
 
 ## Available Tools
 
-### spectree__start_work
+### dispatcher__start_work
 
 Begin working on a feature or task. Call this when you start working on an item.
 
@@ -47,10 +47,10 @@ Begin working on a feature or task. Call this when you start working on an item.
 
 **Example:**
 ```
-Use spectree__start_work with id="COM-123" type="feature" to begin work
+Use dispatcher__start_work with id="COM-123" type="feature" to begin work
 ```
 
-### spectree__complete_work
+### dispatcher__complete_work
 
 Mark a feature or task as complete. Call this when you've finished work on an item.
 
@@ -72,10 +72,10 @@ Mark a feature or task as complete. Call this when you've finished work on an it
 
 **Example:**
 ```
-Use spectree__complete_work with id="COM-123" type="feature" summary="Implemented the progress tracking API and MCP tools"
+Use dispatcher__complete_work with id="COM-123" type="feature" summary="Implemented the progress tracking API and MCP tools"
 ```
 
-### spectree__log_progress
+### dispatcher__log_progress
 
 Log incremental progress without changing status. Use for long-running work items.
 
@@ -94,10 +94,10 @@ Log incremental progress without changing status. Use for long-running work item
 
 **Example:**
 ```
-Use spectree__log_progress with id="COM-123" type="feature" message="Schema changes complete, working on service layer" percentComplete=40
+Use dispatcher__log_progress with id="COM-123" type="feature" message="Schema changes complete, working on service layer" percentComplete=40
 ```
 
-### spectree__report_blocker
+### dispatcher__report_blocker
 
 Report that work is blocked. Use when something prevents progress.
 
@@ -118,7 +118,7 @@ Report that work is blocked. Use when something prevents progress.
 
 **Example:**
 ```
-Use spectree__report_blocker with id="COM-123" type="feature" reason="Waiting for API review approval"
+Use dispatcher__report_blocker with id="COM-123" type="feature" reason="Waiting for API review approval"
 ```
 
 ## Database Fields
@@ -139,20 +139,20 @@ These fields exist on both Feature and Task models.
 
 ### Recommended Workflow
 
-1. **Starting work:** Call `spectree__start_work` at the beginning
-2. **During work:** Use `spectree__log_progress` for significant milestones
-3. **When blocked:** Call `spectree__report_blocker` with details
-4. **Completing work:** Call `spectree__complete_work` with summary
+1. **Starting work:** Call `dispatcher__start_work` at the beginning
+2. **During work:** Use `dispatcher__log_progress` for significant milestones
+3. **When blocked:** Call `dispatcher__report_blocker` with details
+4. **Completing work:** Call `dispatcher__complete_work` with summary
 
 ### Hints in Existing Tools
 
-The `spectree__update_feature` and `spectree__update_task` tools now include hints reminding AI agents about progress tools:
+The `dispatcher__update_feature` and `dispatcher__update_task` tools now include hints reminding AI agents about progress tools:
 
 ```
 TIP: After completing significant work on a task, consider using:
-- spectree__complete_work to mark it done (auto-calculates duration)
-- spectree__log_progress to note partial progress
-- spectree__start_work to begin work (sets status and timestamps)
+- dispatcher__complete_work to mark it done (auto-calculates duration)
+- dispatcher__log_progress to note partial progress
+- dispatcher__start_work to begin work (sets status and timestamps)
 ```
 
 ## API Endpoints
@@ -179,9 +179,9 @@ All endpoints require authentication and team membership (member role or higher)
 
 For dashboard views and session start context, see [Progress Summary](./progress-summary.md):
 
-- `spectree__get_progress_summary` - Get comprehensive epic status
-- `spectree__get_my_work` - Get your work across all epics
-- `spectree__get_blocked_summary` - Get all blocked items
+- `dispatcher__get_progress_summary` - Get comprehensive epic status
+- `dispatcher__get_my_work` - Get your work across all epics
+- `dispatcher__get_blocked_summary` - Get all blocked items
 
 These complement the progress tracking tools by providing high-level visibility into overall project status.
 

@@ -1,14 +1,14 @@
-# SpecTree Platform Improvements - Automation Framework Guide
+# Dispatcher Platform Improvements - Automation Framework Guide
 
 **Date:** February 7, 2026
-**Purpose:** Input document for the SpecTree automation framework to create and execute 5 platform improvement epics
-**Consumer:** Developer using `@planner` agent or `spectree plan` CLI
+**Purpose:** Input document for the Dispatcher automation framework to create and execute 5 platform improvement epics
+**Consumer:** Developer using `@planner` agent or `dispatcher plan` CLI
 
 ---
 
 ## 1. Overview
 
-This document specifies 5 platform improvements for SpecTree, designed to be created and executed using the SpecTree automation framework (planner agent + orchestrator). Each improvement is specified at the level of detail needed for the `@planner` agent to produce a fully-specified SpecTree epic.
+This document specifies 5 platform improvements for Dispatcher, designed to be created and executed using the Dispatcher automation framework (planner agent + orchestrator). Each improvement is specified at the level of detail needed for the `@planner` agent to produce a fully-specified Dispatcher epic.
 
 ### The 5 Improvements
 
@@ -52,28 +52,28 @@ Feed each epic's description to the `@planner` agent. The planner will:
 
 ### Option B: Manual Planning with MCP Tools
 
-For more control, create each epic manually using the SpecTree MCP tools:
+For more control, create each epic manually using the Dispatcher MCP tools:
 
 ```typescript
 // 1. Create the full hierarchy
-spectree__create_epic_complete({ ... })
+dispatcher__create_epic_complete({ ... })
 
 // 2. Set structured descriptions on every feature and task
-spectree__set_structured_description({ ... })
+dispatcher__set_structured_description({ ... })
 
 // 3. Set execution metadata
-spectree__set_execution_metadata({ ... })
+dispatcher__set_execution_metadata({ ... })
 
 // 4. Add validation checks
-spectree__add_validation({ ... })
+dispatcher__add_validation({ ... })
 
 // 5. Verify the execution plan
-spectree__get_execution_plan(epicId)
+dispatcher__get_execution_plan(epicId)
 ```
 
 ### Option C: Hybrid — Use This Doc as Planner Input
 
-Pass this entire document (or a specific section) as context to a Copilot CLI session with SpecTree MCP access. The session can use `spectree__create_epic_complete` to create each epic atomically, then enrich with structured descriptions.
+Pass this entire document (or a specific section) as context to a Copilot CLI session with Dispatcher MCP access. The session can use `dispatcher__create_epic_complete` to create each epic atomically, then enrich with structured descriptions.
 
 ### After Planning: Execution
 
@@ -81,7 +81,7 @@ Once epics are created and verified:
 
 ```bash
 # Execute a single epic
-spectree run <epic-id>
+dispatcher run <epic-id>
 
 # Or use the orchestrator agent
 @orchestrator "Execute epic <epic-identifier>"
@@ -94,7 +94,7 @@ spectree run <epic-id>
 ### Planner Prompt
 
 ```
-Build an MCP tool consolidation system for SpecTree. The MCP server currently
+Build an MCP tool consolidation system for Dispatcher. The MCP server currently
 exposes 83 individual tools to AI agents, which burns excessive context window
 tokens and increases decision fatigue. Consolidate related tools into composite,
 action-based tools to reduce the surface area to ~25 primary tools.
@@ -175,7 +175,7 @@ packages/mcp/src/api-client.ts            → No changes (composites delegate to
 ### Planner Prompt
 
 ```
-Add Server-Sent Events (SSE) to the SpecTree platform for real-time updates.
+Add Server-Sent Events (SSE) to the Dispatcher platform for real-time updates.
 Currently the web frontend has no real-time communication with the API server.
 When AI agents update task status, log progress, or complete work via MCP tools,
 the dashboard doesn't reflect changes until the user manually refreshes.
@@ -262,18 +262,18 @@ packages/web/src/components/common/live-indicator.tsx → NEW: Visual indicator
 ### Planner Prompt
 
 ```
-Fix test database isolation for SpecTree. On Feb 6, 2026, running tests
-accidentally overwrote the production SQLite database (spectree.db) with
+Fix test database isolation for Dispatcher. On Feb 6, 2026, running tests
+accidentally overwrote the production SQLite database (dispatcher.db) with
 test fixture data, causing catastrophic data loss.
 
 This is a critical infrastructure fix with very low effort:
 
-1. Ensure tests ALWAYS use a separate database file (spectree-test.db)
+1. Ensure tests ALWAYS use a separate database file (dispatcher-test.db)
    or an in-memory SQLite database (:memory:)
 2. Add a runtime guard in the Prisma client that refuses to connect
    to the production database path when NODE_ENV=test
 3. Add a vitest globalSetup that:
-   - Asserts DATABASE_URL does NOT point to spectree.db
+   - Asserts DATABASE_URL does NOT point to dispatcher.db
    - Creates a fresh test database with migrations
    - Seeds minimal test fixtures
 4. Add a vitest globalTeardown that cleans up the test database
@@ -281,10 +281,10 @@ This is a critical infrastructure fix with very low effort:
 6. Add a pre-test npm script that validates the database target
 
 Current state:
-- Database: packages/api/prisma/data/spectree.db (SQLite)
+- Database: packages/api/prisma/data/dispatcher.db (SQLite)
 - Tests: packages/api/tests/ and packages/orchestrator/tests/
 - Test runner: vitest
-- The copilot-instructions.md CLAIMS tests use spectree-test.db but
+- The copilot-instructions.md CLAIMS tests use dispatcher-test.db but
   this is not actually enforced in all test configurations
 
 Target packages: packages/api, packages/orchestrator
@@ -302,8 +302,8 @@ Team: Engineering
 
 ### Key Technical Decisions
 
-- **In-memory vs file**: Use a file-based `spectree-test.db` (not `:memory:`) so that tests can share a database across multiple test files while still being isolated from production
-- **Guard location**: Put the guard in the Prisma client singleton initialization — fail loudly with a clear error message if `NODE_ENV=test` and `DATABASE_URL` contains `spectree.db` (without `-test`)
+- **In-memory vs file**: Use a file-based `dispatcher-test.db` (not `:memory:`) so that tests can share a database across multiple test files while still being isolated from production
+- **Guard location**: Put the guard in the Prisma client singleton initialization — fail loudly with a clear error message if `NODE_ENV=test` and `DATABASE_URL` contains `dispatcher.db` (without `-test`)
 - **Migration strategy**: Run `prisma migrate deploy` in globalSetup to apply all migrations to the test DB
 - **Cleanup**: Truncate all tables between test suites, drop DB file in globalTeardown
 
@@ -321,8 +321,8 @@ package.json                               → Add pretest validation script
 
 ### Acceptance Criteria (Epic-Level)
 
-- [ ] Running `pnpm test` in packages/api uses spectree-test.db, never spectree.db
-- [ ] Running `pnpm test` in packages/orchestrator uses spectree-test.db or mocks
+- [ ] Running `pnpm test` in packages/api uses dispatcher-test.db, never dispatcher.db
+- [ ] Running `pnpm test` in packages/orchestrator uses dispatcher-test.db or mocks
 - [ ] Prisma client throws clear error if test environment targets production DB
 - [ ] Tests pass with a fresh (empty) test database
 - [ ] Production database is completely untouched after full test suite run
@@ -335,7 +335,7 @@ package.json                               → Add pretest validation script
 ### Planner Prompt
 
 ```
-Add an Execution Plan visualization to the SpecTree web dashboard. The execution
+Add an Execution Plan visualization to the Dispatcher web dashboard. The execution
 plan system (phases, dependencies, parallel groups, complexity estimates) is a
 core differentiator but has no visual representation — it's only accessible via
 the API endpoint GET /api/v1/execution-plans/:epicId.
@@ -420,7 +420,7 @@ packages/web/src/lib/api/types.ts            → Add ExecutionPlan types
 ### Planner Prompt
 
 ```
-Add an entity change history (audit log) system to SpecTree. Currently,
+Add an entity change history (audit log) system to Dispatcher. Currently,
 decisions are tracked via the append-only decision log, but general changes
 (status updates, description edits, reassignments, title changes) have no
 record of who changed what, when, or what the previous value was.
@@ -457,7 +457,7 @@ Implementation:
    - Show "Status changed from 'In Progress' to 'Done' by Aaron" style entries
 
 5. MCP: Expose changelog to AI agents
-   - Add spectree__get_changelog tool (or action in a composite tool)
+   - Add dispatcher__get_changelog tool (or action in a composite tool)
    - AI agents can query what changed since their last session
 
 Target packages: packages/api (schema, services, routes), packages/web (activity),
@@ -498,7 +498,7 @@ packages/web/src/hooks/queries/use-changelog.ts      → NEW: React Query hook
 packages/web/src/lib/api/changelog.ts                → NEW: API client
 packages/web/src/components/activity/activity-panel.tsx → Integrate changelog data
 packages/web/src/components/activity/activity-item.tsx  → New item types for changes
-packages/mcp/src/tools/changelog.ts                  → NEW: spectree__get_changelog
+packages/mcp/src/tools/changelog.ts                  → NEW: dispatcher__get_changelog
 ```
 
 ### Acceptance Criteria (Epic-Level)
@@ -520,8 +520,8 @@ packages/mcp/src/tools/changelog.ts                  → NEW: spectree__get_chan
 
 #### Prerequisites
 
-1. SpecTree API running: `cd packages/api && pnpm dev`
-2. SpecTree MCP tools available in your Copilot CLI session
+1. Dispatcher API running: `cd packages/api && pnpm dev`
+2. Dispatcher MCP tools available in your Copilot CLI session
 3. MCP token configured in `packages/mcp/.env`
 
 #### Phase A: Independent Epics (Run in Parallel)
@@ -531,7 +531,7 @@ Open 3 Copilot CLI sessions simultaneously:
 **Session 1 — Epic 3 (Test DB Isolation):**
 ```
 @planner --gates=auto,auto,review,review,review "Fix test database isolation
-for SpecTree. On Feb 6, 2026, running tests overwrote the production SQLite
+for Dispatcher. On Feb 6, 2026, running tests overwrote the production SQLite
 database with test fixture data. Ensure tests ALWAYS use a separate database,
 add runtime guards, and add globalSetup/globalTeardown for vitest. See
 docs/platform-improvements-plan.md Section 5 for full specification."
@@ -540,7 +540,7 @@ docs/platform-improvements-plan.md Section 5 for full specification."
 **Session 2 — Epic 5 (Change History):**
 ```
 @planner --gates=auto,auto,review,review,review "Add an entity change history
-audit log to SpecTree. Track who changed what field, when, and what the previous
+audit log to Dispatcher. Track who changed what field, when, and what the previous
 value was for all features, tasks, and epics. Add ChangeLog model, hook into
 services, expose via API and MCP, and integrate with the existing Activity Panel
 in the frontend. See docs/platform-improvements-plan.md Section 7 for full
@@ -549,7 +549,7 @@ specification."
 
 **Session 3 — Epic 1 (MCP Consolidation):**
 ```
-@planner --gates=auto,auto,review,review,review "Consolidate the SpecTree MCP
+@planner --gates=auto,auto,review,review,review "Consolidate the Dispatcher MCP
 server from 83 individual tools to ~25 composite tools. Group related tools by
 domain (code-context, validation, structured-desc, progress, ai-context, ordering)
 into composite tools with an action parameter. Keep backward compatibility with
@@ -559,7 +559,7 @@ specification."
 
 **After planning completes for each, review the execution plans:**
 ```typescript
-spectree__get_execution_plan("<epic-id>")
+dispatcher__get_execution_plan("<epic-id>")
 ```
 
 **Then execute each epic:**
@@ -569,7 +569,7 @@ spectree__get_execution_plan("<epic-id>")
 
 Or via CLI:
 ```bash
-spectree run <epic-id>
+dispatcher run <epic-id>
 ```
 
 #### Phase B: Dependent Epics (After Phase A)
@@ -577,7 +577,7 @@ spectree run <epic-id>
 **Session 4 — Epic 2 (SSE Updates):**
 ```
 @planner --gates=auto,auto,review,review,review "Add Server-Sent Events to
-SpecTree for real-time dashboard updates. Add SSE endpoint to the API server,
+Dispatcher for real-time dashboard updates. Add SSE endpoint to the API server,
 extend the internal EventEmitter to cover all entity mutations, create frontend
 useEventSource hook with React Query cache invalidation. See
 docs/platform-improvements-plan.md Section 4 for full specification."
@@ -614,13 +614,13 @@ During orchestrator execution, monitor progress:
 
 ```typescript
 // Check overall progress
-spectree__get_progress_summary({ epicId: "<epic-id>" })
+dispatcher__get_progress_summary({ epicId: "<epic-id>" })
 
 // Check for blocked items
-spectree__get_blocked_summary({ epicId: "<epic-id>" })
+dispatcher__get_blocked_summary({ epicId: "<epic-id>" })
 
 // View decisions made by AI agents
-spectree__list_decisions({ epicId: "<epic-id>" })
+dispatcher__list_decisions({ epicId: "<epic-id>" })
 ```
 
 ### Post-Execution Validation
@@ -629,7 +629,7 @@ After each epic completes:
 
 ```bash
 # Run all validation checks
-spectree validate <epic-id>
+dispatcher validate <epic-id>
 
 # Run the test suite
 pnpm test

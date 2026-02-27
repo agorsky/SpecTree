@@ -1,6 +1,6 @@
-# SpecTree Troubleshooting Guide
+# Dispatcher Troubleshooting Guide
 
-Comprehensive solutions for common issues during installation, setup, and usage of SpecTree.
+Comprehensive solutions for common issues during installation, setup, and usage of Dispatcher.
 
 ---
 
@@ -9,26 +9,26 @@ Comprehensive solutions for common issues during installation, setup, and usage 
 Before diving into specific issues, run these diagnostic checks:
 
 ```bash
-# Check SpecTree CLI version
-spectree --version
+# Check Dispatcher CLI version
+dispatcher --version
 
 # Check API health
 curl http://localhost:3001/health
 
 # List installed skill packs
-spectree list
+dispatcher list
 
 # Check MCP server connectivity (in GitHub Copilot)
-@spectree help
+@dispatcher help
 ```
 
 ---
 
 ## Installation Issues
 
-### Command Not Found: `spectree`
+### Command Not Found: `dispatcher`
 
-**Symptom:** Running `spectree` in terminal shows "command not found"
+**Symptom:** Running `dispatcher` in terminal shows "command not found"
 
 **Likely Causes:**
 1. CLI not installed globally
@@ -39,15 +39,15 @@ spectree list
 
 **Option 1: Install globally**
 ```bash
-npm install -g @spectree/cli
+npm install -g @dispatcher/cli
 # or
-pnpm install -g @spectree/cli
+pnpm install -g @dispatcher/cli
 ```
 
 **Option 2: Use npx (no global install)**
 ```bash
-npx @spectree/cli list
-npx @spectree/cli install @spectree/full
+npx @dispatcher/cli list
+npx @dispatcher/cli install @dispatcher/full
 ```
 
 **Option 3: Fix PATH**
@@ -66,7 +66,7 @@ Add to `~/.bashrc` or `~/.zshrc` to persist.
 
 **Verify:**
 ```bash
-which spectree
+which dispatcher
 # Should show path to CLI
 ```
 
@@ -76,7 +76,7 @@ which spectree
 
 **Symptom:** 
 ```
-Error: EACCES: permission denied, mkdir '/usr/local/lib/node_modules/@spectree'
+Error: EACCES: permission denied, mkdir '/usr/local/lib/node_modules/@dispatcher'
 ```
 
 **Likely Causes:**
@@ -87,7 +87,7 @@ Error: EACCES: permission denied, mkdir '/usr/local/lib/node_modules/@spectree'
 
 **Option 1: Use npx (recommended)**
 ```bash
-npx @spectree/cli install @spectree/full
+npx @dispatcher/cli install @dispatcher/full
 ```
 
 **Option 2: Fix npm permissions (macOS/Linux)**
@@ -99,12 +99,12 @@ export PATH=~/.npm-global/bin:$PATH
 source ~/.bashrc  # or ~/.zshrc
 
 # Now install globally
-npm install -g @spectree/cli
+npm install -g @dispatcher/cli
 ```
 
 **Option 3: Use sudo (not recommended)**
 ```bash
-sudo npm install -g @spectree/cli
+sudo npm install -g @dispatcher/cli
 ```
 
 ---
@@ -113,7 +113,7 @@ sudo npm install -g @spectree/cli
 
 **Symptom:**
 ```
-Error: Request timeout downloading @spectree/planning
+Error: Request timeout downloading @dispatcher/planning
 ```
 
 **Likely Causes:**
@@ -125,22 +125,22 @@ Error: Request timeout downloading @spectree/planning
 
 **Check network:**
 ```bash
-ping spectree.io
-curl -I https://registry.spectree.io/health
+ping dispatcher.io
+curl -I https://registry.dispatcher.io/health
 ```
 
 **Retry with increased timeout:**
 ```bash
-spectree install @spectree/planning --timeout 120
+dispatcher install @dispatcher/planning --timeout 120
 ```
 
 **Check firewall settings:**
 - Ensure outbound HTTPS (port 443) is allowed
-- Whitelist `registry.spectree.io`
+- Whitelist `registry.dispatcher.io`
 
 **Use alternative registry (if available):**
 ```bash
-spectree install @spectree/planning --registry https://backup-registry.spectree.io
+dispatcher install @dispatcher/planning --registry https://backup-registry.dispatcher.io
 ```
 
 ---
@@ -149,11 +149,11 @@ spectree install @spectree/planning --registry https://backup-registry.spectree.
 
 ### MCP Server Not Responding
 
-**Symptom:** GitHub Copilot shows "MCP server 'spectree' not responding"
+**Symptom:** GitHub Copilot shows "MCP server 'dispatcher' not responding"
 
 **Likely Causes:**
 1. MCP server not configured in Copilot settings
-2. SpecTree API not running
+2. Dispatcher API not running
 3. Invalid API token
 4. MCP server binary not found
 
@@ -167,9 +167,9 @@ Check `~/.config/github-copilot/config.json`:
 {
   "mcp": {
     "servers": {
-      "spectree": {
+      "dispatcher": {
         "command": "npx",
-        "args": ["@spectree/mcp"],
+        "args": ["@dispatcher/mcp"],
         "env": {
           "API_BASE_URL": "http://localhost:3001",
           "API_TOKEN": "your-token-here"
@@ -189,8 +189,8 @@ curl http://localhost:3001/health
 
 If not running:
 ```bash
-cd /path/to/SpecTree
-pnpm --filter @spectree/api dev
+cd /path/to/Dispatcher
+pnpm --filter @dispatcher/api dev
 ```
 
 **Step 3: Verify API token**
@@ -207,7 +207,7 @@ Get a valid token:
 After config changes:
 1. Quit GitHub Copilot completely
 2. Reopen your editor
-3. Test: `@spectree help`
+3. Test: `@dispatcher help`
 
 ---
 
@@ -257,7 +257,7 @@ Should return epic list, not 401.
 
 ### MCP Tools Not Available in Copilot
 
-**Symptom:** Typing `@spectree` shows no suggestions
+**Symptom:** Typing `@dispatcher` shows no suggestions
 
 **Likely Causes:**
 1. MCP server not configured
@@ -268,17 +268,17 @@ Should return epic list, not 401.
 
 **Check skill pack installation:**
 ```bash
-spectree list
+dispatcher list
 ```
 
 Ensure packs are installed:
-- `@spectree/core` (minimum required)
-- `@spectree/planning` (for planner agent)
-- `@spectree/orchestrator` (for orchestration)
+- `@dispatcher/core` (minimum required)
+- `@dispatcher/planning` (for planner agent)
+- `@dispatcher/orchestrator` (for orchestration)
 
 **Install missing packs:**
 ```bash
-spectree install @spectree/full
+dispatcher install @dispatcher/full
 ```
 
 **Clear Copilot cache:**
@@ -292,7 +292,7 @@ rmdir /s %APPDATA%\github-copilot\cache
 
 **Restart Copilot and test:**
 ```
-@spectree help
+@dispatcher help
 ```
 
 ---
@@ -303,7 +303,7 @@ rmdir /s %APPDATA%\github-copilot\cache
 
 **Symptom:**
 ```
-Error: Pack '@spectree/planning' not found in registry
+Error: Pack '@dispatcher/planning' not found in registry
 ```
 
 **Likely Causes:**
@@ -315,18 +315,18 @@ Error: Pack '@spectree/planning' not found in registry
 
 **List available packs:**
 ```bash
-spectree list --available
+dispatcher list --available
 ```
 
 **Check pack name spelling:**
 
 Common mistakes:
-- `@spectree/planner` ❌ → `@spectree/planning` ✅
-- `@spectree/orchestrate` ❌ → `@spectree/orchestrator` ✅
+- `@dispatcher/planner` ❌ → `@dispatcher/planning` ✅
+- `@dispatcher/orchestrate` ❌ → `@dispatcher/orchestrator` ✅
 
 **Verify registry connectivity:**
 ```bash
-curl https://registry.spectree.io/api/v1/skill-packs
+curl https://registry.dispatcher.io/api/v1/skill-packs
 ```
 
 ---
@@ -335,9 +335,9 @@ curl https://registry.spectree.io/api/v1/skill-packs
 
 **Symptom:**
 ```
-Error: Cannot update @spectree/planning - local changes detected
+Error: Cannot update @dispatcher/planning - local changes detected
 Files modified:
-  - .github/copilot-instructions/@spectree/planning/agents/planner.md
+  - .github/copilot-instructions/@dispatcher/planning/agents/planner.md
 ```
 
 **Likely Causes:**
@@ -350,19 +350,19 @@ Files modified:
 ```bash
 git add .github/copilot-instructions/
 git commit -m "Custom modifications to planner"
-spectree update @spectree/planning
+dispatcher update @dispatcher/planning
 ```
 
 **Option 2: Stash changes temporarily**
 ```bash
 git stash
-spectree update @spectree/planning
+dispatcher update @dispatcher/planning
 git stash pop  # Merge changes back
 ```
 
 **Option 3: Force update (loses local changes)**
 ```bash
-spectree update @spectree/planning --force
+dispatcher update @dispatcher/planning --force
 ```
 
 ⚠️ **Warning:** `--force` will overwrite your changes!
@@ -406,7 +406,7 @@ Use semantic versioning:
 
 **Validate before publishing:**
 ```bash
-spectree validate .
+dispatcher validate .
 ```
 
 Fix all errors shown.
@@ -428,7 +428,7 @@ Fix all errors shown.
 
 **Verify structured description exists:**
 ```
-@spectree get structured description for task ENG-42-1-1
+@dispatcher get structured description for task ENG-42-1-1
 ```
 
 Should show `aiInstructions` field with content.
@@ -473,7 +473,7 @@ Should show `aiInstructions` field with content.
 
 Link related files:
 ```
-@spectree link file to task ENG-42-1-1 "packages/api/src/routes/users.ts"
+@dispatcher link file to task ENG-42-1-1 "packages/api/src/routes/users.ts"
 ```
 
 Reference in AI instructions:
@@ -483,15 +483,15 @@ Reference in AI instructions:
 
 **Define clear acceptance criteria:**
 ```
-@spectree add acceptance criterion to task ENG-42-1-1 "Endpoint returns 200 with valid JSON"
-@spectree add acceptance criterion to task ENG-42-1-1 "Unauthorized requests return 401"
+@dispatcher add acceptance criterion to task ENG-42-1-1 "Endpoint returns 200 with valid JSON"
+@dispatcher add acceptance criterion to task ENG-42-1-1 "Unauthorized requests return 401"
 ```
 
 **Log decisions:**
 
 When making implementation choices:
 ```
-@spectree log decision "Use Zod for validation instead of Joi because Zod is already used in the project"
+@dispatcher log decision "Use Zod for validation instead of Joi because Zod is already used in the project"
 ```
 
 Future agents will see this context.
@@ -519,14 +519,14 @@ Future agents will see this context.
 **Run test command manually:**
 ```bash
 cd /path/to/project
-pnpm test --filter @spectree/api
+pnpm test --filter @dispatcher/api
 ```
 
 Does it pass? If no, fix tests first.
 
 **Specify working directory:**
 ```
-@spectree add validation with workingDirectory "/Users/you/project/packages/api"
+@dispatcher add validation with workingDirectory "/Users/you/project/packages/api"
 ```
 
 **Check environment variables:**
@@ -546,7 +546,7 @@ pnpm test
 
 Use:
 ```bash
-pnpm test --filter @spectree/api --run preferences.test.ts
+pnpm test --filter @dispatcher/api --run preferences.test.ts
 ```
 
 ---
@@ -609,21 +609,21 @@ Instead of one complex check, use 2-3 simple checks:
 
 **List validations:**
 ```
-@spectree list validations for task ENG-42-1-3
+@dispatcher list validations for task ENG-42-1-3
 ```
 
 Find the manual check (type: `manual`).
 
 **Mark as validated:**
 ```
-@spectree mark manual validation <checkId> for task ENG-42-1-3 validated with notes "Verified in Chrome, looks good"
+@dispatcher mark manual validation <checkId> for task ENG-42-1-3 validated with notes "Verified in Chrome, looks good"
 ```
 
 **If check is outdated:**
 
 Remove it:
 ```
-@spectree remove validation <checkId> from task ENG-42-1-3
+@dispatcher remove validation <checkId> from task ENG-42-1-3
 ```
 
 ---
@@ -652,7 +652,7 @@ Reduces CPU/memory pressure.
 
 If tasks take 3x longer than estimated, update estimates:
 ```
-@spectree set execution metadata for task ENG-42-1-1 with complexity complex
+@dispatcher set execution metadata for task ENG-42-1-1 with complexity complex
 ```
 
 **Optimize validation checks:**
@@ -660,17 +660,17 @@ If tasks take 3x longer than estimated, update estimates:
 Remove slow checks:
 ```bash
 # Instead of full build:
-spectree add validation type command with command "pnpm build"  # Slow!
+dispatcher add validation type command with command "pnpm build"  # Slow!
 
 # Use type checking only:
-spectree add validation type command with command "pnpm typecheck"  # Faster
+dispatcher add validation type command with command "pnpm typecheck"  # Faster
 ```
 
 ---
 
 ### Database Queries Slow
 
-**Symptom:** SpecTree UI/API is slow to load
+**Symptom:** Dispatcher UI/API is slow to load
 
 **Likely Causes:**
 1. Database not indexed properly
@@ -681,7 +681,7 @@ spectree add validation type command with command "pnpm typecheck"  # Faster
 
 **Check database size:**
 ```bash
-ls -lh spectree.db
+ls -lh dispatcher.db
 ```
 
 If >100MB, consider PostgreSQL.
@@ -698,12 +698,12 @@ pnpm exec prisma studio
 
 Update `DATABASE_URL` in `.env`:
 ```bash
-DATABASE_URL="postgresql://user:pass@localhost:5432/spectree"
+DATABASE_URL="postgresql://user:pass@localhost:5432/dispatcher"
 ```
 
 Run migrations:
 ```bash
-pnpm --filter @spectree/api db:push
+pnpm --filter @dispatcher/api db:push
 ```
 
 ---
@@ -712,7 +712,7 @@ pnpm --filter @spectree/api db:push
 
 **Symptom:**
 ```
-Error: MCP tool 'spectree__list_epics' timed out
+Error: MCP tool 'dispatcher__list_epics' timed out
 ```
 
 **Likely Causes:**
@@ -732,7 +732,7 @@ Error: MCP tool 'spectree__list_epics' timed out
 
 Use pagination:
 ```
-@spectree list epics with limit 20
+@dispatcher list epics with limit 20
 ```
 
 **Restart services:**
@@ -753,19 +753,19 @@ pnpm dev
 
 **CLI:**
 ```bash
-DEBUG=spectree:* spectree install @spectree/planning
+DEBUG=dispatcher:* dispatcher install @dispatcher/planning
 ```
 
 **API:**
 ```bash
-LOG_LEVEL=debug pnpm --filter @spectree/api dev
+LOG_LEVEL=debug pnpm --filter @dispatcher/api dev
 ```
 
 **MCP:**
 ```bash
 # In MCP config
 "env": {
-  "DEBUG": "spectree:*"
+  "DEBUG": "dispatcher:*"
 }
 ```
 
@@ -779,7 +779,7 @@ LOG_LEVEL=debug pnpm --filter @spectree/api dev
 
 **MCP logs (macOS/Linux):**
 ```bash
-tail -f ~/.config/github-copilot/logs/mcp-server-spectree.log
+tail -f ~/.config/github-copilot/logs/mcp-server-dispatcher.log
 ```
 
 **Browser console (web UI):**
@@ -790,15 +790,15 @@ Open DevTools → Console tab, check for errors.
 
 If you're still experiencing issues:
 
-1. **Check GitHub Issues:** [github.com/your-org/spectree/issues](https://github.com/your-org/spectree/issues)
+1. **Check GitHub Issues:** [github.com/your-org/dispatcher/issues](https://github.com/your-org/dispatcher/issues)
 2. **Open a new issue** with:
    - Operating system and version
-   - SpecTree version (`spectree --version`)
+   - Dispatcher version (`dispatcher --version`)
    - Full error message
    - Steps to reproduce
    - Relevant logs
 3. **Join community chat:** [Link to Slack/Discord]
-4. **Email support:** support@spectree.dev
+4. **Email support:** support@dispatcher.dev
 
 ---
 
@@ -806,17 +806,17 @@ If you're still experiencing issues:
 
 ### Weekly Checklist
 
-✅ Check for skill pack updates: `spectree list`  
+✅ Check for skill pack updates: `dispatcher list`  
 ✅ Review API logs for errors  
-✅ Backup database: `cp spectree.db spectree.db.backup`  
+✅ Backup database: `cp dispatcher.db dispatcher.db.backup`  
 ✅ Clear old Git branches  
 ✅ Update dependencies: `pnpm update`  
 
 ### Before Major Work
 
 ✅ Commit all changes: `git status`  
-✅ Update skill packs: `spectree update --all`  
-✅ Verify MCP connectivity: `@spectree help`  
+✅ Update skill packs: `dispatcher update --all`  
+✅ Verify MCP connectivity: `@dispatcher help`  
 ✅ Test key workflows: Create test epic  
 
 ---
@@ -832,7 +832,7 @@ Quick reference for error messages:
 | `401 Unauthorized` | Invalid or expired API token |
 | `404 Not Found` | Wrong endpoint or resource doesn't exist |
 | `EACCES permission denied` | File permission or install without sudo |
-| `Validation failed` | Check pack structure with `spectree validate` |
+| `Validation failed` | Check pack structure with `dispatcher validate` |
 | `Command not found` | CLI not installed or not in PATH |
 | `MCP server not responding` | Check MCP config and restart Copilot |
 

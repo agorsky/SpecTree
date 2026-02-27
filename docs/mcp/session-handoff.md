@@ -1,6 +1,6 @@
 # Session Handoff System
 
-The Session Handoff System provides explicit session management for AI agents working on SpecTree epics, enabling context preservation and handoff between sessions.
+The Session Handoff System provides explicit session management for AI agents working on Dispatcher epics, enabling context preservation and handoff between sessions.
 
 ## Overview
 
@@ -43,7 +43,7 @@ model AiSession {
 
 ## MCP Tools
 
-### spectree__start_session
+### dispatcher__start_session
 
 Start a new AI session for an epic. Creates a session record, abandons any existing active sessions, and returns handoff data from the previous session.
 
@@ -84,7 +84,7 @@ Start a new AI session for an epic. Creates a session record, abandons any exist
 }
 ```
 
-### spectree__end_session
+### dispatcher__end_session
 
 End the current AI session with handoff data for successor sessions.
 
@@ -98,7 +98,7 @@ End the current AI session with handoff data for successor sessions.
 
 **Example:**
 ```typescript
-await spectree__end_session({
+await dispatcher__end_session({
   epicId: "Mobile App Redesign",
   summary: "Completed login screen implementation and started on profile page",
   nextSteps: [
@@ -118,7 +118,7 @@ await spectree__end_session({
 });
 ```
 
-### spectree__get_last_session
+### dispatcher__get_last_session
 
 Get the last completed session for an epic without starting a new one.
 
@@ -127,7 +127,7 @@ Get the last completed session for an epic without starting a new one.
 
 **Returns:** Session details including all handoff data, or null if no completed sessions exist.
 
-### spectree__get_session_history
+### dispatcher__get_session_history
 
 Get the history of all sessions for an epic.
 
@@ -137,7 +137,7 @@ Get the history of all sessions for an epic.
 
 **Returns:** List of sessions with summaries and counts.
 
-### spectree__get_active_session
+### dispatcher__get_active_session
 
 Check if there's an active session for an epic.
 
@@ -149,9 +149,9 @@ Check if there's an active session for an epic.
 ## Automatic Work Tracking
 
 The following operations automatically track work progress:
-- `spectree__manage_progress` with action `start_work` - begins work on an item
-- `spectree__manage_progress` with action `complete_work` - completes work on an item
-- `spectree__manage_progress` with action `log_progress` - logs incremental progress
+- `dispatcher__manage_progress` with action `start_work` - begins work on an item
+- `dispatcher__manage_progress` with action `complete_work` - completes work on an item
+- `dispatcher__manage_progress` with action `log_progress` - logs incremental progress
 
 This means AI agents don't need to manually track work - it's built into the progress tools.
 
@@ -163,7 +163,7 @@ Always start a session before beginning work on an epic:
 
 ```typescript
 // At the start of your work
-const { previousSession, epicProgress } = await spectree__start_session({
+const { previousSession, epicProgress } = await dispatcher__start_session({
   epicId: "COM-5",
   externalId: "copilot-session-xyz"  // Optional: your session ID
 });
@@ -182,7 +182,7 @@ Always end your session with good handoff data:
 
 ```typescript
 // At the end of your work
-await spectree__end_session({
+await dispatcher__end_session({
   epicId: "COM-5",
   summary: "Implemented session handoff feature including Prisma model, " +
            "service layer, API routes, and MCP tools. All tests passing.",

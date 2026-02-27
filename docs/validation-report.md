@@ -1,4 +1,4 @@
-# SpecTree External Adoption Validation Report
+# Dispatcher External Adoption Validation Report
 
 **Date:** February 16, 2026  
 **Test Environment:** Fresh external repository  
@@ -8,11 +8,11 @@
 
 ## Test Scope
 
-This validation tests the complete SpecTree adoption workflow from initial installation through first successful orchestration run.
+This validation tests the complete Dispatcher adoption workflow from initial installation through first successful orchestration run.
 
 ### Test Steps
 
-1. ✅ Install @spectree/full pack via CLI
+1. ✅ Install @dispatcher/full pack via CLI
 2. ✅ Configure MCP server
 3. ✅ Verify installation
 4. ✅ Create first epic using planner agent
@@ -24,7 +24,7 @@ This validation tests the complete SpecTree adoption workflow from initial insta
 
 - Node.js 18+ installed
 - GitHub repository initialized
-- SpecTree API server running (localhost:3001)
+- Dispatcher API server running (localhost:3001)
 - Valid API authentication token
 
 ---
@@ -42,19 +42,19 @@ This validation tests the complete SpecTree adoption workflow from initial insta
 
 **Remaining Work:**
 - ❌ Skill pack files need to be stored in database during publish
-- ❌ @spectree/full pack needs to be created and published
+- ❌ @dispatcher/full pack needs to be created and published
 - ❌ Test CLI install command with real pack
 
 **Commands Tested:**
 ```bash
 # NOT YET TESTED - blocked on pack creation
-spectree install @spectree/full
-spectree list --installed
+dispatcher install @dispatcher/full
+dispatcher list --installed
 ```
 
 **Expected Outcome:**
 - Files copied to `.github/copilot-instructions/`
-- Manifest created at `.spectree/manifest.json`
+- Manifest created at `.dispatcher/manifest.json`
 - MCP configuration updated
 
 **Actual Outcome:** Cannot test until packs are published with file contents.
@@ -71,9 +71,9 @@ spectree list --installed
 ```json
 {
   "mcpServers": {
-    "spectree": {
+    "dispatcher": {
       "command": "npx",
-      "args": ["@spectree/mcp"],
+      "args": ["@dispatcher/mcp"],
       "env": {
         "SPECTREE_API_URL": "http://localhost:3001",
         "SPECTREE_API_TOKEN": "${SPECTREE_API_TOKEN}"
@@ -98,7 +98,7 @@ spectree list --installed
 
 **Validation Steps:**
 - [ ] Use planner agent to create epic with 2-3 features
-- [ ] Verify epic appears in SpecTree dashboard
+- [ ] Verify epic appears in Dispatcher dashboard
 - [ ] Verify features have execution order
 - [ ] Verify structured descriptions populated
 
@@ -120,13 +120,13 @@ spectree list --installed
 - [ ] Verify feature status transitions (Backlog → In Progress → Done)
 - [ ] Verify worker agent completes tasks
 - [ ] Verify files are modified
-- [ ] Verify SpecTree tracking via MCP tools
+- [ ] Verify Dispatcher tracking via MCP tools
 
 **Success Criteria:**
 - At least one feature completed
 - Task validations run successfully
 - Code changes committed
-- SpecTree dashboard reflects progress
+- Dispatcher dashboard reflects progress
 
 ---
 
@@ -140,7 +140,7 @@ spectree list --installed
    - **Fix Required:** Update `publishVersion` to accept and store file contents
    - **Estimated Time:** 30-45 minutes
 
-2. **@spectree/full Pack Creation** ❌
+2. **@dispatcher/full Pack Creation** ❌
    - **Issue:** Reference pack doesn't exist
    - **Impact:** Cannot test install workflow
    - **Fix Required:** Create and publish comprehensive pack with all agents/skills
@@ -215,7 +215,7 @@ spectree list --installed
    - Update CLI `publish` command to include file contents
    - Store files in `SkillPackFile` table
 
-2. **Create @spectree/full Pack**
+2. **Create @dispatcher/full Pack**
    - Bundle all agents (planner, orchestrator, worker)
    - Include all skills
    - Add comprehensive instructions
@@ -270,7 +270,7 @@ spectree list --installed
 
 **Path Forward:**
 1. Implement file storage (30-45 min)
-2. Create and publish @spectree/full pack (45-60 min)
+2. Create and publish @dispatcher/full pack (45-60 min)
 3. Run external validation test (30 min)
 4. Update documentation with findings (15 min)
 
@@ -298,6 +298,6 @@ spectree list --installed
 
 ---
 
-**Report Author:** SpecTree AI Agent  
+**Report Author:** Dispatcher AI Agent  
 **Last Updated:** February 16, 2026  
 **Version:** 1.0

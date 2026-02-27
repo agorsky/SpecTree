@@ -1,10 +1,10 @@
-# SpecTree API Documentation
+# Dispatcher API Documentation
 
 **Complete REST API reference for internal testers and developers**
 
 ## Quick Start
 
-- 🚀 **New to SpecTree API?** Start with [Authentication & Users](./auth-user-endpoints.md)
+- 🚀 **New to Dispatcher API?** Start with [Authentication & Users](./auth-user-endpoints.md)
 - 🔍 **Looking for something?** Check the [Complete Endpoint List](#complete-endpoint-list)
 - 📝 **Working with features?** See [Features](./feature-endpoints.md), [Tasks](./task-endpoints.md), and [Epics](./epic-endpoints.md)
 
@@ -275,10 +275,10 @@ For questions or issues:
 1. Check the relevant endpoint documentation above
 2. Search the [Endpoint Inventory](../archive/planning/ENDPOINT-INVENTORY.md)
 3. Review common error codes and solutions in each doc
-4. Contact the SpecTree team
+4. Contact the Dispatcher team
 
 ---
 
 **Last Updated:** February 10, 2026  
 **API Version:** v1  
-**Base URL:** `https://api.spectree.app/api/v1`
+**Base URL:** `https://api.dispatcher.app/api/v1`

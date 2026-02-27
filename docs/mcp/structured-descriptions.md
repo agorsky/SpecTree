@@ -1,9 +1,9 @@
 # Structured Descriptions
 
 > **⚠️ DEPRECATION NOTICE:**  
-> The individual structured description tools (`spectree__get_structured_description`, `spectree__set_structured_description`, `spectree__update_section`, `spectree__add_acceptance_criterion`, `spectree__link_file`, `spectree__add_external_link`) are **DEPRECATED**.  
+> The individual structured description tools (`dispatcher__get_structured_description`, `dispatcher__set_structured_description`, `dispatcher__update_section`, `dispatcher__add_acceptance_criterion`, `dispatcher__link_file`, `dispatcher__add_external_link`) are **DEPRECATED**.  
 >  
-> **Use instead:** `spectree__manage_description` with action-based routing:
+> **Use instead:** `dispatcher__manage_description` with action-based routing:
 > - `action='get'` - Retrieve structured description
 > - `action='set'` - Replace entire description
 > - `action='update_section'` - Update single section
@@ -11,9 +11,9 @@
 > - `action='link_file'` - Add file to filesInvolved
 > - `action='add_link'` - Add external link
 >
-> See [Tools Reference](./tools-reference.md#spectree__manage_description) for complete documentation.
+> See [Tools Reference](./tools-reference.md#dispatcher__manage_description) for complete documentation.
 
-SpecTree supports rich, structured descriptions for Features and Tasks that enable AI agents to extract and update specific sections without parsing unstructured text.
+Dispatcher supports rich, structured descriptions for Features and Tasks that enable AI agents to extract and update specific sections without parsing unstructured text.
 
 ## Overview
 
@@ -63,7 +63,7 @@ interface ExternalLink {
 Retrieve the parsed structured description from a Feature or Task.
 
 ```typescript
-spectree__get_structured_description({
+dispatcher__get_structured_description({
   id: "COM-123",      // Feature or Task identifier
   type: "feature"     // "feature" or "task"
 })
@@ -76,7 +76,7 @@ Returns the full `StructuredDescription` object or `null` if not set.
 Replace the entire structured description (use with caution).
 
 ```typescript
-spectree__set_structured_description({
+dispatcher__set_structured_description({
   id: "COM-123",
   type: "feature",
   structuredDescription: {
@@ -97,7 +97,7 @@ spectree__set_structured_description({
 Update a single section without affecting others. This is the recommended approach for incremental updates.
 
 ```typescript
-spectree__update_section({
+dispatcher__update_section({
   id: "COM-123",
   type: "feature",
   section: "aiInstructions",
@@ -124,7 +124,7 @@ spectree__update_section({
 Append a single acceptance criterion to the list (convenience tool).
 
 ```typescript
-spectree__add_acceptance_criterion({
+dispatcher__add_acceptance_criterion({
   id: "COM-123",
   type: "feature",
   criterion: "User receives confirmation email after signup"
@@ -138,7 +138,7 @@ Duplicate criteria are automatically skipped.
 Add a file path to the filesInvolved list (convenience tool).
 
 ```typescript
-spectree__link_file({
+dispatcher__link_file({
   id: "COM-123",
   type: "feature",
   filePath: "src/services/userService.ts"
@@ -152,7 +152,7 @@ Duplicate paths are automatically skipped.
 Add an external URL reference (convenience tool).
 
 ```typescript
-spectree__add_external_link({
+dispatcher__add_external_link({
   id: "COM-123",
   type: "feature",
   url: "https://docs.example.com/auth-spec",

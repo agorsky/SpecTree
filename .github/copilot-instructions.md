@@ -1,49 +1,49 @@
-# Copilot Instructions for SpecTree
+# Copilot Instructions for Dispatcher
 
 **🔴 NEVER:** `prisma migrate reset`, `prisma migrate dev`, `db push --force-reset`
 
 ---
 
-SpecTree is a project management tool similar to Linear, with a REST API, React frontend, and MCP server for AI integration.
+Dispatcher is a project management tool similar to Linear, with a REST API, React frontend, and MCP server for AI integration.
 
 ---
 
 ## ⚡ Quick Reference (READ FIRST)
 
 **Before Implementation:**
-- [ ] `spectree__list_teams()` - Discover teams (don't assume names)
-- [ ] `spectree__start_session({ epicId })` - Start session for existing epic
-- [ ] `spectree__list_templates()` - Use templates for new epics
+- [ ] `dispatcher__list_teams()` - Discover teams (don't assume names)
+- [ ] `dispatcher__start_session({ epicId })` - Start session for existing epic
+- [ ] `dispatcher__list_templates()` - Use templates for new epics
 
 **During Epic Creation:**
 - [ ] Every feature: `executionOrder`, `estimatedComplexity`, `dependencies`
 - [ ] Minimum 3 tasks per feature with detailed descriptions
-- [ ] `spectree__set_structured_description()` for ALL features and tasks
+- [ ] `dispatcher__set_structured_description()` for ALL features and tasks
 
 **Before Completing:**
-- [ ] `spectree__run_all_validations()` - Verify acceptance criteria
-- [ ] `spectree__link_code_file()` - Link modified files
-- [ ] `spectree__log_decision()` - Record important choices
+- [ ] `dispatcher__run_all_validations()` - Verify acceptance criteria
+- [ ] `dispatcher__link_code_file()` - Link modified files
+- [ ] `dispatcher__log_decision()` - Record important choices
 
 **During Implementation (EVERY file/decision):**
-- [ ] `spectree__link_code_file()` - For EVERY file created or modified
-- [ ] `spectree__log_decision()` - For every non-trivial choice
-- [ ] `spectree__log_progress()` - At every significant milestone
-- [ ] `spectree__append_ai_note()` - Observations & context for future sessions
+- [ ] `dispatcher__link_code_file()` - For EVERY file created or modified
+- [ ] `dispatcher__log_decision()` - For every non-trivial choice
+- [ ] `dispatcher__log_progress()` - At every significant milestone
+- [ ] `dispatcher__append_ai_note()` - Observations & context for future sessions
 
 **After Epic Execution (MANDATORY):**
-- [ ] `spectree__update_epic()` - Append execution summary to epic description (phase results, metrics, files)
+- [ ] `dispatcher__update_epic()` - Append execution summary to epic description (phase results, metrics, files)
 
 **At Session End:**
-- [ ] `spectree__end_session()` with summary + nextSteps
+- [ ] `dispatcher__end_session()` with summary + nextSteps
 
-## 🔴 CRITICAL: Use SpecTree for Implementation Planning
+## 🔴 CRITICAL: Use Dispatcher for Implementation Planning
 
-**When SpecTree MCP tools are available, ALWAYS use SpecTree for implementation planning instead of creating plan.md files.**
+**When Dispatcher MCP tools are available, ALWAYS use Dispatcher for implementation planning instead of creating plan.md files.**
 
-### When to Use SpecTree
+### When to Use Dispatcher
 
-Use SpecTree when the user asks to:
+Use Dispatcher when the user asks to:
 - "Build", "implement", "create", or "develop" a feature
 - "Plan" or "design" a new capability
 - Work on something that requires multiple steps or phases
@@ -53,13 +53,13 @@ Use SpecTree when the user asks to:
 
 **Step 1: Check for existing work**
 ```typescript
-spectree__list_epics()  // See existing epics
-spectree__search({ query: "relevant keywords" })  // Find related items
+dispatcher__list_epics()  // See existing epics
+dispatcher__search({ query: "relevant keywords" })  // Find related items
 ```
 
 **Step 2: Start a session (if working on existing epic)**
 ```typescript
-spectree__start_session({ epicId: "Epic Name" })
+dispatcher__start_session({ epicId: "Epic Name" })
 // Review previousSession context for continuity
 ```
 
@@ -70,14 +70,14 @@ spectree__start_session({ epicId: "Epic Name" })
 ```typescript
 // If user specifies a team, use it directly
 // If team is NOT specified, discover available teams and ASK:
-const { teams } = await spectree__list_teams();
+const { teams } = await dispatcher__list_teams();
 // teams = [{ id: "uuid-here", name: "Engineering", key: "ENG" }, { id: "uuid-here", name: "Commercial", key: "COM" }]
 
 // Then ask the user:
 // "Which team should I create this epic in? Available teams: Engineering (ENG), Commercial (COM)"
 ```
 
-**Do NOT assume team names.** If the API returns an error like "Access denied" or "Team not found" when creating an epic, call `spectree__list_teams()` to see available teams and ask the user to choose.
+**Do NOT assume team names.** If the API returns an error like "Access denied" or "Team not found" when creating an epic, call `dispatcher__list_teams()` to see available teams and ask the user to choose.
 
 **Step 4: Create epic using a template (MANDATORY)**
 
@@ -85,18 +85,18 @@ const { teams } = await spectree__list_teams();
 
 ```typescript
 // Step 4a: List available templates
-spectree__list_templates()
+dispatcher__list_templates()
 // Available: "Code Feature", "Bug Fix", "Refactoring", "API Endpoint"
 
 // Step 4b: Preview what will be created
-spectree__preview_template({
+dispatcher__preview_template({
   templateName: "Code Feature",
   epicName: "User Activity Dashboard",
   variables: { topic: "Activity Dashboard" }
 })
 
 // Step 4c: Create from template (creates full hierarchy)
-spectree__create_from_template({
+dispatcher__create_from_template({
   templateName: "Code Feature",
   epicName: "User Activity Dashboard",
   team: "Engineering",  // Use actual team from step 3
@@ -109,7 +109,7 @@ spectree__create_from_template({
 
 **Step 5: Create features with execution metadata**
 ```typescript
-spectree__create_feature({
+dispatcher__create_feature({
   title: "Database Schema",
   epic: "User Activity Dashboard",
   executionOrder: 1,
@@ -117,7 +117,7 @@ spectree__create_feature({
   description: "Add ActivityLog and related tables..."
 })
 
-spectree__create_feature({
+dispatcher__create_feature({
   title: "Activity Service",
   epic: "User Activity Dashboard",
   executionOrder: 2,
@@ -128,7 +128,7 @@ spectree__create_feature({
 
 **Step 6: Add tasks for granular work**
 ```typescript
-spectree__create_task({
+dispatcher__create_task({
   title: "Add ActivityLog table to Prisma schema",
   feature_id: "SPEC-123",
   executionOrder: 1,
@@ -138,7 +138,7 @@ spectree__create_task({
 
 **Step 7: Add structured details**
 ```typescript
-spectree__set_structured_description({
+dispatcher__set_structured_description({
   id: "SPEC-123",
   type: "feature",
   structuredDesc: {
@@ -157,30 +157,30 @@ spectree__set_structured_description({
 ### During Implementation
 
 **At START:**
-- `spectree__start_work({ id, type })` — mark item in-progress
-- `spectree__get_structured_description({ id, type })` — read acceptance criteria
-- `spectree__get_ai_context({ id, type })` — read prior session notes
+- `dispatcher__start_work({ id, type })` — mark item in-progress
+- `dispatcher__get_structured_description({ id, type })` — read acceptance criteria
+- `dispatcher__get_ai_context({ id, type })` — read prior session notes
 
 **While working (call repeatedly):**
-- `spectree__log_progress({ id, type, message, percentComplete })` — at milestones
-- `spectree__log_decision({ epicId, question, decision, rationale, category })` — for choices
-- `spectree__link_code_file({ id, type, filePath })` — for EVERY file touched
-- `spectree__append_ai_note({ id, type, noteType, content })` — observations, context
+- `dispatcher__log_progress({ id, type, message, percentComplete })` — at milestones
+- `dispatcher__log_decision({ epicId, question, decision, rationale, category })` — for choices
+- `dispatcher__link_code_file({ id, type, filePath })` — for EVERY file touched
+- `dispatcher__append_ai_note({ id, type, noteType, content })` — observations, context
 
 **Before completing:**
-- `spectree__run_all_validations({ taskId })` — verify acceptance criteria
-- `spectree__link_branch({ id, type, branchName })` — link git branch
-- `spectree__link_commit({ id, type, commitSha })` — link merge/squash commit
-- `spectree__complete_work({ id, type, summary })` — mark done
+- `dispatcher__run_all_validations({ taskId })` — verify acceptance criteria
+- `dispatcher__link_branch({ id, type, branchName })` — link git branch
+- `dispatcher__link_commit({ id, type, commitSha })` — link merge/squash commit
+- `dispatcher__complete_work({ id, type, summary })` — mark done
 
 **After PR creation:**
-- `spectree__link_pr({ id, type, prNumber, prUrl })` — link the pull request
+- `dispatcher__link_pr({ id, type, prNumber, prUrl })` — link the pull request
 
 ### 🔴 MANDATORY: Epic Execution Summary
 
 After completing execution of an epic (all phases done), you MUST update the epic's description with a permanent execution summary. This applies to orchestrator-driven execution AND manual multi-feature work.
 
-**Call `spectree__update_epic`** to append a `## ✅ Execution Complete` section to the existing description. The summary MUST include:
+**Call `dispatcher__update_epic`** to append a `## ✅ Execution Complete` section to the existing description. The summary MUST include:
 
 1. **Phase results table** — each phase with feature identifiers and ✅/❌ status
 2. **Verification metrics** — test counts, lines added/removed, file counts
@@ -218,7 +218,7 @@ Every feature MUST have:
 - Each task MUST have a detailed `description` explaining what needs to be done
 
 **3. Set structured descriptions FOR EVERY FEATURE AND TASK:**
-For each feature, call `spectree__set_structured_description` with:
+For each feature, call `dispatcher__set_structured_description` with:
 - `summary` - Clear description of what the feature does (REQUIRED)
 - `acceptanceCriteria` - List of conditions that define "done" (REQUIRED, min 3 items)
 - `aiInstructions` - Specific guidance for AI working on this feature (REQUIRED)
@@ -227,13 +227,13 @@ For each feature, call `spectree__set_structured_description` with:
 - `riskLevel` - "low", "medium", or "high"
 - `estimatedEffort` - "trivial", "small", "medium", "large", or "xl"
 
-For each task, call `spectree__set_structured_description` with:
+For each task, call `dispatcher__set_structured_description` with:
 - `summary` - What this task accomplishes (REQUIRED)
 - `acceptanceCriteria` - How to verify the task is done (REQUIRED, min 2 items)
 - `aiInstructions` - Step-by-step guidance for implementation (REQUIRED)
 
 **4. Verify execution plan:**
-After creating all features and tasks, call `spectree__get_execution_plan` and review it.
+After creating all features and tasks, call `dispatcher__get_execution_plan` and review it.
 
 ### 🔴 MANDATORY: Minimum Information Checklists
 
@@ -264,7 +264,7 @@ After creating all features and tasks, call `spectree__get_execution_plan` and r
 
 ❌ **BAD (too sparse):**
 ```typescript
-spectree__create_feature({
+dispatcher__create_feature({
   title: "Database Schema",
   epic: "Activity Dashboard",
   description: "Add tables"
@@ -273,7 +273,7 @@ spectree__create_feature({
 
 ✅ **GOOD (sufficient detail):**
 ```typescript
-spectree__create_feature({
+dispatcher__create_feature({
   title: "Activity Tracking Database Schema",
   epic: "Activity Dashboard",
   executionOrder: 1,
@@ -292,7 +292,7 @@ spectree__create_feature({
 })
 
 // Then ALSO set structured description:
-spectree__set_structured_description({
+dispatcher__set_structured_description({
   id: "COM-xxx",
   type: "feature",
   structuredDesc: {
@@ -300,7 +300,7 @@ spectree__set_structured_description({
     acceptanceCriteria: [
       "ActivityLog model exists in Prisma schema with all required fields",
       "Migration creates table with indexes on userId, activityType, createdAt",
-      "TypeScript types are exported from @spectree/shared",
+      "TypeScript types are exported from @dispatcher/shared",
       "Existing tests still pass after migration"
     ],
     aiInstructions: "1. Add ActivityLog model to schema.prisma with fields: id, userId, activityType (enum), metadata (JSON), createdAt, updatedAt. 2. Add index on (userId, createdAt) and (activityType). 3. Run prisma generate. 4. Create ActivityLogType enum in shared/types. 5. Export types from shared index.",
@@ -317,12 +317,12 @@ After calling any MCP tool that creates or updates data, you MUST:
 
 1. **Check the response for errors** - If the tool returns an error, STOP and report it
 2. **Verify critical fields were set** - For execution metadata, check the returned object has non-null values
-3. **Do NOT proceed if data didn't persist** - The tool `spectree__set_execution_metadata` now validates this automatically
+3. **Do NOT proceed if data didn't persist** - The tool `dispatcher__set_execution_metadata` now validates this automatically
 
 Example verification:
 ```typescript
 // Create feature
-const feature = await spectree__create_feature({ ... });
+const feature = await dispatcher__create_feature({ ... });
 
 // Verify it was created
 if (!feature.identifier) {
@@ -330,7 +330,7 @@ if (!feature.identifier) {
 }
 
 // Set execution metadata
-const updated = await spectree__set_execution_metadata({
+const updated = await dispatcher__set_execution_metadata({
   id: feature.identifier,
   type: "feature",
   executionOrder: 1,
@@ -346,13 +346,13 @@ const updated = await spectree__set_execution_metadata({
 
 ```typescript
 // ✅ CORRECT: Sequential creation
-const feature1 = await spectree__create_feature({ title: "Feature 1", ... });
-const feature2 = await spectree__create_feature({ title: "Feature 2", ... });
+const feature1 = await dispatcher__create_feature({ title: "Feature 1", ... });
+const feature2 = await dispatcher__create_feature({ title: "Feature 2", ... });
 
 // ❌ WRONG: Parallel creation (can cause identifier conflicts)
 await Promise.all([
-  spectree__create_feature({ title: "Feature 1", ... }),
-  spectree__create_feature({ title: "Feature 2", ... })
+  dispatcher__create_feature({ title: "Feature 1", ... }),
+  dispatcher__create_feature({ title: "Feature 2", ... })
 ]);
 ```
 
@@ -360,7 +360,7 @@ await Promise.all([
 
 Always end with session handoff:
 ```typescript
-spectree__end_session({
+dispatcher__end_session({
   epicId: "User Activity Dashboard",
   summary: "Completed database schema and started service layer",
   nextSteps: ["Implement activityService.ts", "Add API routes"],
@@ -369,7 +369,7 @@ spectree__end_session({
 })
 ```
 
-### When NOT to Use SpecTree
+### When NOT to Use Dispatcher
 
 - Quick one-off questions or explanations
 - Single-file fixes (typos, small bugs)
@@ -398,10 +398,10 @@ spectree__end_session({
 
 4. **Before any code changes, confirm the branch is synced with remote**
 
-5. **If working on a SpecTree epic, initialize session context:**
+5. **If working on a Dispatcher epic, initialize session context:**
    ```typescript
-   spectree__list_epics()  // Check for tracked epics
-   spectree__start_session({ epicId: "<epic-id>" })  // Initialize session
+   dispatcher__list_epics()  // Check for tracked epics
+   dispatcher__start_session({ epicId: "<epic-id>" })  // Initialize session
    // Review previousSession.summary, nextSteps, blockers, decisions for continuity
    ```
 
@@ -428,7 +428,7 @@ npm run db:migrate:safe        # Safe migration (backs up automatically)
 npx prisma db push             # Schema sync without --force-reset
 ```
 
-Tests use a separate database (`spectree-test.db`) configured in `packages/api/vitest.config.ts`. Do not modify this configuration.
+Tests use a separate database (`dispatcher-test.db`) configured in `packages/api/vitest.config.ts`. Do not modify this configuration.
 
 ---
 
@@ -436,11 +436,11 @@ Tests use a separate database (`spectree-test.db`) configured in `packages/api/v
 
 ### Per-Item Context (Features/Tasks)
 
-SpecTree provides dedicated AI context fields on Features and Tasks for cross-session continuity:
+Dispatcher provides dedicated AI context fields on Features and Tasks for cross-session continuity:
 
-- `spectree__get_ai_context` - Read context from previous sessions
-- `spectree__set_ai_context` - Set structured summary context  
-- `spectree__append_ai_note` - Log observations, decisions, blockers, next-steps
+- `dispatcher__get_ai_context` - Read context from previous sessions
+- `dispatcher__set_ai_context` - Set structured summary context  
+- `dispatcher__append_ai_note` - Log observations, decisions, blockers, next-steps
 
 See `docs/mcp/ai-session-context.md` for full documentation.
 
@@ -448,13 +448,13 @@ See `docs/mcp/ai-session-context.md` for full documentation.
 
 Get comprehensive progress summaries at session start to quickly understand project status:
 
-- `spectree__get_progress_summary` - Epic summary with counts, blockers, and next actions
-- `spectree__get_my_work` - Your assigned items across all epics  
-- `spectree__get_blocked_summary` - All blocked items grouped by epic
+- `dispatcher__get_progress_summary` - Epic summary with counts, blockers, and next actions
+- `dispatcher__get_my_work` - Your assigned items across all epics  
+- `dispatcher__get_blocked_summary` - All blocked items grouped by epic
 
 **Recommended at session start:**
 ```typescript
-const summary = await spectree__get_progress_summary({ epicId: "My Epic" });
+const summary = await dispatcher__get_progress_summary({ epicId: "My Epic" });
 // summary.blockedItems - Items needing attention
 // summary.nextActionable - What to work on next
 // summary.lastSession - Previous session context
@@ -468,17 +468,17 @@ For epic-level workflow continuity, use the Session Handoff System:
 
 **At session start:**
 ```typescript
-const { previousSession, epicProgress } = await spectree__start_session({
+const { previousSession, epicProgress } = await dispatcher__start_session({
   epicId: "Epic Name or ID"
 });
 // Review previousSession.summary, nextSteps, blockers, decisions
 ```
 
-**During work:** Work is automatically tracked when using `spectree__start_work` and `spectree__complete_work`.
+**During work:** Work is automatically tracked when using `dispatcher__start_work` and `dispatcher__complete_work`.
 
 **At session end:**
 ```typescript
-await spectree__end_session({
+await dispatcher__end_session({
   epicId: "Epic Name or ID",
   summary: "What was accomplished",
   nextSteps: ["Recommended next actions"],
@@ -493,12 +493,12 @@ See `docs/mcp/session-handoff.md` for full documentation.
 
 Features and Tasks support rich, structured descriptions with AI-friendly sections:
 
-- `spectree__get_structured_description` - Get parsed structured description
-- `spectree__set_structured_description` - Replace entire structured description
-- `spectree__update_section` - Update single section (recommended approach)
-- `spectree__add_acceptance_criterion` - Append acceptance criterion
-- `spectree__link_file` - Add file to filesInvolved list
-- `spectree__add_external_link` - Add external URL reference
+- `dispatcher__get_structured_description` - Get parsed structured description
+- `dispatcher__set_structured_description` - Replace entire structured description
+- `dispatcher__update_section` - Update single section (recommended approach)
+- `dispatcher__add_acceptance_criterion` - Append acceptance criterion
+- `dispatcher__link_file` - Add file to filesInvolved list
+- `dispatcher__add_external_link` - Add external URL reference
 
 **Available sections:** `summary` (required), `aiInstructions`, `acceptanceCriteria`, `filesInvolved`, `functionsToModify`, `testingStrategy`, `testFiles`, `relatedItemIds`, `externalLinks`, `technicalNotes`, `riskLevel`, `estimatedEffort`
 
@@ -508,13 +508,13 @@ See `docs/mcp/structured-descriptions.md` for full documentation.
 
 Link features and tasks directly to code artifacts for instant code context:
 
-- `spectree__link_code_file` - Link a source file
-- `spectree__unlink_code_file` - Remove a file link
-- `spectree__link_function` - Link a function (format: `filePath:functionName`)
-- `spectree__link_branch` - Set git branch
-- `spectree__link_commit` - Add commit SHA
-- `spectree__link_pr` - Link pull request
-- `spectree__get_code_context` - Get all code context
+- `dispatcher__link_code_file` - Link a source file
+- `dispatcher__unlink_code_file` - Remove a file link
+- `dispatcher__link_function` - Link a function (format: `filePath:functionName`)
+- `dispatcher__link_branch` - Set git branch
+- `dispatcher__link_commit` - Add commit SHA
+- `dispatcher__link_pr` - Link pull request
+- `dispatcher__get_code_context` - Get all code context
 
 **Difference from Structured Descriptions:**
 - Structured descriptions (`filesInvolved`) = files you *plan* to modify
@@ -526,13 +526,13 @@ See `docs/mcp/code-context.md` for full documentation.
 
 Tasks can have executable validation checks that define "done" in a verifiable way:
 
-- `spectree__add_validation` - Add a validation check (command, file_exists, file_contains, test_passes, manual)
-- `spectree__list_validations` - List checks with status summary
-- `spectree__run_validation` - Run a single check
-- `spectree__run_all_validations` - Run all checks
-- `spectree__mark_manual_validated` - Mark manual check as passed
-- `spectree__remove_validation` - Remove a check
-- `spectree__reset_validations` - Reset all to pending
+- `dispatcher__add_validation` - Add a validation check (command, file_exists, file_contains, test_passes, manual)
+- `dispatcher__list_validations` - List checks with status summary
+- `dispatcher__run_validation` - Run a single check
+- `dispatcher__run_all_validations` - Run all checks
+- `dispatcher__mark_manual_validated` - Mark manual check as passed
+- `dispatcher__remove_validation` - Remove a check
+- `dispatcher__reset_validations` - Reset all to pending
 
 See `docs/mcp/validation-checklists.md` for full documentation.
 
@@ -540,10 +540,10 @@ See `docs/mcp/validation-checklists.md` for full documentation.
 
 Record implementation decisions with their rationale using the Decision Log. Creates an append-only audit trail for understanding past choices.
 
-- `spectree__log_decision` - Record a new decision with rationale
-- `spectree__list_decisions` - List decisions with filters (epic, feature, task, category, impact)
-- `spectree__search_decisions` - Search decision text
-- `spectree__get_decision_context` - Get all decisions for a task or feature context
+- `dispatcher__log_decision` - Record a new decision with rationale
+- `dispatcher__list_decisions` - List decisions with filters (epic, feature, task, category, impact)
+- `dispatcher__search_decisions` - Search decision text
+- `dispatcher__get_decision_context` - Get all decisions for a task or feature context
 
 **When to log decisions:**
 - Choosing between libraries/approaches
@@ -553,7 +553,7 @@ Record implementation decisions with their rationale using the Decision Log. Cre
 
 **Example:**
 ```typescript
-await spectree__log_decision({
+await dispatcher__log_decision({
   epicId: "epic-uuid",
   featureId: "feature-uuid",  // optional
   question: "Which state management library to use?",
@@ -580,8 +580,8 @@ pnpm lint             # Lint all packages
 pnpm typecheck        # TypeScript checking
 
 # Single package
-pnpm --filter @spectree/api test
-pnpm --filter @spectree/web build
+pnpm --filter @dispatcher/api test
+pnpm --filter @dispatcher/web build
 
 # Single test file (from packages/api)
 cd packages/api
@@ -625,7 +625,7 @@ All extend `AppError` with `statusCode`, `code`, and optional `details`.
 ### Database
 
 - Schema: `packages/api/prisma/schema.prisma`
-- Data: `packages/api/prisma/data/spectree.db` (SQLite)
+- Data: `packages/api/prisma/data/dispatcher.db` (SQLite)
 - Generated client: `packages/api/src/generated/prisma/`
 
 ---
@@ -735,9 +735,9 @@ git merge release/x.y
 
 Six custom agents are defined in `.github/agents/`. Five are user-invokable; `feature-worker` is a sub-agent only.
 
-### @planner - SpecTree Planning Pipeline
+### @planner - Dispatcher Planning Pipeline
 
-Creates structured SpecTree epics from natural language descriptions. Runs a 5-stage pipeline: Analyze → Decompose → Detail → Evaluate → Verify. Supports configurable review gates at each stage.
+Creates structured Dispatcher epics from natural language descriptions. Runs a 5-stage pipeline: Analyze → Decompose → Detail → Evaluate → Verify. Supports configurable review gates at each stage.
 
 ```
 Usage: @planner "Build a user activity dashboard"
@@ -747,7 +747,7 @@ Usage: @planner "Build a user activity dashboard"
        @planner --from-request "My Epic Request Title" --gates=auto
 ```
 
-The planner reads the codebase to understand scope, creates the epic with `spectree__create_epic_complete`, sets structured descriptions on every feature and task, evaluates quality, and verifies the execution plan.
+The planner reads the codebase to understand scope, creates the epic with `dispatcher__create_epic_complete`, sets structured descriptions on every feature and task, evaluates quality, and verifies the execution plan.
 
 **`--from-request` flag:** When provided, the planner fetches an existing Epic Request (by title or UUID) and uses its structured description (problem statement, proposed solution, impact assessment, etc.) as the requirements source. This avoids re-explaining what was already captured during the request-formulator interview. The planner still performs codebase analysis for technical context.
 
@@ -759,56 +759,56 @@ Guides users through a structured interview to craft high-quality Epic Requests.
 Usage: @request-formulator "I want to propose adding real-time notifications"
 ```
 
-The request-formulator conducts an interactive interview gathering requirements, checks for duplicate requests via `spectree__list_epic_requests`, presents a formatted preview with both markdown description and structured JSON, and submits via `spectree__create_epic_request` with both `description` and `structuredDesc` fields.
+The request-formulator conducts an interactive interview gathering requirements, checks for duplicate requests via `dispatcher__list_epic_requests`, presents a formatted preview with both markdown description and structured JSON, and submits via `dispatcher__create_epic_request` with both `description` and `structuredDesc` fields.
 
 **When to recommend:** When a user mentions wanting to "propose a feature", "suggest an epic", "request a new feature", or "submit an idea for review". The formulator helps users create well-structured proposals that are easier for admins to review and approve.
 
 ### @orchestrator - Epic Execution
 
-Executes SpecTree execution plans by delegating features to feature-worker sub-agents. Reads the execution plan, spawns workers in parallel where safe, and tracks progress back to SpecTree.
+Executes Dispatcher execution plans by delegating features to feature-worker sub-agents. Reads the execution plan, spawns workers in parallel where safe, and tracks progress back to Dispatcher.
 
 ```
 Usage: @orchestrator "Execute epic ENG-42"
 ```
 
-The orchestrator reads the execution plan via `spectree__get_execution_plan`, gathers full context for each feature from SpecTree (structured descriptions, AI context, code context, decisions), builds context prompts, and spawns feature-worker sub-agents. After each phase, it invokes the reviewer agent to verify the work.
+The orchestrator reads the execution plan via `dispatcher__get_execution_plan`, gathers full context for each feature from Dispatcher (structured descriptions, AI context, code context, decisions), builds context prompts, and spawns feature-worker sub-agents. After each phase, it invokes the reviewer agent to verify the work.
 
-**Monitoring Progress:** The orchestrator logs progress to SpecTree at the epic level after each phase. While execution is running, you can check progress from a second terminal:
+**Monitoring Progress:** The orchestrator logs progress to Dispatcher at the epic level after each phase. While execution is running, you can check progress from a second terminal:
 ```
 @copilot "Check progress on epic <epic-id>"
-# → calls spectree__get_progress_summary({ epicId: "<epic-id>" })
+# → calls dispatcher__get_progress_summary({ epicId: "<epic-id>" })
 ```
 Or check epic AI notes for detailed phase-by-phase updates:
 ```
 @copilot "Show AI notes for epic <epic-name>"
-# → calls spectree__get_ai_context({ type: "epic", id: "<epic-id>" })
+# → calls dispatcher__get_ai_context({ type: "epic", id: "<epic-id>" })
 ```
 
-> **Note:** When invoked via the `task` tool, the orchestrator's text output is buffered and returned at the end. SpecTree polling is the recommended way to monitor real-time progress.
+> **Note:** When invoked via the `task` tool, the orchestrator's text output is buffered and returned at the end. Dispatcher polling is the recommended way to monitor real-time progress.
 
 ### @reviewer - Acceptance Review
 
-Reviews completed features against their SpecTree acceptance criteria. Runs validations, checks code quality, and verifies requirements are met.
+Reviews completed features against their Dispatcher acceptance criteria. Runs validations, checks code quality, and verifies requirements are met.
 
 ```
 Usage: @reviewer "Review feature ENG-42-1"
 ```
 
-The reviewer reads acceptance criteria from structured descriptions, runs `spectree__run_all_validations`, reviews code changes, and presents a structured review report with per-criterion PASS/FAIL/PARTIAL verdicts.
+The reviewer reads acceptance criteria from structured descriptions, runs `dispatcher__run_all_validations`, reviews code changes, and presents a structured review report with per-criterion PASS/FAIL/PARTIAL verdicts.
 
 ### @plan-reviewer - Epic Quality Review
 
-Reviews SpecTree epics, features, and tasks for completeness and quality before implementation begins. Evaluates epic descriptions, structured descriptions, acceptance criteria, AI instructions, and execution plans against quality standards.
+Reviews Dispatcher epics, features, and tasks for completeness and quality before implementation begins. Evaluates epic descriptions, structured descriptions, acceptance criteria, AI instructions, and execution plans against quality standards.
 
 ```
 Usage: @plan-reviewer "Review epic ENG-42"
 ```
 
-The plan-reviewer loads the epic and all features/tasks, evaluates them against the `spectree-plan-review` skill rubrics, scores each dimension, and produces a structured readiness report with an overall READY/NOT READY verdict.
+The plan-reviewer loads the epic and all features/tasks, evaluates them against the `dispatcher-plan-review` skill rubrics, scores each dimension, and produces a structured readiness report with an overall READY/NOT READY verdict.
 
 ### feature-worker (Sub-Agent Only)
 
-Implements all tasks within a single SpecTree feature. **Not user-invokable** — only spawned by the orchestrator as a sub-agent. Receives full context from the orchestrator including requirements, acceptance criteria, and code context. Follows a strict per-task workflow: `spectree__start_work` → implement → `spectree__link_code_file` → `spectree__log_progress` → `spectree__complete_task_with_validation`.
+Implements all tasks within a single Dispatcher feature. **Not user-invokable** — only spawned by the orchestrator as a sub-agent. Receives full context from the orchestrator including requirements, acceptance criteria, and code context. Follows a strict per-task workflow: `dispatcher__start_work` → implement → `dispatcher__link_code_file` → `dispatcher__log_progress` → `dispatcher__complete_task_with_validation`.
 
 ---
 
@@ -818,25 +818,25 @@ Four reusable procedure skills are available in `.github/skills/`. Skills are st
 
 | Skill | Location | Purpose |
 |-------|----------|---------|
-| **spectree-planning** | `.github/skills/spectree-planning/SKILL.md` | 5-stage planning pipeline procedure with quality heuristics, review gates, and task scoping guidelines |
-| **spectree-session** | `.github/skills/spectree-session/SKILL.md` | Session start/during/end protocol for SpecTree context continuity across AI sessions |
-| **spectree-validation** | `.github/skills/spectree-validation/SKILL.md` | Validation run/interpret/complete workflow for verifying acceptance criteria with automated checks |
-| **spectree-plan-review** | `.github/skills/spectree-plan-review/SKILL.md` | Quality rubrics, scoring methodology, and review process for evaluating epic readiness before orchestrator execution |
+| **dispatcher-planning** | `.github/skills/dispatcher-planning/SKILL.md` | 5-stage planning pipeline procedure with quality heuristics, review gates, and task scoping guidelines |
+| **dispatcher-session** | `.github/skills/dispatcher-session/SKILL.md` | Session start/during/end protocol for Dispatcher context continuity across AI sessions |
+| **dispatcher-validation** | `.github/skills/dispatcher-validation/SKILL.md` | Validation run/interpret/complete workflow for verifying acceptance criteria with automated checks |
+| **dispatcher-plan-review** | `.github/skills/dispatcher-plan-review/SKILL.md` | Quality rubrics, scoring methodology, and review process for evaluating epic readiness before orchestrator execution |
 
 ---
 
 ## Automation Workflow
 
-### Planning (`spectree plan`)
+### Planning (`dispatcher plan`)
 
-Create a fully-specified SpecTree epic from a natural language description:
+Create a fully-specified Dispatcher epic from a natural language description:
 
 ```bash
 # Interactive planning with review gates (default)
-spectree plan "Build a user activity dashboard"
+dispatcher plan "Build a user activity dashboard"
 
 # Headless planning (auto-approve all stages except Evaluate)
-spectree plan --auto "Build a user preferences API"
+dispatcher plan --auto "Build a user preferences API"
 ```
 
 Or use the planner agent directly in a Copilot CLI session:
@@ -848,26 +848,26 @@ Or use the planner agent directly in a Copilot CLI session:
 
 The planning pipeline produces an epic with features, tasks, structured descriptions (AI instructions, acceptance criteria, files involved), execution ordering, and a validated execution plan.
 
-### Execution (`spectree run`)
+### Execution (`dispatcher run`)
 
-Execute a SpecTree epic's execution plan:
+Execute a Dispatcher epic's execution plan:
 
 ```bash
 # Execute all phases
-spectree run <epic-id>
+dispatcher run <epic-id>
 
 # Dry run — show execution plan without executing
-spectree run --dry-run <epic-id>
+dispatcher run --dry-run <epic-id>
 ```
 
-The execution engine reads the execution plan from SpecTree, spawns Copilot CLI sessions (via ACP) for each feature, manages git branches, tracks progress, and runs validations on completion.
+The execution engine reads the execution plan from Dispatcher, spawns Copilot CLI sessions (via ACP) for each feature, manages git branches, tracks progress, and runs validations on completion.
 
-### Validation (`spectree validate`)
+### Validation (`dispatcher validate`)
 
 Run all validation checks for an epic's tasks and report results:
 
 ```bash
-spectree validate <epic-id>
+dispatcher validate <epic-id>
 ```
 
 ### Shell Scripts
@@ -876,13 +876,13 @@ Headless automation scripts are available in `scripts/` for CI/CD integration:
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/spectree-plan.sh` | Headless planning pipeline |
-| `scripts/spectree-run.sh` | Headless epic execution |
-| `scripts/spectree-validate.sh` | Headless validation run |
+| `scripts/dispatcher-plan.sh` | Headless planning pipeline |
+| `scripts/dispatcher-run.sh` | Headless epic execution |
+| `scripts/dispatcher-validate.sh` | Headless validation run |
 
 ```bash
 # Example: Full headless workflow
-./scripts/spectree-plan.sh "Build a CSV export feature"
-./scripts/spectree-run.sh ENG-42
-./scripts/spectree-validate.sh ENG-42
+./scripts/dispatcher-plan.sh "Build a CSV export feature"
+./scripts/dispatcher-run.sh ENG-42
+./scripts/dispatcher-validate.sh ENG-42
 ```

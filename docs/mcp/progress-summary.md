@@ -27,7 +27,7 @@ The Progress Summary tools answer these questions with a single API call.
 
 ## MCP Tools
 
-### spectree__get_progress_summary
+### dispatcher__get_progress_summary
 
 Get a comprehensive progress summary for a specific epic.
 
@@ -88,7 +88,7 @@ interface ProgressSummary {
 
 ```typescript
 // At session start
-const summary = await spectree__get_progress_summary({ 
+const summary = await dispatcher__get_progress_summary({ 
   epicId: "Authentication Overhaul" 
 });
 
@@ -99,7 +99,7 @@ console.log(`Next actionable: ${summary.nextActionable.length}`);
 
 ---
 
-### spectree__get_my_work
+### dispatcher__get_my_work
 
 Get all work items assigned to the current user across all accessible epics.
 
@@ -136,7 +136,7 @@ interface MyWorkItem {
 
 ```typescript
 // Check my current assignments
-const myWork = await spectree__get_my_work();
+const myWork = await dispatcher__get_my_work();
 
 console.log(`In progress: ${myWork.counts.inProgress}`);
 console.log(`Blocked: ${myWork.counts.blocked}`);
@@ -148,7 +148,7 @@ const blocked = myWork.items.filter(i => i.blockerReason);
 
 ---
 
-### spectree__get_blocked_summary
+### dispatcher__get_blocked_summary
 
 Get all blocked items across all accessible epics, grouped by epic.
 
@@ -185,7 +185,7 @@ interface EpicBlockedCount {
 
 ```typescript
 // Get all blockers across projects
-const blockers = await spectree__get_blocked_summary();
+const blockers = await dispatcher__get_blocked_summary();
 
 console.log(`Total blocked items: ${blockers.total}`);
 
@@ -215,7 +215,7 @@ The MCP tools use these underlying REST endpoints:
 
 ```typescript
 // 1. Get progress summary for the epic you're working on
-const summary = await spectree__get_progress_summary({ epicId: "My Epic" });
+const summary = await dispatcher__get_progress_summary({ epicId: "My Epic" });
 
 // 2. Check if there are blockers needing attention
 if (summary.blockedItems.length > 0) {
@@ -248,7 +248,7 @@ if (summary.lastSession) {
 if (summary.nextActionable.length > 0) {
   const next = summary.nextActionable[0];
   console.log(`▶️ Starting work on: ${next.identifier}`);
-  await spectree__start_work({ id: next.id, type: next.type });
+  await dispatcher__start_work({ id: next.id, type: next.type });
 }
 ```
 
@@ -256,7 +256,7 @@ if (summary.nextActionable.length > 0) {
 
 ```typescript
 // Get personal work summary
-const myWork = await spectree__get_my_work();
+const myWork = await dispatcher__get_my_work();
 
 console.log("📊 My Work Summary:");
 console.log(`  In Progress: ${myWork.counts.inProgress}`);
@@ -278,7 +278,7 @@ if (myWork.counts.blocked > 0) {
 
 ```typescript
 // Get all blockers across projects
-const blockers = await spectree__get_blocked_summary();
+const blockers = await dispatcher__get_blocked_summary();
 
 console.log(`🚫 Total Blocked: ${blockers.total}`);
 
@@ -314,10 +314,10 @@ Use with [Execution Planning](./execution-metadata.md) tools:
 
 ```typescript
 // Get summary first
-const summary = await spectree__get_progress_summary({ epicId });
+const summary = await dispatcher__get_progress_summary({ epicId });
 
 // Then get detailed execution plan for ordering work
-const plan = await spectree__get_execution_plan({ epicId });
+const plan = await dispatcher__get_execution_plan({ epicId });
 ```
 
 ### AI Context
@@ -326,11 +326,11 @@ Complements [AI Context](./ai-session-context.md) for individual items:
 
 ```typescript
 // Summary shows what to work on
-const summary = await spectree__get_progress_summary({ epicId });
+const summary = await dispatcher__get_progress_summary({ epicId });
 const nextItem = summary.nextActionable[0];
 
 // AI Context provides detailed item context
-const context = await spectree__get_ai_context({ 
+const context = await dispatcher__get_ai_context({ 
   id: nextItem.id, 
   type: nextItem.type 
 });

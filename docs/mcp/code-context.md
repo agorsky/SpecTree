@@ -1,9 +1,9 @@
 # Code Context (Codebase Integration)
 
 > **⚠️ DEPRECATION NOTICE:**  
-> The individual code context tools (`spectree__get_code_context`, `spectree__link_code_file`, `spectree__unlink_code_file`, `spectree__link_function`, `spectree__link_branch`, `spectree__link_commit`, `spectree__link_pr`) are **DEPRECATED**.  
+> The individual code context tools (`dispatcher__get_code_context`, `dispatcher__link_code_file`, `dispatcher__unlink_code_file`, `dispatcher__link_function`, `dispatcher__link_branch`, `dispatcher__link_commit`, `dispatcher__link_pr`) are **DEPRECATED**.  
 >  
-> **Use instead:** `spectree__manage_code_context` with action-based routing:
+> **Use instead:** `dispatcher__manage_code_context` with action-based routing:
 > - `action='get_context'` - Get all code artifacts
 > - `action='link_file'` - Link a file  
 > - `action='unlink_file'` - Remove a file link
@@ -12,7 +12,7 @@
 > - `action='link_commit'` - Link git commit
 > - `action='link_pr'` - Link pull request
 >
-> See [Tools Reference](./tools-reference.md#spectree__manage_code_context) for complete documentation.
+> See [Tools Reference](./tools-reference.md#dispatcher__manage_code_context) for complete documentation.
 
 Code Context provides a way to link features and tasks directly to code artifacts, enabling AI agents to instantly understand the code context for any work item without needing to search or explore.
 
@@ -46,12 +46,12 @@ Both Feature and Task models include these fields:
 
 ## MCP Tools
 
-### spectree__link_code_file
+### dispatcher__link_code_file
 
 Add a file to a feature or task's related files list.
 
 ```typescript
-spectree__link_code_file({
+dispatcher__link_code_file({
   id: "COM-123",           // Feature or task identifier
   type: "feature",         // "feature" or "task"
   filePath: "src/services/userService.ts"
@@ -60,24 +60,24 @@ spectree__link_code_file({
 
 Duplicates are silently ignored.
 
-### spectree__unlink_code_file
+### dispatcher__unlink_code_file
 
 Remove a file from the related files list.
 
 ```typescript
-spectree__unlink_code_file({
+dispatcher__unlink_code_file({
   id: "COM-123",
   type: "feature",
   filePath: "src/services/userService.ts"
 })
 ```
 
-### spectree__link_function
+### dispatcher__link_function
 
 Add a function reference. Functions are stored as `"filePath:functionName"`.
 
 ```typescript
-spectree__link_function({
+dispatcher__link_function({
   id: "COM-123",
   type: "feature",
   filePath: "src/services/userService.ts",
@@ -85,36 +85,36 @@ spectree__link_function({
 })
 ```
 
-### spectree__link_branch
+### dispatcher__link_branch
 
 Set or update the git branch. Only one branch per item.
 
 ```typescript
-spectree__link_branch({
+dispatcher__link_branch({
   id: "COM-123",
   type: "feature",
   branch: "feature/COM-123-user-auth"
 })
 ```
 
-### spectree__link_commit
+### dispatcher__link_commit
 
 Add a commit SHA to the commits list. Duplicates ignored, commits accumulate.
 
 ```typescript
-spectree__link_commit({
+dispatcher__link_commit({
   id: "COM-123",
   type: "feature",
   commitSha: "abc123def456"
 })
 ```
 
-### spectree__link_pr
+### dispatcher__link_pr
 
 Link a pull request. Only one PR per item (replaces previous).
 
 ```typescript
-spectree__link_pr({
+dispatcher__link_pr({
   id: "COM-123",
   type: "feature",
   prNumber: 42,
@@ -122,12 +122,12 @@ spectree__link_pr({
 })
 ```
 
-### spectree__get_code_context
+### dispatcher__get_code_context
 
 Retrieve all code context for a feature or task.
 
 ```typescript
-const context = spectree__get_code_context({
+const context = dispatcher__get_code_context({
   id: "COM-123",
   type: "feature"
 })
@@ -149,12 +149,12 @@ const context = spectree__get_code_context({
 
 1. **Get existing context** to see what was previously tracked:
    ```typescript
-   const context = spectree__get_code_context({ id: "COM-123", type: "feature" })
+   const context = dispatcher__get_code_context({ id: "COM-123", type: "feature" })
    ```
 
 2. **Link your branch** when you create it:
    ```typescript
-   spectree__link_branch({ 
+   dispatcher__link_branch({ 
      id: "COM-123", 
      type: "feature",
      branch: "feature/COM-123-description" 
@@ -165,7 +165,7 @@ const context = spectree__get_code_context({
 
 3. **Link files as you modify them**:
    ```typescript
-   spectree__link_code_file({
+   dispatcher__link_code_file({
      id: "COM-123",
      type: "feature",
      filePath: "src/routes/users.ts"
@@ -174,7 +174,7 @@ const context = spectree__get_code_context({
 
 4. **Link functions for significant changes**:
    ```typescript
-   spectree__link_function({
+   dispatcher__link_function({
      id: "COM-123",
      type: "feature",
      filePath: "src/routes/users.ts",
@@ -184,7 +184,7 @@ const context = spectree__get_code_context({
 
 5. **Record commits** after committing:
    ```typescript
-   spectree__link_commit({
+   dispatcher__link_commit({
      id: "COM-123",
      type: "feature",
      commitSha: "abc123"
@@ -195,7 +195,7 @@ const context = spectree__get_code_context({
 
 6. **Link the PR** when opened:
    ```typescript
-   spectree__link_pr({
+   dispatcher__link_pr({
      id: "COM-123",
      type: "feature",
      prNumber: 42,

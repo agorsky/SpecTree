@@ -1,17 +1,17 @@
-# Platform Analysis: SpecTree Parallel Agent Orchestrator
+# Platform Analysis: Dispatcher Parallel Agent Orchestrator
 
 ## Executive Summary
 
 **Recommended Approach: CLI Tool + Web Dashboard (Hybrid)**
 
-For a team tool that orchestrates parallel AI agents with SpecTree, I recommend a **CLI-first approach with an optional web dashboard** built on top of your existing SpecTree infrastructure.
+For a team tool that orchestrates parallel AI agents with Dispatcher, I recommend a **CLI-first approach with an optional web dashboard** built on top of your existing Dispatcher infrastructure.
 
 ---
 
 ## Platform Options Analyzed
 
 ### Option 1: CLI Tool (npm package)
-**`npx @spectree/agent run "Build user dashboard"`**
+**`npx @dispatcher/agent run "Build user dashboard"`**
 
 | Pros | Cons |
 |------|------|
@@ -46,7 +46,7 @@ For a team tool that orchestrates parallel AI agents with SpecTree, I recommend 
 | ✅ Real-time progress dashboard | ❌ More complex to build |
 | ✅ Works from anywhere | ❌ Separate from coding environment |
 | ✅ Non-technical stakeholders can view | ❌ Ongoing maintenance |
-| ✅ You already have SpecTree web! | |
+| ✅ You already have Dispatcher web! | |
 
 **Complexity: Medium** | **Team Adoption: High**
 
@@ -78,15 +78,15 @@ For a team tool that orchestrates parallel AI agents with SpecTree, I recommend 
 
 ## 🏆 Recommended Architecture: CLI + Web Dashboard Hybrid
 
-Given that you already have SpecTree (web app + API), the smartest path is:
+Given that you already have Dispatcher (web app + API), the smartest path is:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    SpecTree Ecosystem                            │
+│                    Dispatcher Ecosystem                            │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │   ┌──────────────┐     ┌──────────────┐     ┌──────────────┐   │
-│   │   CLI Tool   │     │  Web Dashboard│     │  SpecTree    │   │
+│   │   CLI Tool   │     │  Web Dashboard│     │  Dispatcher    │   │
 │   │  (new pkg)   │     │  (extend web) │     │  API         │   │
 │   │              │     │               │     │  (existing)  │   │
 │   │ • Run epics  │     │ • View runs   │     │              │   │
@@ -140,20 +140,20 @@ packages/
 **Usage:**
 ```bash
 # Install globally or use npx
-npm install -g @spectree/orchestrator
+npm install -g @dispatcher/orchestrator
 
 # Run an epic with parallel agents
-spectree-agent run "Build user activity dashboard" --team Engineering
+dispatcher-agent run "Build user activity dashboard" --team Engineering
 
 # Continue existing epic
-spectree-agent continue "Activity Dashboard"
+dispatcher-agent continue "Activity Dashboard"
 
 # Monitor running agents
-spectree-agent status
+dispatcher-agent status
 
 # Intervene in a specific agent
-spectree-agent pause worker-2
-spectree-agent resume worker-2
+dispatcher-agent pause worker-2
+dispatcher-agent resume worker-2
 ```
 
 **Why CLI First:**
@@ -166,7 +166,7 @@ spectree-agent resume worker-2
 ---
 
 ### Phase 2: Web Dashboard Integration (2-3 weeks)
-**Goal:** Team visibility and management through existing SpecTree web
+**Goal:** Team visibility and management through existing Dispatcher web
 
 **Add to existing `packages/web/`:**
 ```typescript
@@ -211,7 +211,7 @@ src/
 
 ```json
 {
-  "name": "@spectree/orchestrator",
+  "name": "@dispatcher/orchestrator",
   "dependencies": {
     "@github/copilot-sdk": "latest",
     "commander": "^11.0.0",      // CLI framework
@@ -237,7 +237,7 @@ src/
 | Aspect | Build (This Approach) | Buy/Use Existing |
 |--------|----------------------|------------------|
 | **Control** | Full control over workflow | Limited to tool's design |
-| **Integration** | Tight SpecTree integration | May need adapters |
+| **Integration** | Tight Dispatcher integration | May need adapters |
 | **Cost** | Dev time + Copilot licenses | Tool licenses + Copilot |
 | **Maintenance** | You maintain it | Vendor maintains |
 | **Customization** | Unlimited | Limited |
@@ -247,7 +247,7 @@ src/
 - **Mission Control** (GitHub native) - Browser-based, less customizable
 - **n8n / Temporal** - Workflow engines (overkill for this)
 
-**Verdict:** Build it. You have SpecTree's execution planning already - you just need the runner.
+**Verdict:** Build it. You have Dispatcher's execution planning already - you just need the runner.
 
 ---
 
@@ -257,19 +257,19 @@ src/
 
 ```bash
 # One-time setup
-npm install -g @spectree/orchestrator
-spectree-agent auth  # Links to SpecTree API token
+npm install -g @dispatcher/orchestrator
+dispatcher-agent auth  # Links to Dispatcher API token
 
 # Daily use
 cd my-project
-spectree-agent run "Add user authentication with OAuth"
+dispatcher-agent run "Add user authentication with OAuth"
 # → Creates epic, spawns agents, shows real-time progress
 # → Opens PR when done
 ```
 
 ### For Team Leads (via Web Dashboard):
 
-1. Open SpecTree web → Orchestrator tab
+1. Open Dispatcher web → Orchestrator tab
 2. See all active runs across team
 3. Click into any run to see agent progress
 4. View decisions made, blockers encountered
@@ -282,7 +282,7 @@ spectree-agent run "Add user authentication with OAuth"
 | Component | Cost |
 |-----------|------|
 | Copilot SDK | Included with Copilot subscription |
-| SpecTree hosting | Already have |
+| Dispatcher hosting | Already have |
 | CLI distribution | Free (npm) |
 | Additional infra | None (runs locally) |
 
@@ -297,7 +297,7 @@ spectree-agent run "Add user authentication with OAuth"
 | Copilot SDK is in "Technical Preview" | Start simple, don't over-invest in SDK-specific patterns |
 | Parallel agents may conflict | Use branch-per-agent strategy; your execution plan already defines safe parallelism |
 | Team adoption friction | CLI-first is low friction; web dashboard adds visibility |
-| Maintenance burden | Leverage existing SpecTree API; orchestrator is thin layer |
+| Maintenance burden | Leverage existing Dispatcher API; orchestrator is thin layer |
 
 ---
 
@@ -307,7 +307,7 @@ spectree-agent run "Add user authentication with OAuth"
 2. **Implement single-agent runner** first (prove SDK integration works)
 3. **Add parallel execution** using your execution plan phases
 4. **Add real-time CLI progress** (spinners, logs)
-5. **Integrate with SpecTree API** for session tracking
+5. **Integrate with Dispatcher API** for session tracking
 6. **Build web dashboard** for team visibility
 7. **Document and distribute** to team
 
@@ -317,10 +317,10 @@ spectree-agent run "Add user authentication with OAuth"
 
 | Recommendation | Rationale |
 |----------------|-----------|
-| **Platform:** CLI + Web Dashboard | Lowest friction, reuses your existing SpecTree |
+| **Platform:** CLI + Web Dashboard | Lowest friction, reuses your existing Dispatcher |
 | **Distribution:** npm package | Easy install, familiar to developers |
-| **Architecture:** Thin orchestrator on SDK | SpecTree API does heavy lifting |
-| **Team visibility:** Extend SpecTree web | Don't build separate dashboard |
+| **Architecture:** Thin orchestrator on SDK | Dispatcher API does heavy lifting |
+| **Team visibility:** Extend Dispatcher web | Don't build separate dashboard |
 | **Timeline:** 4-6 weeks for v1 | CLI (2-3w) + Web (2-3w) |
 
 The CLI gives you immediate power; the web dashboard gives your team visibility. Both build on what you already have.

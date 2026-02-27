@@ -1,6 +1,6 @@
 # Task API Endpoints
 
-This document describes the API endpoints for managing tasks in SpecTree.
+This document describes the API endpoints for managing tasks in Dispatcher.
 
 ## Overview
 

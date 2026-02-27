@@ -1,4 +1,4 @@
-# SpecTree Documentation Accuracy Audit — Summary Report
+# Dispatcher Documentation Accuracy Audit — Summary Report
 
 **Date:** February 18, 2026  
 **Epic:** ENG-XX — Documentation Accuracy Audit & Remediation  
@@ -45,7 +45,7 @@ This audit was triggered by a critical issue where the `docs/cookbook/README.md`
 - Audited: `docs/mcp/*.md` (16 files) vs `packages/mcp/src/tools/` (95 tool definitions)
 - Issues: 32 tool documentation issues
   - 30 deprecated tools still referenced without warnings
-  - 2 non-existent tool references (`spectree__get_workflow_stages`, `spectree__log_session_work`)
+  - 2 non-existent tool references (`dispatcher__get_workflow_stages`, `dispatcher__log_session_work`)
   - 12 undocumented tools (epic-requests, skill-packs, workflow) — deferred to separate task
   - Tool count outdated (68 → should be 95)
 - Fixed: 9 documentation files updated
@@ -134,11 +134,11 @@ This audit was triggered by a critical issue where the `docs/cookbook/README.md`
   - `planner.md` — 3 updates
   - `request-formulator.md` — 0 updates
 - Deprecated tools replaced:
-  - `spectree__start_work`, `spectree__complete_work`, `spectree__log_progress`, `spectree__report_blocker` → `spectree__manage_progress`
-  - `spectree__get_code_context`, `spectree__link_code_file`, `spectree__unlink_code_file` → `spectree__manage_code_context`
-  - `spectree__get_ai_context`, `spectree__set_ai_context`, `spectree__append_ai_note` → `spectree__manage_ai_context`
-  - `spectree__get_structured_description`, `spectree__set_structured_description` → `spectree__manage_description`
-  - `spectree__run_all_validations` → `spectree__manage_validations`
+  - `dispatcher__start_work`, `dispatcher__complete_work`, `dispatcher__log_progress`, `dispatcher__report_blocker` → `dispatcher__manage_progress`
+  - `dispatcher__get_code_context`, `dispatcher__link_code_file`, `dispatcher__unlink_code_file` → `dispatcher__manage_code_context`
+  - `dispatcher__get_ai_context`, `dispatcher__set_ai_context`, `dispatcher__append_ai_note` → `dispatcher__manage_ai_context`
+  - `dispatcher__get_structured_description`, `dispatcher__set_structured_description` → `dispatcher__manage_description`
+  - `dispatcher__run_all_validations` → `dispatcher__manage_validations`
 - Verified: 5 instruction files accurate (focus on architecture patterns, not tool invocations)
 - Result: ✅ Zero deprecated tool references remain in agent files
 
@@ -170,7 +170,7 @@ This audit was triggered by a critical issue where the `docs/cookbook/README.md`
   - Added `deployment/ai-agent-deployment-guide.md` to Deployment section
   - Created new **Quality & Audit Reports** section with 3 entries:
     - `instruction-audit.md` — Instruction files audit report
-    - `validation-report.md` — SpecTree external adoption validation report
+    - `validation-report.md` — Dispatcher external adoption validation report
     - `CONVENTIONS.md` — Documentation naming and versioning conventions
   - Added note about `local/` directory being organization-specific
   - Updated quick navigation with new section
@@ -184,7 +184,7 @@ This audit was triggered by a critical issue where the `docs/cookbook/README.md`
 |------------|-------|----------|
 | **Structural Discrepancies** | 28 | Missing path segments, singular→plural naming, incorrect response schemas |
 | **Deprecated Tool References** | 72 | 30 in docs + 42 in agent files |
-| **Non-existent Tool References** | 2 | `spectree__get_workflow_stages`, `spectree__log_session_work` |
+| **Non-existent Tool References** | 2 | `dispatcher__get_workflow_stages`, `dispatcher__log_session_work` |
 | **Undocumented Tools** | 12 | epic-requests, skill-packs, workflow tools (deferred) |
 | **Missing Documentation** | 2 | API package README, CLI SPECTREE_TOKEN env var |
 | **Incomplete Context** | 1 | update-packs.md missing registry configuration |

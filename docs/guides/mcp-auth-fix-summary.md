@@ -1,7 +1,7 @@
-# SpecTree MCP Authentication Fix - Summary
+# Dispatcher MCP Authentication Fix - Summary
 
 ## Problem
-SpecTree MCP tools were returning **HTTP 401 Unauthorized** errors after computer reboot.
+Dispatcher MCP tools were returning **HTTP 401 Unauthorized** errors after computer reboot.
 
 ## Root Cause
 The MCP config contained an **old API token** that didn't match the newly created token in the database.
@@ -30,10 +30,10 @@ The correct config path for Copilot CLI MCP servers is:
 After restarting Copilot CLI, run this to verify the fix:
 
 ```
-# Test the SpecTree MCP connection by listing epics
+# Test the Dispatcher MCP connection by listing epics
 ```
 
-Or simply ask: "List my SpecTree epics" - if it returns data without 401 errors, the fix worked.
+Or simply ask: "List my Dispatcher epics" - if it returns data without 401 errors, the fix worked.
 
 ## Notes
 - API tokens are hashed (SHA-256) before storage - plaintext is never stored

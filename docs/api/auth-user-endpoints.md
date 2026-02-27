@@ -1,10 +1,10 @@
 # Authentication & User API Endpoints
 
-This document describes the authentication and user management API endpoints in SpecTree.
+This document describes the authentication and user management API endpoints in Dispatcher.
 
 ## Overview
 
-SpecTree uses JWT-based authentication with access and refresh tokens. User accounts are created via invitation code (see [Invitation Endpoints](./invitation-endpoints.md)) and then authenticated via email/password login.
+Dispatcher uses JWT-based authentication with access and refresh tokens. User accounts are created via invitation code (see [Invitation Endpoints](./invitation-endpoints.md)) and then authenticated via email/password login.
 
 ---
 
@@ -641,7 +641,7 @@ Authorization: Bearer <access_token>
 ### Initial Authentication
 ```bash
 # 1. Login
-curl -X POST https://api.spectree.app/api/v1/auth/login \
+curl -X POST https://api.dispatcher.app/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "john@toro.com",
@@ -655,14 +655,14 @@ curl -X POST https://api.spectree.app/api/v1/auth/login \
 ### Using Access Token
 ```bash
 # 2. Make authenticated request
-curl https://api.spectree.app/api/v1/features \
+curl https://api.dispatcher.app/api/v1/features \
   -H "Authorization: Bearer <access_token>"
 ```
 
 ### Refreshing Expired Token
 ```bash
 # 3. When access token expires (after 15 minutes)
-curl -X POST https://api.spectree.app/api/v1/auth/refresh \
+curl -X POST https://api.dispatcher.app/api/v1/auth/refresh \
   -H "Content-Type: application/json" \
   -d '{
     "refreshToken": "<refresh_token>"

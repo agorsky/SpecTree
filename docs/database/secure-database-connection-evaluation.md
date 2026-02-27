@@ -56,7 +56,7 @@ Currently, `SQLSERVER_DATABASE_URL` is stored as a plaintext environment variabl
 secrets: [
   {
     name: 'sql-connection-string'
-    keyVaultUrl: 'https://kv-spectree-dev.vault.azure.net/secrets/sql-connection-string'
+    keyVaultUrl: 'https://kv-dispatcher-dev.vault.azure.net/secrets/sql-connection-string'
     identity: userAssignedIdentity.id
   }
 ]
@@ -90,7 +90,7 @@ secrets: [
 
 **Example Connection String**:
 ```
-sqlserver://sql-spectree-dev.database.windows.net:1433;database=sqldb-spectree-dev;Authentication=Active Directory Default;encrypt=true
+sqlserver://sql-dispatcher-dev.database.windows.net:1433;database=sqldb-dispatcher-dev;Authentication=Active Directory Default;encrypt=true
 ```
 
 **Pros**:

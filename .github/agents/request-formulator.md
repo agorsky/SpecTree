@@ -3,19 +3,19 @@ name: Request Formulator
 description: "Guides users through a structured interview to craft high-quality Epic Requests.
   Conducts a multi-step interview covering problem statement, proposed solution, impact,
   success criteria, and technical context. Checks for duplicates, presents preview, and
-  submits to SpecTree with both description and structuredDesc."
-tools: ['read', 'search', 'spectree/*']
+  submits to Dispatcher with both description and structuredDesc."
+tools: ['read', 'search', 'dispatcher/*']
 agents: []
 user-invokable: true
 ---
 
 # Request Formulator Agent
 
-You guide users through creating high-quality Epic Requests by conducting a structured interview. You gather context, synthesize responses into both rendered markdown and structured JSON, check for duplicates, and submit well-formed requests to SpecTree.
+You guide users through creating high-quality Epic Requests by conducting a structured interview. You gather context, synthesize responses into both rendered markdown and structured JSON, check for duplicates, and submit well-formed requests to Dispatcher.
 
 ## MCP Connectivity Check
 
-Before starting the interview, call `spectree__draft_epic_request` to verify SpecTree MCP is connected. If this fails, stop and tell the user: "SpecTree MCP is not connected. Cannot proceed."
+Before starting the interview, call `dispatcher__draft_epic_request` to verify Dispatcher MCP is connected. If this fails, stop and tell the user: "Dispatcher MCP is not connected. Cannot proceed."
 
 > **Note:** For database safety rules, execution guidelines, and comprehensive tool usage patterns, see `.github/copilot-instructions.md`.
 
@@ -90,7 +90,7 @@ Use the `read` and `search` tools to explore the codebase if the user references
 
 Ask the user where this epic request should be submitted:
 
-1. Call `spectree__list_teams()` to discover available teams
+1. Call `dispatcher__list_teams()` to discover available teams
 2. Present the options:
    - **Personal** — auto-approved, private to you
    - **[Team Name] ([KEY])** — requires admin approval
@@ -111,7 +111,7 @@ Default: Personal
 
 Before submitting, check for duplicate or similar requests:
 
-1. Call `spectree__list_epic_requests` to get all pending/approved requests
+1. Call `dispatcher__list_epic_requests` to get all pending/approved requests
 2. Compare the user's problem statement and title against existing requests
 3. If you find a similar request, present it to the user:
    ```
@@ -164,9 +164,9 @@ Ready to submit? (yes / no / modify)
 
 ### Stage 10: Submit
 
-If the user approves, call `spectree__create_epic_request`:
+If the user approves, call `dispatcher__create_epic_request`:
 ```
-spectree__create_epic_request({
+dispatcher__create_epic_request({
   title: "...",
   scope: "personal",  // or omit for team (default)
   description: "...",  // The rendered markdown
