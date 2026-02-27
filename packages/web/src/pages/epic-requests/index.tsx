@@ -11,11 +11,10 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, ThumbsUp, Flame, ThumbsDown, Plus, ChevronDown, User, Users } from 'lucide-react';
+import { Search, ThumbsUp, Flame, ThumbsDown, ChevronDown, User, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { EpicRequestStatus, EpicRequestWithReactionCounts } from '@/lib/api/epic-requests';
-import { CliInstructionModal } from '@/components/epic-requests/cli-instruction-modal';
 
 // Status badge colors based on status
 const statusColors: Record<EpicRequestStatus, string> = {
@@ -161,10 +160,6 @@ export function EpicRequestsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Epic Requests</h1>
-        <CliInstructionModal>
-          <Plus className="h-4 w-4 mr-2" />
-          New Request
-        </CliInstructionModal>
       </div>
 
       {/* Filters */}
@@ -237,17 +232,9 @@ export function EpicRequestsPage() {
         </div>
       ) : filteredRequests.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">
-            {searchQuery
-              ? 'No requests match your search'
-              : 'No epic requests yet'}
+          <p className="text-muted-foreground">
+            {searchQuery ? 'No requests match your search' : 'No epic requests yet'}
           </p>
-          {!searchQuery && (
-            <CliInstructionModal>
-              <Plus className="h-4 w-4 mr-2" />
-              Create your first request
-            </CliInstructionModal>
-          )}
         </div>
       ) : (
         <>
