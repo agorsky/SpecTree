@@ -120,10 +120,12 @@ export function EpicsPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">New Epic</span>
-          </Button>
+          {import.meta.env.VITE_SHOW_CREATION_FORMS === 'true' && (
+            <Button onClick={() => setIsFormOpen(true)}>
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">New Epic</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -146,10 +148,12 @@ export function EpicsPage() {
               ? "No epics found for this filter. Try changing your filter selection or creating a new epic."
               : showArchived ? "No epics found" : "No epics yet"}
           </p>
-          <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {scope !== 'all' ? "Create Epic" : "Create your first epic"}
-          </Button>
+          {import.meta.env.VITE_SHOW_CREATION_FORMS === 'true' && (
+            <Button onClick={() => setIsFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              {scope !== 'all' ? "Create Epic" : "Create your first epic"}
+            </Button>
+          )}
         </div>
       ) : (
         <>
@@ -180,7 +184,9 @@ export function EpicsPage() {
         </>
       )}
 
-      <EpicForm open={isFormOpen} onOpenChange={setIsFormOpen} />
+      {import.meta.env.VITE_SHOW_CREATION_FORMS === 'true' && (
+        <EpicForm open={isFormOpen} onOpenChange={setIsFormOpen} />
+      )}
     </div>
   );
 }

@@ -1,5 +1,13 @@
 /// <reference types="vite/client" />
 
+interface ImportMetaEnv {
+  readonly VITE_SHOW_CREATION_FORMS?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
 // Enable importing markdown files as raw strings
 declare module "*.md" {
   const content: string;

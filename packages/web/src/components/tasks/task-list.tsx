@@ -20,10 +20,12 @@ export function TaskList({ featureId, teamId }: TaskListProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Tasks ({tasks.length})</h3>
-        <Button variant="ghost" size="sm" onClick={() => setIsFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          Add task
-        </Button>
+        {import.meta.env.VITE_SHOW_CREATION_FORMS === 'true' && (
+          <Button variant="ghost" size="sm" onClick={() => setIsFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add task
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -54,12 +56,14 @@ export function TaskList({ featureId, teamId }: TaskListProps) {
         </div>
       )}
 
-      <TaskForm
-        featureId={featureId}
-        teamId={teamId}
-        open={isFormOpen}
-        onOpenChange={setIsFormOpen}
-      />
+      {import.meta.env.VITE_SHOW_CREATION_FORMS === 'true' && (
+        <TaskForm
+          featureId={featureId}
+          teamId={teamId}
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+        />
+      )}
     </div>
   );
 }

@@ -221,12 +221,12 @@ export function EpicDetailPage() {
               <ArchiveRestore className="h-4 w-4 mr-1.5" />
               {unarchiveEpic.isPending ? "Restoring..." : "Restore Epic"}
             </Button>
-          ) : (
+          ) : import.meta.env.VITE_SHOW_CREATION_FORMS === 'true' ? (
             <Button size="sm" onClick={() => setIsFeatureFormOpen(true)}>
               <Plus className="h-4 w-4 mr-1.5" />
               New Feature
             </Button>
-          )}
+          ) : null}
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -252,10 +252,12 @@ export function EpicDetailPage() {
                 </>
               ) : (
                 <>
-                  <DropdownMenuItem onClick={() => setIsFeatureFormOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Feature
-                  </DropdownMenuItem>
+                  {import.meta.env.VITE_SHOW_CREATION_FORMS === 'true' && (
+                    <DropdownMenuItem onClick={() => setIsFeatureFormOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Feature
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setShowArchiveDialog(true)}>
                     <Archive className="h-4 w-4 mr-2" />
@@ -454,7 +456,7 @@ export function EpicDetailPage() {
       </div>
 
       {/* Feature form */}
-      {epicId && (
+      {import.meta.env.VITE_SHOW_CREATION_FORMS === 'true' && epicId && (
         <FeatureForm
           open={isFeatureFormOpen}
           onOpenChange={setIsFeatureFormOpen}
