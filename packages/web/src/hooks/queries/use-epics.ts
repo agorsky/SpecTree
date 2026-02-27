@@ -114,3 +114,13 @@ export function useTransferEpicScope() {
     },
   });
 }
+
+export function useEpicsCount() {
+  return useQuery({
+    queryKey: [...epicKeys.lists(), 'count'] as const,
+    queryFn: async () => {
+      const response = await epicsApi.list({ limit: 100 } as EpicFilters);
+      return response.data.length;
+    },
+  });
+}

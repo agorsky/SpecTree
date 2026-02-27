@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useUserActivity } from '@/hooks/queries/use-user-activity';
 import type { ActivityInterval } from '@/lib/api/user-activity';
+import { useEpicsCount } from '@/hooks/queries/use-epics';
+import { useEpicRequestsCount } from '@/hooks/queries/use-epic-requests';
 import { IntervalSelector } from '@/components/dashboard/interval-selector';
 import { ActivityChart } from '@/components/dashboard/activity-chart';
 import { ActivityTable } from '@/components/dashboard/activity-table';
@@ -39,6 +41,9 @@ export function DashboardPage() {
   const [page, setPage] = useState(1);
   const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null);
 
+  const { data: epicsCountData } = useEpicsCount();
+  const { data: epicRequestsCountData } = useEpicRequestsCount();
+
   const { data, isLoading, isError, dataUpdatedAt, isFetching } = useUserActivity(
     interval,
     page,
@@ -69,7 +74,7 @@ export function DashboardPage() {
           <h1 className="text-2xl font-semibold">Activity Dashboard</h1>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-sm text-muted-foreground">
-              Agent activity across features, tasks, decisions, and AI sessions
+              Agent activity across epic requests, epics, features, tasks, decisions, and AI sessions
             </p>
             {dataUpdatedAt > 0 && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground/70">
@@ -104,6 +109,8 @@ export function DashboardPage() {
       {data && !isLoading && (
         <>
           <SummaryCards
+            epicsCount={epicsCountData ?? 0}
+            epicRequestsCount={epicRequestsCountData ?? 0}
             data={data.data}
             onCardClick={handleMetricClick}
           />
@@ -157,10 +164,14 @@ export function DashboardPage() {
 
 function SummaryCards({
   data,
-  onCardClick
+  onCardClick,
+  epicsCount,
+  epicRequestsCount,
 }: {
   data: import('@/lib/api/user-activity').UserActivityDataPoint[];
   onCardClick?: (metric: MetricType, count: number) => void;
+  epicsCount: number;
+  epicRequestsCount: number;
 }) {
   const [hoveredCard, setHoveredCard] = useState<MetricType | null>(null);
 
@@ -175,6 +186,8 @@ function SummaryCards({
   );
 
   const cards = [
+    { label: 'Epic Requests', value: epicRequestsCount, color: 'text-orange-500', metric: null },
+    { label: 'Epics Created', value: epicsCount, color: 'text-cyan-600', metric: null },
     { label: 'Features Created', value: totals.features, color: 'text-blue-600', metric: 'features' as MetricType },
     { label: 'Tasks Completed', value: totals.tasks, color: 'text-green-600', metric: 'tasks' as MetricType },
     { label: 'Decisions Logged', value: totals.decisions, color: 'text-amber-600', metric: 'decisions' as MetricType },
@@ -182,45 +195,38 @@ function SummaryCards({
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {cards.map((card) => {
-        const isZero = card.value === 0;
-        const isHovered = hoveredCard === card.metric;
+        const isClickable = card.metric !== null && card.value > 0;
+        const isHovered = card.metric !== null && hoveredCard === card.metric;
 
         return (
           <div
             key={card.label}
             className={`rounded-lg border bg-card p-4 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-              isZero
-                ? 'opacity-60 cursor-not-allowed'
-                : 'cursor-pointer hover:shadow-md hover:border-primary/50'
+              isClickable
+                ? 'cursor-pointer hover:shadow-md hover:border-primary/50'
+                : 'cursor-default'
             }`}
-            onClick={() => onCardClick?.(card.metric, card.value)}
+            onClick={() => isClickable && card.metric && onCardClick?.(card.metric, card.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
+              if ((e.key === 'Enter' || e.key === ' ') && isClickable && card.metric) {
                 e.preventDefault();
                 onCardClick?.(card.metric, card.value);
               }
             }}
-            onMouseEnter={() => !isZero && setHoveredCard(card.metric)}
+            onMouseEnter={() => isClickable && card.metric && setHoveredCard(card.metric)}
             onMouseLeave={() => setHoveredCard(null)}
-            role="button"
-            tabIndex={isZero ? -1 : 0}
-            aria-label={isZero ? `${card.label}: ${card.value} (no data to view)` : `View ${card.label} details: ${card.value} items`}
-            aria-disabled={isZero}
+            role={isClickable ? 'button' : undefined}
+            tabIndex={isClickable ? 0 : undefined}
           >
             <p className={`text-2xl font-bold tabular-nums ${card.color}`}>
               {card.value}
             </p>
             <p className="text-xs text-muted-foreground mt-1">{card.label}</p>
-            {isHovered && !isZero && (
+            {isHovered && (
               <p className="text-xs text-primary mt-2 font-medium">
                 View details →
-              </p>
-            )}
-            {isZero && (
-              <p className="text-xs text-muted-foreground/70 mt-2">
-                No data
               </p>
             )}
           </div>

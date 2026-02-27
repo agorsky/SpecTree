@@ -308,3 +308,13 @@ export function useTransferEpicRequestScope() {
     },
   });
 }
+
+export function useEpicRequestsCount() {
+  return useQuery({
+    queryKey: [...epicRequestKeys.lists(), 'count'] as const,
+    queryFn: async () => {
+      const response = await epicRequestsApi.list({ limit: 100 });
+      return response.data.length;
+    },
+  });
+}
