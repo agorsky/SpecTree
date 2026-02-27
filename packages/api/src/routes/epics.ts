@@ -127,8 +127,8 @@ export default function epicsRoutes(
         }
         options.createdBy = request.query.createdBy;
       }
-      // Always pass currentUserId for scope-based filtering
-      if (request.user?.id) {
+      // Global admins see all epics; others are filtered to their accessible scopes
+      if (request.user?.id && !request.user.isGlobalAdmin) {
         options.currentUserId = request.user.id;
       }
 

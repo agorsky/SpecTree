@@ -119,7 +119,7 @@ export function useEpicsCount() {
   return useQuery({
     queryKey: [...epicKeys.lists(), 'count'] as const,
     queryFn: async () => {
-      const response = await epicsApi.list({ limit: 100 } as EpicFilters);
+      const response = await epicsApi.list({ limit: 100, includeArchived: true } as EpicFilters);
       return response.data.length;
     },
   });
