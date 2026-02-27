@@ -618,6 +618,26 @@ model Case {
 }
 
 // =============================================================================
+// AgentScore Model
+// Tracks agent reputation scores for the governance system
+// =============================================================================
+
+model AgentScore {
+  id             String    @id @default(uuid())
+  agentName      String    @unique @map("agent_name")
+  agentTitle     String    @map("agent_title")
+  totalScore     Int       @default(100) @map("total_score")
+  bustsReceived  Int       @default(0) @map("busts_received")
+  bustsIssued    Int       @default(0) @map("busts_issued")
+  cleanCycles    Int       @default(0) @map("clean_cycles")
+  lastAuditAt    DateTime? @map("last_audit_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("agent_scores")
+}
+
+// =============================================================================
 // Skill Pack Models
 // Central registry for installable Skill Packs with versioning
 // =============================================================================

@@ -1236,6 +1236,20 @@ export interface Case {
   remediationTask?: Record<string, unknown> | null;
 }
 
+/** Agent score record */
+export interface AgentScore {
+  id: string;
+  agentName: string;
+  agentTitle: string;
+  totalScore: number;
+  bustsReceived: number;
+  bustsIssued: number;
+  cleanCycles: number;
+  lastAuditAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Decision record */
 export interface Decision {
   id: string;
@@ -3711,6 +3725,35 @@ export class ApiClient {
       "PUT",
       `/api/v1/cases/${encodeURIComponent(id)}/dismiss`,
       { reason }
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent Scores
+  // ---------------------------------------------------------------------------
+
+  async listAgentScores(): Promise<{ data: Array<AgentScore & { rank: number }> }> {
+    return this.request<{ data: Array<AgentScore & { rank: number }> }>(
+      "GET",
+      "/api/v1/agent-scores"
+    );
+  }
+
+  async getAgentScore(agentName: string): Promise<{ data: AgentScore }> {
+    return this.request<{ data: AgentScore }>(
+      "GET",
+      `/api/v1/agent-scores/${encodeURIComponent(agentName)}`
+    );
+  }
+
+  async adjustAgentScore(
+    agentName: string,
+    input: { delta: number; reason: string }
+  ): Promise<{ data: AgentScore }> {
+    return this.request<{ data: AgentScore }>(
+      "PUT",
+      `/api/v1/agent-scores/${encodeURIComponent(agentName)}/adjust`,
+      input
     );
   }
 }

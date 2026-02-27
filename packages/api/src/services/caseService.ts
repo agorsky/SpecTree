@@ -1,6 +1,7 @@
 import { prisma } from "../lib/db.js";
 import type { Case } from "../generated/prisma/index.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
+import * as agentScoreService from "./agentScoreService.js";
 
 // =============================================================================
 // Types
@@ -216,8 +217,18 @@ export async function issueVerdict(
         },
       });
 
-      // TODO (ENG-13): Call agentScoreService.updateOnVerdict(accusedAgent, deductionLevel)
-      // This will deduct points from the agent's score based on the deduction level.
+      // Deduct points from the accused agent's score
+      await agentScoreService.updateOnVerdict(
+        c.accusedAgent,
+        input.deductionLevel
+      ).catch(() => {
+        // Score record may not exist yet — don't block verdict
+      });
+
+      // Barney earns points for a successful conviction
+      await agentScoreService.updateOnConviction(c.filedBy).catch(() => {
+        // Score record may not exist yet — don't block verdict
+      });
 
       return updatedCase;
     });
@@ -235,8 +246,10 @@ export async function issueVerdict(
       },
     });
 
-    // TODO (ENG-13): Call agentScoreService.updateOnFalseBust("barney")
-    // This will penalize Barney for filing a false case.
+    // Penalize Barney for filing a false case
+    await agentScoreService.updateOnFalseBust(c.filedBy).catch(() => {
+      // Score record may not exist yet — don't block verdict
+    });
 
     return updatedCase;
   }
