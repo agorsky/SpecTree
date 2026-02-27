@@ -130,7 +130,7 @@ export default function lawsRoutes(
     },
     async (request, reply) => {
       try {
-        const law = await updateLaw(request.params.id, request.body);
+        const law = await updateLaw(request.params.id, request.body as UpdateLawInput);
         return reply.send({ data: law });
       } catch (error) {
         if (error instanceof ValidationError) {
