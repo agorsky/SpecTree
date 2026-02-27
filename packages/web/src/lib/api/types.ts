@@ -138,12 +138,6 @@ export interface CodeContextResponse {
   gitPrUrl: string | null;
 }
 
-export interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-}
-
 export interface TaskPhaseItem {
   id: string;
   title: string;

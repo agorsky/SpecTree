@@ -6,15 +6,7 @@ import { LiveIndicator } from "@/components/live-indicator";
 import { ToastContainer } from "@/components/toast-container";
 
 export function AppLayout() {
-  const { isAuthenticated, isLoading } = useAuthStore();
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

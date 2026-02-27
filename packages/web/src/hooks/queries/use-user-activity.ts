@@ -5,7 +5,7 @@ import {
   type ActivityInterval,
   type ActivityScope,
 } from '@/lib/api/user-activity';
-import { useAuthStore } from '@/stores/auth-store';
+import { useCurrentUser } from '@/hooks/queries/use-current-user';
 
 export const userActivityKeys = {
   all: ['user-activity'] as const,
@@ -26,7 +26,8 @@ export function useUserActivity(
   scope?: ActivityScope,
   scopeId?: string
 ) {
-  const userTimeZone = useAuthStore((s) => s.user?.timeZone);
+  const { data: currentUser } = useCurrentUser();
+  const userTimeZone = currentUser?.data.timeZone;
   const timeZone = resolveTimeZone(userTimeZone);
 
   return useQuery({

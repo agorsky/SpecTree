@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTeam, useDeleteTeam } from "@/hooks/queries/use-teams";
-import { useAuthStore } from "@/stores/auth-store";
+import { useCurrentUser } from "@/hooks/queries/use-current-user";
 import { MemberList } from "@/components/teams/member-list";
 import { TeamForm } from "@/components/teams/team-form";
 import { AddMemberModal } from "@/components/teams/add-member-modal";
@@ -25,7 +25,8 @@ export function TeamDetailPage() {
   const navigate = useNavigate();
   const { data: team, isLoading } = useTeam(teamId ?? "");
   const deleteTeam = useDeleteTeam();
-  const { user } = useAuthStore();
+  const { data: currentUser } = useCurrentUser();
+  const user = currentUser?.data;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);

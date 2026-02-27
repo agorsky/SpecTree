@@ -14,7 +14,7 @@ import { StatusSelect } from "@/components/common/status-select";
 import { AssigneeSelect } from "@/components/common/assignee-select";
 import { EpicSelect } from "@/components/common/epic-select";
 import { useCreateFeature, useUpdateFeature } from "@/hooks/queries/use-features";
-import { useAuthStore } from "@/stores/auth-store";
+import { useCurrentUser } from "@/hooks/queries/use-current-user";
 import type { Feature } from "@/lib/api/types";
 
 interface FeatureFormProps {
@@ -33,7 +33,8 @@ export function FeatureForm({
   const isEditing = !!feature;
   const createFeature = useCreateFeature();
   const updateFeature = useUpdateFeature();
-  const { user } = useAuthStore();
+  const { data: currentUser } = useCurrentUser();
+  const user = currentUser?.data;
 
   const [title, setTitle] = useState(feature?.title ?? "");
   const [description, setDescription] = useState(feature?.description ?? "");

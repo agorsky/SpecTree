@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/auth-store';
+import { useCurrentUser } from '@/hooks/queries/use-current-user';
 import {
   useEpicRequest,
   useReactToEpicRequest,
@@ -35,7 +35,8 @@ const statusColors: Record<EpicRequestStatus, string> = {
 export function EpicRequestDetailPage() {
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { data: currentUser } = useCurrentUser();
+  const user = currentUser?.data;
 
   const { data: request, isLoading } = useEpicRequest(requestId ?? '');
   const reactMutation = useReactToEpicRequest();

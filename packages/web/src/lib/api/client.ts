@@ -13,11 +13,6 @@ export class ApiError extends Error {
   }
 }
 
-interface RefreshResponse {
-  accessToken: string;
-  refreshToken: string;
-}
-
 class ApiClient {
   private baseUrl = "/api/v1";
 
@@ -42,15 +37,9 @@ class ApiClient {
     });
 
     if (res.status === 401 && !path.startsWith("/auth/")) {
-      // Attempt refresh or redirect to login (skip for auth endpoints)
-      const refreshed = await this.refreshToken();
-      if (!refreshed) {
-        useAuthStore.getState().logout();
-        window.location.href = "/login";
-        throw new ApiError(res, { message: "Unauthorized" });
-      }
-      // Retry original request
-      return this.request<T>(path, options);
+      useAuthStore.getState().logout();
+      window.location.href = "/login";
+      throw new ApiError(res, { message: "Unauthorized" });
     }
 
     if (!res.ok) {
@@ -64,27 +53,6 @@ class ApiClient {
     }
 
     return res.json() as Promise<T>;
-  }
-
-  private async refreshToken(): Promise<boolean> {
-    const refreshToken = useAuthStore.getState().refreshToken;
-    if (!refreshToken) return false;
-
-    try {
-      const res = await fetch(`${this.baseUrl}/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
-      });
-
-      if (!res.ok) return false;
-
-      const data = (await res.json()) as RefreshResponse;
-      useAuthStore.getState().setTokens(data.accessToken, data.refreshToken);
-      return true;
-    } catch {
-      return false;
-    }
   }
 
   get<T>(path: string) {

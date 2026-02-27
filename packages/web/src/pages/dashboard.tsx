@@ -9,7 +9,7 @@ import { ExportMenu } from '@/components/dashboard/export-menu';
 import { MetricDetailSheet } from '@/components/dashboard/metric-detail-sheet';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
-import { useAuthStore } from '@/stores/auth-store';
+import { useCurrentUser } from '@/hooks/queries/use-current-user';
 
 export type MetricType = 'features' | 'tasks' | 'decisions' | 'sessions';
 
@@ -44,7 +44,8 @@ export function DashboardPage() {
   // State for tracking which metric detail view is open (used by future drill-down feature)
   const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null);
 
-  const isGlobalAdmin = useAuthStore((s) => s.user?.isGlobalAdmin ?? false);
+  const { data: currentUser } = useCurrentUser();
+  const isGlobalAdmin = currentUser?.data.isGlobalAdmin ?? false;
 
   const { data, isLoading, isError, dataUpdatedAt, isFetching } = useUserActivity(
     interval,

@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateEpic, useUpdateEpic } from "@/hooks/queries/use-epics";
-import { useAuthStore } from "@/stores/auth-store";
+import { useCurrentUser } from "@/hooks/queries/use-current-user";
 import type { Epic } from "@/lib/api/types";
 
 interface EpicFormProps {
@@ -24,7 +24,8 @@ export function EpicForm({ open, onOpenChange, epic }: EpicFormProps) {
   const isEditing = !!epic;
   const createEpic = useCreateEpic();
   const updateEpic = useUpdateEpic();
-  const { user } = useAuthStore();
+  const { data: currentUser } = useCurrentUser();
+  const user = currentUser?.data;
 
   const [name, setName] = useState(epic?.name ?? "");
   const [description, setDescription] = useState(epic?.description ?? "");

@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
+import { useCurrentUser } from "@/hooks/queries/use-current-user";
 import { Folder, Users, Settings, LogOut, BarChart3, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +25,9 @@ const VERSION = "0.2.0";
 
 export function Sidebar() {
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const logout = useAuthStore((s) => s.logout);
+  const { data: currentUser } = useCurrentUser();
+  const user = currentUser?.data;
 
   return (
     <div className="flex h-full w-64 flex-col border-r bg-muted/40">

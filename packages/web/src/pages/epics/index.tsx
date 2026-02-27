@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useEpics } from "@/hooks/queries/use-epics";
-import { useAuthStore } from "@/stores/auth-store";
+import { useCurrentUser } from "@/hooks/queries/use-current-user";
 import { Button } from "@/components/ui/button";
 import { EpicForm } from "@/components/epics/epic-form";
 import { EpicCard } from "@/components/epics/epic-card";
@@ -55,7 +55,8 @@ export function EpicsPage() {
     return stored || undefined;
   });
   
-  const currentUser = useAuthStore((state) => state.user);
+  const { data: currentUserData } = useCurrentUser();
+  const currentUser = currentUserData?.data;
   
   const handleScopeChange = (newScope: ScopeMode, newScopeId?: string) => {
     setScope(newScope);

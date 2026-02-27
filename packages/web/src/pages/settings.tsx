@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
+import { useCurrentUser } from "@/hooks/queries/use-current-user";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/hooks/use-theme";
 import { useTokens, useRevokeToken } from "@/hooks/queries/use-tokens";
 import { usersApi } from "@/lib/api/users";
@@ -48,7 +50,10 @@ const TIMEZONE_OPTIONS: string[] =
 const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 export function SettingsPage() {
-  const { user, logout } = useAuthStore();
+  const logout = useAuthStore((s) => s.logout);
+  const { data: currentUser } = useCurrentUser();
+  const user = currentUser?.data;
+  const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
   const [name, setName] = useState(user?.name ?? "");
   const [timeZone, setTimeZone] = useState(user?.timeZone ?? browserTimeZone);
@@ -63,8 +68,8 @@ export function SettingsPage() {
     if (!user) return;
     setIsSaving(true);
     try {
-      const res = await usersApi.update(user.id, { name, timeZone });
-      useAuthStore.setState({ user: res.data });
+      await usersApi.update(user.id, { name, timeZone });
+      await queryClient.invalidateQueries({ queryKey: ["current-user"] });
     } catch (e) {
       console.error("Failed to save profile:", e);
     } finally {

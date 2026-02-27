@@ -1,11 +1,9 @@
-import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { router } from "@/router";
-import { useAuthStore } from "@/stores/auth-store";
 import { LiveUpdatesProvider } from "@/providers/LiveUpdatesProvider";
 
 const queryClient = new QueryClient({
@@ -18,12 +16,6 @@ const queryClient = new QueryClient({
 });
 
 function App(): React.ReactNode {
-  const checkAuth = useAuthStore((state) => state.checkAuth);
-
-  useEffect(() => {
-    void checkAuth();
-  }, [checkAuth]);
-
   return (
     <QueryClientProvider client={queryClient}>
       <LiveUpdatesProvider>

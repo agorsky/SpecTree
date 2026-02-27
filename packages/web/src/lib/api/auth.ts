@@ -1,14 +1,10 @@
 import { api } from "./client";
-import type { LoginResponse, User } from "./types";
+
+interface LoginResult {
+  accessToken: string;
+}
 
 export const authApi = {
   login: (passphrase: string) =>
-    api.post<LoginResponse>("/auth/login", { passphrase }),
-
-  refresh: (refreshToken: string) =>
-    api.post<LoginResponse>("/auth/refresh", { refreshToken }),
-
-  me: () => api.get<User>("/auth/me"),
-
-  logout: () => api.post("/auth/logout", {}),
+    api.post<LoginResult>("/auth/login", { passphrase }),
 };
