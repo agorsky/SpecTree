@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { adminApi } from "@/lib/api/admin";
+import { usersApi } from "@/lib/api/users";
 import { teamsApi } from "@/lib/api/teams";
 import { useTeamMembers, teamKeys } from "@/hooks/queries/use-teams";
 import { useQuery } from "@tanstack/react-query";
@@ -27,10 +27,9 @@ export function AddMemberModal({ teamId, open, onOpenChange }: AddMemberModalPro
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  // Get all users (admin only endpoint)
   const { data: usersResponse, isLoading: loadingUsers } = useQuery({
-    queryKey: ["admin", "users"],
-    queryFn: () => adminApi.listUsers({ limit: 100 }),
+    queryKey: ["users"],
+    queryFn: () => usersApi.list({ limit: 100 }),
     enabled: open,
   });
 
@@ -65,7 +64,7 @@ export function AddMemberModal({ teamId, open, onOpenChange }: AddMemberModalPro
 
   // Filter out users who are already members
   const currentMemberIds = new Set(members?.map((m) => m.user.id) ?? []);
-  const availableUsers = usersResponse?.users?.filter(
+  const availableUsers = usersResponse?.data?.filter(
     (u) => u.isActive && !currentMemberIds.has(u.id)
   ) ?? [];
 

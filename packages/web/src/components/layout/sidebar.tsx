@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
-import { Folder, Users, Settings, LogOut, Shield, BarChart3, Lightbulb } from "lucide-react";
+import { Folder, Users, Settings, LogOut, BarChart3, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
+
 import { Badge } from "@/components/ui/badge";
 
 const navItems = [
@@ -18,10 +18,6 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/epics", label: "Epics", icon: Folder },
   { href: "/teams", label: "Teams", icon: Users },
-];
-
-const adminNavItems = [
-  { href: "/admin/users", label: "User Management", icon: Shield },
 ];
 
 const VERSION = "0.2.0";
@@ -56,31 +52,6 @@ export function Sidebar() {
           </Link>
         ))}
 
-        {/* Admin Section */}
-        {user?.isGlobalAdmin && (
-          <>
-            <Separator className="my-2" />
-            <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Admin
-            </p>
-            {adminNavItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                  location.pathname === item.href ||
-                    location.pathname.startsWith(item.href + "/")
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            ))}
-          </>
-        )}
       </nav>
 
       {/* User menu */}
