@@ -128,7 +128,7 @@ describe("EpicRequestDetailPage", () => {
 
     // The trigger Approve button has green styling
     const approveButtons = screen.getAllByText("Approve");
-    const triggerButton = approveButtons[0].closest("button");
+    const triggerButton = approveButtons.at(0)?.closest("button");
     expect(triggerButton?.className).toContain("bg-green-600");
   });
 
@@ -139,7 +139,7 @@ describe("EpicRequestDetailPage", () => {
     renderWithProviders(<EpicRequestDetailPage />);
 
     const rejectButton = screen.getByText("Reject").closest("button");
-    expect(rejectButton?.className).toContain("destructive");
+    expect(rejectButton!.className).toContain("destructive");
   });
 
   it("renders structured description sections as Card components", async () => {
@@ -166,7 +166,7 @@ describe("EpicRequestDetailPage", () => {
 
     // The AlertDialog trigger wraps the Approve button
     const approveButtons = screen.getAllByText("Approve");
-    const triggerButton = approveButtons[0].closest("button");
+    const triggerButton = approveButtons.at(0)?.closest("button");
     expect(triggerButton).toBeDefined();
 
     // Check the dialog content exists in the DOM (may be hidden)
