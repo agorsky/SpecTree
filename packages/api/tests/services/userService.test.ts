@@ -8,11 +8,6 @@ vi.mock('bcrypt', () => ({
   },
 }));
 
-// Mock personalScopeService
-vi.mock('../../src/services/personalScopeService.js', () => ({
-  createPersonalScopeInTransaction: vi.fn().mockResolvedValue({ id: 'scope-123', userId: 'user-123' }),
-}));
-
 // Mock membershipService
 vi.mock('../../src/services/membershipService.js', () => ({
   getTeamsWhereUserIsLastAdmin: vi.fn().mockResolvedValue([]),
@@ -22,30 +17,22 @@ vi.mock('../../src/services/membershipService.js', () => ({
 vi.mock('../../src/lib/db.js', () => {
   const mockPrisma = {
     user: {
-      create: vi.fn(),
       findUnique: vi.fn(),
       findFirst: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
       count: vi.fn(),
+      delete: vi.fn(),
     },
     team: {
       findMany: vi.fn(),
     },
-    membership: {
-      createMany: vi.fn(),
-      findMany: vi.fn(),
-    },
-    $transaction: vi.fn(),
   };
-  // $transaction executes the callback with the mock prisma as the tx client
-  mockPrisma.$transaction.mockImplementation((fn: any) => fn(mockPrisma));
   return { prisma: mockPrisma };
 });
 
 import bcrypt from 'bcrypt';
 import { prisma } from '../../src/lib/db.js';
-import { createPersonalScopeInTransaction } from '../../src/services/personalScopeService.js';
 import { getTeamsWhereUserIsLastAdmin } from '../../src/services/membershipService.js';
 import {
   getUsers,
@@ -53,10 +40,8 @@ import {
   getCurrentUser,
   getUserByEmail,
   emailExists,
-  createUser,
   updateUser,
   softDeleteUser,
-  getUserByEmailWithPassword,
 } from '../../src/services/userService.js';
 import { ForbiddenError } from '../../src/errors/index.js';
 
@@ -254,87 +239,6 @@ describe('userService', () => {
     });
   });
 
-  describe('createUser', () => {
-    it('should create user with hashed password and provision PersonalScope', async () => {
-      const mockUser = {
-        id: 'user-123',
-        email: 'new@test.com',
-        name: 'New User',
-      };
-      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as any);
-
-      const result = await createUser({
-        email: 'new@test.com',
-        name: 'New User',
-        password: 'secret123',
-      });
-
-      expect(result).toEqual(mockUser);
-      expect(bcrypt.hash).toHaveBeenCalledWith('secret123', 10);
-      expect(prisma.user.create).toHaveBeenCalledWith({
-        data: {
-          email: 'new@test.com',
-          name: 'New User',
-          passwordHash: 'hashed-password',
-          avatarUrl: null,
-        },
-        select: expect.objectContaining({ id: true, passwordHash: false }),
-      });
-      // Verify PersonalScope is created inside the transaction
-      expect(createPersonalScopeInTransaction).toHaveBeenCalledWith(expect.anything(), 'user-123');
-    });
-
-    it('should create user with avatar URL', async () => {
-      const mockUser = { id: 'user-123' };
-      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as any);
-
-      await createUser({
-        email: 'new@test.com',
-        name: 'New User',
-        password: 'secret123',
-        avatarUrl: 'https://example.com/avatar.png',
-      });
-
-      expect(prisma.user.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          avatarUrl: 'https://example.com/avatar.png',
-        }),
-        select: expect.any(Object),
-      });
-    });
-
-    it('should NOT auto-join user to any teams', async () => {
-      const mockUser = { id: 'user-123', email: 'new@test.com', name: 'New User' };
-      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as any);
-
-      await createUser({
-        email: 'new@test.com',
-        name: 'New User',
-        password: 'secret123',
-      });
-
-      // Verify team lookup is NOT called
-      expect(prisma.team.findMany).not.toHaveBeenCalled();
-      // Verify membership creation is NOT called
-      expect(prisma.membership.createMany).not.toHaveBeenCalled();
-    });
-
-    it('should provision PersonalScope with default statuses for new users', async () => {
-      const mockUser = { id: 'user-456', email: 'test@test.com', name: 'Test' };
-      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as any);
-
-      await createUser({
-        email: 'test@test.com',
-        name: 'Test',
-        password: 'password123',
-      });
-
-      // createPersonalScopeInTransaction creates the scope AND default statuses
-      expect(createPersonalScopeInTransaction).toHaveBeenCalledWith(expect.anything(), 'user-456');
-      expect(createPersonalScopeInTransaction).toHaveBeenCalledTimes(1);
-    });
-  });
-
   describe('updateUser', () => {
     it('should update user email', async () => {
       const updatedUser = { id: 'user-123', email: 'updated@test.com' };
@@ -508,52 +412,4 @@ describe('userService', () => {
     });
   });
 
-  describe('getUserByEmailWithPassword', () => {
-    it('should return user with password hash', async () => {
-      const mockUser = {
-        id: 'user-123',
-        email: 'test@test.com',
-        name: 'Test User',
-        avatarUrl: null,
-        isActive: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
-        passwordHash: 'hashed-password',
-        memberships: [
-          { teamId: 'team-123', role: 'MEMBER' },
-        ],
-      };
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
-
-      const result = await getUserByEmailWithPassword('test@test.com');
-
-      expect(result).toEqual({
-        id: 'user-123',
-        email: 'test@test.com',
-        name: 'Test User',
-        avatarUrl: null,
-        isActive: true,
-        createdAt: mockUser.createdAt,
-        updatedAt: mockUser.updatedAt,
-        passwordHash: 'hashed-password',
-        teamId: 'team-123',
-        role: 'MEMBER',
-      });
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'test@test.com' },
-        select: expect.objectContaining({
-          id: true,
-          passwordHash: true,
-        }),
-      });
-    });
-
-    it('should return null when user not found', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
-
-      const result = await getUserByEmailWithPassword('nonexistent@test.com');
-
-      expect(result).toBeNull();
-    });
-  });
 });

@@ -7,7 +7,6 @@ import {
   emailExists,
 } from "../services/userService.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { ForbiddenError } from "../errors/index.js";
 
 // Request/Response type definitions
 interface GetUsersQuery {
@@ -17,13 +16,6 @@ interface GetUsersQuery {
 
 interface UserIdParams {
   id: string;
-}
-
-interface CreateUserBody {
-  email: string;
-  name: string;
-  password: string;
-  avatarUrl?: string | null;
 }
 
 interface UpdateUserBody {
@@ -96,20 +88,6 @@ export default function usersRoutes(
         });
       }
       return reply.send({ data: user });
-    }
-  );
-
-  /**
-   * POST /api/v1/users
-   * Registration endpoint - DISABLED
-   * Self-registration is disabled. Contact an administrator.
-   */
-  fastify.post<{ Body: CreateUserBody }>(
-    "/",
-    async () => {
-      throw new ForbiddenError(
-        "Self-registration is disabled. Please contact an administrator."
-      );
     }
   );
 

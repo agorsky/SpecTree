@@ -1,6 +1,5 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../lib/db.js";
-import { createPersonalScopeInTransaction } from "./personalScopeService.js";
 import { getTeamsWhereUserIsLastAdmin } from "./membershipService.js";
 import { ForbiddenError } from "../errors/index.js";
 
@@ -28,13 +27,6 @@ export interface UserResponse {
   timeZone: string | null;
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface CreateUserInput {
-  email: string;
-  name: string;
-  password: string;
-  avatarUrl?: string | null;
 }
 
 export interface UpdateUserInput {
@@ -133,35 +125,6 @@ export async function emailExists(email: string, excludeId?: string): Promise<bo
   if (!user) return false;
   if (excludeId && user.id === excludeId) return false;
   return true;
-}
-
-/**
- * Create a new user
- * Automatically provisions a PersonalScope for the new user.
- * Users must be invited to teams (no auto-join).
- */
-export async function createUser(input: CreateUserInput): Promise<UserResponse> {
-  const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
-
-  // Create user and PersonalScope atomically
-  const user = await prisma.$transaction(async (tx) => {
-    const newUser = await tx.user.create({
-      data: {
-        email: input.email,
-        name: input.name,
-        passwordHash,
-        avatarUrl: input.avatarUrl ?? null,
-      },
-      select: userSelectFields,
-    });
-
-    // Create PersonalScope inside the same transaction
-    await createPersonalScopeInTransaction(tx, newUser.id);
-
-    return newUser;
-  });
-
-  return user;
 }
 
 /**
@@ -274,62 +237,4 @@ export async function hardDeleteUser(id: string): Promise<boolean> {
     // User not found
     return false;
   }
-}
-
-
-/**
- * Get a user by email with password hash (for authentication)
- * This function is internal and should only be used for authentication purposes
- */
-export async function getUserByEmailWithPassword(email: string): Promise<{
-  id: string;
-  email: string;
-  name: string;
-  avatarUrl: string | null;
-  isActive: boolean;
-  isGlobalAdmin: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  passwordHash: string;
-  teamId: string | null;
-  role: string | null;
-} | null> {
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      avatarUrl: true,
-      isActive: true,
-      isGlobalAdmin: true,
-      createdAt: true,
-      updatedAt: true,
-      passwordHash: true,
-      memberships: {
-        select: {
-          teamId: true,
-          role: true,
-        },
-        take: 1,
-      },
-    },
-  });
-
-  if (!user) return null;
-
-  const membership = user.memberships[0];
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    avatarUrl: user.avatarUrl,
-    isActive: user.isActive,
-    isGlobalAdmin: user.isGlobalAdmin,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-    passwordHash: user.passwordHash,
-    teamId: membership?.teamId ?? null,
-    role: membership?.role ?? null,
-  };
 }

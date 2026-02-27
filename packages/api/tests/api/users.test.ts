@@ -164,51 +164,6 @@ describe("Users API", () => {
     });
   });
 
-  describe("POST /api/v1/users (registration - DISABLED)", () => {
-    it("rejects all registration attempts with 403", async () => {
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/users",
-        payload: {
-          email: "newuser@example.com",
-          name: "New User",
-          password: "securePassword123",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-      const body = JSON.parse(response.body);
-      expect(body.error.code).toBe("FORBIDDEN");
-      expect(body.error.message).toContain("Self-registration is disabled");
-      expect(body.error.message).toContain("invitation");
-    });
-
-    it("rejects registration even with all valid fields", async () => {
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/users",
-        payload: {
-          email: "validuser@example.com",
-          name: "Valid User",
-          password: "ValidPassword123!",
-          avatarUrl: "https://example.com/avatar.png",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("rejects registration with empty payload", async () => {
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/users",
-        payload: {},
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-  });
-
   describe("PUT /api/v1/users/:id", () => {
     it("should update user name", async () => {
       const { headers } = await createAuthenticatedUser();

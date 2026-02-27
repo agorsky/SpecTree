@@ -32,9 +32,7 @@ export {
 
 // User schemas
 export {
-  createUserSchema,
   updateUserSchema,
-  type CreateUserInput,
   type UpdateUserInput,
 } from "./user.js";
 
