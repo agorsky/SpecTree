@@ -47,6 +47,29 @@ describe("Admin routes removed", () => {
     });
   });
 
+  describe("DELETE /api/v1/admin/invitations/:id", () => {
+    it("should return 404", async () => {
+      const response = await app.inject({
+        method: "DELETE",
+        url: "/api/v1/admin/invitations/some-id",
+      });
+
+      expect(response.statusCode).toBe(404);
+    });
+  });
+
+  describe("PATCH /api/v1/admin/invitations/:id", () => {
+    it("should return 404", async () => {
+      const response = await app.inject({
+        method: "PATCH",
+        url: "/api/v1/admin/invitations/some-id",
+        payload: { status: "expired" },
+      });
+
+      expect(response.statusCode).toBe(404);
+    });
+  });
+
   describe("GET /api/v1/admin/users", () => {
     it("should return 404", async () => {
       const response = await app.inject({
