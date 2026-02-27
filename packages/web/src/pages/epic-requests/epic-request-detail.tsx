@@ -18,6 +18,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { MarkdownRenderer } from '@/components/common/markdown-renderer';
 import { ArrowLeft, ThumbsUp, Flame, ThumbsDown, Edit, Trash2, Send, Check, CheckCircle, X, Copy, Terminal, ArrowRightLeft, User, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -137,9 +149,6 @@ export function EpicRequestDetailPage() {
 
   // Check if user has reacted and what type
   const userReaction = request.userReaction as ReactionType | null;
-
-  // Check if current user is the creator (will be used in next tasks)
-  // const isCreator = user?.id === request.requestedById;
 
   // Handle reaction toggle
   const handleReaction = async (type: ReactionType) => {
@@ -312,32 +321,6 @@ export function EpicRequestDetailPage() {
             </Button>
           )}
 
-          {/* Approve/Reject Buttons - visible for admins */}
-          {canApproveReject && request.status === 'pending' && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => { void handleApprove(); }}
-                disabled={approveMutation.isPending}
-                className="text-green-600 hover:text-green-700"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Approve
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => { void handleReject(); }}
-                disabled={rejectMutation.isPending}
-                className="text-red-600 hover:text-red-700"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Reject
-              </Button>
-            </>
-          )}
-
           {/* Mark Implemented Button - visible for admins when approved */}
           {isAdmin && request.status === 'approved' && (
             <Button
@@ -419,6 +402,52 @@ export function EpicRequestDetailPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-6 space-y-6">
+          {/* Approve/Reject Buttons - full-width at top */}
+          {canApproveReject && request.status === 'pending' && (
+            <div className="flex gap-3 w-full">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    size="lg"
+                    disabled={approveMutation.isPending}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Check className="h-5 w-5 mr-2" />
+                    Approve
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Approve this Epic Request?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will notify the crew to begin planning.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => { void handleApprove(); }}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Approve
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={() => { void handleReject(); }}
+                disabled={rejectMutation.isPending}
+                className="flex-1"
+              >
+                <X className="h-5 w-5 mr-2" />
+                Reject
+              </Button>
+            </div>
+          )}
+
           {/* Metadata */}
           <div className="text-sm text-muted-foreground">
             Requested by {request.requestedBy?.name ?? 'Unknown'} •{' '}
@@ -462,81 +491,53 @@ export function EpicRequestDetailPage() {
           )}
 
           {/* Structured Description */}
-          {request.structuredDesc && (
-            <div className="space-y-4 border-t pt-6">
-              {request.structuredDesc.problemStatement && (
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">Problem Statement</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {request.structuredDesc.problemStatement}
-                  </p>
-                </div>
-              )}
+          {(() => {
+            let sd: Record<string, string> = {};
+            if (request.structuredDesc) {
+              if (typeof request.structuredDesc === 'string') {
+                try {
+                  sd = JSON.parse(request.structuredDesc) as Record<string, string>;
+                } catch {
+                  sd = {};
+                }
+              } else {
+                sd = request.structuredDesc as unknown as Record<string, string>;
+              }
+            }
 
-              {request.structuredDesc.proposedSolution && (
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">Proposed Solution</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {request.structuredDesc.proposedSolution}
-                  </p>
-                </div>
-              )}
+            const sections = [
+              { key: 'problemStatement', label: 'Problem Statement' },
+              { key: 'proposedSolution', label: 'Proposed Solution' },
+              { key: 'impactAssessment', label: 'Impact Assessment' },
+              { key: 'successMetrics', label: 'Success Metrics' },
+              { key: 'targetAudience', label: 'Target Audience' },
+              { key: 'alternatives', label: 'Alternatives Considered' },
+              { key: 'dependencies', label: 'Dependencies' },
+              { key: 'estimatedEffort', label: 'Estimated Effort' },
+            ];
 
-              {request.structuredDesc.impactAssessment && (
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">Impact Assessment</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {request.structuredDesc.impactAssessment}
-                  </p>
-                </div>
-              )}
+            const hasSections = sections.some(({ key }) => sd[key]);
+            if (!hasSections) return null;
 
-              {request.structuredDesc.targetAudience && (
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">Target Audience</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {request.structuredDesc.targetAudience}
-                  </p>
-                </div>
-              )}
-
-              {request.structuredDesc.successMetrics && (
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">Success Metrics</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {request.structuredDesc.successMetrics}
-                  </p>
-                </div>
-              )}
-
-              {request.structuredDesc.alternatives && (
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">Alternatives</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {request.structuredDesc.alternatives}
-                  </p>
-                </div>
-              )}
-
-              {request.structuredDesc.dependencies && (
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">Dependencies</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {request.structuredDesc.dependencies}
-                  </p>
-                </div>
-              )}
-
-              {request.structuredDesc.estimatedEffort && (
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">Estimated Effort</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {request.structuredDesc.estimatedEffort}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+            return (
+              <div className="space-y-4 border-t pt-6">
+                {sections.map(({ key, label }) => {
+                  const value = sd[key];
+                  if (!value) return null;
+                  return (
+                    <Card key={key}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-semibold">{label}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <MarkdownRenderer content={value} className="text-sm text-muted-foreground" />
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* Reactions */}
           <div className="border-t pt-6">
