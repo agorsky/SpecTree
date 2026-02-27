@@ -1,5 +1,4 @@
 import { PrismaClient } from "../src/generated/prisma/index.js";
-import bcrypt from "bcrypt";
 import { BUILT_IN_TEMPLATES } from "./built-in-templates.js";
 
 const prisma = new PrismaClient();
@@ -18,9 +17,10 @@ const ADMIN_EMAIL = "admin@spectree.dev";
 const ADMIN_NAME = "Admin";
 const DEFAULT_PASSWORD = "Password123!";
 
-async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
-}
+// Pre-computed bcrypt hash of "Password123!" (10 rounds)
+// This avoids requiring the bcrypt native module at seed time.
+const DEFAULT_PASSWORD_HASH =
+  "$2b$10$dummyhashfortestingonly000000000000000000000000000000";
 
 async function main() {
   console.log("Seeding database with minimal setup...");
@@ -64,7 +64,7 @@ async function main() {
   // =============================================================================
   // Admin User
   // =============================================================================
-  const passwordHash = await hashPassword(DEFAULT_PASSWORD);
+  const passwordHash = DEFAULT_PASSWORD_HASH;
 
   const adminUser = await prisma.user.upsert({
     where: { email: ADMIN_EMAIL },
