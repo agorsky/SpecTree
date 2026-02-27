@@ -553,6 +553,31 @@ model EpicRequestComment {
 }
 
 // =============================================================================
+// Law Model
+// Registry of enforceable rules for AI agent governance
+// Valid LawSeverity values: 'minor', 'major', 'critical'
+// =============================================================================
+
+model Law {
+  id          String   @id @default(uuid())
+  lawCode     String   @unique @map("law_code")
+  title       String
+  description String
+  severity    String   // 'minor' | 'major' | 'critical'
+  auditLogic  String   @map("audit_logic")
+  consequence String
+  appliesTo   String   @map("applies_to")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([severity])
+  @@index([appliesTo])
+  @@index([isActive])
+  @@map("laws")
+}
+
+// =============================================================================
 // Skill Pack Models
 // Central registry for installable Skill Packs with versioning
 // =============================================================================
