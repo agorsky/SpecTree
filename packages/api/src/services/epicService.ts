@@ -296,7 +296,7 @@ export async function updateEpic(
       : { name: idOrName },
   });
 
-  if (!existing || existing.isArchived) {
+  if (!existing) {
     throw new NotFoundError(`Epic with id '${idOrName}' not found`);
   }
 
