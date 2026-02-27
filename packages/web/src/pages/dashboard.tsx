@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { useUserActivity } from '@/hooks/queries/use-user-activity';
-import type { ActivityInterval, ActivityScope } from '@/lib/api/user-activity';
+import type { ActivityInterval } from '@/lib/api/user-activity';
 import { IntervalSelector } from '@/components/dashboard/interval-selector';
-import { ScopeSelector } from '@/components/dashboard/scope-selector';
 import { ActivityChart } from '@/components/dashboard/activity-chart';
 import { ActivityTable } from '@/components/dashboard/activity-table';
 import { ExportMenu } from '@/components/dashboard/export-menu';
 import { MetricDetailSheet } from '@/components/dashboard/metric-detail-sheet';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
-import { useCurrentUser } from '@/hooks/queries/use-current-user';
 
 export type MetricType = 'features' | 'tasks' | 'decisions' | 'sessions';
 
@@ -39,46 +37,28 @@ export function computeDateRange(
 export function DashboardPage() {
   const [interval, setInterval] = useState<ActivityInterval>('week');
   const [page, setPage] = useState(1);
-  const [scope, setScope] = useState<ActivityScope>('self');
-  const [scopeId, setScopeId] = useState<string | undefined>(undefined);
-  // State for tracking which metric detail view is open (used by future drill-down feature)
   const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null);
-
-  const { data: currentUser } = useCurrentUser();
-  const isGlobalAdmin = currentUser?.data.isGlobalAdmin ?? false;
 
   const { data, isLoading, isError, dataUpdatedAt, isFetching } = useUserActivity(
     interval,
     page,
     14,
-    scope,
-    scopeId
+    'all',
+    undefined
   );
 
-  // Reset page when interval changes
   const handleIntervalChange = (newInterval: ActivityInterval) => {
     setInterval(newInterval);
     setPage(1);
   };
 
-  // Reset page when scope changes
-  const handleScopeChange = (newScope: ActivityScope, newScopeId?: string) => {
-    setScope(newScope);
-    setScopeId(newScopeId);
-    setPage(1);
-  };
-
-  // Handle metric card click for drill-down
   const handleMetricClick = (metric: MetricType, count: number) => {
-    // Don't open sheet for zero-count metrics
     if (count === 0) return;
     setSelectedMetric(metric);
   };
 
-  // Close drill-down view
   const handleCloseDrillDown = () => {
     setSelectedMetric(null);
-    // TODO: Future feature will use this to close detail views
   };
 
   return (
@@ -89,7 +69,7 @@ export function DashboardPage() {
           <h1 className="text-2xl font-semibold">Activity Dashboard</h1>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-sm text-muted-foreground">
-              Your activity across features, tasks, decisions, and AI sessions
+              Agent activity across features, tasks, decisions, and AI sessions
             </p>
             {dataUpdatedAt > 0 && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground/70">
@@ -101,13 +81,6 @@ export function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           {data && <ExportMenu data={data.data} interval={interval} />}
-          {isGlobalAdmin && (
-            <ScopeSelector
-              scope={scope}
-              {...(scopeId !== undefined && { scopeId })}
-              onScopeChange={handleScopeChange}
-            />
-          )}
           <IntervalSelector value={interval} onChange={handleIntervalChange} />
         </div>
       </div>
@@ -130,16 +103,11 @@ export function DashboardPage() {
       {/* Content */}
       {data && !isLoading && (
         <>
-          {/* Summary cards */}
-          <SummaryCards 
+          <SummaryCards
             data={data.data}
             onCardClick={handleMetricClick}
           />
-
-          {/* Chart */}
           <ActivityChart data={data.data} interval={interval} />
-
-          {/* Table */}
           <ActivityTable data={data.data} interval={interval} />
 
           {/* Pagination */}
@@ -179,8 +147,7 @@ export function DashboardPage() {
           onOpenChange={(open) => !open && handleCloseDrillDown()}
           interval={interval}
           page={page}
-          scope={scope}
-          {...(scopeId !== undefined && { scopeId })}
+          scope="all"
           timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
         />
       )}
@@ -188,15 +155,15 @@ export function DashboardPage() {
   );
 }
 
-function SummaryCards({ 
+function SummaryCards({
   data,
   onCardClick
-}: { 
+}: {
   data: import('@/lib/api/user-activity').UserActivityDataPoint[];
   onCardClick?: (metric: MetricType, count: number) => void;
 }) {
   const [hoveredCard, setHoveredCard] = useState<MetricType | null>(null);
-  
+
   const totals = data.reduce(
     (acc, d) => ({
       features: acc.features + d.featuresCreated,
@@ -214,33 +181,27 @@ function SummaryCards({
     { label: 'AI Sessions', value: totals.sessions, color: 'text-purple-600', metric: 'sessions' as MetricType },
   ];
 
-  const handleCardClick = (metric: MetricType, value: number) => {
-    onCardClick?.(metric, value);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent, metric: MetricType, value: number) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleCardClick(metric, value);
-    }
-  };
-
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {cards.map((card) => {
         const isZero = card.value === 0;
         const isHovered = hoveredCard === card.metric;
-        
+
         return (
           <div
             key={card.label}
             className={`rounded-lg border bg-card p-4 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-              isZero 
-                ? 'opacity-60 cursor-not-allowed' 
+              isZero
+                ? 'opacity-60 cursor-not-allowed'
                 : 'cursor-pointer hover:shadow-md hover:border-primary/50'
             }`}
-            onClick={() => handleCardClick(card.metric, card.value)}
-            onKeyDown={(e) => handleKeyDown(e, card.metric, card.value)}
+            onClick={() => onCardClick?.(card.metric, card.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onCardClick?.(card.metric, card.value);
+              }
+            }}
             onMouseEnter={() => !isZero && setHoveredCard(card.metric)}
             onMouseLeave={() => setHoveredCard(null)}
             role="button"
