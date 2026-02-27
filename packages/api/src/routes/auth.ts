@@ -1,7 +1,5 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import bcrypt from "bcrypt";
 import {
-  getUserByEmailWithPassword,
   activateAccount,
 } from "../services/userService.js";
 import {
@@ -9,7 +7,7 @@ import {
   generateRefreshToken,
   verifyTokenWithType,
 } from "../utils/jwt.js";
-import { UnauthorizedError, ForbiddenError, ValidationError } from "../errors/index.js";
+import { UnauthorizedError, ValidationError } from "../errors/index.js";
 import {
   loginSchema,
   refreshSchema,
@@ -19,6 +17,7 @@ import {
   type ActivateAccountInput,
 } from "../schemas/auth.js";
 import { authenticate } from "../middleware/authenticate.js";
+import { prisma } from "../lib/db.js";
 
 /**
  * Auth routes plugin
@@ -30,41 +29,35 @@ export default function authRoutes(
 ): void {
   /**
    * POST /api/v1/auth/login
-   * Authenticate user with email and password
+   * Authenticate with a passphrase to obtain tokens for the admin user
    */
   fastify.post<{ Body: LoginInput }>(
     "/login",
     async (request, reply) => {
-      // Validate request body
       const parseResult = loginSchema.safeParse(request.body);
       if (!parseResult.success) {
         throw new UnauthorizedError("Invalid credentials");
       }
 
-      const { email, password } = parseResult.data;
+      const { passphrase } = parseResult.data;
 
-      // Find user by email (including password hash for verification)
-      const user = await getUserByEmailWithPassword(email);
+      // Validate passphrase against env var
+      const expectedPassphrase = process.env.SPECTREE_PASSPHRASE;
+      if (!expectedPassphrase || passphrase !== expectedPassphrase) {
+        throw new UnauthorizedError("Invalid credentials");
+      }
+
+      // Look up the admin user
+      const user = await prisma.user.findFirst({
+        where: { isGlobalAdmin: true, isActive: true },
+      });
       if (!user) {
         throw new UnauthorizedError("Invalid credentials");
       }
 
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-      if (!isValidPassword) {
-        throw new UnauthorizedError("Invalid credentials");
-      }
-
-      // Check if user is active
-      if (!user.isActive) {
-        throw new ForbiddenError("Account is deactivated");
-      }
-
-      // Generate tokens
       const accessToken = generateAccessToken(user.id);
       const refreshToken = generateRefreshToken(user.id);
 
-      // Return response without password_hash
       const { passwordHash: _, ...userWithoutPassword } = user;
 
       return reply.send({
