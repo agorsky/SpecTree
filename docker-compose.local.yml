@@ -21,6 +21,7 @@ services:
       - DATABASE_URL=file:/app/data/spectree.db
       - JWT_SECRET=local-dev-jwt-secret-change-in-production
       - CORS_ORIGIN=http://localhost
+      - SPECTREE_PASSPHRASE=devpassphrase123
     volumes:
       - spectree-data:/app/data
     healthcheck:
