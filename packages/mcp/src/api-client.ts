@@ -1199,6 +1199,21 @@ export type DecisionCategory =
 /** Valid impact levels */
 export type ImpactLevel = "low" | "medium" | "high";
 
+/** Law record */
+export interface Law {
+  id: string;
+  lawCode: string;
+  title: string;
+  description: string;
+  severity: string;
+  auditLogic: string;
+  consequence: string;
+  appliesTo: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Decision record */
 export interface Decision {
   id: string;
@@ -3544,6 +3559,60 @@ export class ApiClient {
       "PATCH",
       `/api/v1/skill-packs/${encodeURIComponent(idOrName)}/enabled`,
       { isEnabled }
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Laws
+  // ---------------------------------------------------------------------------
+
+  async listLaws(params?: {
+    severity?: string;
+    appliesTo?: string;
+    isActive?: boolean;
+    limit?: number;
+    cursor?: string;
+  }): Promise<{ data: Law[]; meta: { cursor: string | null; hasMore: boolean } }> {
+    const query = this.buildQueryString({
+      severity: params?.severity,
+      appliesTo: params?.appliesTo,
+      isActive: params?.isActive,
+      limit: params?.limit,
+      cursor: params?.cursor,
+    });
+    return this.request<{ data: Law[]; meta: { cursor: string | null; hasMore: boolean } }>(
+      "GET",
+      `/api/v1/laws${query}`
+    );
+  }
+
+  async getLaw(idOrCode: string): Promise<{ data: Law }> {
+    return this.request<{ data: Law }>(
+      "GET",
+      `/api/v1/laws/${encodeURIComponent(idOrCode)}`
+    );
+  }
+
+  async createLaw(input: {
+    lawCode: string;
+    title: string;
+    description: string;
+    severity: string;
+    auditLogic: string;
+    consequence: string;
+    appliesTo: string;
+  }): Promise<{ data: Law }> {
+    return this.request<{ data: Law }>("POST", "/api/v1/laws", input);
+  }
+
+  async updateLaw(
+    idOrCode: string,
+    input: Record<string, unknown>
+  ): Promise<{ data: Law }> {
+    return this.request<{ data: Law }>(
+      "PUT",
+      `/api/v1/laws/${encodeURIComponent(idOrCode)}`,
+      input
     );
   }
 }
