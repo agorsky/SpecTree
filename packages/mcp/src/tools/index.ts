@@ -34,6 +34,7 @@ import { registerTeamTools } from "./teams.js";
 import { registerCompositeTools } from "./composite.js";
 import { registerWorkflowTools } from "./workflow.js";
 import { registerLawTools } from "./laws.js";
+import { registerCaseTools } from "./cases.js";
 
 // Import changelog tools
 import { registerChangelogTools } from "./changelog.js";
@@ -71,6 +72,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerSessionTools,      // AI session lifecycle
   registerValidationTools,   // Validation checks
   registerLawTools,          // Law registry
+  registerCaseTools,         // Case management (court cases against agents)
   registerWorkflowTools,     // Workflow guidance
   registerSkillPackTools,    // Skill pack management
 ];
