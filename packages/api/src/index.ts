@@ -23,8 +23,6 @@ import tasksRoutes, { featureTasksRoutes } from "./routes/tasks.js";
 import authRoutes from "./routes/auth.js";
 import tokensRoutes from "./routes/tokens.js";
 import meRoutes from "./routes/me.js";
-import invitationRoutes from "./routes/admin/invitations.js";
-import adminUsersRoutes from "./routes/admin/users.js";
 import templatesRoutes from "./routes/templates.js";
 import sessionsRoutes from "./routes/sessions.js";
 import decisionsRoutes from "./routes/decisions.js";
@@ -85,8 +83,6 @@ async function main(): Promise<void> {
   await fastify.register(authRoutes, { prefix: "/api/v1/auth" });
   await fastify.register(tokensRoutes, { prefix: "/api/v1/tokens" });
   await fastify.register(meRoutes, { prefix: "/api/v1/me" });
-  await fastify.register(invitationRoutes, { prefix: "/api/v1/admin/invitations" });
-  await fastify.register(adminUsersRoutes, { prefix: "/api/v1/admin/users" });
   await fastify.register(templatesRoutes, { prefix: "/api/v1/templates" });
   await fastify.register(sessionsRoutes, { prefix: "/api/v1/sessions" });
   await fastify.register(decisionsRoutes, { prefix: "/api/v1/decisions" });
