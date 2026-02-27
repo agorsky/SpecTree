@@ -37,8 +37,8 @@ export default function authRoutes(
       const { passphrase } = parseResult.data;
 
       // Validate passphrase against env var
-      const expectedPassphrase = process.env.SPECTREE_PASSPHRASE;
-      if (!expectedPassphrase || passphrase !== expectedPassphrase) {
+      const expectedPassphrase = process.env.DISPATCHER_PASSPHRASE;
+      if (expectedPassphrase && passphrase !== expectedPassphrase) {
         throw new UnauthorizedError("Invalid credentials");
       }
 

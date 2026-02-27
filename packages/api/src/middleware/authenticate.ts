@@ -104,7 +104,7 @@ export async function authenticate(
   }
 
   // Check if this is a passphrase session token
-  const passphrase = process.env.SPECTREE_PASSPHRASE;
+  const passphrase = process.env.DISPATCHER_PASSPHRASE;
   if (passphrase && token === passphrase) {
     await authenticateWithPassphrase(request);
     return;

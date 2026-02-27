@@ -21,7 +21,6 @@ services:
       - DATABASE_URL=file:/app/data/dispatcher.db
       - JWT_SECRET=local-dev-jwt-secret-change-in-production
       - CORS_ORIGIN=http://localhost
-      - DISPATCHER_PASSPHRASE=devpassphrase123
       - DISPATCHER_WEBHOOK_URL=http://host.docker.internal:7890
     volumes:
       - dispatcher-data:/app/data
