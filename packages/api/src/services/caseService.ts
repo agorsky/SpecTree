@@ -19,7 +19,7 @@ export interface FileCaseInput {
   lawId: string;
   evidence: Array<{ type: string; reference: string; description: string }>;
   severity: string;
-  filedBy?: string;
+  filedBy?: string | undefined;
 }
 
 export interface IssueVerdictInput {
