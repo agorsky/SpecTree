@@ -12,6 +12,7 @@ import { randomUUID } from "crypto";
 import { OrchestratorError, ErrorCode } from "../errors.js";
 import { ClaudeCodeClient, type SpawnOptions } from "./client.js";
 import type {
+  ClaudeCodeClientOptions,
   ClaudeSessionOptions,
   ClaudeSessionStatus,
 } from "./types.js";
@@ -26,7 +27,6 @@ export class ClaudeCodeSession extends EventEmitter {
   private readonly options: ClaudeSessionOptions | undefined;
   private status: ClaudeSessionStatus = "idle";
   private lastContent = "";
-  private abortController: AbortController | null = null;
   private currentReject: ((reason: Error) => void) | null = null;
 
   constructor(
@@ -211,16 +211,25 @@ export class ClaudeCodeSession extends EventEmitter {
   private buildSessionClient(): ClaudeCodeClient {
     if (!this.options) return this.client;
 
-    // Create a new client with session overrides merged
-    return new ClaudeCodeClient({
-      claudePath: (this.client as any).claudePath,
-      model: this.options.model ?? (this.client as any).model,
-      skipPermissions: this.options.skipPermissions ?? (this.client as any).skipPermissions,
-      systemPrompt: this.options.systemPrompt ?? (this.client as any).systemPrompt,
-      env: this.options.env,
-      allowedTools: this.options.allowedTools ?? (this.client as any).allowedTools,
-      requestTimeout: (this.client as any).requestTimeout,
-    });
+    // Build options object, only including defined values
+    const opts: ClaudeCodeClientOptions = {
+      claudePath: (this.client as any).claudePath as string,
+      skipPermissions: this.options.skipPermissions ?? (this.client as any).skipPermissions as boolean,
+      requestTimeout: (this.client as any).requestTimeout as number,
+    };
+
+    const model = this.options.model ?? (this.client as any).model;
+    if (model) opts.model = model as string;
+
+    const systemPrompt = this.options.systemPrompt ?? this.options.systemMessage ?? (this.client as any).systemPrompt;
+    if (systemPrompt) opts.systemPrompt = systemPrompt as string;
+
+    if (this.options.env) opts.env = this.options.env;
+
+    const allowedTools = this.options.allowedTools ?? (this.client as any).allowedTools;
+    if (allowedTools) opts.allowedTools = allowedTools as string[];
+
+    return new ClaudeCodeClient(opts);
   }
 
   /**

@@ -23,7 +23,7 @@ import ora, { type Ora } from "ora";
 import { getApiToken, getApiUrl } from "./auth.js";
 import { initConfig } from "../../config/index.js";
 import { DispatcherClient, type Team } from "../../spectree/index.js";
-import { AcpClient, AcpSessionManager } from "../../acp/index.js";
+import { ClaudeCodeClient, ClaudeCodeSessionManager } from "../../claude/index.js";
 import {
   PlanGenerator,
   type GeneratedPlan,
@@ -365,8 +365,8 @@ export async function planCommand(
     // Step 2: Initialize clients
     const apiUrl = getApiUrl();
     const client = new DispatcherClient({ apiUrl, token });
-    const acpClient = new AcpClient();
-    const sessionManager = new AcpSessionManager(acpClient);
+    const claudeClient = new ClaudeCodeClient();
+    const sessionManager = new ClaudeCodeSessionManager(claudeClient);
 
     spinner.succeed("Initialized");
 

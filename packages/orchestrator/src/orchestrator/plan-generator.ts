@@ -12,7 +12,7 @@
  * - Dry-run mode for plan preview without creation
  */
 
-import { AcpSessionManager } from "../acp/index.js";
+import { ClaudeCodeSessionManager } from "../claude/index.js";
 import {
   DispatcherClient,
   type CreateEpicInput,
@@ -342,10 +342,10 @@ export class PlanParsingError extends OrchestratorError {
  * Generates SpecTree epic structures from natural language prompts.
  */
 export class PlanGenerator {
-  private sessionManager: AcpSessionManager;
+  private sessionManager: ClaudeCodeSessionManager;
   private spectreeClient: DispatcherClient;
 
-  constructor(spectreeClient: DispatcherClient, sessionManager: AcpSessionManager) {
+  constructor(spectreeClient: DispatcherClient, sessionManager: ClaudeCodeSessionManager) {
     this.spectreeClient = spectreeClient;
     this.sessionManager = sessionManager;
   }
@@ -1539,7 +1539,7 @@ export async function generatePlan(
   prompt: string,
   options: GeneratePlanOptions,
   spectreeClient: DispatcherClient,
-  sessionManager: AcpSessionManager
+  sessionManager: ClaudeCodeSessionManager
 ): Promise<GeneratedPlan> {
   const generator = new PlanGenerator(spectreeClient, sessionManager);
   return generator.generatePlan(prompt, options);

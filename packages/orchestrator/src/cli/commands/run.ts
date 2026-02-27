@@ -30,7 +30,7 @@ import {
   type ProgressEvent,
   type OrchestratorOptions,
 } from "../../orchestrator/index.js";
-import { AcpClient, AcpSessionManager } from "../../acp/index.js";
+import { ClaudeCodeClient, ClaudeCodeSessionManager } from "../../claude/index.js";
 import {
   TaskProgressDisplay,
   ActivityTracker,
@@ -553,8 +553,8 @@ export async function runCommand(
     // Step 2: Initialize clients
     const apiUrl = getApiUrl();
     const client = new DispatcherClient({ apiUrl, token });
-    const acpClient = new AcpClient();
-    const sessionManager = new AcpSessionManager(acpClient);
+    const claudeClient = new ClaudeCodeClient();
+    const sessionManager = new ClaudeCodeSessionManager(claudeClient);
 
     spinner.succeed("Initialized");
 
@@ -705,8 +705,8 @@ async function runEpicCommand(
     // Step 2: Initialize clients
     const apiUrl = getApiUrl();
     const client = new DispatcherClient({ apiUrl, token });
-    const acpClient = new AcpClient();
-    const sessionManager = new AcpSessionManager(acpClient);
+    const claudeClient = new ClaudeCodeClient();
+    const sessionManager = new ClaudeCodeSessionManager(claudeClient);
 
     // Step 3: Get epic info
     spinner.text = "Loading epic...";

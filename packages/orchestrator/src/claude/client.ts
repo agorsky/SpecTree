@@ -231,9 +231,9 @@ export class ClaudeCodeClient extends EventEmitter {
    */
   executePrompt(prompt: string, options?: SpawnOptions): Promise<{
     result: string;
-    costUsd?: number;
-    durationMs?: number;
-    sessionId?: string;
+    costUsd: number | undefined;
+    durationMs: number | undefined;
+    sessionId: string | undefined;
   }> {
     const timeoutMs = options?.timeoutMs ?? this.requestTimeout;
 
@@ -251,9 +251,9 @@ export class ClaudeCodeClient extends EventEmitter {
       let stderr = "";
       let resultData: {
         result: string;
-        costUsd?: number;
-        durationMs?: number;
-        sessionId?: string;
+        costUsd: number | undefined;
+        durationMs: number | undefined;
+        sessionId: string | undefined;
       } | null = null;
 
       // Timeout handler
@@ -305,7 +305,7 @@ export class ClaudeCodeClient extends EventEmitter {
           if (event.subtype === "error" || event.is_error) {
             (this as EventEmitter).emit("error", event.result, event.session_id);
           } else {
-            (this as EventEmitter).emit("complete", resultData.result, event.session_id);
+            (this as EventEmitter).emit("complete", resultData!.result, event.session_id);
           }
         } else if (isSystemEvent(event)) {
           (this as EventEmitter).emit("system", event.message, event.session_id);
@@ -335,16 +335,12 @@ export class ClaudeCodeClient extends EventEmitter {
         if (code === 0 || resultData) {
           // If we have result data from a ResultEvent, use it
           if (resultData) {
-            if (resultData.result || lastContent) {
-              resolve({
-                ...resultData,
-                result: resultData.result || lastContent,
-              });
-            } else {
-              resolve({ result: lastContent });
-            }
+            resolve({
+              ...resultData,
+              result: resultData.result || lastContent,
+            });
           } else {
-            resolve({ result: lastContent });
+            resolve({ result: lastContent, costUsd: undefined, durationMs: undefined, sessionId: undefined });
           }
         } else {
           // Non-zero exit

@@ -139,10 +139,14 @@ export type ClaudeSessionStatus = "idle" | "working" | "completed" | "failed";
  * Options for creating a Claude Code session.
  */
 export interface ClaudeSessionOptions {
+  /** Agent name (ignored for Claude Code, kept for ACP compat). */
+  agent?: string;
   /** Model override for this session. */
   model?: string;
   /** System prompt for this session. */
   systemPrompt?: string;
+  /** System message (alias for systemPrompt, for ACP compatibility). */
+  systemMessage?: string;
   /** MCP server configurations. */
   mcpServers?: Record<string, McpServerConfig>;
   /** Allowed tools for this session. */
@@ -153,6 +157,17 @@ export interface ClaudeSessionOptions {
   env?: Record<string, string>;
   /** Skip permission prompts. */
   skipPermissions?: boolean;
+  /** Permissions (ACP compat, mapped to skipPermissions). */
+  permissions?: SessionPermissions;
+}
+
+/**
+ * Session permissions (ACP compatibility).
+ */
+export interface SessionPermissions {
+  allowAllTools?: boolean;
+  allowAllPaths?: boolean;
+  allowAll?: boolean;
 }
 
 /**

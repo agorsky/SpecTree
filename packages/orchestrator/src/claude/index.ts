@@ -30,6 +30,7 @@ export type {
   ClaudeSessionEventMap,
   SessionUpdateType,
   McpServerConfig,
+  SessionPermissions,
 
   // Internal
   PendingRequest,
