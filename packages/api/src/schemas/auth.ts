@@ -5,10 +5,10 @@ import { z } from "zod";
  */
 
 /**
- * Schema for login request — accepts a passphrase for admin authentication
+ * Schema for login request — passphrase is optional in open-auth mode
  */
 export const loginSchema = z.object({
-  passphrase: z.string().min(1),
+  passphrase: z.string(),
 });
 
 /**
