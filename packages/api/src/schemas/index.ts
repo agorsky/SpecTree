@@ -245,3 +245,9 @@ export {
   type SessionErrorEventInput,
   type SessionEventInput,
 } from "./session-events.js";
+
+// Agent Score schemas
+export {
+  adjustScoreSchema,
+  type AdjustScoreInput,
+} from "./agentScore.js";
