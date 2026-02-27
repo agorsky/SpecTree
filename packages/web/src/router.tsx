@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/app-layout";
 import { LoginPage } from "@/pages/login";
-import { InboxPage } from "@/pages/inbox";
 import { EpicsPage } from "@/pages/epics/index";
 import { EpicDetailPage } from "@/pages/epics/epic-detail";
 import { EpicRequestsPage } from "@/pages/epic-requests/index";
@@ -24,7 +23,6 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: "inbox", element: <InboxPage /> },
       { path: "dashboard", element: <DashboardPage /> },
       { path: "whats-new", element: <WhatsNewPage /> },
       { path: "epic-requests", element: <EpicRequestsPage /> },

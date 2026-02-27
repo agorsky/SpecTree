@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/command";
 import { useFeatures } from "@/hooks/queries/use-features";
 import { useEpics } from "@/hooks/queries/use-epics";
-import { Folder, FileText, Inbox, Settings } from "lucide-react";
+import { Folder, FileText, LayoutDashboard, Settings } from "lucide-react";
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -63,9 +63,9 @@ export function CommandPalette() {
 
         {/* Quick actions */}
         <CommandGroup heading="Quick Actions">
-          <CommandItem onSelect={() => runCommand(() => navigate("/inbox"))}>
-            <Inbox className="mr-2 h-4 w-4" />
-            Go to Inbox
+          <CommandItem onSelect={() => runCommand(() => navigate("/dashboard"))}>
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            Go to Dashboard
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate("/epics"))}>
             <Folder className="mr-2 h-4 w-4" />
