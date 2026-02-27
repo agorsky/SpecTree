@@ -18,7 +18,7 @@ const ThemeProviderContext = createContext<ThemeProviderState | null>(null);
 export function ThemeProvider({
   children,
   defaultTheme = "system",
-  storageKey = "spectree-ui-theme",
+  storageKey = "dispatcher-ui-theme",
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {

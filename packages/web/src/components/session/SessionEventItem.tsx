@@ -1,4 +1,4 @@
-import { SessionEvent, SessionEventType } from "@spectree/shared";
+import { SessionEvent, SessionEventType } from "@dispatcher/shared";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Check, Play, AlertCircle, Activity } from "lucide-react";

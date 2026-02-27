@@ -19,7 +19,7 @@ function App(): React.ReactNode {
   return (
     <QueryClientProvider client={queryClient}>
       <LiveUpdatesProvider>
-        <ThemeProvider defaultTheme="dark" storageKey="spectree-ui-theme">
+        <ThemeProvider defaultTheme="dark" storageKey="dispatcher-ui-theme">
           <TooltipProvider>
             <RouterProvider router={router} />
           </TooltipProvider>

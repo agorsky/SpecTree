@@ -1,4 +1,4 @@
-import { isSessionFeatureEvent, isSessionTaskEvent, isSessionTaskProgressEvent, isSessionPhaseEvent, isSessionLifecycleEvent, isSessionErrorEvent, SessionEvent } from "@spectree/shared";
+import { isSessionFeatureEvent, isSessionTaskEvent, isSessionTaskProgressEvent, isSessionPhaseEvent, isSessionLifecycleEvent, isSessionErrorEvent, SessionEvent } from "@dispatcher/shared";
 import { SessionEventItem } from "./SessionEventItem";
 import { cn } from "@/lib/utils";
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
