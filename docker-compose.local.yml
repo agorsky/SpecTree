@@ -22,6 +22,7 @@ services:
       - JWT_SECRET=local-dev-jwt-secret-change-in-production
       - CORS_ORIGIN=http://localhost
       - SPECTREE_PASSPHRASE=devpassphrase123
+      - SPECTREE_WEBHOOK_URL=http://host.docker.internal:7890
     volumes:
       - spectree-data:/app/data
     healthcheck:
