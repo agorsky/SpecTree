@@ -50,13 +50,13 @@ export function registerLawTools(server: McpServer): void {
     async (input) => {
       try {
         const apiClient = getApiClient();
-        const result = await apiClient.listLaws({
-          severity: input.severity,
-          appliesTo: input.appliesTo,
-          isActive: input.isActive,
-          limit: input.limit,
-          cursor: input.cursor,
-        });
+        const params: Parameters<typeof apiClient.listLaws>[0] = {};
+        if (input.severity !== undefined) params.severity = input.severity;
+        if (input.appliesTo !== undefined) params.appliesTo = input.appliesTo;
+        if (input.isActive !== undefined) params.isActive = input.isActive;
+        if (input.limit !== undefined) params.limit = input.limit;
+        if (input.cursor !== undefined) params.cursor = input.cursor;
+        const result = await apiClient.listLaws(params);
 
         return createResponse({
           laws: result.data,
