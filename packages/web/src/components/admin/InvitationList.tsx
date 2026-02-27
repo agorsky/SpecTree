@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { Trash2, Copy, Clock, Check, X } from "lucide-react";
+import { Trash2, Clock, Check, X } from "lucide-react";
 import { adminApi } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,12 +39,6 @@ export function InvitationList() {
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["invitations"] }),
   });
-
-  const copyActivationUrl = async (email: string, code: string) => {
-    const baseUrl = window.location.origin;
-    const url = `${baseUrl}/activate?email=${encodeURIComponent(email)}&code=${code}`;
-    await navigator.clipboard.writeText(url);
-  };
 
   if (isLoading) {
     return (
@@ -99,14 +93,6 @@ export function InvitationList() {
               </Badge>
               {isPending && (
                 <>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => copyActivationUrl(inv.email, inv.code)}
-                    title="Copy activation link"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"

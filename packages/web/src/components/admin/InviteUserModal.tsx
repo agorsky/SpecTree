@@ -54,16 +54,6 @@ export function InviteUserModal({ open, onClose }: Props) {
     onClose();
   };
 
-  const getActivationUrl = () => {
-    if (!successData) return "";
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/activate?email=${encodeURIComponent(successData.email)}&code=${successData.code}`;
-  };
-
-  const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(getActivationUrl());
-  };
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent>
@@ -79,18 +69,6 @@ export function InviteUserModal({ open, onClose }: Props) {
             <div className="rounded-md bg-green-50 p-4 dark:bg-green-900/20">
               <p className="text-sm text-green-800 dark:text-green-200">
                 Invitation created successfully!
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>Activation Link</Label>
-              <div className="flex gap-2">
-                <Input value={getActivationUrl()} readOnly className="font-mono text-xs" />
-                <Button variant="outline" onClick={copyToClipboard}>
-                  Copy
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Share this link with the user to complete registration.
               </p>
             </div>
             <DialogFooter>

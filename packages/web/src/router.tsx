@@ -1,8 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/app-layout";
 import { LoginPage } from "@/pages/login";
-import { RegisterPage } from "@/pages/register";
-import { ActivatePage } from "@/pages/activate";
 import { InboxPage } from "@/pages/inbox";
 import { EpicsPage } from "@/pages/epics/index";
 import { EpicDetailPage } from "@/pages/epics/epic-detail";
@@ -22,14 +20,6 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
-  },
-  {
-    path: "/register",
-    element: <RegisterPage />,
-  },
-  {
-    path: "/activate",
-    element: <ActivatePage />,
   },
   {
     path: "/",
