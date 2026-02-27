@@ -336,6 +336,22 @@ describe("Auth API", () => {
     });
   });
 
+  describe("POST /api/v1/auth/register", () => {
+    it("should return 404 (registration endpoint does not exist)", async () => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/register",
+        payload: {
+          email: "newuser@example.com",
+          password: "password123",
+          name: "New User",
+        },
+      });
+
+      expect(response.statusCode).toBe(404);
+    });
+  });
+
   describe("GET /api/v1/users/me (protected route)", () => {
     it("should return current user when authenticated", async () => {
       const { user, headers } = await createAuthenticatedUser();
