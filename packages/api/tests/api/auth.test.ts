@@ -116,6 +116,51 @@ describe("Auth API", () => {
 
       process.env.SPECTREE_PASSPHRASE = saved;
     });
+
+    it("should return 401 when admin user is inactive", async () => {
+      await createTestGlobalAdmin({
+        email: "admin-inactive-login@example.com",
+        isActive: false,
+      });
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/login",
+        payload: { passphrase: TEST_PASSPHRASE },
+      });
+
+      expect(response.statusCode).toBe(401);
+      const body = JSON.parse(response.body);
+      expect(body.error.code).toBe("UNAUTHORIZED");
+    });
+
+    it("should return 401 for empty string passphrase", async () => {
+      await createTestGlobalAdmin({ email: "admin-empty@example.com" });
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/login",
+        payload: { passphrase: "" },
+      });
+
+      expect(response.statusCode).toBe(401);
+    });
+
+    it("should not expose passwordHash in the response", async () => {
+      await createTestGlobalAdmin({ email: "admin-nohash@example.com" });
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/login",
+        payload: { passphrase: TEST_PASSPHRASE },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.user).toBeDefined();
+      expect(body.user.passwordHash).toBeUndefined();
+      expect(body.user.isGlobalAdmin).toBe(true);
+    });
   });
 
   describe("POST /api/v1/auth/refresh", () => {
