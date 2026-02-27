@@ -1,25 +1,25 @@
 /**
- * Authorization middleware for team-scoping access control.
- * Restricts access to resources within user's teams.
+ * Authorization middleware — single-user pass-through.
+ *
+ * All multi-user scope/role checks have been removed.
+ * Every authenticated user passes through automatically.
+ * Function signatures are preserved for call-site compatibility.
  */
 
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { Membership } from "../generated/prisma/index.js";
-import { prisma } from "../lib/db.js";
-import { ForbiddenError, NotFoundError } from "../errors/index.js";
+import { ForbiddenError } from "../errors/index.js";
 import type { MembershipRole } from "../services/membershipService.js";
 
 /**
  * Special marker for personal scope resources.
- * When a resource belongs to a personal scope (not a team), we use this
- * to indicate that team-based authorization should be bypassed in favor
- * of personal scope ownership checks.
+ * Retained for call-site compatibility.
  */
 export const PERSONAL_SCOPE_MARKER = "__personal_scope__";
 
 /**
  * User's team membership info for authorization.
- * Cached on req.userTeams for reuse across middleware calls.
+ * Retained for type compatibility.
  */
 export type UserTeamMembership = Pick<Membership, "teamId" | "role">;
 
@@ -37,250 +37,10 @@ declare module "fastify" {
 }
 
 /**
- * Fetches and caches user's team memberships on the request object.
- * If already cached, returns the cached value.
- *
- * @param request - The Fastify request object
- * @returns Array of user's team memberships
- */
-async function getUserTeams(
-  request: FastifyRequest
-): Promise<UserTeamMembership[]> {
-  // Return cached value if available
-  if (request.userTeams) {
-    return request.userTeams;
-  }
-
-  // User must be authenticated
-  if (!request.user) {
-    throw new ForbiddenError("User not authenticated");
-  }
-
-  // Fetch user's team memberships from database
-  const memberships = await prisma.membership.findMany({
-    where: { userId: request.user.id },
-    select: { teamId: true, role: true },
-  });
-
-  // Cache on request for reuse
-  request.userTeams = memberships;
-
-  return memberships;
-}
-
-/**
- * Checks if user has access to the specified team.
- *
- * @param userTeams - User's team memberships
- * @param teamId - The team ID to check access for
- * @returns True if user is a member of the team
- */
-function hasTeamAccess(
-  userTeams: UserTeamMembership[],
-  teamId: string
-): boolean {
-  return userTeams.some((membership) => membership.teamId === teamId);
-}
-
-/**
- * Result of looking up an epic for authorization.
- * Contains teamId (null for personal epics) and personalScopeId if applicable.
- */
-interface EpicAuthInfo {
-  teamId: string | null;
-  personalScopeId: string | null;
-}
-
-/**
- * Looks up the team ID for an epic.
- * Supports both UUID and exact epic name lookups.
- *
- * For personal scope epics (teamId = null), returns the personalScopeId
- * to enable ownership verification.
- *
- * @param epicIdOrName - The epic ID (UUID) or exact name
- * @returns Epic auth info or null if epic not found
- */
-async function getEpicAuthInfo(epicIdOrName: string): Promise<EpicAuthInfo | null> {
-  const isUuid = UUID_REGEX.test(epicIdOrName);
-  const epic = await prisma.epic.findFirst({
-    where: isUuid
-      ? { id: epicIdOrName }
-      : { name: epicIdOrName },
-    select: { teamId: true, personalScopeId: true },
-  });
-
-  if (!epic) {
-    return null;
-  }
-
-  return {
-    teamId: epic.teamId,
-    personalScopeId: epic.personalScopeId,
-  };
-}
-
-/**
- * Looks up the team ID for an epic (legacy function for compatibility).
- * Use getEpicAuthInfo for full support including personal scope.
- *
- * @param epicIdOrName - The epic ID (UUID) or exact name
- * @returns The team ID, PERSONAL_SCOPE_MARKER for personal epics, or null if not found
- */
-async function getTeamIdFromEpic(epicIdOrName: string): Promise<string | null> {
-  const authInfo = await getEpicAuthInfo(epicIdOrName);
-  if (!authInfo) {
-    return null;
-  }
-  // For personal scope epics, return marker
-  if (authInfo.teamId === null && authInfo.personalScopeId) {
-    return PERSONAL_SCOPE_MARKER;
-  }
-  return authInfo.teamId;
-}
-
-/**
- * Looks up the team ID for a feature (via epic).
- * Supports both UUID and identifier (e.g., "ENG-4") lookups.
- *
- * @param featureIdOrIdentifier - The feature ID (UUID) or identifier
- * @returns The team ID, PERSONAL_SCOPE_MARKER for personal features, or null if not found
- */
-async function getTeamIdFromFeature(featureIdOrIdentifier: string): Promise<string | null> {
-  const isUuid = UUID_REGEX.test(featureIdOrIdentifier);
-  const feature = await prisma.feature.findFirst({
-    where: isUuid
-      ? { id: featureIdOrIdentifier }
-      : { identifier: featureIdOrIdentifier },
-    select: { epic: { select: { teamId: true, personalScopeId: true } } },
-  });
-  if (!feature) {
-    return null;
-  }
-  // For personal scope features, return marker
-  if (feature.epic.teamId === null && feature.epic.personalScopeId) {
-    return PERSONAL_SCOPE_MARKER;
-  }
-  return feature.epic.teamId ?? null;
-}
-
-/**
- * UUID v4 regex pattern for validation
- */
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/**
- * Looks up the team ID for a task (via feature → epic).
- * Supports both UUID and identifier (e.g., "ENG-4-1") lookups.
- *
- * @param taskIdOrIdentifier - The task ID (UUID) or identifier (e.g., "ENG-4-1")
- * @returns The team ID, PERSONAL_SCOPE_MARKER for personal tasks, or null if not found
- */
-async function getTeamIdFromTask(taskIdOrIdentifier: string): Promise<string | null> {
-  const isUuid = UUID_REGEX.test(taskIdOrIdentifier);
-  const task = await prisma.task.findFirst({
-    where: isUuid
-      ? { id: taskIdOrIdentifier }
-      : { identifier: taskIdOrIdentifier },
-    select: { feature: { select: { epic: { select: { teamId: true, personalScopeId: true } } } } },
-  });
-  if (!task) {
-    return null;
-  }
-  // For personal scope tasks, return marker
-  if (task.feature.epic.teamId === null && task.feature.epic.personalScopeId) {
-    return PERSONAL_SCOPE_MARKER;
-  }
-  return task.feature.epic.teamId ?? null;
-}
-
-/**
- * Looks up the team ID for a status.
- * For personal statuses, returns PERSONAL_SCOPE_MARKER.
- *
- * @param statusId - The status ID
- * @returns The team ID, PERSONAL_SCOPE_MARKER for personal statuses, or null if not found
- */
-async function getTeamIdFromStatus(statusId: string): Promise<string | null> {
-  const status = await prisma.status.findUnique({
-    where: { id: statusId },
-    select: { teamId: true, personalScopeId: true },
-  });
-  if (!status) {
-    return null;
-  }
-  // For personal scope statuses, return marker
-  if (status.teamId === null && status.personalScopeId) {
-    return PERSONAL_SCOPE_MARKER;
-  }
-  return status.teamId ?? null;
-}
-
-/**
- * Resolves a team ID, name, or key to the actual team UUID.
- * Supports UUID (e.g., "550e8400-..."), team key (e.g., "ENG"), or team name (e.g., "Engineering").
- *
- * @param teamIdOrNameOrKey - The team ID (UUID), name, or key
- * @returns The team UUID or null if not found
- */
-async function resolveTeamId(teamIdOrNameOrKey: string): Promise<string | null> {
-  const isUuid = UUID_REGEX.test(teamIdOrNameOrKey);
-
-  if (isUuid) {
-    // Verify the UUID exists
-    const team = await prisma.team.findUnique({
-      where: { id: teamIdOrNameOrKey, isArchived: false },
-      select: { id: true },
-    });
-    return team?.id ?? null;
-  }
-
-  // Try lookup by key first (exact match)
-  let team = await prisma.team.findFirst({
-    where: {
-      key: teamIdOrNameOrKey,
-      isArchived: false,
-    },
-    select: { id: true },
-  });
-
-  if (team) {
-    return team.id;
-  }
-
-  // Try key uppercase (keys are typically uppercase like "ENG")
-  team = await prisma.team.findFirst({
-    where: {
-      key: teamIdOrNameOrKey.toUpperCase(),
-      isArchived: false,
-    },
-    select: { id: true },
-  });
-
-  if (team) {
-    return team.id;
-  }
-
-  // Fall back to name lookup (exact match)
-  team = await prisma.team.findFirst({
-    where: {
-      name: teamIdOrNameOrKey,
-      isArchived: false,
-    },
-    select: { id: true },
-  });
-
-  return team?.id ?? null;
-}
-
-/**
  * Factory function that creates a preHandler hook for team access authorization.
  *
- * The middleware looks up the team ID from the specified parameter (or body),
- * fetches the user's team memberships, and verifies access.
- *
- * For nested resources (epic, feature, task, status), the middleware performs
- * the necessary lookups to determine the associated team.
+ * Simplified to single-user pass-through: verifies the user is authenticated,
+ * then allows access unconditionally.
  *
  * @param teamIdParam - Name of the param or body field containing the team reference.
  *   Supports special values for nested resources:
@@ -296,11 +56,7 @@ async function resolveTeamId(teamIdOrNameOrKey: string): Promise<string | null> 
  *
  * @returns A Fastify preHandler hook function
  *
- * @throws ForbiddenError if:
- *   - User is not authenticated
- *   - Team/resource ID is not provided
- *   - Resource is not found (for nested lookups)
- *   - User is not a member of the team
+ * @throws ForbiddenError if user is not authenticated
  *
  * @example
  * // Direct team access check
@@ -309,51 +65,29 @@ async function resolveTeamId(teamIdOrNameOrKey: string): Promise<string | null> 
  *   { preHandler: [authenticate, requireTeamAccess("teamId")] },
  *   async (request, reply) => { ... }
  * );
- *
- * @example
- * // Epic-based team access check with mapped param
- * fastify.get(
- *   "/epics/:id",
- *   { preHandler: [authenticate, requireTeamAccess("id:epicId")] },
- *   async (request, reply) => { ... }
- * );
- *
- * @example
- * // Team ID from request body
- * fastify.post(
- *   "/epics",
- *   { preHandler: [authenticate, requireTeamAccess("teamId")] },
- *   async (request, reply) => { ... }
- * );
  */
 export function requireTeamAccess(
   teamIdParam: string
 ): (request: FastifyRequest, reply: FastifyReply) => Promise<void> {
   return async (request: FastifyRequest, _reply: FastifyReply): Promise<void> => {
-    // Get user's team memberships
-    const userTeams = await getUserTeams(request);
+    if (!request.user) {
+      throw new ForbiddenError("User not authenticated");
+    }
 
-    // Get the resource ID from params or body
+    // Parse the param name (keep param-extraction logic so teamId is set on request)
     const params = request.params as Record<string, string>;
     const body = request.body as Record<string, unknown> | undefined;
 
-    // Support mapping syntax "paramName:resourceType" (e.g., "id:epicId")
-    // This allows using a different param name than the resource type
-    // Also supports "body.fieldName" to look only in request body (e.g., "body.team")
     let paramName = teamIdParam;
-    let resourceType = teamIdParam;
     let bodyOnly = false;
 
-    // Check for body. prefix first (e.g., "body.team" -> look for "team" in body only)
     if (teamIdParam.startsWith("body.")) {
-      paramName = teamIdParam.slice(5); // Remove "body." prefix
-      resourceType = paramName;
+      paramName = teamIdParam.slice(5);
       bodyOnly = true;
     } else if (teamIdParam.includes(":")) {
       const parts = teamIdParam.split(":");
       if (parts.length === 2 && parts[0] && parts[1]) {
         paramName = parts[0];
-        resourceType = parts[1];
       }
     }
 
@@ -361,185 +95,27 @@ export function requireTeamAccess(
       ? (body?.[paramName] as string | undefined)
       : (params[paramName] ?? (body?.[paramName] as string | undefined));
 
-    if (!resourceId) {
-      throw new ForbiddenError(`Missing required parameter: ${paramName}`);
+    // Store resourceId as teamId on request for downstream compatibility
+    if (resourceId) {
+      request.teamId = resourceId;
     }
 
-    // Resolve team ID based on the resource type
-    let teamId: string | null;
-    const typeLower = resourceType.toLowerCase();
-
-    if (typeLower === "teamid" || typeLower === "team_id") {
-      // Direct team ID - resolve name/key to UUID if needed
-      teamId = await resolveTeamId(resourceId);
-      if (!teamId) {
-        // Team doesn't exist - return 404, not 403
-        throw new NotFoundError(`Team '${resourceId}' not found`);
-      }
-    } else if (typeLower === "epicid" || typeLower === "epic_id") {
-      // Lookup team via epic (supports UUID and name)
-      teamId = await getTeamIdFromEpic(resourceId);
-      if (teamId === null) {
-        throw new ForbiddenError("Epic not found");
-      }
-    } else if (typeLower === "featureid" || typeLower === "feature_id") {
-      // Lookup team via feature → epic
-      teamId = await getTeamIdFromFeature(resourceId);
-      if (teamId === null) {
-        throw new ForbiddenError("Feature not found");
-      }
-    } else if (typeLower === "taskid" || typeLower === "task_id") {
-      // Lookup team via task → feature → epic
-      teamId = await getTeamIdFromTask(resourceId);
-      if (teamId === null) {
-        throw new ForbiddenError("Task not found");
-      }
-    } else if (typeLower === "statusid" || typeLower === "status_id") {
-      // Lookup team via status
-      teamId = await getTeamIdFromStatus(resourceId);
-      if (teamId === null) {
-        throw new ForbiddenError("Status not found");
-      }
-    } else {
-      // Unknown resource type - try to resolve as team ID/name/key
-      teamId = await resolveTeamId(resourceId);
-      if (!teamId) {
-        // For direct team lookups, if the team doesn't exist, return 404
-        // This handles cases like requireTeamAccess("id") where the param
-        // is the team identifier itself
-        throw new NotFoundError(`Team '${resourceId}' not found`);
-      }
-    }
-
-    // Handle personal scope resources - allow access if user owns the personal scope
-    if (teamId === PERSONAL_SCOPE_MARKER) {
-      // Personal scope resources don't require team membership
-      // The resource itself validates ownership (via user's personal scope ID)
-      // Don't set teamId - leave it undefined for personal scope
-      return;  // Allow access - actual ownership validated by route handler
-    }
-
-    // Global admins bypass team membership checks
-    if (request.user?.isGlobalAdmin) {
-      request.teamId = teamId;
-      return;
-    }
-
-    // Check if user has access to the team
-    if (!hasTeamAccess(userTeams, teamId)) {
-      throw new ForbiddenError("Access denied: not a member of this team");
-    }
-
-    // Store the resolved teamId on the request for use by requireRole
-    request.teamId = teamId;
+    // Populate userTeams for downstream requireRole compatibility
+    request.userTeams = request.userTeams ?? [];
   };
-}
-
-/**
- * Role hierarchy for permission checks.
- * Higher number = more permissions.
- * admin (2) > member (1) > guest (0)
- */
-const ROLE_HIERARCHY: Record<MembershipRole, number> = {
-  admin: 2,
-  member: 1,
-  guest: 0,
-};
-
-/**
- * Gets the user's role for a specific team from their cached memberships.
- *
- * @param userTeams - User's team memberships (cached on request)
- * @param teamId - The team ID to get the role for
- * @returns The user's role in the team, or null if not a member
- */
-function getUserRoleInTeam(
-  userTeams: UserTeamMembership[],
-  teamId: string
-): MembershipRole | null {
-  const membership = userTeams.find((m) => m.teamId === teamId);
-  return membership ? (membership.role as MembershipRole) : null;
-}
-
-/**
- * Checks if a user's role meets the minimum required role.
- * Uses role hierarchy: admin > member > guest
- *
- * @param userRole - The user's actual role
- * @param requiredRoles - Array of roles that are allowed
- * @returns True if the user's role is in the allowed roles or has higher privileges
- */
-function hasRequiredRole(
-  userRole: MembershipRole,
-  requiredRoles: MembershipRole[]
-): boolean {
-  // Admin can do everything - always allowed
-  if (userRole === "admin") {
-    return true;
-  }
-
-  // Get the minimum required hierarchy level from the allowed roles
-  const minRequiredLevel = Math.min(
-    ...requiredRoles.map((role) => ROLE_HIERARCHY[role])
-  );
-
-  // Check if user's role level meets or exceeds the minimum required
-  return ROLE_HIERARCHY[userRole] >= minRequiredLevel;
-}
-
-/**
- * Extracts the team ID from the request context.
- * First checks for teamId cached by requireTeamAccess, then params/body.
- *
- * @param request - The Fastify request object
- * @returns The team ID or null if not found
- */
-function getTeamIdFromRequest(request: FastifyRequest): string | null {
-  // First check for teamId cached by requireTeamAccess middleware
-  if (request.teamId) {
-    return request.teamId;
-  }
-
-  const params = request.params as Record<string, string>;
-  const body = request.body as Record<string, unknown> | undefined;
-
-  // Check common parameter names for team ID
-  const teamIdFields = ["teamId", "team_id"];
-
-  for (const field of teamIdFields) {
-    if (params[field]) {
-      return params[field];
-    }
-    if (body?.[field] && typeof body[field] === "string") {
-      return body[field];
-    }
-  }
-
-  return null;
 }
 
 /**
  * Factory function that creates a preHandler hook for role-based authorization.
  *
- * This middleware should be used AFTER requireTeamAccess so that:
- * 1. userTeams is already populated on the request
- * 2. The team context has been established
- *
- * Role hierarchy (admin > member > guest):
- * - guest: read only
- * - member: read, create, update own resources
- * - admin: full CRUD, manage team members
+ * Simplified to single-user pass-through: verifies the user is authenticated,
+ * then allows access unconditionally.
  *
  * @param roles - Array of minimum roles required for this endpoint.
- *   If multiple roles are specified, the user needs to have at least one of them
- *   (or a role higher in the hierarchy).
  *
  * @returns A Fastify preHandler hook function
  *
- * @throws ForbiddenError if:
- *   - User's team memberships are not available (requireTeamAccess not called)
- *   - Team context cannot be determined
- *   - User's role is insufficient for the operation
+ * @throws ForbiddenError if user is not authenticated
  *
  * @example
  * // Require admin role
@@ -548,63 +124,14 @@ function getTeamIdFromRequest(request: FastifyRequest): string | null {
  *   { preHandler: [authenticate, requireTeamAccess("teamId"), requireRole("admin")] },
  *   async (request, reply) => { ... }
  * );
- *
- * @example
- * // Require member or admin role (member can create)
- * fastify.post(
- *   "/teams/:teamId/epics",
- *   { preHandler: [authenticate, requireTeamAccess("teamId"), requireRole("member")] },
- *   async (request, reply) => { ... }
- * );
- *
- * @example
- * // Guest can read (any role allowed)
- * fastify.get(
- *   "/teams/:teamId/epics",
- *   { preHandler: [authenticate, requireTeamAccess("teamId"), requireRole("guest")] },
- *   async (request, reply) => { ... }
- * );
  */
 export function requireRole(
-  ...roles: MembershipRole[]
+  ..._roles: MembershipRole[]
 ): (request: FastifyRequest, reply: FastifyReply) => Promise<void> {
   return async (request: FastifyRequest, _reply: FastifyReply): Promise<void> => {
-    // Global admins bypass role checks
-    if (request.user?.isGlobalAdmin) {
-      return;
+    if (!request.user) {
+      throw new ForbiddenError("User not authenticated");
     }
-
-    // Ensure userTeams is available (requireTeamAccess must be called first)
-    if (!request.userTeams) {
-      throw new ForbiddenError(
-        "Authorization context not established. Ensure requireTeamAccess is called first."
-      );
-    }
-
-    // Get team ID from request context
-    const teamId = getTeamIdFromRequest(request);
-
-    // If no team context, this is a personal scope resource
-    // For personal scope, the user has full access to their own resources
-    // (ownership is validated by the API token, which links to the user's personal scope)
-    if (!teamId) {
-      // Personal scope - allow access (user owns their personal resources)
-      return;
-    }
-
-    // Get user's role in this team
-    const userRole = getUserRoleInTeam(request.userTeams, teamId);
-
-    if (!userRole) {
-      throw new ForbiddenError("Access denied: not a member of this team");
-    }
-
-    // Check if user has required role
-    if (!hasRequiredRole(userRole, roles)) {
-      const requiredRolesStr = roles.join(" or ");
-      throw new ForbiddenError(
-        `Access denied: requires ${requiredRolesStr} role. Your role: ${userRole}`
-      );
-    }
+    // Single-user mode: every authenticated user passes through
   };
 }
