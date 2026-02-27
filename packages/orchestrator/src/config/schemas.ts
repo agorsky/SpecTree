@@ -5,11 +5,16 @@
 import { z } from "zod";
 
 /**
- * Schema for Copilot-specific configuration.
+ * Schema for Claude Code configuration.
  */
-export const CopilotConfigSchema = z.object({
-  model: z.string().default("gpt-4.1"),
+export const ClaudeConfigSchema = z.object({
+  model: z.string().default("sonnet"),
+  claudePath: z.string().default("claude"),
+  skipPermissions: z.boolean().default(true),
 });
+
+/** @deprecated Use ClaudeConfigSchema */
+export const CopilotConfigSchema = ClaudeConfigSchema;
 
 /**
  * Schema for user configuration (~/.spectree/config.json).
@@ -20,7 +25,7 @@ export const UserConfigSchema = z.object({
   maxConcurrentAgents: z.number().int().min(1).max(10).default(4),
   autoMerge: z.boolean().default(true),
   branchPrefix: z.string().default("feature/"),
-  copilot: CopilotConfigSchema.default({}),
+  claude: ClaudeConfigSchema.default({}),
 });
 
 /**
@@ -52,7 +57,7 @@ export const MergedConfigSchema = z.object({
   maxConcurrentAgents: z.number().int().min(1).max(10),
   autoMerge: z.boolean(),
   branchPrefix: z.string(),
-  copilot: CopilotConfigSchema,
+  claude: ClaudeConfigSchema,
 
   // From project config
   team: z.string().optional(),
@@ -65,7 +70,9 @@ export const MergedConfigSchema = z.object({
 });
 
 // TypeScript types derived from schemas
-export type CopilotConfig = z.infer<typeof CopilotConfigSchema>;
+export type ClaudeConfig = z.infer<typeof ClaudeConfigSchema>;
+/** @deprecated Use ClaudeConfig */
+export type CopilotConfig = ClaudeConfig;
 export type UserConfig = z.infer<typeof UserConfigSchema>;
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 export type CliOverrides = z.infer<typeof CliOverridesSchema>;
@@ -75,5 +82,5 @@ export type Config = z.infer<typeof MergedConfigSchema>;
  * Partial user config for updates.
  */
 export type PartialUserConfig = Partial<
-  Omit<UserConfig, "copilot"> & { copilot?: Partial<CopilotConfig> }
+  Omit<UserConfig, "claude"> & { claude?: Partial<ClaudeConfig> }
 >;

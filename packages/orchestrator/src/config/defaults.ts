@@ -14,8 +14,10 @@ export const DEFAULT_USER_CONFIG_FOR_STORE: Omit<UserConfig, "defaultTeam"> = {
   maxConcurrentAgents: 4,
   autoMerge: true,
   branchPrefix: "feature/",
-  copilot: {
-    model: "gpt-4.1",
+  claude: {
+    model: "sonnet",
+    claudePath: "claude",
+    skipPermissions: true,
   },
 };
 
@@ -36,7 +38,8 @@ export const ENV_VARS = {
   MAX_AGENTS: "SPECTREE_MAX_AGENTS",
   AUTO_MERGE: "SPECTREE_AUTO_MERGE",
   BRANCH_PREFIX: "SPECTREE_BRANCH_PREFIX",
-  COPILOT_MODEL: "SPECTREE_COPILOT_MODEL",
+  CLAUDE_MODEL: "SPECTREE_CLAUDE_MODEL",
+  CLAUDE_PATH: "SPECTREE_CLAUDE_PATH",
 } as const;
 
 /**

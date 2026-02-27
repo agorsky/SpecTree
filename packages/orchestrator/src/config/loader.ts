@@ -70,10 +70,12 @@ function getUserConfigStore(): Conf<UserConfig> {
         maxConcurrentAgents: { type: "number", minimum: 1, maximum: 10 },
         autoMerge: { type: "boolean" },
         branchPrefix: { type: "string" },
-        copilot: {
+        claude: {
           type: "object",
           properties: {
             model: { type: "string" },
+            claudePath: { type: "string" },
+            skipPermissions: { type: "boolean" },
           },
         },
       },
@@ -96,7 +98,7 @@ export function loadUserConfig(): UserConfig {
     maxConcurrentAgents: store.get("maxConcurrentAgents"),
     autoMerge: store.get("autoMerge"),
     branchPrefix: store.get("branchPrefix"),
-    copilot: store.get("copilot"),
+    claude: store.get("claude"),
   };
 
   // Validate with Zod
@@ -172,8 +174,12 @@ export function loadEnvConfig(): Partial<Config> {
     env.branchPrefix = process.env[ENV_VARS.BRANCH_PREFIX]!;
   }
 
-  if (process.env[ENV_VARS.COPILOT_MODEL]) {
-    env.copilot = { model: process.env[ENV_VARS.COPILOT_MODEL]! };
+  if (process.env[ENV_VARS.CLAUDE_MODEL]) {
+    env.claude = { ...env.claude, model: process.env[ENV_VARS.CLAUDE_MODEL]! } as Config["claude"];
+  }
+
+  if (process.env[ENV_VARS.CLAUDE_PATH]) {
+    env.claude = { ...env.claude, claudePath: process.env[ENV_VARS.CLAUDE_PATH]! } as Config["claude"];
   }
 
   return env;
@@ -234,8 +240,8 @@ export function mergeConfig(cliOverrides?: CliOverrides): Config {
   if (envConfig.branchPrefix) {
     merged.branchPrefix = envConfig.branchPrefix;
   }
-  if (envConfig.copilot) {
-    merged.copilot = { ...merged.copilot, ...envConfig.copilot };
+  if (envConfig.claude) {
+    merged.claude = { ...merged.claude, ...envConfig.claude };
   }
 
   // Apply CLI overrides (highest priority)
@@ -284,9 +290,9 @@ export function updateUserConfig(updates: PartialUserConfig): void {
   const updated: UserConfig = {
     ...current,
     ...updates,
-    copilot: {
-      ...current.copilot,
-      ...updates.copilot,
+    claude: {
+      ...current.claude,
+      ...updates.claude,
     },
   };
 
