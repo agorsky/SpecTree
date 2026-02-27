@@ -1,17 +1,17 @@
 /**
- * Global Admin Authorization Middleware
+ * Global Admin Authorization Middleware — single-user pass-through.
  *
- * Requires the authenticated user to have global admin privileges.
- * Must be used after the authenticate middleware.
+ * All global-admin checks have been removed.
+ * Every authenticated user passes through automatically.
+ * Function signature is preserved for call-site compatibility.
  */
 
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { ForbiddenError } from "../errors/index.js";
 
 /**
  * Middleware that requires the authenticated user to be a global admin.
  *
- * @throws ForbiddenError if user is not authenticated or not a global admin
+ * Simplified to single-user pass-through: always allows access.
  *
  * @example
  * fastify.post('/admin/invitations', {
@@ -19,15 +19,8 @@ import { ForbiddenError } from "../errors/index.js";
  * }, handler);
  */
 export async function requireGlobalAdmin(
-  request: FastifyRequest,
+  _request: FastifyRequest,
   _reply: FastifyReply
 ): Promise<void> {
-  // Assumes authenticate middleware has already run and set request.user
-  if (!request.user) {
-    throw new ForbiddenError("Authentication required");
-  }
-
-  if (!request.user.isGlobalAdmin) {
-    throw new ForbiddenError("Global admin access required");
-  }
+  // Single-user mode: every request passes through
 }
