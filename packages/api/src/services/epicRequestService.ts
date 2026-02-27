@@ -6,6 +6,8 @@ import type {
   UpdateEpicRequestInput,
   EpicRequestStatus,
 } from "../schemas/epicRequest.js";
+import { emitEntityCreated, emitEntityUpdated } from "../events/index.js";
+import { dispatch } from "./webhookService.js";
 
 // Types for service operations
 export interface ListEpicRequestsOptions {
@@ -267,13 +269,12 @@ export async function createEpicRequest(
 
   const epicRequest = await prisma.epicRequest.create({ data });
 
-  // TODO: Emit entity created event once "epicRequest" is added to EntityType
-  // emitEntityCreated({
-  //   entityType: "epicRequest",
-  //   entityId: epicRequest.id,
-  //   userId,
-  //   timestamp: new Date().toISOString(),
-  // });
+  emitEntityCreated({
+    entityType: "epicRequest",
+    entityId: epicRequest.id,
+    userId,
+    timestamp: new Date().toISOString(),
+  });
 
   return epicRequest;
 }
@@ -363,17 +364,16 @@ export async function updateEpicRequest(
     data,
   });
 
-  // TODO: Emit entity updated event once "epicRequest" is added to EntityType
-  // const changedFields = Object.keys(data);
-  // if (changedFields.length > 0) {
-  //   emitEntityUpdated({
-  //     entityType: "epicRequest",
-  //     entityId: id,
-  //     changedFields,
-  //     userId,
-  //     timestamp: new Date().toISOString(),
-  //   });
-  // }
+  const changedFields = Object.keys(data);
+  if (changedFields.length > 0) {
+    emitEntityUpdated({
+      entityType: "epicRequest",
+      entityId: id,
+      changedFields,
+      userId,
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   return updatedRequest;
 }
@@ -716,14 +716,12 @@ export async function approveRequest(
   }
 
   // Update status to 'approved'
-  const updatedRequest = await prisma.epicRequest.update({
+  const updated = await prisma.epicRequest.update({
     where: { id },
     data: { status: "approved" },
   });
 
   // Emit status changed event
-  // Note: emitStatusChanged expects entityType to be 'feature' or 'task'
-  // For epic requests, we'll use console log for now as it's not in the StatusChangedPayload union
   console.log(`[Event] EpicRequest status changed:`, {
     entityType: "epicRequest",
     entityId: id,
@@ -733,7 +731,20 @@ export async function approveRequest(
     timestamp: new Date().toISOString(),
   });
 
-  return updatedRequest;
+  // Fire-and-forget webhook dispatch
+  const webhookUrl = process.env.SPECTREE_WEBHOOK_URL;
+  if (webhookUrl) {
+    void dispatch(webhookUrl, {
+      event: "epic_request.approved",
+      epicRequestId: id,
+      title: updated.title,
+      status: "approved",
+      structuredDesc: updated.structuredDesc,
+      approvedAt: new Date().toISOString(),
+    });
+  }
+
+  return updated;
 }
 
 /**

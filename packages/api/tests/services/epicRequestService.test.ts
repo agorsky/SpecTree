@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock the db module
 vi.mock('../../src/lib/db.js', () => ({
@@ -28,11 +28,24 @@ vi.mock('../../src/lib/db.js', () => ({
   },
 }));
 
+vi.mock('../../src/events/index.js', () => ({
+  emitEntityCreated: vi.fn(),
+  emitEntityUpdated: vi.fn(),
+}));
+
+vi.mock('../../src/services/webhookService.js', () => ({
+  dispatch: vi.fn(),
+}));
+
 import { prisma } from '../../src/lib/db.js';
+import { emitEntityCreated, emitEntityUpdated } from '../../src/events/index.js';
+import { dispatch } from '../../src/services/webhookService.js';
 import {
   createEpicRequest,
   listEpicRequests,
   getEpicRequestById,
+  updateEpicRequest,
+  approveRequest,
   transferEpicRequestScope,
 } from '../../src/services/epicRequestService.js';
 
@@ -464,6 +477,197 @@ describe('epicRequestService - Personal Scope', () => {
       });
       expect(result.personalScopeId).toBe('new-scope-1');
       expect(result.status).toBe('approved');
+    });
+  });
+});
+
+// ==================== Entity Events ====================
+
+describe('epicRequestService - Entity Events', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('createEpicRequest', () => {
+    it('should emit entity created event after creation', async () => {
+      const mockCreated = {
+        id: 'req-1',
+        title: 'New Request',
+        description: null,
+        structuredDesc: null,
+        status: 'pending',
+        requestedById: 'user-1',
+        personalScopeId: null,
+        convertedEpicId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      vi.mocked(prisma.epicRequest.create).mockResolvedValue(mockCreated as any);
+
+      await createEpicRequest({ title: 'New Request' }, 'user-1');
+
+      expect(emitEntityCreated).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entityType: 'epicRequest',
+          entityId: 'req-1',
+          userId: 'user-1',
+        })
+      );
+    });
+  });
+
+  describe('updateEpicRequest', () => {
+    it('should emit entity updated event with changed fields', async () => {
+      const existing = {
+        id: 'req-1',
+        title: 'Old Title',
+        description: null,
+        structuredDesc: null,
+        status: 'pending',
+        requestedById: 'user-1',
+        personalScopeId: null,
+        convertedEpicId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      vi.mocked(prisma.epicRequest.findUnique).mockResolvedValue(existing as any);
+
+      const updated = { ...existing, title: 'New Title' };
+      vi.mocked(prisma.epicRequest.update).mockResolvedValue(updated as any);
+
+      await updateEpicRequest('req-1', { title: 'New Title' }, 'user-1');
+
+      expect(emitEntityUpdated).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entityType: 'epicRequest',
+          entityId: 'req-1',
+          changedFields: ['title'],
+          userId: 'user-1',
+        })
+      );
+    });
+
+    it('should not emit entity updated event when no fields changed', async () => {
+      const existing = {
+        id: 'req-1',
+        title: 'Title',
+        description: null,
+        structuredDesc: null,
+        status: 'pending',
+        requestedById: 'user-1',
+        personalScopeId: null,
+        convertedEpicId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      vi.mocked(prisma.epicRequest.findUnique).mockResolvedValue(existing as any);
+      vi.mocked(prisma.epicRequest.update).mockResolvedValue(existing as any);
+
+      // Pass an empty update (no fields set)
+      await updateEpicRequest('req-1', {}, 'user-1');
+
+      expect(emitEntityUpdated).not.toHaveBeenCalled();
+    });
+  });
+});
+
+// ==================== Webhook Dispatch ====================
+
+describe('epicRequestService - Webhook Dispatch', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  describe('approveRequest', () => {
+    const makeRequest = (overrides: Record<string, any> = {}) => ({
+      id: 'req-1',
+      title: 'Test Request',
+      description: null,
+      structuredDesc: '{"problemStatement":"test"}',
+      status: 'pending',
+      requestedById: 'user-1',
+      personalScopeId: null,
+      convertedEpicId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    });
+
+    it('should dispatch webhook when SPECTREE_WEBHOOK_URL is set', async () => {
+      process.env.SPECTREE_WEBHOOK_URL = 'https://hooks.example.com/webhook';
+
+      const existing = makeRequest({ status: 'pending' });
+      vi.mocked(prisma.epicRequest.findUnique).mockResolvedValue(existing as any);
+
+      const approved = makeRequest({ status: 'approved' });
+      vi.mocked(prisma.epicRequest.update).mockResolvedValue(approved as any);
+
+      await approveRequest('req-1', 'admin-1');
+
+      expect(dispatch).toHaveBeenCalledWith(
+        'https://hooks.example.com/webhook',
+        expect.objectContaining({
+          event: 'epic_request.approved',
+          epicRequestId: 'req-1',
+          title: 'Test Request',
+          status: 'approved',
+          structuredDesc: '{"problemStatement":"test"}',
+        })
+      );
+    });
+
+    it('should not dispatch webhook when SPECTREE_WEBHOOK_URL is not set', async () => {
+      delete process.env.SPECTREE_WEBHOOK_URL;
+
+      const existing = makeRequest({ status: 'pending' });
+      vi.mocked(prisma.epicRequest.findUnique).mockResolvedValue(existing as any);
+
+      const approved = makeRequest({ status: 'approved' });
+      vi.mocked(prisma.epicRequest.update).mockResolvedValue(approved as any);
+
+      await approveRequest('req-1', 'admin-1');
+
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundError when request does not exist', async () => {
+      vi.mocked(prisma.epicRequest.findUnique).mockResolvedValue(null);
+
+      await expect(approveRequest('nonexistent', 'admin-1')).rejects.toThrow(
+        "Epic request with id 'nonexistent' not found"
+      );
+    });
+
+    it('should throw ValidationError when request is not pending', async () => {
+      const existing = makeRequest({ status: 'approved' });
+      vi.mocked(prisma.epicRequest.findUnique).mockResolvedValue(existing as any);
+
+      await expect(approveRequest('req-1', 'admin-1')).rejects.toThrow(
+        "Cannot approve epic request with status 'approved'"
+      );
+    });
+
+    it('should return the updated request', async () => {
+      const existing = makeRequest({ status: 'pending' });
+      vi.mocked(prisma.epicRequest.findUnique).mockResolvedValue(existing as any);
+
+      const approved = makeRequest({ status: 'approved' });
+      vi.mocked(prisma.epicRequest.update).mockResolvedValue(approved as any);
+
+      const result = await approveRequest('req-1', 'admin-1');
+
+      expect(result.status).toBe('approved');
+      expect(prisma.epicRequest.update).toHaveBeenCalledWith({
+        where: { id: 'req-1' },
+        data: { status: 'approved' },
+      });
     });
   });
 });

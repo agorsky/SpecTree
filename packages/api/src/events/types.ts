@@ -3,7 +3,7 @@
  */
 
 // Entity types that can be tracked
-export type EntityType = "feature" | "task" | "epic";
+export type EntityType = "feature" | "task" | "epic" | "epicRequest";
 
 // Mutation action types
 export type MutationAction = "created" | "updated" | "deleted";
