@@ -13,7 +13,7 @@ export function RootLayout() {
       <footer className="border-t border-border py-6">
         <div className="container flex flex-col items-center justify-between gap-4 md:h-10 md:flex-row">
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            SpecTree - OpenAPI Spec Analysis Platform
+            Dispatcher - OpenAPI Spec Analysis Platform
           </p>
         </div>
       </footer>

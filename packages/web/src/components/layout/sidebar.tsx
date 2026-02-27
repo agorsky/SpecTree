@@ -33,7 +33,7 @@ export function Sidebar() {
     <div className="flex h-full w-64 flex-col border-r bg-muted/40">
       {/* Header */}
       <div className="flex h-14 items-center border-b px-4">
-        <span className="font-semibold">SpecTree</span>
+        <span className="font-semibold">Dispatcher</span>
       </div>
 
       {/* Navigation */}
