@@ -1,20 +1,15 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import {
-  activateAccount,
-} from "../services/userService.js";
-import {
   generateAccessToken,
   generateRefreshToken,
   verifyTokenWithType,
 } from "../utils/jwt.js";
-import { UnauthorizedError, ValidationError } from "../errors/index.js";
+import { UnauthorizedError } from "../errors/index.js";
 import {
   loginSchema,
   refreshSchema,
-  activateAccountSchema,
   type LoginInput,
   type RefreshInput,
-  type ActivateAccountInput,
 } from "../schemas/auth.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { prisma } from "../lib/db.js";
@@ -128,71 +123,6 @@ export default function authRoutes(
 
       return reply.status(200).send({
         message: "Logged out successfully",
-      });
-    }
-  );
-
-  /**
-   * POST /api/v1/auth/activate
-   * Activate a new account using an invitation code
-   * Public endpoint with rate limiting
-   */
-  fastify.post<{ Body: ActivateAccountInput }>(
-    "/activate",
-    {
-      config: {
-        rateLimit: {
-          max: 5,
-          timeWindow: "15 minutes",
-          keyGenerator: (request: { ip: string }) => request.ip,
-          errorResponseBuilder: () => ({
-            statusCode: 429,
-            error: "Too Many Requests",
-            message: "Too many activation attempts. Please try again in 15 minutes.",
-          }),
-        },
-      },
-    },
-    async (request, reply) => {
-      // Validate request body
-      const parseResult = activateAccountSchema.safeParse(request.body);
-      if (!parseResult.success) {
-        const errors = parseResult.error.errors.reduce(
-          (acc, e) => {
-            acc[e.path.join(".")] = e.message;
-            return acc;
-          },
-          {} as Record<string, string>
-        );
-        throw new ValidationError("Invalid request", errors);
-      }
-
-      const { email, code, name, password } = parseResult.data;
-
-      // All steps (validate invitation, create user, provision personal scope)
-      // run in a single transaction for atomicity
-      const { user, invitationId } = await activateAccount({ email, code, name, password });
-
-      // Generate tokens (outside transaction - no DB writes)
-      const accessToken = generateAccessToken(user.id);
-      const refreshToken = generateRefreshToken(user.id);
-
-      // Log activation event
-      request.log.info(
-        { email, userId: user.id, invitationId },
-        "Account activated"
-      );
-
-      return reply.status(201).send({
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
-        tokens: {
-          accessToken,
-          refreshToken,
-        },
       });
     }
   );

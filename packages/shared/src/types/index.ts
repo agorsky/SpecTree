@@ -5,7 +5,6 @@
 // Domain types
 export * from "./user.js";
 export * from "./auth.js";
-export * from "./invitation.js";
 export * from "./session-events.js";
 
 /**

@@ -184,7 +184,6 @@ export async function cleanupTestDatabase(): Promise<void> {
   await prisma.membership.deleteMany();
   await prisma.team.deleteMany();
   await prisma.personalScope.deleteMany();
-  await prisma.userInvitation.deleteMany();
   await prisma.user.deleteMany();
   await prisma.healthCheck.deleteMany();
 }

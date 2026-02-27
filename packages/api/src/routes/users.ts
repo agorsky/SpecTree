@@ -102,13 +102,13 @@ export default function usersRoutes(
   /**
    * POST /api/v1/users
    * Registration endpoint - DISABLED
-   * Self-registration is disabled. New users must be invited by an administrator.
+   * Self-registration is disabled. Contact an administrator.
    */
   fastify.post<{ Body: CreateUserBody }>(
     "/",
     async () => {
       throw new ForbiddenError(
-        "Self-registration is disabled. Please contact an administrator for an invitation code."
+        "Self-registration is disabled. Please contact an administrator."
       );
     }
   );

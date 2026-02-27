@@ -31,10 +31,6 @@ export {
   // Utility functions
   resetFactoryCounter,
 
-  // Invitation factories
-  createTestInvitation,
-  createExpiredTestInvitation,
-  createUsedTestInvitation,
   createTestGlobalAdmin,
 
   // Type exports
@@ -45,7 +41,6 @@ export {
   type StatusInput,
   type FeatureInput,
   type TaskInput,
-  type InvitationInput,
 } from "./factories.js";
 
 // Authentication helpers
