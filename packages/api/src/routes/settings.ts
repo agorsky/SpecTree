@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import { authenticate } from "../middleware/authenticate.js";
 
-let webhookUrl: string | null = process.env.SPECTREE_WEBHOOK_URL ?? null;
+let webhookUrl: string | null = process.env.DISPATCHER_WEBHOOK_URL ?? null;
 
 /**
  * Settings routes plugin
@@ -33,7 +33,7 @@ export default function settingsRoutes(
     async (request, reply) => {
       const { url } = request.body;
       webhookUrl = url;
-      process.env.SPECTREE_WEBHOOK_URL = url;
+      process.env.DISPATCHER_WEBHOOK_URL = url;
       return reply.send({ url: webhookUrl });
     }
   );

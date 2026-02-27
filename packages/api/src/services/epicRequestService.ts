@@ -732,7 +732,7 @@ export async function approveRequest(
   });
 
   // Fire-and-forget webhook dispatch
-  const webhookUrl = process.env.SPECTREE_WEBHOOK_URL;
+  const webhookUrl = process.env.DISPATCHER_WEBHOOK_URL;
   if (webhookUrl) {
     void dispatch(webhookUrl, {
       event: "epic_request.approved",
