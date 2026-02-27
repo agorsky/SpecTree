@@ -35,6 +35,7 @@ import { registerCompositeTools } from "./composite.js";
 import { registerWorkflowTools } from "./workflow.js";
 import { registerLawTools } from "./laws.js";
 import { registerCaseTools } from "./cases.js";
+import { registerAgentScoreTools } from "./agent-scores.js";
 
 // Import changelog tools
 import { registerChangelogTools } from "./changelog.js";
@@ -73,6 +74,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerValidationTools,   // Validation checks
   registerLawTools,          // Law registry
   registerCaseTools,         // Case management (court cases against agents)
+  registerAgentScoreTools,   // Agent score leaderboard and adjustments
   registerWorkflowTools,     // Workflow guidance
   registerSkillPackTools,    // Skill pack management
 ];
