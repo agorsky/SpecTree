@@ -13,13 +13,13 @@ export interface CreateLawInput {
 }
 
 export interface UpdateLawInput {
-  lawCode?: string;
-  title?: string;
-  description?: string;
-  severity?: string;
-  auditLogic?: string;
-  consequence?: string;
-  appliesTo?: string;
+  lawCode?: string | undefined;
+  title?: string | undefined;
+  description?: string | undefined;
+  severity?: string | undefined;
+  auditLogic?: string | undefined;
+  consequence?: string | undefined;
+  appliesTo?: string | undefined;
 }
 
 export interface ListLawsOptions {
