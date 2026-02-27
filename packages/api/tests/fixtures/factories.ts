@@ -28,7 +28,6 @@ import type {
 export interface UserInput {
   email: string;
   name: string;
-  passwordHash: string;
   avatarUrl?: string | null;
   isActive?: boolean;
   isGlobalAdmin?: boolean;
@@ -142,10 +141,10 @@ export async function createTestUser(
 ): Promise<User> {
   const prisma = getTestPrisma();
 
-  const defaults: UserInput = {
+  const defaults = {
     email: uniqueEmail(),
     name: "Test User",
-    passwordHash: "$2b$10$hashedpasswordfortesting123456789", // Mock bcrypt hash
+    passwordHash: "no-password-auth-via-passphrase",
     avatarUrl: null,
     isActive: true,
     isGlobalAdmin: false,
@@ -502,10 +501,10 @@ export async function createTestGlobalAdmin(
 ): Promise<User> {
   const prisma = getTestPrisma();
 
-  const defaults: UserInput & { isGlobalAdmin: boolean } = {
+  const defaults = {
     email: `admin-${uniqueId()}@toro.com`,
     name: "Test Admin",
-    passwordHash: "$2b$10$hashedpasswordfortesting123456789",
+    passwordHash: "no-password-auth-via-passphrase",
     avatarUrl: null,
     isActive: true,
     isGlobalAdmin: true,

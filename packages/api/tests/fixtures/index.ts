@@ -45,6 +45,9 @@ export {
 
 // Authentication helpers
 export {
+  // Passphrase login (primary auth method)
+  loginWithPassphrase,
+
   // Header creation
   createAuthHeader,
   createRefreshHeader,
@@ -66,6 +69,7 @@ export {
   type AuthHeader,
   type AuthenticatedUser,
   type AuthenticatedTeamMember,
+  type PassphraseLoginResult,
 } from "./auth.js";
 
 // Database setup and cleanup utilities

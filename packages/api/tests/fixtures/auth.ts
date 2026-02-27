@@ -1,12 +1,14 @@
 /**
  * Authentication Helpers for SpecTree API Tests
  *
- * Provides utilities for creating authenticated test requests,
- * including JWT token generation and user creation helpers.
+ * Provides utilities for creating authenticated test requests.
+ * Primary authentication is via passphrase (POST /api/v1/auth/login).
+ * Direct JWT token generation is available for tests needing specific user contexts.
  */
 
+import type { FastifyInstance } from "fastify";
 import { generateAccessToken, generateRefreshToken } from "../../src/utils/jwt.js";
-import { createTestUser, createTestMembership, createTestTeam } from "./factories.js";
+import { createTestUser, createTestMembership, createTestTeam, createTestGlobalAdmin } from "./factories.js";
 import type { User, Team, Membership } from "../../src/generated/prisma/index.js";
 import type { UserInput, TeamInput, MembershipInput } from "./factories.js";
 
@@ -39,24 +41,77 @@ export interface AuthenticatedTeamMember extends AuthenticatedUser {
   membership: Membership;
 }
 
+/**
+ * Result of logging in via passphrase.
+ */
+export interface PassphraseLoginResult {
+  user: Record<string, unknown>;
+  headers: AuthHeader;
+  accessToken: string;
+  refreshToken: string;
+}
+
+// =============================================================================
+// Passphrase Login Helper
+// =============================================================================
+
+/**
+ * Authenticates via the passphrase login endpoint.
+ * Creates a global admin user, then POSTs to /api/v1/auth/login
+ * with the passphrase from SPECTREE_PASSPHRASE env var.
+ *
+ * @param app - Fastify app instance (from buildTestApp)
+ * @param adminOverrides - Optional overrides for the admin user
+ * @returns The authenticated user, auth headers, and tokens
+ *
+ * @example
+ * const { headers } = await loginWithPassphrase(app);
+ * const response = await app.inject({
+ *   method: 'GET',
+ *   url: '/api/v1/teams',
+ *   headers
+ * });
+ */
+export async function loginWithPassphrase(
+  app: FastifyInstance,
+  adminOverrides?: Partial<UserInput>
+): Promise<PassphraseLoginResult> {
+  await createTestGlobalAdmin(adminOverrides);
+
+  const passphrase = process.env.SPECTREE_PASSPHRASE ?? "test-passphrase";
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/v1/auth/login",
+    payload: { passphrase },
+  });
+
+  if (response.statusCode !== 200) {
+    throw new Error(
+      `Passphrase login failed with status ${String(response.statusCode)}: ${response.body}`
+    );
+  }
+
+  const body = JSON.parse(response.body) as {
+    accessToken: string;
+    refreshToken: string;
+    user: Record<string, unknown>;
+  };
+  const { accessToken, refreshToken, user } = body;
+  const headers: AuthHeader = { Authorization: `Bearer ${accessToken}` };
+
+  return { user, headers, accessToken, refreshToken };
+}
+
 // =============================================================================
 // Token Generation Helpers
 // =============================================================================
 
 /**
  * Creates an Authorization header with a Bearer token for the given user ID.
- * This is a synchronous helper for when you already have a user ID.
  *
  * @param userId - The user's unique identifier
  * @returns An object with the Authorization header
- *
- * @example
- * const headers = createAuthHeader(user.id);
- * const response = await app.inject({
- *   method: 'GET',
- *   url: '/api/epics',
- *   headers
- * });
  */
 export function createAuthHeader(userId: string): AuthHeader {
   const token = generateAccessToken(userId);
@@ -96,18 +151,11 @@ export function generateTokens(userId: string): {
 
 /**
  * Creates a test user and returns both the user and authentication credentials.
- * This is the primary helper for tests that need an authenticated context.
+ * Uses direct JWT token generation for tests that need specific user contexts
+ * (e.g., non-admin users, specific roles).
  *
  * @param overrides - Optional fields to override user defaults
  * @returns The created user, auth headers, and tokens
- *
- * @example
- * const { user, headers } = await createAuthenticatedUser();
- * const response = await app.inject({
- *   method: 'GET',
- *   url: '/api/me',
- *   headers
- * });
  */
 export async function createAuthenticatedUser(
   overrides?: Partial<UserInput>
@@ -130,14 +178,6 @@ export async function createAuthenticatedUser(
  *
  * @param options - Optional overrides for user, team, and membership
  * @returns The created user, team, membership, and auth credentials
- *
- * @example
- * const { user, team, headers } = await createAuthenticatedTeamMember();
- * const response = await app.inject({
- *   method: 'GET',
- *   url: `/api/teams/${team.id}/epics`,
- *   headers
- * });
  */
 export async function createAuthenticatedTeamMember(options?: {
   userOverrides?: Partial<UserInput>;
@@ -167,12 +207,6 @@ export async function createAuthenticatedTeamMember(options?: {
 
 /**
  * Creates an authenticated admin user with admin role in a team.
- *
- * @param options - Optional overrides for user and team
- * @returns The created admin user with team membership
- *
- * @example
- * const { user, team, headers } = await createAuthenticatedAdmin();
  */
 export async function createAuthenticatedAdmin(options?: {
   userOverrides?: Partial<UserInput>;
@@ -186,12 +220,6 @@ export async function createAuthenticatedAdmin(options?: {
 
 /**
  * Creates an authenticated guest user with guest role in a team.
- *
- * @param options - Optional overrides for user and team
- * @returns The created guest user with team membership
- *
- * @example
- * const { user, team, headers } = await createAuthenticatedGuest();
  */
 export async function createAuthenticatedGuest(options?: {
   userOverrides?: Partial<UserInput>;
@@ -209,20 +237,13 @@ export async function createAuthenticatedGuest(options?: {
 
 /**
  * Creates an expired token header for testing token expiration handling.
- * Note: This creates a structurally valid but semantically invalid token.
- *
- * @returns An Authorization header with an expired token
  */
 export function createExpiredAuthHeader(): AuthHeader {
-  // Create a token that looks valid but has an impossible timestamp
-  // The actual JWT verification will fail when checking expiration
   return { Authorization: "Bearer expired.token.here" };
 }
 
 /**
  * Creates an invalid token header for testing malformed token handling.
- *
- * @returns An Authorization header with an invalid token
  */
 export function createInvalidAuthHeader(): AuthHeader {
   return { Authorization: "Bearer invalid-token" };
@@ -230,8 +251,6 @@ export function createInvalidAuthHeader(): AuthHeader {
 
 /**
  * Creates an empty Authorization header for testing missing auth handling.
- *
- * @returns An empty Authorization header
  */
 export function createEmptyAuthHeader(): AuthHeader {
   return { Authorization: "" };
@@ -239,11 +258,8 @@ export function createEmptyAuthHeader(): AuthHeader {
 
 /**
  * Creates a malformed Authorization header (missing Bearer prefix).
- *
- * @param userId - The user's unique identifier
- * @returns A malformed Authorization header
  */
 export function createMalformedAuthHeader(userId: string): AuthHeader {
   const token = generateAccessToken(userId);
-  return { Authorization: token }; // Missing "Bearer " prefix
+  return { Authorization: token };
 }

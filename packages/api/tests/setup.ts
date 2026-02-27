@@ -122,6 +122,9 @@ export async function setupTestDatabase(): Promise<void> {
     process.env.JWT_SECRET = "test-secret-key-for-jwt-signing-minimum-32-chars";
   }
 
+  // Set SPECTREE_PASSPHRASE for passphrase-based auth in tests
+  process.env.SPECTREE_PASSPHRASE ??= "test-passphrase";
+
   // Run database migrations to ensure schema is up to date
   try {
     execSync("pnpm db:migrate:deploy", {
@@ -228,6 +231,9 @@ if (!skipDbSetup) {
     if (!process.env.JWT_SECRET) {
       process.env.JWT_SECRET = "test-secret-key-for-jwt-signing-minimum-32-chars";
     }
+
+    // Always set SPECTREE_PASSPHRASE for passphrase-based auth
+    process.env.SPECTREE_PASSPHRASE ??= "test-passphrase";
 
     // Only try database setup if DATABASE_URL is configured
     if (process.env.DATABASE_URL) {
