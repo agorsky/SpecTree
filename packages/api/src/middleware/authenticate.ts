@@ -103,6 +103,13 @@ export async function authenticate(
     return;
   }
 
+  // Check if this is a passphrase session token
+  const passphrase = process.env.SPECTREE_PASSPHRASE;
+  if (passphrase && token === passphrase) {
+    await authenticateWithPassphrase(request);
+    return;
+  }
+
   // Otherwise, treat as JWT token
   await authenticateWithJwt(request, token);
 }
@@ -139,6 +146,37 @@ async function authenticateWithApiToken(
     role: membership?.role ?? null,
   };
   request.apiToken = apiToken;
+}
+
+/**
+ * Authenticates a request using a passphrase session token.
+ * The raw passphrase is sent as a Bearer token. If it matches
+ * SPECTREE_PASSPHRASE, the request is authenticated as the admin user.
+ */
+async function authenticateWithPassphrase(
+  request: FastifyRequest
+): Promise<void> {
+  const user = await prisma.user.findFirst({
+    where: { isGlobalAdmin: true, isActive: true },
+    include: {
+      memberships: {
+        select: { teamId: true, role: true },
+        take: 1,
+      },
+    },
+  });
+
+  if (!user) {
+    throw new UnauthorizedError("No active admin user found");
+  }
+
+  const { passwordHash: _, memberships, ...userWithoutPassword } = user;
+  const membership = memberships[0];
+  request.user = {
+    ...userWithoutPassword,
+    teamId: membership?.teamId ?? null,
+    role: membership?.role ?? null,
+  };
 }
 
 /**
