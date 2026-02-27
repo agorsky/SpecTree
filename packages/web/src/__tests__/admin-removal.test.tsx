@@ -54,10 +54,10 @@ describe("Admin removal", () => {
     it("renders standard nav items", () => {
       renderWithProviders(<Sidebar />);
 
-      expect(screen.getByText("Requests")).toBeDefined();
       expect(screen.getByText("Dashboard")).toBeDefined();
+      expect(screen.getByText("Epic Requests")).toBeDefined();
       expect(screen.getByText("Epics")).toBeDefined();
-      expect(screen.getByText("Teams")).toBeDefined();
+      expect(screen.getByText("Settings")).toBeDefined();
     });
   });
 });

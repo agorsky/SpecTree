@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useCurrentUser } from "@/hooks/queries/use-current-user";
-import { Folder, Users, Settings, LogOut, BarChart3, Lightbulb } from "lucide-react";
+import { Folder, Settings, LogOut, BarChart3, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,10 +15,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
 const navItems = [
-  { href: "/epic-requests", label: "Requests", icon: Lightbulb },
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+  { href: "/epic-requests", label: "Epic Requests", icon: Lightbulb },
   { href: "/epics", label: "Epics", icon: Folder },
-  { href: "/teams", label: "Teams", icon: Users },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 const VERSION = "0.2.0";
@@ -71,12 +71,6 @@ export function Sidebar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="w-56">
-            <DropdownMenuItem asChild>
-              <Link to="/settings">
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4" />
               Log out
