@@ -50,7 +50,7 @@ export function RegisterPage() {
         });
 
         // Auto-login after registration
-        await login(email, password);
+        await login(password);
         void navigate("/dashboard");
       } catch (err: unknown) {
         if (err && typeof err === "object" && "data" in err) {

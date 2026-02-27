@@ -6,8 +6,8 @@ import type {
 } from "@spectree/shared";
 
 export const authApi = {
-  login: (email: string, password: string) =>
-    api.post<LoginResponse>("/auth/login", { email, password }),
+  login: (passphrase: string) =>
+    api.post<LoginResponse>("/auth/login", { passphrase }),
 
   refresh: (refreshToken: string) =>
     api.post<LoginResponse>("/auth/refresh", { refreshToken }),
