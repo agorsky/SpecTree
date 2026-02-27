@@ -1,12 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Folder, Settings, BarChart3, Lightbulb } from "lucide-react";
+import { Folder, Settings, BarChart3, Lightbulb, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/epic-requests", label: "Epic Requests", icon: Lightbulb },
   { href: "/epics", label: "Epics", icon: Folder },
+  { href: "/compliance", label: "Compliance", icon: Shield },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
