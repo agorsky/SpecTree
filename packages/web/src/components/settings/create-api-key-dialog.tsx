@@ -104,7 +104,7 @@ export function CreateApiKeyDialog({ open, onOpenChange }: CreateApiKeyDialogPro
             <DialogHeader>
               <DialogTitle>Create API Key</DialogTitle>
               <DialogDescription>
-                Create a new API key for programmatic access to SpecTree.
+                Create a new API key for programmatic access to Dispatcher.
               </DialogDescription>
             </DialogHeader>
 
