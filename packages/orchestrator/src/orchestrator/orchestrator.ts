@@ -33,7 +33,7 @@
  */
 
 import { EventEmitter } from "events";
-import { AcpSessionManager, type AcpSession } from "../acp/index.js";
+import { ClaudeCodeSessionManager, type ClaudeCodeSession } from "../claude/index.js";
 import {
   DispatcherClient,
   type ExecutionPlan,
@@ -156,7 +156,7 @@ export interface OrchestratorOptions {
   /** SpecTree API client */
   client: DispatcherClient;
   /** ACP session manager for creating sessions */
-  sessionManager: AcpSessionManager;
+  sessionManager: ClaudeCodeSessionManager;
   /** Maximum concurrent agents (default: 4) */
   maxAgents?: number;
   /** Optional branch manager (created if not provided) */
@@ -242,9 +242,9 @@ You MUST use the progress tracking tools to document your work. The task prompt 
  */
 export class Orchestrator extends EventEmitter {
   private client: DispatcherClient;
-  private sessionManager: AcpSessionManager;
+  private sessionManager: ClaudeCodeSessionManager;
   private maxAgents: number;
-  private activeSession: AcpSession | null = null;
+  private activeSession: ClaudeCodeSession | null = null;
   private spectreeSession: SpecTreeSession | null = null;
   private branchManager: BranchManager;
   private mergeCoordinator: MergeCoordinator;
@@ -965,7 +965,7 @@ export class Orchestrator extends EventEmitter {
   /**
    * Create an ACP session for a task.
    */
-  private async createSession(item: ExecutionItem, _handoffContext?: string): Promise<AcpSession> {
+  private async createSession(item: ExecutionItem, _handoffContext?: string): Promise<ClaudeCodeSession> {
     try {
       const session = await this.sessionManager.createSession({
         systemMessage: AGENT_SYSTEM_PROMPT,
@@ -984,7 +984,7 @@ export class Orchestrator extends EventEmitter {
   /**
    * Close an ACP session.
    */
-  private async closeSession(session: AcpSession): Promise<void> {
+  private async closeSession(session: ClaudeCodeSession): Promise<void> {
     try {
       await session.destroy();
     } catch {

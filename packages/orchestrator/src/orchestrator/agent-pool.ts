@@ -29,7 +29,7 @@
  */
 
 import { EventEmitter } from "events";
-import { AcpSessionManager, type AcpSession } from "../acp/index.js";
+import { ClaudeCodeSessionManager, type ClaudeCodeSession } from "../claude/index.js";
 import type { DispatcherClient, ExecutionItem } from "../spectree/api-client.js";
 import { AgentError, OrchestratorError, ErrorCode } from "../errors.js";
 
@@ -55,7 +55,7 @@ export interface Agent {
   /** Current agent status */
   status: AgentStatus;
   /** The underlying ACP session */
-  session: AcpSession;
+  session: ClaudeCodeSession;
   /** Progress percentage (0-100) */
   progress: number;
   /** When the agent was spawned */
@@ -111,7 +111,7 @@ export interface AgentPoolOptions {
   /** Maximum number of concurrent agents */
   maxAgents: number;
   /** ACP session manager for creating sessions */
-  sessionManager: AcpSessionManager;
+  sessionManager: ClaudeCodeSessionManager;
   /** SpecTree client for API operations */
   specTreeClient: DispatcherClient;
 }
@@ -196,7 +196,7 @@ export class AgentPool extends EventEmitter {
   private activeAgents: Map<string, Agent>;
   private agentPromises: Map<string, Promise<AgentResult>>;
   private agentResolvers: Map<string, (result: AgentResult) => void>;
-  private sessionManager: AcpSessionManager;
+  private sessionManager: ClaudeCodeSessionManager;
   private specTreeClient: DispatcherClient;
   private nextId: number = 1;
   private completedCount: number = 0;
@@ -244,7 +244,7 @@ export class AgentPool extends EventEmitter {
     }
 
     // 2. Create ACP session
-    let session: AcpSession;
+    let session: ClaudeCodeSession;
     try {
       session = await this.sessionManager.createSession({
         systemMessage: this.buildAgentPrompt(task),

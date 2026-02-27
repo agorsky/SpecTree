@@ -24,7 +24,7 @@ import {
   type RunResult,
   type ProgressEvent,
 } from "../../orchestrator/index.js";
-import { AcpClient, AcpSessionManager } from "../../acp/index.js";
+import { ClaudeCodeClient, ClaudeCodeSessionManager } from "../../claude/index.js";
 import {
   TaskProgressDisplay,
   ActivityTracker,
@@ -487,8 +487,8 @@ export async function continueCommand(
     }
 
     // Step 7: Create orchestrator and execute
-    const acpClient = new AcpClient();
-    const sessionManager = new AcpSessionManager(acpClient);
+    const claudeClient = new ClaudeCodeClient();
+    const sessionManager = new ClaudeCodeSessionManager(claudeClient);
     const orchestrator = new Orchestrator({
       client,
       sessionManager,

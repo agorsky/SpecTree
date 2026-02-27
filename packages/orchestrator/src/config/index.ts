@@ -96,11 +96,14 @@ export function getMaxAgents(): number {
 }
 
 /**
- * Get the Copilot model to use.
+ * Get the Claude model to use.
  */
-export function getCopilotModel(): string {
-  return getConfig().copilot.model;
+export function getClaudeModel(): string {
+  return getConfig().claude.model;
 }
+
+/** @deprecated Use getClaudeModel */
+export const getCopilotModel = getClaudeModel;
 
 /**
  * Get the branch prefix for feature branches.
