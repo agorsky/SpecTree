@@ -33,6 +33,7 @@ import { registerDecisionTools } from "./decisions.js";
 import { registerTeamTools } from "./teams.js";
 import { registerCompositeTools } from "./composite.js";
 import { registerWorkflowTools } from "./workflow.js";
+import { registerLawTools } from "./laws.js";
 
 // Import changelog tools
 import { registerChangelogTools } from "./changelog.js";
@@ -69,6 +70,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerTemplateTools,     // Templates
   registerSessionTools,      // AI session lifecycle
   registerValidationTools,   // Validation checks
+  registerLawTools,          // Law registry
   registerWorkflowTools,     // Workflow guidance
   registerSkillPackTools,    // Skill pack management
 ];
