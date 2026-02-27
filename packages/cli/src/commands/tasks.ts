@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import chalk from 'chalk';
 import Table from 'cli-table3';
-import { SpecTreeApiClient } from '../utils/spectree-api-client.js';
+import { DispatcherApiClient } from '../utils/spectree-api-client.js';
 
 interface TasksListOptions {
   feature: string;
@@ -25,12 +25,12 @@ tasksCommand
   .description('List tasks for a feature')
   .requiredOption('--feature <id>', 'Feature ID')
   .option('--status <status>', 'Filter by status name')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (options: TasksListOptions) => {
     const spinner = ora('Fetching tasks...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const params: { status?: string } = {};
       if (options.status) params.status = options.status;
       const result = await client.listTasks(options.feature, params);
@@ -85,12 +85,12 @@ tasksCommand
   .command('get')
   .description('Get task details')
   .argument('<id>', 'Task ID')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (id: string, options: TasksGetOptions) => {
     const spinner = ora('Fetching task...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const result = await client.getTask(id);
       spinner.stop();
 

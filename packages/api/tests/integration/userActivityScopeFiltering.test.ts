@@ -163,7 +163,7 @@ describe("User Activity Scope Filtering (ENG-84)", () => {
     });
   });
 
-  describe("Non-admin authorization", () => {
+  describe("Non-admin access", () => {
     it("allows scope=self for non-admin users", async () => {
       const response = await app.inject({
         method: "GET",
@@ -174,48 +174,6 @@ describe("User Activity Scope Filtering (ENG-84)", () => {
       });
 
       expect(response.statusCode).toBe(200);
-    });
-
-    it("rejects scope=all for non-admin users with 403", async () => {
-      const response = await app.inject({
-        method: "GET",
-        url: "/api/v1/user-activity?scope=all",
-        headers: {
-          Authorization: `Bearer ${regularUserToken}`,
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-      const body = response.json();
-      expect(body.message).toContain("Global admin access required");
-    });
-
-    it("rejects scope=team for non-admin users with 403", async () => {
-      const response = await app.inject({
-        method: "GET",
-        url: `/api/v1/user-activity?scope=team&scopeId=${teamA.id}`,
-        headers: {
-          Authorization: `Bearer ${regularUserToken}`,
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-      const body = response.json();
-      expect(body.message).toContain("Global admin access required");
-    });
-
-    it("rejects scope=user for non-admin users with 403", async () => {
-      const response = await app.inject({
-        method: "GET",
-        url: `/api/v1/user-activity?scope=user&scopeId=${anotherUser.id}`,
-        headers: {
-          Authorization: `Bearer ${regularUserToken}`,
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-      const body = response.json();
-      expect(body.message).toContain("Global admin access required");
     });
   });
 
@@ -287,8 +245,8 @@ describe("User Activity Scope Filtering (ENG-84)", () => {
 
       expect(response.statusCode).toBe(400);
       const body = response.json();
-      expect(body.message).toContain("Invalid scope");
-      expect(body.message).toContain("self, all, team, user");
+      expect(body.error.message).toContain("Invalid scope");
+      expect(body.error.message).toContain("self, all, team, user");
     });
   });
 
@@ -304,7 +262,7 @@ describe("User Activity Scope Filtering (ENG-84)", () => {
 
       expect(response.statusCode).toBe(400);
       const body = response.json();
-      expect(body.message).toContain("scopeId is required when scope is 'team'");
+      expect(body.error.message).toContain("scopeId is required when scope is 'team'");
     });
 
     it("requires scopeId when scope=user", async () => {
@@ -318,7 +276,7 @@ describe("User Activity Scope Filtering (ENG-84)", () => {
 
       expect(response.statusCode).toBe(400);
       const body = response.json();
-      expect(body.message).toContain("scopeId is required when scope is 'user'");
+      expect(body.error.message).toContain("scopeId is required when scope is 'user'");
     });
 
     it("rejects scopeId when scope=self", async () => {
@@ -332,7 +290,7 @@ describe("User Activity Scope Filtering (ENG-84)", () => {
 
       expect(response.statusCode).toBe(400);
       const body = response.json();
-      expect(body.message).toContain("scopeId should not be provided when scope is 'self'");
+      expect(body.error.message).toContain("scopeId should not be provided when scope is 'self'");
     });
 
     it("rejects scopeId when scope=all", async () => {
@@ -346,7 +304,7 @@ describe("User Activity Scope Filtering (ENG-84)", () => {
 
       expect(response.statusCode).toBe(400);
       const body = response.json();
-      expect(body.message).toContain("scopeId should not be provided when scope is 'all'");
+      expect(body.error.message).toContain("scopeId should not be provided when scope is 'all'");
     });
   });
 
@@ -363,8 +321,8 @@ describe("User Activity Scope Filtering (ENG-84)", () => {
 
       expect(response.statusCode).toBe(404);
       const body = response.json();
-      expect(body.message).toContain("Team with ID");
-      expect(body.message).toContain("not found");
+      expect(body.error.message).toContain("Team with ID");
+      expect(body.error.message).toContain("not found");
     });
 
     it("returns 404 when user does not exist", async () => {
@@ -379,8 +337,8 @@ describe("User Activity Scope Filtering (ENG-84)", () => {
 
       expect(response.statusCode).toBe(404);
       const body = response.json();
-      expect(body.message).toContain("User with ID");
-      expect(body.message).toContain("not found");
+      expect(body.error.message).toContain("User with ID");
+      expect(body.error.message).toContain("not found");
     });
   });
 

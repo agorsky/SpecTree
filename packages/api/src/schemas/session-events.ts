@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SessionEventType } from "@spectree/shared";
+import { SessionEventType } from "@dispatcher/shared";
 
 /**
  * Session Event Validation Schemas

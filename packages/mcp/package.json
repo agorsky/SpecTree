@@ -1,5 +1,5 @@
 {
-  "name": "@ttc-ggi/spectree-mcp",
+  "name": "@dispatcher/mcp",
   "version": "0.2.3",
   "description": "SpecTree MCP server - Uses HTTP API client (no direct database access)",
   "type": "module",
@@ -31,8 +31,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
-    "@spectree/shared": "workspace:*",
-    "zod": "^3.24.0"
+    "zod": "^3.24.0",
+    "@dispatcher/shared": "workspace:*"
   },
   "devDependencies": {
     "esbuild": "^0.27.3",

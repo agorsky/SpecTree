@@ -30,7 +30,7 @@
 
 import { EventEmitter } from "events";
 import { AcpSessionManager, type AcpSession } from "../acp/index.js";
-import type { SpecTreeClient, ExecutionItem } from "../spectree/api-client.js";
+import type { DispatcherClient, ExecutionItem } from "../spectree/api-client.js";
 import { AgentError, OrchestratorError, ErrorCode } from "../errors.js";
 
 // =============================================================================
@@ -113,7 +113,7 @@ export interface AgentPoolOptions {
   /** ACP session manager for creating sessions */
   sessionManager: AcpSessionManager;
   /** SpecTree client for API operations */
-  specTreeClient: SpecTreeClient;
+  specTreeClient: DispatcherClient;
 }
 
 // =============================================================================
@@ -197,7 +197,7 @@ export class AgentPool extends EventEmitter {
   private agentPromises: Map<string, Promise<AgentResult>>;
   private agentResolvers: Map<string, (result: AgentResult) => void>;
   private sessionManager: AcpSessionManager;
-  private specTreeClient: SpecTreeClient;
+  private specTreeClient: DispatcherClient;
   private nextId: number = 1;
   private completedCount: number = 0;
   private failedCount: number = 0;

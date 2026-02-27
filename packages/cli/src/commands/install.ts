@@ -13,7 +13,7 @@ interface InstallOptions {
 
 export const installCommand = new Command('install')
   .description('Install a Skill Pack from the registry')
-  .argument('<pack-name>', 'Name of the pack to install (e.g., @spectree/pack-example)')
+  .argument('<pack-name>', 'Name of the pack to install (e.g., @dispatcher/pack-example)')
   .option('-v, --version <version>', 'Specific version to install (default: latest)')
   .option('--registry <url>', 'Custom registry URL')
   .option('--token <token>', 'API token for authentication (or set SPECTREE_TOKEN env var)')
@@ -73,7 +73,7 @@ export const installCommand = new Command('install')
           console.error(chalk.yellow('\nTip: Check your network connection and registry URL'));
         } else if (error.message.includes('404')) {
           console.error(chalk.yellow('\nTip: Verify the pack name and version exist in the registry'));
-          console.error(chalk.gray('Run: spectree list --available'));
+          console.error(chalk.gray('Run: dispatcher list --available'));
         } else if (error.message.includes('EACCES')) {
           console.error(chalk.yellow('\nTip: Check file permissions in the .github directory'));
         }

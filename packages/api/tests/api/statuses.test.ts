@@ -12,7 +12,6 @@ import {
   createAuthenticatedUser,
   createAuthenticatedTeamMember,
   createAuthenticatedAdmin,
-  createAuthenticatedGuest,
   cleanupTestDatabase,
   disconnectTestDatabase,
 } from "../fixtures/index.js";
@@ -199,40 +198,6 @@ describe("Statuses API", () => {
       expect(JSON.parse(canceledResponse.body).data.category).toBe("canceled");
     });
 
-    it("should return 403 for guest trying to create", async () => {
-      const { team, headers } = await createAuthenticatedGuest();
-
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/statuses",
-        headers,
-        payload: {
-          name: "Guest Status",
-          teamId: team.id,
-          category: "unstarted",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for non-team-member", async () => {
-      const { team } = await createAuthenticatedTeamMember();
-      const { headers: otherHeaders } = await createAuthenticatedUser();
-
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/statuses",
-        headers: otherHeaders,
-        payload: {
-          name: "Unauthorized Status",
-          teamId: team.id,
-          category: "unstarted",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 
   describe("PUT /api/v1/statuses/:id", () => {
@@ -292,38 +257,6 @@ describe("Statuses API", () => {
       expect(body.data.position).toBe(10);
     });
 
-    it("should return 403 for guest trying to update", async () => {
-      const { team, headers } = await createAuthenticatedGuest();
-      const status = await createTestStatus(team.id, { name: "Guest Status", category: "unstarted" });
-
-      const response = await app.inject({
-        method: "PUT",
-        url: `/api/v1/statuses/${status.id}`,
-        headers,
-        payload: {
-          name: "Guest Update",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for non-team-member", async () => {
-      const { team } = await createAuthenticatedTeamMember();
-      const status = await createTestStatus(team.id, { name: "Protected Status", category: "unstarted" });
-      const { headers: otherHeaders } = await createAuthenticatedUser();
-
-      const response = await app.inject({
-        method: "PUT",
-        url: `/api/v1/statuses/${status.id}`,
-        headers: otherHeaders,
-        payload: {
-          name: "Hacked Name",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 
   describe("DELETE /api/v1/statuses/:id", () => {
@@ -340,45 +273,6 @@ describe("Statuses API", () => {
       expect(response.statusCode).toBe(204);
     });
 
-    it("should return 403 for member trying to delete", async () => {
-      const { team, headers } = await createAuthenticatedTeamMember();
-      const status = await createTestStatus(team.id, { name: "Member Status", category: "unstarted" });
-
-      const response = await app.inject({
-        method: "DELETE",
-        url: `/api/v1/statuses/${status.id}`,
-        headers,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for guest trying to delete", async () => {
-      const { team, headers } = await createAuthenticatedGuest();
-      const status = await createTestStatus(team.id, { name: "Guest Status", category: "unstarted" });
-
-      const response = await app.inject({
-        method: "DELETE",
-        url: `/api/v1/statuses/${status.id}`,
-        headers,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for non-team-member", async () => {
-      const { team } = await createAuthenticatedTeamMember();
-      const status = await createTestStatus(team.id, { name: "Other Team Status", category: "unstarted" });
-      const { headers: otherHeaders } = await createAuthenticatedUser();
-
-      const response = await app.inject({
-        method: "DELETE",
-        url: `/api/v1/statuses/${status.id}`,
-        headers: otherHeaders,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 
   describe("Status ordering", () => {

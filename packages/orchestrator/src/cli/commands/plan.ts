@@ -22,7 +22,7 @@ import chalk from "chalk";
 import ora, { type Ora } from "ora";
 import { getApiToken, getApiUrl } from "./auth.js";
 import { initConfig } from "../../config/index.js";
-import { SpecTreeClient, type Team } from "../../spectree/index.js";
+import { DispatcherClient, type Team } from "../../spectree/index.js";
 import { AcpClient, AcpSessionManager } from "../../acp/index.js";
 import {
   PlanGenerator,
@@ -236,7 +236,7 @@ function displayError(error: unknown, spinner?: Ora): void {
  * Resolve team from options, config, or interactive selection
  */
 async function resolveTeam(
-  client: SpecTreeClient,
+  client: DispatcherClient,
   teamOption?: string
 ): Promise<{ id: string; name: string }> {
   if (teamOption) {
@@ -364,7 +364,7 @@ export async function planCommand(
 
     // Step 2: Initialize clients
     const apiUrl = getApiUrl();
-    const client = new SpecTreeClient({ apiUrl, token });
+    const client = new DispatcherClient({ apiUrl, token });
     const acpClient = new AcpClient();
     const sessionManager = new AcpSessionManager(acpClient);
 

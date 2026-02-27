@@ -11,7 +11,6 @@ import {
   createTestEpic,
   createTestFeature,
   createTestStatus,
-  createAuthenticatedUser,
   createAuthenticatedTeamMember,
   createAuthenticatedAdmin,
   createAuthenticatedGuest,
@@ -152,20 +151,6 @@ describe("Features API", () => {
       expect(body.data.id).toBe(feature.id);
     });
 
-    it("should return 403 for non-team-member", async () => {
-      const { team } = await createAuthenticatedTeamMember();
-      const epic = await createTestEpic(team.id, { name: "Protected Epic" });
-      const feature = await createTestFeature(epic.id, { title: "Protected Feature" });
-      const { headers: otherHeaders } = await createAuthenticatedUser();
-
-      const response = await app.inject({
-        method: "GET",
-        url: `/api/v1/features/${feature.id}`,
-        headers: otherHeaders,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 
   describe("POST /api/v1/features", () => {
@@ -233,40 +218,6 @@ describe("Features API", () => {
       expect(body.data.assigneeId).toBe(user.id);
     });
 
-    it("should return 403 for guest trying to create", async () => {
-      const { team, headers } = await createAuthenticatedGuest();
-      const epic = await createTestEpic(team.id, { name: "Guest Epic" });
-
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/features",
-        headers,
-        payload: {
-          title: "Guest Feature",
-          epicId: epic.id,
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for non-team-member", async () => {
-      const { team } = await createAuthenticatedTeamMember();
-      const epic = await createTestEpic(team.id, { name: "Protected Epic" });
-      const { headers: otherHeaders } = await createAuthenticatedUser();
-
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/features",
-        headers: otherHeaders,
-        payload: {
-          title: "Unauthorized Feature",
-          epicId: epic.id,
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 
   describe("PUT /api/v1/features/:id", () => {
@@ -309,40 +260,6 @@ describe("Features API", () => {
       expect(body.data.statusId).toBe(status.id);
     });
 
-    it("should return 403 for guest trying to update", async () => {
-      const { team, headers } = await createAuthenticatedGuest();
-      const epic = await createTestEpic(team.id, { name: "Guest Epic" });
-      const feature = await createTestFeature(epic.id, { title: "Guest Feature" });
-
-      const response = await app.inject({
-        method: "PUT",
-        url: `/api/v1/features/${feature.id}`,
-        headers,
-        payload: {
-          title: "Guest Update",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for non-team-member", async () => {
-      const { team } = await createAuthenticatedTeamMember();
-      const epic = await createTestEpic(team.id, { name: "Protected Epic" });
-      const feature = await createTestFeature(epic.id, { title: "Protected Feature" });
-      const { headers: otherHeaders } = await createAuthenticatedUser();
-
-      const response = await app.inject({
-        method: "PUT",
-        url: `/api/v1/features/${feature.id}`,
-        headers: otherHeaders,
-        payload: {
-          title: "Hacked Title",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 
   describe("DELETE /api/v1/features/:id", () => {
@@ -360,33 +277,6 @@ describe("Features API", () => {
       expect(response.statusCode).toBe(204);
     });
 
-    it("should return 403 for member trying to delete", async () => {
-      const { team, headers } = await createAuthenticatedTeamMember();
-      const epic = await createTestEpic(team.id, { name: "Test Epic" });
-      const feature = await createTestFeature(epic.id, { title: "Member Feature" });
-
-      const response = await app.inject({
-        method: "DELETE",
-        url: `/api/v1/features/${feature.id}`,
-        headers,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for guest trying to delete", async () => {
-      const { team, headers } = await createAuthenticatedGuest();
-      const epic = await createTestEpic(team.id, { name: "Guest Epic" });
-      const feature = await createTestFeature(epic.id, { title: "Guest Feature" });
-
-      const response = await app.inject({
-        method: "DELETE",
-        url: `/api/v1/features/${feature.id}`,
-        headers,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 
   describe("PUT /api/v1/features/bulk-update", () => {

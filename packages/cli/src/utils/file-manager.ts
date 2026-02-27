@@ -13,18 +13,18 @@ export interface LocalManifest {
 export class FileManager {
   private manifestPath: string;
   private githubDir: string;
-  private spectreeDir: string;
+  private dispatcherDir: string;
 
   constructor(projectRoot?: string) {
     const root = projectRoot ?? process.cwd();
     this.githubDir = path.join(root, '.github');
-    this.spectreeDir = path.join(root, '.spectree');
-    this.manifestPath = path.join(this.spectreeDir, 'manifest.json');
+    this.dispatcherDir = path.join(root, '.dispatcher');
+    this.manifestPath = path.join(this.dispatcherDir, 'manifest.json');
   }
 
   async ensureDirectories(): Promise<void> {
     await fs.mkdir(this.githubDir, { recursive: true });
-    await fs.mkdir(this.spectreeDir, { recursive: true });
+    await fs.mkdir(this.dispatcherDir, { recursive: true });
   }
 
   async readManifest(): Promise<LocalManifest> {
@@ -69,7 +69,7 @@ export class FileManager {
     const os = await import('os');
 
     // Create a temporary directory for extraction
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'spectree-extract-'));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dispatcher-extract-'));
 
     try {
       // Write buffer to temp file
@@ -187,7 +187,7 @@ export class FileManager {
     return existsSync(this.githubDir);
   }
 
-  spectreeDirExists(): boolean {
-    return existsSync(this.spectreeDir);
+  dispatcherDirExists(): boolean {
+    return existsSync(this.dispatcherDir);
   }
 }

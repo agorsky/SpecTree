@@ -5,7 +5,7 @@ import semver from "semver";
 
 // Types for skill pack operations
 export interface CreateSkillPackInput {
-  name: string; // e.g., "@spectree/planning"
+  name: string; // e.g., "@dispatcher/planning"
   displayName: string;
   description?: string | undefined;
   authorName?: string | undefined;
@@ -83,7 +83,7 @@ export async function createSkillPack(
   // Validate name format (e.g., @scope/name or name)
   if (!/^(@[a-z0-9-]+\/)?[a-z0-9-]+$/.test(input.name)) {
     throw new ValidationError(
-      "Invalid skill pack name. Must be alphanumeric with hyphens, optionally scoped (e.g., '@spectree/planning')"
+      "Invalid skill pack name. Must be alphanumeric with hyphens, optionally scoped (e.g., '@dispatcher/planning')"
     );
   }
 
@@ -549,7 +549,7 @@ export async function bundleVersionFiles(
   const os = await import("os");
 
   // Create a temporary directory for the files
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "spectree-pack-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "dispatcher-pack-"));
 
   try {
     // Write all files to temp directory

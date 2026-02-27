@@ -62,7 +62,7 @@ export const listCommand = new Command('list')
         // Show only installed packs
         if (Object.keys(installedPacks).length === 0) {
           console.log(TableFormatter.warning('No packs installed'));
-          console.log(chalk.gray('\nInstall a pack: spectree install <pack-name>'));
+          console.log(chalk.gray('\nInstall a pack: dispatcher install <pack-name>'));
           return;
         }
 
@@ -136,7 +136,7 @@ export const listCommand = new Command('list')
         if (rows.length === 0) {
           console.log(TableFormatter.warning('No packs found'));
           console.log(
-            chalk.gray('\nInstall a pack: spectree install <pack-name>')
+            chalk.gray('\nInstall a pack: dispatcher install <pack-name>')
           );
           return;
         }
@@ -154,7 +154,7 @@ export const listCommand = new Command('list')
         console.log(chalk.gray(`Available: ${String(availableCount)}`));
         if (updatesAvailable > 0) {
           console.log(chalk.yellow(`Updates available: ${String(updatesAvailable)}`));
-          console.log(chalk.gray('\nRun: spectree update --yes'));
+          console.log(chalk.gray('\nRun: dispatcher update --yes'));
         }
       }
     } catch (error) {

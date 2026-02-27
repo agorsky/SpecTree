@@ -13,8 +13,8 @@ import { tasksCommand } from './commands/tasks.js';
 const program = new Command();
 
 program
-  .name('spectree')
-  .description('SpecTree CLI - Manage epics, requests, and Skill Packs')
+  .name('dispatcher')
+  .description('Dispatcher CLI - Manage epics, requests, and Skill Packs')
   .version('0.1.0');
 
 // Skill Pack commands

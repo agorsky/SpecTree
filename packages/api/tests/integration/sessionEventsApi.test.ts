@@ -21,8 +21,8 @@ import {
 } from "../fixtures/factories.js";
 import { generateAccessToken } from "../../src/utils/jwt.js";
 import { persistSessionEvent } from "../../src/services/sessionEventService.js";
-import { SessionEventType } from "@spectree/shared";
-import type { SessionEvent } from "@spectree/shared";
+import { SessionEventType } from "@dispatcher/shared";
+import type { SessionEvent } from "@dispatcher/shared";
 
 describe("GET /api/v1/sessions/:epicId/events", () => {
   let prisma: ReturnType<typeof getTestPrisma>;

@@ -3,7 +3,7 @@
  * 
  * Exports all skill pack schemas, types, and utilities.
  * NOTE: manifest-utils is NOT re-exported here because it uses Node.js fs/promises,
- * which breaks browser builds. Import it directly: "@spectree/shared/skill-packs/manifest-utils"
+ * which breaks browser builds. Import it directly: "@dispatcher/shared/skill-packs/manifest-utils"
  */
 
 // Schema and validation

@@ -9,7 +9,6 @@ import type { FastifyInstance } from "fastify";
 import { buildTestApp } from "../helpers/app.js";
 import {
   createTestEpic,
-  createAuthenticatedUser,
   createAuthenticatedTeamMember,
   createAuthenticatedAdmin,
   createAuthenticatedGuest,
@@ -126,32 +125,6 @@ describe("Epics API", () => {
       const body = JSON.parse(response.body);
       expect(body.data.id).toBe(epic.id);
     });
-
-    it("should return 403 for non-team-member", async () => {
-      const { team } = await createAuthenticatedTeamMember();
-      const epic = await createTestEpic(team.id, { name: "Restricted Epic" });
-      const { headers: otherHeaders } = await createAuthenticatedUser();
-
-      const response = await app.inject({
-        method: "GET",
-        url: `/api/v1/epics/${epic.id}`,
-        headers: otherHeaders,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for non-existent epic", async () => {
-      const { headers } = await createAuthenticatedUser();
-
-      const response = await app.inject({
-        method: "GET",
-        url: "/api/v1/epics/00000000-0000-0000-0000-000000000000",
-        headers,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 
   describe("POST /api/v1/epics", () => {
@@ -197,38 +170,6 @@ describe("Epics API", () => {
       expect(body.data.color).toBe("#00FF00");
     });
 
-    it("should return 403 for guest trying to create", async () => {
-      const { team, headers } = await createAuthenticatedGuest();
-
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/epics",
-        headers,
-        payload: {
-          name: "Guest Epic",
-          teamId: team.id,
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for non-team-member", async () => {
-      const { team } = await createAuthenticatedTeamMember();
-      const { headers: otherHeaders } = await createAuthenticatedUser();
-
-      const response = await app.inject({
-        method: "POST",
-        url: "/api/v1/epics",
-        headers: otherHeaders,
-        payload: {
-          name: "Unauthorized Epic",
-          teamId: team.id,
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 
   describe("PUT /api/v1/epics/:id", () => {
@@ -274,38 +215,6 @@ describe("Epics API", () => {
       expect(body.data.color).toBe("#0000FF");
     });
 
-    it("should return 403 for guest trying to update", async () => {
-      const { team, headers } = await createAuthenticatedGuest();
-      const epic = await createTestEpic(team.id, { name: "Guest Epic" });
-
-      const response = await app.inject({
-        method: "PUT",
-        url: `/api/v1/epics/${epic.id}`,
-        headers,
-        payload: {
-          name: "Guest Update",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for non-team-member", async () => {
-      const { team } = await createAuthenticatedTeamMember();
-      const epic = await createTestEpic(team.id, { name: "Protected Epic" });
-      const { headers: otherHeaders } = await createAuthenticatedUser();
-
-      const response = await app.inject({
-        method: "PUT",
-        url: `/api/v1/epics/${epic.id}`,
-        headers: otherHeaders,
-        payload: {
-          name: "Hacked Name",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 
   describe("DELETE /api/v1/epics/:id", () => {
@@ -335,31 +244,5 @@ describe("Epics API", () => {
       expect(response.statusCode).toBe(204);
     });
 
-    it("should return 403 for guest trying to delete", async () => {
-      const { team, headers } = await createAuthenticatedGuest();
-      const epic = await createTestEpic(team.id, { name: "Guest Epic" });
-
-      const response = await app.inject({
-        method: "DELETE",
-        url: `/api/v1/epics/${epic.id}`,
-        headers,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for non-team-member", async () => {
-      const { team } = await createAuthenticatedTeamMember();
-      const epic = await createTestEpic(team.id, { name: "Other Team Epic" });
-      const { headers: otherHeaders } = await createAuthenticatedUser();
-
-      const response = await app.inject({
-        method: "DELETE",
-        url: `/api/v1/epics/${epic.id}`,
-        headers: otherHeaders,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 });

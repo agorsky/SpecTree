@@ -11,11 +11,11 @@ permissions:
   contents: read
 
 env:
-  ACR_NAME: acrspectreedev
-  RESOURCE_GROUP: rg-spectree-dev
-  API_CONTAINER_APP: ca-spectree-dev
-  WEB_CONTAINER_APP: ca-spectree-web-dev
-  SQL_SERVER: sql-spectree-dev
+  ACR_NAME: acrdispatcherdev
+  RESOURCE_GROUP: rg-dispatcher-dev
+  API_CONTAINER_APP: ca-dispatcher-dev
+  WEB_CONTAINER_APP: ca-dispatcher-web-dev
+  SQL_SERVER: sql-dispatcher-dev
 
 jobs:
   test:
@@ -34,7 +34,7 @@ jobs:
         run: pnpm install
 
       - name: Lint
-        run: pnpm turbo run lint --filter='@spectree/shared' --filter='@ttc-ggi/spectree-cli' --filter='@ttc-ggi/spectree-mcp'
+        run: pnpm turbo run lint --filter='@dispatcher/shared' --filter='@ttc-ggi/dispatcher-cli' --filter='@ttc-ggi/dispatcher-mcp'
 
       - name: Type check
         run: pnpm typecheck
@@ -79,7 +79,7 @@ jobs:
 
       - name: Install dependencies (for schema migration)
         if: steps.schema-check.outputs.changed == 'true'
-        run: pnpm install --filter @spectree/api
+        run: pnpm install --filter @dispatcher/api
 
       - name: Azure Login
         uses: azure/login@v2
@@ -96,23 +96,23 @@ jobs:
           VERSION=${{ github.sha }}
 
           docker build -f packages/api/Dockerfile.azure \
-            -t ${{ env.ACR_NAME }}.azurecr.io/spectree-api:$VERSION \
-            -t ${{ env.ACR_NAME }}.azurecr.io/spectree-api:latest .
+            -t ${{ env.ACR_NAME }}.azurecr.io/dispatcher-api:$VERSION \
+            -t ${{ env.ACR_NAME }}.azurecr.io/dispatcher-api:latest .
 
-          docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-api:$VERSION
-          docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-api:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/dispatcher-api:$VERSION
+          docker push ${{ env.ACR_NAME }}.azurecr.io/dispatcher-api:latest
 
       - name: Build and push Web image
         run: |
           VERSION=${{ github.sha }}
 
           docker build -f packages/web/Dockerfile \
-            -t ${{ env.ACR_NAME }}.azurecr.io/spectree-web:$VERSION \
-            -t ${{ env.ACR_NAME }}.azurecr.io/spectree-web:latest \
+            -t ${{ env.ACR_NAME }}.azurecr.io/dispatcher-web:$VERSION \
+            -t ${{ env.ACR_NAME }}.azurecr.io/dispatcher-web:latest \
             --build-arg VITE_API_URL=${{ secrets.API_URL }} .
 
-          docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-web:$VERSION
-          docker push ${{ env.ACR_NAME }}.azurecr.io/spectree-web:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/dispatcher-web:$VERSION
+          docker push ${{ env.ACR_NAME }}.azurecr.io/dispatcher-web:latest
 
       - name: Deploy schema to Azure SQL
         if: steps.schema-check.outputs.changed == 'true'
@@ -159,20 +159,20 @@ jobs:
           az containerapp update \
             --name ${{ env.API_CONTAINER_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_NAME }}.azurecr.io/spectree-api:${{ github.sha }}
+            --image ${{ env.ACR_NAME }}.azurecr.io/dispatcher-api:${{ github.sha }}
 
       - name: Deploy Web to Container Apps
         run: |
           az containerapp update \
             --name ${{ env.WEB_CONTAINER_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_NAME }}.azurecr.io/spectree-web:${{ github.sha }}
+            --image ${{ env.ACR_NAME }}.azurecr.io/dispatcher-web:${{ github.sha }}
 
       - name: Purge Front Door Cache
         run: |
           # Only purge if Front Door profile exists
-          FD_PROFILE="afd-spectree-dev"
-          FD_ENDPOINT="ep-spectree-dev"
+          FD_PROFILE="afd-dispatcher-dev"
+          FD_ENDPOINT="ep-dispatcher-dev"
           if az afd profile show --profile-name "$FD_PROFILE" --resource-group ${{ env.RESOURCE_GROUP }} &>/dev/null; then
             echo "Purging Front Door cache..."
             az afd endpoint purge \

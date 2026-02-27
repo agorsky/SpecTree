@@ -63,6 +63,9 @@ vi.mock('../../src/utils/dateParser.js', () => ({
 // Mock events
 vi.mock('../../src/events/index.js', () => ({
   emitStatusChanged: vi.fn(),
+  emitEntityCreated: vi.fn(),
+  emitEntityUpdated: vi.fn(),
+  emitEntityDeleted: vi.fn(),
 }));
 
 import { prisma } from '../../src/lib/db.js';
@@ -102,7 +105,13 @@ describe('featureService', () => {
         take: 21,
         where: {},
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-        include: { _count: { select: { tasks: true } }, assignee: true, status: true },
+        include: {
+          _count: { select: { tasks: true } },
+          status: true,
+          assignee: true,
+          creator: { select: { id: true, name: true, email: true } },
+          implementer: { select: { id: true, name: true, email: true } },
+        },
       });
     });
 
@@ -125,7 +134,13 @@ describe('featureService', () => {
         skip: 1,
         where: {},
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-        include: { _count: { select: { tasks: true } }, assignee: true, status: true },
+        include: {
+          _count: { select: { tasks: true } },
+          status: true,
+          assignee: true,
+          creator: { select: { id: true, name: true, email: true } },
+          implementer: { select: { id: true, name: true, email: true } },
+        },
       });
     });
 
@@ -343,6 +358,8 @@ describe('featureService', () => {
               teamId: true,
             },
           },
+          creator: { select: { id: true, name: true, email: true } },
+          implementer: { select: { id: true, name: true, email: true } },
         },
       });
     });
@@ -371,6 +388,8 @@ describe('featureService', () => {
               teamId: true,
             },
           },
+          creator: { select: { id: true, name: true, email: true } },
+          implementer: { select: { id: true, name: true, email: true } },
         },
       });
     });

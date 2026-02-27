@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import chalk from 'chalk';
 import Table from 'cli-table3';
-import { SpecTreeApiClient } from '../utils/spectree-api-client.js';
+import { DispatcherApiClient } from '../utils/spectree-api-client.js';
 
 interface RequestsListOptions {
   status?: string;
@@ -55,12 +55,12 @@ requestsCommand
   .command('list')
   .description('List epic requests')
   .option('--status <status>', 'Filter by status (pending|approved|rejected|converted)')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (options: RequestsListOptions) => {
     const spinner = ora('Fetching epic requests...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const params: { status?: string } = {};
       if (options.status) params.status = options.status;
       const result = await client.listEpicRequests(params);
@@ -107,12 +107,12 @@ requestsCommand
   .command('get')
   .description('Get epic request details')
   .argument('<id>', 'Epic request ID')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (id: string, options: RequestsGetOptions) => {
     const spinner = ora('Fetching epic request...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const result = await client.getEpicRequest(id);
       spinner.stop();
 
@@ -154,12 +154,12 @@ requestsCommand
   .requiredOption('--impact <impact>', 'Impact assessment')
   .option('--scope <scope>', 'Scope: personal or team (default: team)')
   .option('--effort <effort>', 'Estimated effort')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (options: RequestsCreateOptions) => {
     const spinner = ora('Creating epic request...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const structuredDesc: {
         problemStatement: string;
         proposedSolution: string;
@@ -196,12 +196,12 @@ requestsCommand
   .command('approve')
   .description('Approve an epic request')
   .argument('<id>', 'Epic request ID')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (id: string, options: RequestsApproveOptions) => {
     const spinner = ora('Approving epic request...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const result = await client.approveEpicRequest(id);
       spinner.succeed(chalk.green(`Epic request approved: ${result.data.title}`));
     } catch (error) {
@@ -217,12 +217,12 @@ requestsCommand
   .description('Reject an epic request')
   .argument('<id>', 'Epic request ID')
   .option('--reason <reason>', 'Rejection reason')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (id: string, options: RequestsRejectOptions) => {
     const spinner = ora('Rejecting epic request...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const result = await client.rejectEpicRequest(id, options.reason);
       spinner.succeed(chalk.red(`Epic request rejected: ${result.data.title}`));
     } catch (error) {

@@ -1,4 +1,4 @@
-# SpecTree
+# Dispatcher
 
 Project Management & Issue Tracking Platform
 
@@ -8,8 +8,8 @@ Project Management & Issue Tracking Platform
 - [What's New (v0.2.0)](#whats-new-v020)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
-  - [Using SpecTree in Your Project](#using-spectree-in-your-project)
-  - [Developing SpecTree](#developing-spectree)
+  - [Using Dispatcher in Your Project](#using-spectree-in-your-project)
+  - [Developing Dispatcher](#developing-spectree)
 - [Project Structure](#project-structure)
 - [Environment Variables](#environment-variables)
 - [Development](#development)
@@ -22,7 +22,7 @@ Project Management & Issue Tracking Platform
 
 ## Overview
 
-SpecTree is a Linear-inspired project management tool with support for:
+Dispatcher is a Linear-inspired project management tool with support for:
 
 - **Team-based collaboration** — Organize work into teams with role-based access (admin, member, guest)
 - **Personal scopes** — Private workspace for personal projects and tasks not shared with any team
@@ -48,7 +48,7 @@ Full release notes: [`docs/whats-new/v0.2.0.md`](./docs/whats-new/v0.2.0.md)
 
 ### Identity & Collaboration Model
 
-SpecTree implements an invite-only collaboration model:
+Dispatcher implements an invite-only collaboration model:
 
 | Concept | Description |
 |---------|-------------|
@@ -80,9 +80,9 @@ az --version      # Optional, for Azure deployment
 
 ## Quick Start
 
-### Using SpecTree in Your Project
+### Using Dispatcher in Your Project
 
-Install SpecTree's AI agents and MCP tools into any project to get AI-powered project management.
+Install Dispatcher's AI agents and MCP tools into any project to get AI-powered project management.
 
 #### Prerequisites
 
@@ -92,7 +92,7 @@ Install SpecTree's AI agents and MCP tools into any project to get AI-powered pr
 
 #### 1. Configure npm for GitHub Packages (one-time)
 
-SpecTree is distributed via GitHub Packages. Run these commands once:
+Dispatcher is distributed via GitHub Packages. Run these commands once:
 
 ```bash
 # Ensure your GitHub CLI session has package read access
@@ -107,13 +107,13 @@ npm config set //npm.pkg.github.com/:_authToken $(gh auth token)
 
 > **Note:** If you later run `gh auth login` or `gh auth refresh`, re-run the `npm config set .../:_authToken` command above to update the cached token.
 
-#### 2. Install SpecTree Skill Packs
+#### 2. Install Dispatcher Skill Packs
 
 ```bash
-npx @ttc-ggi/spectree-cli install @spectree/full --registry https://ca-spectree-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
+npx @ttc-ggi/dispatcher-cli install @dispatcher/full --registry https://ca-dispatcher-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
 ```
 
-This installs the full SpecTree Skill Pack suite including:
+This installs the full Dispatcher Skill Pack suite including:
 - **Planner** — Decompose requirements into structured epics
 - **Orchestrator** — Execute features with parallel AI agents
 - **Reviewer** — Validate implementations against acceptance criteria
@@ -121,7 +121,7 @@ This installs the full SpecTree Skill Pack suite including:
 
 #### 3. Configure GitHub Copilot MCP
 
-Add the SpecTree MCP server to your GitHub Copilot config:
+Add the Dispatcher MCP server to your GitHub Copilot config:
 
 **macOS/Linux:** `~/.config/github-copilot/config.json`
 **Windows:** `%APPDATA%\github-copilot\config.json`
@@ -130,11 +130,11 @@ Add the SpecTree MCP server to your GitHub Copilot config:
 {
   "mcp": {
     "servers": {
-      "spectree": {
+      "dispatcher": {
         "command": "npx",
-        "args": ["@ttc-ggi/spectree-mcp"],
+        "args": ["@ttc-ggi/dispatcher-mcp"],
         "env": {
-          "API_BASE_URL": "https://ca-spectree-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io",
+          "API_BASE_URL": "https://ca-dispatcher-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io",
           "API_TOKEN": "your-api-token-here"
         }
       }
@@ -144,7 +144,7 @@ Add the SpecTree MCP server to your GitHub Copilot config:
 ```
 
 **Get your API token:**
-1. Navigate to https://ca-spectree-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
+1. Navigate to https://ca-dispatcher-web-dev.happyground-5b47f2ba.eastus.azurecontainerapps.io
 2. Go to **Settings → API Tokens → Create Token**
 
 #### 4. Verify Installation
@@ -152,7 +152,7 @@ Add the SpecTree MCP server to your GitHub Copilot config:
 Open GitHub Copilot and test connectivity:
 
 ```
-@spectree list epics
+@dispatcher list epics
 ```
 
 **Expected:** A list of epics in your workspace (or an empty list if none exist yet).
@@ -175,14 +175,14 @@ Once installed, the typical workflow is:
 
 ---
 
-### Developing SpecTree
+### Developing Dispatcher
 
 To work on SpecTree itself, clone the repo and set up the development environment:
 
 ```bash
 # 1. Clone the repository
 git clone <repository-url>
-cd SpecTree
+cd Dispatcher
 
 # 2. Install dependencies
 pnpm install
@@ -683,7 +683,7 @@ Add the MCP server to your Claude Code configuration (`~/.claude/settings.json` 
 ```json
 {
   "mcpServers": {
-    "spectree": {
+    "dispatcher": {
       "type": "stdio",
       "command": "node",
       "args": ["/path/to/SpecTree/packages/mcp/dist/index.js"],

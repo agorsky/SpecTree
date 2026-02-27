@@ -19,13 +19,13 @@ describe("Header navigation", () => {
     expect(screen.queryByText("About")).toBeNull();
   });
 
-  it("renders the SpecTree brand link", () => {
+  it("renders the Dispatcher brand link", () => {
     render(
       <MemoryRouter>
         <Header />
       </MemoryRouter>
     );
 
-    expect(screen.getByText("SpecTree")).toBeDefined();
+    expect(screen.getByText("Dispatcher")).toBeDefined();
   });
 });

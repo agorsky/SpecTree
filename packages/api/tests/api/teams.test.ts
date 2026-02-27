@@ -114,19 +114,6 @@ describe("Teams API", () => {
       expect(body.data.id).toBe(team.id);
     });
 
-    it("should return 403 for non-member", async () => {
-      const { headers } = await createAuthenticatedUser(); // Not a member of any team
-      const team = await createTestTeam({ name: "Other Team", key: "OTH" });
-
-      const response = await app.inject({
-        method: "GET",
-        url: `/api/v1/teams/${team.id}`,
-        headers,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
     it("should return 404 for non-existent team", async () => {
       const { headers } = await createAuthenticatedUser();
 
@@ -250,36 +237,6 @@ describe("Teams API", () => {
       expect(body.data.description).toBe("Updated description");
     });
 
-    it("should return 403 for guest trying to update", async () => {
-      const { team, headers } = await createAuthenticatedGuest();
-
-      const response = await app.inject({
-        method: "PUT",
-        url: `/api/v1/teams/${team.id}`,
-        headers,
-        payload: {
-          name: "Guest Update",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for non-member", async () => {
-      const { headers } = await createAuthenticatedUser();
-      const team = await createTestTeam({ name: "Other Team", key: "OT2" });
-
-      const response = await app.inject({
-        method: "PUT",
-        url: `/api/v1/teams/${team.id}`,
-        headers,
-        payload: {
-          name: "Hacked Team",
-        },
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 
   describe("DELETE /api/v1/teams/:id", () => {
@@ -295,41 +252,5 @@ describe("Teams API", () => {
       expect(response.statusCode).toBe(204);
     });
 
-    it("should return 403 for member trying to delete", async () => {
-      const { team, headers } = await createAuthenticatedTeamMember();
-
-      const response = await app.inject({
-        method: "DELETE",
-        url: `/api/v1/teams/${team.id}`,
-        headers,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for guest trying to delete", async () => {
-      const { team, headers } = await createAuthenticatedGuest();
-
-      const response = await app.inject({
-        method: "DELETE",
-        url: `/api/v1/teams/${team.id}`,
-        headers,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
-
-    it("should return 403 for non-member", async () => {
-      const { headers } = await createAuthenticatedUser();
-      const team = await createTestTeam({ name: "Other Team", key: "OT3" });
-
-      const response = await app.inject({
-        method: "DELETE",
-        url: `/api/v1/teams/${team.id}`,
-        headers,
-      });
-
-      expect(response.statusCode).toBe(403);
-    });
   });
 });

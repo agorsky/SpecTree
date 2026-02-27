@@ -1,5 +1,5 @@
 {
-  "name": "@spectree/api",
+  "name": "@dispatcher/api",
   "version": "0.2.0",
   "private": true,
   "description": "SpecTree API backend",
@@ -23,7 +23,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:backup": "mkdir -p ../../backups && cp prisma/data/spectree.db \"../../backups/spectree_$(date +%Y%m%d_%H%M%S).db\" && echo 'Backup created in backups/'",
-    "db:migrate": "echo '⚠️  WARNING: This may reset your database!' && echo 'Run db:backup first, then use: npx prisma migrate dev' && exit 1",
+    "db:migrate": "echo '\u26a0\ufe0f  WARNING: This may reset your database!' && echo 'Run db:backup first, then use: npx prisma migrate dev' && exit 1",
     "db:migrate:safe": "npm run db:backup && prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
@@ -43,14 +43,14 @@
     "@fastify/helmet": "^13.0.2",
     "@fastify/rate-limit": "^10.3.0",
     "@prisma/client": "^6.3.0",
-    "@spectree/shared": "workspace:*",
     "bcrypt": "^5.1.1",
     "dotenv": "^17.2.3",
     "fastify": "^5.2.0",
     "jsonwebtoken": "^9.0.3",
     "semver": "^7.7.4",
     "tar": "^7.5.9",
-    "zod": "^3.24.0"
+    "zod": "^3.24.0",
+    "@dispatcher/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

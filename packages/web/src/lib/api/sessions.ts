@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { SessionEvent } from '@spectree/shared';
+import type { SessionEvent } from '@dispatcher/shared';
 
 export type SessionStatus = 'active' | 'completed' | 'abandoned';
 

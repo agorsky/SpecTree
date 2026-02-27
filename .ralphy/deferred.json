@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "markdown:/Users/theclawfather/.openclaw/workspace/ENG-5-PRD.md:8": {
+      "count": 1,
+      "last": "2026-02-27T07:09:20.352Z",
+      "title": "Delete obsolete test files: packages/api/tests/integration/invitation-flow.test.ts, packages/api/tests/integration/userLifecycle.test.ts, packages/api/tests/integration/authActivation.test.ts. Delete or rewrite packages/api/tests/api/users.test.ts. Run npx vitest run --reporter=verbose in packages/api/ and fix cascade failures until all tests green."
+    }
+  }
+}

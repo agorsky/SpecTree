@@ -4,7 +4,7 @@ import { getSecret } from "../lib/secrets/index.js";
 
 /**
  * JWT utility functions for token generation and verification.
- * Used for authentication in the SpecTree API.
+ * Used for authentication in the Dispatcher API.
  */
 
 // Token expiration times

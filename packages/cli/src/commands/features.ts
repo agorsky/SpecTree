@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import chalk from 'chalk';
 import Table from 'cli-table3';
-import { SpecTreeApiClient } from '../utils/spectree-api-client.js';
+import { DispatcherApiClient } from '../utils/spectree-api-client.js';
 
 interface FeaturesListOptions {
   epic: string;
@@ -25,12 +25,12 @@ featuresCommand
   .description('List features for an epic')
   .requiredOption('--epic <id>', 'Epic ID')
   .option('--status <status>', 'Filter by status name')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (options: FeaturesListOptions) => {
     const spinner = ora('Fetching features...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const params: { status?: string } = {};
       if (options.status) params.status = options.status;
       const result = await client.listFeatures(options.epic, params);
@@ -85,12 +85,12 @@ featuresCommand
   .command('get')
   .description('Get feature details')
   .argument('<id>', 'Feature ID')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (id: string, options: FeaturesGetOptions) => {
     const spinner = ora('Fetching feature...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const result = await client.getFeature(id);
       spinner.stop();
 

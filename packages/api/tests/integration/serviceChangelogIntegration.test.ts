@@ -20,13 +20,17 @@ vi.mock("../../src/lib/db.js", () => ({
       create: vi.fn(),
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       update: vi.fn(),
+      count: vi.fn(),
     },
     task: {
       create: vi.fn(),
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       update: vi.fn(),
+      groupBy: vi.fn().mockResolvedValue([]),
     },
     team: {
       findUnique: vi.fn(),
@@ -35,6 +39,7 @@ vi.mock("../../src/lib/db.js", () => ({
     status: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      groupBy: vi.fn().mockResolvedValue([]),
     },
     user: {
       findUnique: vi.fn(),
@@ -54,6 +59,36 @@ vi.mock("../../src/utils/ordering.js", () => ({
 // Mock events
 vi.mock("../../src/events/index.js", () => ({
   emitStatusChanged: vi.fn(),
+  emitEntityCreated: vi.fn(),
+  emitEntityUpdated: vi.fn(),
+  emitEntityDeleted: vi.fn(),
+}));
+
+// Mock status service
+vi.mock("../../src/services/statusService.js", () => ({
+  resolveStatusesToIds: vi.fn().mockResolvedValue(["status-1"]),
+  getStatusIdsByCategory: vi.fn().mockResolvedValue(["status-1"]),
+  getDefaultBacklogStatus: vi.fn().mockResolvedValue({ id: "backlog-status-id", name: "Backlog" }),
+}));
+
+// Mock scope context utility
+vi.mock("../../src/utils/scopeContext.js", () => ({
+  getAccessibleScopes: vi.fn().mockResolvedValue({ personalScopeIds: [], teamIds: [] }),
+  hasAccessibleScopes: vi.fn().mockReturnValue(false),
+}));
+
+// Mock assignee utility
+vi.mock("../../src/utils/assignee.js", () => ({
+  resolveAssigneeId: vi.fn().mockResolvedValue("user-123"),
+  isAssigneeNone: vi.fn().mockReturnValue(false),
+  isAssigneeInvalid: vi.fn().mockReturnValue(false),
+  ASSIGNEE_NONE: Symbol("ASSIGNEE_NONE"),
+  ASSIGNEE_INVALID: Symbol("ASSIGNEE_INVALID"),
+}));
+
+// Mock date parser
+vi.mock("../../src/utils/dateParser.js", () => ({
+  buildDateFilters: vi.fn().mockReturnValue({}),
 }));
 
 import { prisma } from "../../src/lib/db.js";
@@ -246,11 +281,15 @@ describe("Service Changelog Integration", () => {
         id: "epic-1",
         teamId: "team-1",
         isArchived: false,
+        team: { key: "TEST" },
+        personalScopeId: null,
+        personalScope: null,
       };
 
       vi.mocked(prisma.epic.findUnique).mockResolvedValue(mockEpic as any);
       vi.mocked(prisma.feature.findMany).mockResolvedValue([]);
       vi.mocked(prisma.feature.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.feature.findUnique).mockResolvedValue(null);
       vi.mocked(prisma.feature.create).mockResolvedValue(mockFeature as any);
 
       // Spy on recordChange to verify it's called
@@ -332,11 +371,15 @@ describe("Service Changelog Integration", () => {
         id: "epic-1",
         teamId: "team-1",
         isArchived: false,
+        team: { key: "TEST" },
+        personalScopeId: null,
+        personalScope: null,
       };
 
       vi.mocked(prisma.epic.findUnique).mockResolvedValue(mockEpic as any);
       vi.mocked(prisma.feature.findMany).mockResolvedValue([]);
       vi.mocked(prisma.feature.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.feature.findUnique).mockResolvedValue(null);
       vi.mocked(prisma.feature.create).mockResolvedValue(mockFeature as any);
 
       // Make recordChange throw an error

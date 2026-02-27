@@ -44,7 +44,7 @@ export interface TokenWithUser extends ApiToken {
 
 /**
  * Generates a cryptographically secure random token with st_ prefix.
- * The prefix allows easy identification of SpecTree API tokens.
+ * The prefix allows easy identification of Dispatcher API tokens.
  *
  * @returns A random token string like "st_abc123xyz789..."
  */

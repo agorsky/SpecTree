@@ -10,7 +10,7 @@
  */
 
 import { prisma } from "../lib/db.js";
-import type { SessionEvent } from "@spectree/shared";
+import type { SessionEvent } from "@dispatcher/shared";
 
 // =============================================================================
 // Type Definitions

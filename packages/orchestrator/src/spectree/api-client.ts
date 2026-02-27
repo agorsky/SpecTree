@@ -1,7 +1,7 @@
 /**
- * SpecTree API Client for Orchestrator
+ * Dispatcher API Client for Orchestrator
  *
- * HTTP client for interacting with the SpecTree REST API.
+ * HTTP client for interacting with the Dispatcher REST API.
  * Features:
  * - Bearer token authentication
  * - Automatic retry with exponential backoff
@@ -12,11 +12,11 @@
 import {
   AuthError,
   NetworkError,
-  SpecTreeAPIError,
+  DispatcherAPIError,
   ErrorCode,
 } from "../errors.js";
 import { getApiUrl } from "../config/index.js";
-import type { SessionEvent } from "@spectree/shared";
+import type { SessionEvent } from "@dispatcher/shared";
 
 // =============================================================================
 // Types and Interfaces
@@ -566,7 +566,7 @@ export interface ReportBlockerInput {
 // Client Configuration
 // =============================================================================
 
-export interface SpecTreeClientOptions {
+export interface DispatcherClientOptions {
   apiUrl?: string;
   token: string;
   timeout?: number;
@@ -589,15 +589,15 @@ const DEFAULT_TIMEOUT = 30000;
 const RETRYABLE_ERROR_CODES = ["ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "ECONNRESET"];
 
 // =============================================================================
-// SpecTree API Client
+// Dispatcher API Client
 // =============================================================================
 
-export class SpecTreeClient {
+export class DispatcherClient {
   private baseUrl: string;
   private token: string;
   private timeout: number;
 
-  constructor(options: SpecTreeClientOptions) {
+  constructor(options: DispatcherClientOptions) {
     this.baseUrl = (options.apiUrl ?? getApiUrl()).replace(/\/$/, "");
     this.token = options.token;
     this.timeout = options.timeout ?? DEFAULT_TIMEOUT;
@@ -628,7 +628,7 @@ export class SpecTreeClient {
           headers: {
             Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json",
-            "User-Agent": "SpecTree-Orchestrator/1.0",
+            "User-Agent": "Dispatcher-Orchestrator/1.0",
           },
           signal: controller.signal,
         };
@@ -666,7 +666,7 @@ export class SpecTreeClient {
         }
 
         // Don't retry auth errors or validation errors
-        if (error instanceof AuthError || error instanceof SpecTreeAPIError) {
+        if (error instanceof AuthError || error instanceof DispatcherAPIError) {
           throw error;
         }
 
@@ -732,13 +732,13 @@ export class SpecTreeClient {
 
     // Not found
     if (status === 404) {
-      throw SpecTreeAPIError.notFound(endpoint, method, endpoint);
+      throw DispatcherAPIError.notFound(endpoint, method, endpoint);
     }
 
     // Validation errors
     if (status === 400 || status === 422) {
       const errors = this.extractValidationErrors(body);
-      throw SpecTreeAPIError.validationError(endpoint, method, errors);
+      throw DispatcherAPIError.validationError(endpoint, method, errors);
     }
 
     // Rate limiting - retryable
@@ -756,7 +756,7 @@ export class SpecTreeClient {
     }
 
     // Generic API error
-    throw new SpecTreeAPIError(message, endpoint, method, {
+    throw new DispatcherAPIError(message, endpoint, method, {
       statusCode: status,
     });
   }
@@ -1153,7 +1153,7 @@ export class SpecTreeClient {
       );
       return response.data;
     } catch (error) {
-      if (error instanceof SpecTreeAPIError && error.statusCode === 404) {
+      if (error instanceof DispatcherAPIError && error.statusCode === 404) {
         return null;
       }
       throw error;
@@ -1574,8 +1574,8 @@ export class SpecTreeClient {
 // =============================================================================
 
 /**
- * Create a new SpecTree client instance.
+ * Create a new Dispatcher client instance.
  */
-export function createSpecTreeClient(options: SpecTreeClientOptions): SpecTreeClient {
-  return new SpecTreeClient(options);
+export function createDispatcherClient(options: DispatcherClientOptions): DispatcherClient {
+  return new DispatcherClient(options);
 }

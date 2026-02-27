@@ -10,7 +10,7 @@ import {
   OrchestratorError,
   isNetworkError,
   isAuthError,
-  isSpecTreeAPIError,
+  isDispatcherAPIError,
 } from "../errors.js";
 
 // =============================================================================
@@ -270,7 +270,7 @@ export function isRetryable(
   }
 
   // SpecTree API errors - check status code
-  if (isSpecTreeAPIError(error)) {
+  if (isDispatcherAPIError(error)) {
     // 404, 400, 422 are not retryable
     if (error.statusCode !== undefined) {
       if (error.statusCode === 404 || error.statusCode === 400 || error.statusCode === 422) {
@@ -309,7 +309,7 @@ export function isRateLimitError(error: unknown): boolean {
   if (isNetworkError(error) && error.statusCode === 429) {
     return true;
   }
-  if (isSpecTreeAPIError(error) && error.statusCode === 429) {
+  if (isDispatcherAPIError(error) && error.statusCode === 429) {
     return true;
   }
   return false;

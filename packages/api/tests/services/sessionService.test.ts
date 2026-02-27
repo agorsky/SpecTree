@@ -15,6 +15,12 @@ vi.mock('../../src/lib/db.js', () => ({
     epic: {
       findFirst: vi.fn(),
     },
+    feature: {
+      findUnique: vi.fn(),
+    },
+    task: {
+      findUnique: vi.fn(),
+    },
   },
 }));
 

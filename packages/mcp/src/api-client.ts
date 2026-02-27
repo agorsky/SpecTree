@@ -1,7 +1,7 @@
 /**
- * HTTP API Client for SpecTree MCP
+ * HTTP API Client for Dispatcher MCP
  *
- * This module provides a type-safe HTTP client for communicating with the SpecTree API.
+ * This module provides a type-safe HTTP client for communicating with the Dispatcher API.
  * It replaces direct Prisma database calls with authenticated HTTP requests.
  *
  * Features:
@@ -1538,7 +1538,7 @@ export class ApiClient {
           headers: {
             Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json",
-            "User-Agent": "SpecTree-MCP/1.0",
+            "User-Agent": "Dispatcher-MCP/1.0",
             "X-MCP-Request": "true",
           },
         };

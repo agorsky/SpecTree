@@ -55,44 +55,38 @@ describe('mcpValidation middleware', () => {
     const reply = createMockReply();
 
     describe('non-MCP requests', () => {
-      it('should pass validation for non-MCP request without executionOrder', () => {
+      it('should pass validation for non-MCP request without executionOrder', async () => {
         const request = createMockRequest({}, {
           title: 'Test Feature',
           epicId: 'epic-123',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).not.toThrow();
+        await expect(validateMcpFeatureCreation(request, reply)).resolves.toBeUndefined();
       });
 
-      it('should pass validation for non-MCP request without estimatedComplexity', () => {
+      it('should pass validation for non-MCP request without estimatedComplexity', async () => {
         const request = createMockRequest({}, {
           title: 'Test Feature',
           epicId: 'epic-123',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).not.toThrow();
+        await expect(validateMcpFeatureCreation(request, reply)).resolves.toBeUndefined();
       });
     });
 
     describe('MCP requests - executionOrder validation', () => {
-      it('should fail when executionOrder is missing', () => {
+      it('should fail when executionOrder is missing', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
           estimatedComplexity: 'moderate',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).toThrow(ValidationError);
-        try {
-          validateMcpFeatureCreation(request, reply);
-        } catch (error) {
-          expect(error).toBeInstanceOf(ValidationError);
-          const validationError = error as ValidationError;
-          expect(validationError.message).toContain('executionOrder is required');
-        }
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(ValidationError);
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(/executionOrder is required/);
       });
 
-      it('should fail when executionOrder is null', () => {
+      it('should fail when executionOrder is null', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -100,10 +94,10 @@ describe('mcpValidation middleware', () => {
           estimatedComplexity: 'moderate',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).toThrow(ValidationError);
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(ValidationError);
       });
 
-      it('should fail when executionOrder is not a number', () => {
+      it('should fail when executionOrder is not a number', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -111,15 +105,11 @@ describe('mcpValidation middleware', () => {
           estimatedComplexity: 'moderate',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).toThrow(ValidationError);
-        try {
-          validateMcpFeatureCreation(request, reply);
-        } catch (error) {
-          expect((error as ValidationError).message).toContain('must be a positive integer');
-        }
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(ValidationError);
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(/must be a positive integer/);
       });
 
-      it('should fail when executionOrder is not an integer', () => {
+      it('should fail when executionOrder is not an integer', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -127,10 +117,10 @@ describe('mcpValidation middleware', () => {
           estimatedComplexity: 'moderate',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).toThrow(ValidationError);
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(ValidationError);
       });
 
-      it('should fail when executionOrder is zero', () => {
+      it('should fail when executionOrder is zero', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -138,10 +128,10 @@ describe('mcpValidation middleware', () => {
           estimatedComplexity: 'moderate',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).toThrow(ValidationError);
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(ValidationError);
       });
 
-      it('should fail when executionOrder is negative', () => {
+      it('should fail when executionOrder is negative', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -149,27 +139,23 @@ describe('mcpValidation middleware', () => {
           estimatedComplexity: 'moderate',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).toThrow(ValidationError);
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(ValidationError);
       });
     });
 
     describe('MCP requests - estimatedComplexity validation', () => {
-      it('should fail when estimatedComplexity is missing', () => {
+      it('should fail when estimatedComplexity is missing', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
           executionOrder: 1,
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).toThrow(ValidationError);
-        try {
-          validateMcpFeatureCreation(request, reply);
-        } catch (error) {
-          expect((error as ValidationError).message).toContain('estimatedComplexity is required');
-        }
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(ValidationError);
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(/estimatedComplexity is required/);
       });
 
-      it('should fail when estimatedComplexity is null', () => {
+      it('should fail when estimatedComplexity is null', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -177,10 +163,10 @@ describe('mcpValidation middleware', () => {
           estimatedComplexity: null,
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).toThrow(ValidationError);
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(ValidationError);
       });
 
-      it('should fail when estimatedComplexity is not a valid value', () => {
+      it('should fail when estimatedComplexity is not a valid value', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -188,17 +174,13 @@ describe('mcpValidation middleware', () => {
           estimatedComplexity: 'very-hard',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).toThrow(ValidationError);
-        try {
-          validateMcpFeatureCreation(request, reply);
-        } catch (error) {
-          expect((error as ValidationError).message).toContain('must be one of');
-        }
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(ValidationError);
+        await expect(validateMcpFeatureCreation(request, reply)).rejects.toThrow(/must be one of/);
       });
     });
 
     describe('MCP requests - successful validation', () => {
-      it('should pass with valid executionOrder and estimatedComplexity: trivial', () => {
+      it('should pass with valid executionOrder and estimatedComplexity: trivial', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -206,10 +188,10 @@ describe('mcpValidation middleware', () => {
           estimatedComplexity: 'trivial',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).not.toThrow();
+        await expect(validateMcpFeatureCreation(request, reply)).resolves.toBeUndefined();
       });
 
-      it('should pass with valid executionOrder and estimatedComplexity: simple', () => {
+      it('should pass with valid executionOrder and estimatedComplexity: simple', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -217,10 +199,10 @@ describe('mcpValidation middleware', () => {
           estimatedComplexity: 'simple',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).not.toThrow();
+        await expect(validateMcpFeatureCreation(request, reply)).resolves.toBeUndefined();
       });
 
-      it('should pass with valid executionOrder and estimatedComplexity: moderate', () => {
+      it('should pass with valid executionOrder and estimatedComplexity: moderate', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -228,10 +210,10 @@ describe('mcpValidation middleware', () => {
           estimatedComplexity: 'moderate',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).not.toThrow();
+        await expect(validateMcpFeatureCreation(request, reply)).resolves.toBeUndefined();
       });
 
-      it('should pass with valid executionOrder and estimatedComplexity: complex', () => {
+      it('should pass with valid executionOrder and estimatedComplexity: complex', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -239,12 +221,12 @@ describe('mcpValidation middleware', () => {
           estimatedComplexity: 'complex',
         });
 
-        expect(() => validateMcpFeatureCreation(request, reply)).not.toThrow();
+        await expect(validateMcpFeatureCreation(request, reply)).resolves.toBeUndefined();
       });
     });
 
     describe('error response format', () => {
-      it('should include field name in error details', () => {
+      it('should include field name in error details', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Feature',
           epicId: 'epic-123',
@@ -252,7 +234,8 @@ describe('mcpValidation middleware', () => {
         });
 
         try {
-          validateMcpFeatureCreation(request, reply);
+          await validateMcpFeatureCreation(request, reply);
+          expect.fail('Should have thrown');
         } catch (error) {
           expect(error).toBeInstanceOf(ValidationError);
           const validationError = error as ValidationError;
@@ -269,93 +252,90 @@ describe('mcpValidation middleware', () => {
     const reply = createMockReply();
 
     describe('non-MCP requests', () => {
-      it('should pass validation for non-MCP request without executionOrder', () => {
+      it('should pass validation for non-MCP request without executionOrder', async () => {
         const request = createMockRequest({}, {
           title: 'Test Task',
           featureId: 'feature-123',
         });
 
-        expect(() => validateMcpTaskCreation(request, reply)).not.toThrow();
+        await expect(validateMcpTaskCreation(request, reply)).resolves.toBeUndefined();
       });
     });
 
     describe('MCP requests - executionOrder validation', () => {
-      it('should fail when executionOrder is missing', () => {
+      it('should fail when executionOrder is missing', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Task',
           featureId: 'feature-123',
         });
 
-        expect(() => validateMcpTaskCreation(request, reply)).toThrow(ValidationError);
-        try {
-          validateMcpTaskCreation(request, reply);
-        } catch (error) {
-          expect((error as ValidationError).message).toContain('executionOrder is required');
-        }
+        await expect(validateMcpTaskCreation(request, reply)).rejects.toThrow(ValidationError);
+        await expect(validateMcpTaskCreation(request, reply)).rejects.toThrow(/executionOrder is required/);
       });
 
-      it('should fail when executionOrder is null', () => {
+      it('should fail when executionOrder is null', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Task',
           featureId: 'feature-123',
           executionOrder: null,
         });
 
-        expect(() => validateMcpTaskCreation(request, reply)).toThrow(ValidationError);
+        await expect(validateMcpTaskCreation(request, reply)).rejects.toThrow(ValidationError);
       });
 
-      it('should fail when executionOrder is not a number', () => {
+      it('should fail when executionOrder is not a number', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Task',
           featureId: 'feature-123',
           executionOrder: 'first',
         });
 
-        expect(() => validateMcpTaskCreation(request, reply)).toThrow(ValidationError);
+        await expect(validateMcpTaskCreation(request, reply)).rejects.toThrow(ValidationError);
       });
 
-      it('should fail when executionOrder is zero or negative', () => {
+      it('should fail when executionOrder is zero or negative', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Task',
           featureId: 'feature-123',
           executionOrder: 0,
         });
 
-        expect(() => validateMcpTaskCreation(request, reply)).toThrow(ValidationError);
+        await expect(validateMcpTaskCreation(request, reply)).rejects.toThrow(ValidationError);
       });
     });
 
     describe('MCP requests - successful validation', () => {
-      it('should pass with valid executionOrder', () => {
+      it('should pass with valid executionOrder', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Task',
           featureId: 'feature-123',
           executionOrder: 1,
         });
 
-        expect(() => validateMcpTaskCreation(request, reply)).not.toThrow();
+        await expect(validateMcpTaskCreation(request, reply)).resolves.toBeUndefined();
       });
 
-      it('should pass with higher executionOrder values', () => {
+      it('should pass with higher executionOrder values', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Task',
           featureId: 'feature-123',
           executionOrder: 100,
         });
 
-        expect(() => validateMcpTaskCreation(request, reply)).not.toThrow();
+        await expect(validateMcpTaskCreation(request, reply)).resolves.toBeUndefined();
       });
     });
 
     describe('error response format', () => {
-      it('should include field name and suggestion in error details', () => {
+      it('should include field name and suggestion in error details', async () => {
         const request = createMockRequest({ 'x-mcp-request': 'true' }, {
           title: 'Test Task',
           featureId: 'feature-123',
         });
 
         try {
-          validateMcpTaskCreation(request, reply);
+          await validateMcpTaskCreation(request, reply);
+          expect.fail('Should have thrown');
         } catch (error) {
           expect(error).toBeInstanceOf(ValidationError);
           const validationError = error as ValidationError;

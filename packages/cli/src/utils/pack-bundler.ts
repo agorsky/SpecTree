@@ -28,10 +28,10 @@ export class PackBundler {
   }
 
   async readPackManifest(): Promise<PackManifest> {
-    const manifestPath = path.join(this.packRoot, '.spectree', 'pack.json');
+    const manifestPath = path.join(this.packRoot, '.dispatcher', 'pack.json');
 
     if (!existsSync(manifestPath)) {
-      throw new Error('Pack manifest not found at .spectree/pack.json');
+      throw new Error('Pack manifest not found at .dispatcher/pack.json');
     }
 
     const content = await fs.readFile(manifestPath, 'utf-8');

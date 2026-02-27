@@ -17,8 +17,8 @@ import {
   getSessionEvents,
   type GetSessionEventsOptions,
 } from '../../src/services/sessionEventService.js';
-import { SessionEventType } from '@spectree/shared';
-import type { SessionEvent } from '@spectree/shared';
+import { SessionEventType } from '@dispatcher/shared';
+import type { SessionEvent } from '@dispatcher/shared';
 
 describe('sessionEventService', () => {
   beforeEach(() => {

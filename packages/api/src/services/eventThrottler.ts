@@ -10,8 +10,8 @@
  */
 
 import { EventEmitter } from "events";
-import type { SessionEvent } from "@spectree/shared";
-import { SessionEventType } from "@spectree/shared";
+import type { SessionEvent } from "@dispatcher/shared";
+import { SessionEventType } from "@dispatcher/shared";
 
 // Throttling configuration
 const MAX_EVENTS_PER_SECOND = 10;

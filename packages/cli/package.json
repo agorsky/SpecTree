@@ -1,5 +1,5 @@
 {
-  "name": "@ttc-ggi/spectree-cli",
+  "name": "@dispatcher/cli",
   "version": "0.1.5",
   "description": "SpecTree CLI - Install, update, and manage Skill Packs",
   "type": "module",
@@ -31,7 +31,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@spectree/shared": "workspace:*",
     "axios": "^1.7.0",
     "chalk": "^5.4.0",
     "cli-table3": "^0.6.5",
@@ -39,7 +38,8 @@
     "form-data": "^4.0.0",
     "ora": "^8.1.0",
     "semver": "^7.7.4",
-    "tar": "^7.5.9"
+    "tar": "^7.5.9",
+    "@dispatcher/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -124,11 +124,11 @@ export interface Task {
 // Client
 // ---------------------------------------------------------------------------
 
-export class SpecTreeApiClient {
+export class DispatcherApiClient {
   private client: AxiosInstance;
 
   constructor(baseUrl?: string, token?: string) {
-    const resolvedUrl = baseUrl ?? process.env.SPECTREE_API_URL ?? 'http://localhost:3001';
+    const resolvedUrl = baseUrl ?? process.env.DISPATCHER_API_URL ?? 'http://localhost:3001';
     const resolvedToken = token ?? process.env.SPECTREE_API_TOKEN;
 
     if (!resolvedToken) {
@@ -269,7 +269,7 @@ export class SpecTreeApiClient {
         throw new Error(`API error (${String(status)}): ${msg}`);
       }
       if (axiosErr.code === 'ECONNREFUSED') {
-        throw new Error('Cannot connect to SpecTree API. Is the server running?');
+        throw new Error('Cannot connect to Dispatcher API. Is the server running?');
       }
       throw err;
     }

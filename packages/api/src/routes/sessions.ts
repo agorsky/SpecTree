@@ -31,7 +31,7 @@ import {
   type EpicIdParam,
   type SessionEventsQuery,
 } from "../schemas/session-events.js";
-import type { SessionEvent } from "@spectree/shared";
+import type { SessionEvent } from "@dispatcher/shared";
 
 // =============================================================================
 // Request Type Definitions

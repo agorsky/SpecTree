@@ -13,7 +13,7 @@ import chalk from "chalk";
 import ora, { type Ora } from "ora";
 import { getApiToken, getApiUrl } from "./auth.js";
 import {
-  SpecTreeClient,
+  DispatcherClient,
   type Epic,
   type Feature,
   type Session,
@@ -310,7 +310,7 @@ function setupProgressHandlers(orchestrator: Orchestrator): void {
  * Find an epic by name or ID
  */
 async function findEpic(
-  client: SpecTreeClient,
+  client: DispatcherClient,
   epicQuery: string
 ): Promise<Epic | null> {
   // First, try to get by ID directly (if it looks like a UUID)
@@ -424,7 +424,7 @@ export async function continueCommand(
 
     // Step 2: Initialize client
     const apiUrl = getApiUrl();
-    const client = new SpecTreeClient({ apiUrl, token });
+    const client = new DispatcherClient({ apiUrl, token });
 
     spinner.text = `Finding epic "${epicQuery}"...`;
 

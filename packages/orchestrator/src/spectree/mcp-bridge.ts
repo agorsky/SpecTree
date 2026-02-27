@@ -1,7 +1,7 @@
 /**
  * MCP Bridge for Copilot SDK Tools
  *
- * Wraps SpecTree API operations as tools compatible with the GitHub Copilot SDK.
+ * Wraps Dispatcher API operations as tools compatible with the GitHub Copilot SDK.
  * These tools are provided to AI agents during task execution.
  *
  * Agent Tools (11):
@@ -24,7 +24,7 @@
 
 import { defineTool, type Tool } from "@github/copilot-sdk";
 import {
-  SpecTreeClient,
+  DispatcherClient,
   type Task,
   type Feature,
   type LogProgressInput,
@@ -461,7 +461,7 @@ function errorResult(error: unknown): ToolResult {
 /**
  * Create the log_progress tool
  */
-function createLogProgressTool(client: SpecTreeClient): Tool<LogProgressArgs> {
+function createLogProgressTool(client: DispatcherClient): Tool<LogProgressArgs> {
   return defineTool("log_progress", {
     description:
       "Report incremental progress on a feature or task without changing its status. " +
@@ -496,7 +496,7 @@ function createLogProgressTool(client: SpecTreeClient): Tool<LogProgressArgs> {
 /**
  * Create the log_decision tool
  */
-function createLogDecisionTool(client: SpecTreeClient): Tool<LogDecisionArgs> {
+function createLogDecisionTool(client: DispatcherClient): Tool<LogDecisionArgs> {
   return defineTool("log_decision", {
     description:
       "Record an implementation decision with its rationale. Use this to preserve " +
@@ -544,7 +544,7 @@ function createLogDecisionTool(client: SpecTreeClient): Tool<LogDecisionArgs> {
 /**
  * Create the link_code_file tool
  */
-function createLinkCodeFileTool(client: SpecTreeClient): Tool<LinkCodeFileArgs> {
+function createLinkCodeFileTool(client: DispatcherClient): Tool<LinkCodeFileArgs> {
   return defineTool("link_code_file", {
     description:
       "Link a file to a feature or task. Records which files are involved in " +
@@ -581,7 +581,7 @@ function createLinkCodeFileTool(client: SpecTreeClient): Tool<LinkCodeFileArgs> 
 /**
  * Create the get_task_context tool
  */
-function createGetTaskContextTool(client: SpecTreeClient): Tool<GetTaskContextArgs> {
+function createGetTaskContextTool(client: DispatcherClient): Tool<GetTaskContextArgs> {
   return defineTool("get_task_context", {
     description:
       "Get detailed context for a task including its title, description, acceptance criteria, " +
@@ -624,7 +624,7 @@ function createGetTaskContextTool(client: SpecTreeClient): Tool<GetTaskContextAr
 /**
  * Create the get_code_context tool
  */
-function createGetCodeContextTool(client: SpecTreeClient): Tool<GetCodeContextArgs> {
+function createGetCodeContextTool(client: DispatcherClient): Tool<GetCodeContextArgs> {
   return defineTool("get_code_context", {
     description:
       "Get all code artifacts linked to a feature or task. Returns files involved, " +
@@ -676,7 +676,7 @@ function createGetCodeContextTool(client: SpecTreeClient): Tool<GetCodeContextAr
 /**
  * Create the report_blocker tool
  */
-function createReportBlockerTool(client: SpecTreeClient): Tool<ReportBlockerArgs> {
+function createReportBlockerTool(client: DispatcherClient): Tool<ReportBlockerArgs> {
   return defineTool("report_blocker", {
     description:
       "Report that a feature or task is blocked and cannot proceed. Use this when you " +
@@ -710,7 +710,7 @@ function createReportBlockerTool(client: SpecTreeClient): Tool<ReportBlockerArgs
 /**
  * Create the get_ai_context tool
  */
-function createGetAiContextTool(client: SpecTreeClient): Tool<GetAiContextArgs> {
+function createGetAiContextTool(client: DispatcherClient): Tool<GetAiContextArgs> {
   return defineTool("get_ai_context", {
     description:
       "Retrieve AI context from previous sessions. Returns structured context that " +
@@ -747,7 +747,7 @@ function createGetAiContextTool(client: SpecTreeClient): Tool<GetAiContextArgs> 
 /**
  * Create the append_ai_note tool
  */
-function createAppendAiNoteTool(client: SpecTreeClient): Tool<AppendAiNoteArgs> {
+function createAppendAiNoteTool(client: DispatcherClient): Tool<AppendAiNoteArgs> {
   return defineTool("append_ai_note", {
     description:
       "Append a note to a feature or task's AI notes array. Notes are never overwritten, " +
@@ -790,7 +790,7 @@ function createAppendAiNoteTool(client: SpecTreeClient): Tool<AppendAiNoteArgs> 
 /**
  * Create the run_validation tool
  */
-function createRunValidationTool(client: SpecTreeClient): Tool<RunValidationArgs> {
+function createRunValidationTool(client: DispatcherClient): Tool<RunValidationArgs> {
   return defineTool("run_validation", {
     description:
       "Run a single validation check and update its status. Returns the result " +
@@ -830,7 +830,7 @@ function createRunValidationTool(client: SpecTreeClient): Tool<RunValidationArgs
 /**
  * Create the run_all_validations tool
  */
-function createRunAllValidationsTool(client: SpecTreeClient): Tool<RunAllValidationsArgs> {
+function createRunAllValidationsTool(client: DispatcherClient): Tool<RunAllValidationsArgs> {
   return defineTool("run_all_validations", {
     description:
       "Run all validation checks for a task. Returns a summary with pass/fail counts " +
@@ -875,7 +875,7 @@ function createRunAllValidationsTool(client: SpecTreeClient): Tool<RunAllValidat
 /**
  * Create the get_structured_description tool
  */
-function createGetStructuredDescriptionTool(client: SpecTreeClient): Tool<GetStructuredDescriptionArgs> {
+function createGetStructuredDescriptionTool(client: DispatcherClient): Tool<GetStructuredDescriptionArgs> {
   return defineTool("get_structured_description", {
     description:
       "Get the structured description for a feature or task. Returns parsed sections " +
@@ -950,7 +950,7 @@ export type AgentToolName = typeof agentToolNames[number];
  * @param client - SpecTree API client instance
  * @returns Array of Tool objects for SDK consumption
  */
-export function createAgentTools(client: SpecTreeClient): Tool<unknown>[] {
+export function createAgentTools(client: DispatcherClient): Tool<unknown>[] {
   return [
     createLogProgressTool(client) as Tool<unknown>,
     createLogDecisionTool(client) as Tool<unknown>,
@@ -975,7 +975,7 @@ export function createAgentTools(client: SpecTreeClient): Tool<unknown>[] {
  */
 export function createAgentTool(
   name: AgentToolName,
-  client: SpecTreeClient
+  client: DispatcherClient
 ): Tool<unknown> | undefined {
   switch (name) {
     case "log_progress":

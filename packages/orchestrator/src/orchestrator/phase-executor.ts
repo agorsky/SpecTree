@@ -36,13 +36,13 @@ import {
 } from "./agent-pool.js";
 import { BranchManager } from "../git/branch-manager.js";
 import type {
-  SpecTreeClient,
+  DispatcherClient,
   ExecutionItem,
   ExecutionPhase,
   Task,
 } from "../spectree/api-client.js";
 import { AgentError, OrchestratorError, wrapError } from "../errors.js";
-import { SessionEventType } from "@spectree/shared";
+import { SessionEventType } from "@dispatcher/shared";
 
 // =============================================================================
 // Types and Interfaces
@@ -97,7 +97,7 @@ export interface PhaseExecutorOptions {
   /** Branch manager for git operations */
   branchManager: BranchManager;
   /** SpecTree client for API operations */
-  specTreeClient: SpecTreeClient;
+  specTreeClient: DispatcherClient;
   /** Session ID for SpecTree progress tracking */
   sessionId?: string;
   /** Base branch to create feature branches from (default: auto-detect) */
@@ -149,7 +149,7 @@ export interface PhaseExecutorEvents {
 export class PhaseExecutor extends EventEmitter {
   private agentPool: AgentPool;
   private branchManager: BranchManager;
-  private specTreeClient: SpecTreeClient;
+  private specTreeClient: DispatcherClient;
   private sessionId: string | undefined;
   private baseBranch: string | undefined;
   private taskLevelAgents: boolean;

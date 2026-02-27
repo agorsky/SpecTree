@@ -1,4 +1,4 @@
-# SpecTree Self-Contained Local Deployment
+# Dispatcher Self-Contained Local Deployment
 # Run: docker-compose -f docker-compose.local.yml up -d
 # Reset: docker-compose -f docker-compose.local.yml down -v
 
@@ -10,7 +10,7 @@ services:
     build:
       context: .
       dockerfile: packages/api/Dockerfile.local
-    container_name: spectree-local-api
+    container_name: dispatcher-local-api
     restart: unless-stopped
     ports:
       - "3001:3001"
@@ -18,13 +18,13 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - HOST=0.0.0.0
-      - DATABASE_URL=file:/app/data/spectree.db
+      - DATABASE_URL=file:/app/data/dispatcher.db
       - JWT_SECRET=local-dev-jwt-secret-change-in-production
       - CORS_ORIGIN=http://localhost
-      - SPECTREE_PASSPHRASE=devpassphrase123
-      - SPECTREE_WEBHOOK_URL=http://host.docker.internal:7890
+      - DISPATCHER_PASSPHRASE=devpassphrase123
+      - DISPATCHER_WEBHOOK_URL=http://host.docker.internal:7890
     volumes:
-      - spectree-data:/app/data
+      - dispatcher-data:/app/data
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/health"]
       interval: 10s
@@ -39,7 +39,7 @@ services:
     build:
       context: .
       dockerfile: packages/web/Dockerfile
-    container_name: spectree-local-web
+    container_name: dispatcher-local-web
     restart: unless-stopped
     ports:
       - "80:80"
@@ -48,4 +48,4 @@ services:
         condition: service_healthy
 
 volumes:
-  spectree-data:
+  dispatcher-data:

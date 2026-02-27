@@ -1,4 +1,4 @@
-# SpecTree Local Development Environment
+# Dispatcher Local Development Environment
 # Run: docker-compose up -d
 
 services:
@@ -9,7 +9,7 @@ services:
     build:
       context: .
       dockerfile: packages/api/Dockerfile
-    container_name: spectree-api
+    container_name: dispatcher-api
     restart: unless-stopped
     ports:
       - "3001:3001"
@@ -18,9 +18,9 @@ services:
       - PORT=3001
       - HOST=0.0.0.0
       - CORS_ORIGIN=http://localhost:5173
-      - DATABASE_URL=file:/app/data/spectree.db
+      - DATABASE_URL=file:/app/data/dispatcher.db
     volumes:
-      - spectree-data:/app/data
+      - dispatcher-data:/app/data
     profiles:
       - full
 
@@ -31,7 +31,7 @@ services:
     build:
       context: .
       dockerfile: packages/web/Dockerfile
-    container_name: spectree-web
+    container_name: dispatcher-web
     restart: unless-stopped
     ports:
       - "80:80"
@@ -41,4 +41,4 @@ services:
       - full
 
 volumes:
-  spectree-data:
+  dispatcher-data:

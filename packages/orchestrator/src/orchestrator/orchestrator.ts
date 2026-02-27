@@ -35,7 +35,7 @@
 import { EventEmitter } from "events";
 import { AcpSessionManager, type AcpSession } from "../acp/index.js";
 import {
-  SpecTreeClient,
+  DispatcherClient,
   type ExecutionPlan,
   type ExecutionPhase,
   type ExecutionItem,
@@ -56,7 +56,7 @@ import { PhaseExecutor, type PhaseResult, type TaskProgressEvent } from "./phase
 import { AgentPool } from "./agent-pool.js";
 import { BranchManager } from "../git/branch-manager.js";
 import { MergeCoordinator } from "../git/merge-coordinator.js";
-import { SessionEventType } from "@spectree/shared";
+import { SessionEventType } from "@dispatcher/shared";
 
 // =============================================================================
 // Types and Interfaces
@@ -154,7 +154,7 @@ export interface ProgressEvent {
  */
 export interface OrchestratorOptions {
   /** SpecTree API client */
-  client: SpecTreeClient;
+  client: DispatcherClient;
   /** ACP session manager for creating sessions */
   sessionManager: AcpSessionManager;
   /** Maximum concurrent agents (default: 4) */
@@ -241,7 +241,7 @@ You MUST use the progress tracking tools to document your work. The task prompt 
  * parallel and sequential modes.
  */
 export class Orchestrator extends EventEmitter {
-  private client: SpecTreeClient;
+  private client: DispatcherClient;
   private sessionManager: AcpSessionManager;
   private maxAgents: number;
   private activeSession: AcpSession | null = null;

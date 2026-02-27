@@ -57,7 +57,12 @@ describe('epicService', () => {
         take: 21,
         where: { isArchived: false },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-        include: { _count: { select: { features: true } } },
+        include: {
+          _count: { select: { features: true } },
+          team: true,
+          creator: { select: { id: true, name: true, email: true } },
+          implementer: { select: { id: true, name: true, email: true } },
+        },
       });
     });
 
@@ -79,7 +84,12 @@ describe('epicService', () => {
         cursor: { id: 'cursor-id' },
         where: { isArchived: false },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-        include: { _count: { select: { features: true } } },
+        include: {
+          _count: { select: { features: true } },
+          team: true,
+          creator: { select: { id: true, name: true, email: true } },
+          implementer: { select: { id: true, name: true, email: true } },
+        },
       });
     });
 
@@ -156,7 +166,12 @@ describe('epicService', () => {
       expect(result).toEqual(mockEpic);
       expect(prisma.epic.findFirst).toHaveBeenCalledWith({
         where: { id: validUuid, isArchived: false },
-        include: { _count: { select: { features: true } } },
+        include: {
+          _count: { select: { features: true } },
+          team: { select: { id: true, name: true, key: true } },
+          creator: { select: { id: true, name: true, email: true } },
+          implementer: { select: { id: true, name: true, email: true } },
+        },
       });
     });
 
@@ -181,7 +196,12 @@ describe('epicService', () => {
       expect(result).toEqual(mockEpic);
       expect(prisma.epic.findFirst).toHaveBeenCalledWith({
         where: { name: 'My Epic', isArchived: false },
-        include: { _count: { select: { features: true } } },
+        include: {
+          _count: { select: { features: true } },
+          team: { select: { id: true, name: true, key: true } },
+          creator: { select: { id: true, name: true, email: true } },
+          implementer: { select: { id: true, name: true, email: true } },
+        },
       });
     });
   });

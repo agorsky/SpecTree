@@ -8,7 +8,7 @@
 import { prisma } from "../lib/db.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
 import { emitSessionEvent } from "../events/index.js";
-import { SessionEventType } from "@spectree/shared";
+import { SessionEventType } from "@dispatcher/shared";
 import type {
   StartSessionInput,
   EndSessionInput,

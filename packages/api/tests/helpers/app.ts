@@ -21,6 +21,7 @@ import authRoutes from "../../src/routes/auth.js";
 import tokensRoutes from "../../src/routes/tokens.js";
 import meRoutes from "../../src/routes/me.js";
 import userActivityRoutes from "../../src/routes/userActivity.js";
+import changelogRoutes from "../../src/routes/changelog.js";
 
 /**
  * Builds and configures a Fastify app instance for testing.
@@ -67,6 +68,7 @@ export async function buildTestApp(): Promise<FastifyInstance> {
   await fastify.register(tokensRoutes, { prefix: "/api/v1/tokens" });
   await fastify.register(meRoutes, { prefix: "/api/v1/me" });
   await fastify.register(userActivityRoutes, { prefix: "/api/v1/user-activity" });
+  await fastify.register(changelogRoutes, { prefix: "/api/v1/changelog" });
 
   // Health check endpoint (for testing)
   fastify.get("/health", () => {

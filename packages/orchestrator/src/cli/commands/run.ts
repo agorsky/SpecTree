@@ -18,7 +18,7 @@ import { resolve } from "path";
 import { getApiToken, getApiUrl } from "./auth.js";
 import { getDefaultTeam, initConfig } from "../../config/index.js";
 import {
-  SpecTreeClient,
+  DispatcherClient,
   type Team,
   type ExecutionPlan,
 } from "../../spectree/index.js";
@@ -316,7 +316,7 @@ function setupProgressHandlers(orchestrator: Orchestrator): void {
 /**
  * Prompt the user to select a team interactively
  */
-async function promptForTeam(client: SpecTreeClient): Promise<{ id: string; name: string }> {
+async function promptForTeam(client: DispatcherClient): Promise<{ id: string; name: string }> {
   const spinner = ora("Loading teams...").start();
 
   try {
@@ -364,7 +364,7 @@ async function promptForTeam(client: SpecTreeClient): Promise<{ id: string; name
  * Resolve team from options, config, or interactive selection
  */
 async function resolveTeam(
-  client: SpecTreeClient,
+  client: DispatcherClient,
   teamOption?: string
 ): Promise<{ id: string; name: string }> {
   // 1. Use explicit team option
@@ -552,7 +552,7 @@ export async function runCommand(
 
     // Step 2: Initialize clients
     const apiUrl = getApiUrl();
-    const client = new SpecTreeClient({ apiUrl, token });
+    const client = new DispatcherClient({ apiUrl, token });
     const acpClient = new AcpClient();
     const sessionManager = new AcpSessionManager(acpClient);
 
@@ -704,7 +704,7 @@ async function runEpicCommand(
 
     // Step 2: Initialize clients
     const apiUrl = getApiUrl();
-    const client = new SpecTreeClient({ apiUrl, token });
+    const client = new DispatcherClient({ apiUrl, token });
     const acpClient = new AcpClient();
     const sessionManager = new AcpSessionManager(acpClient);
 

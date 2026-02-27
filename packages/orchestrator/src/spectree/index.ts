@@ -1,16 +1,16 @@
 /**
- * SpecTree API Client Module
+ * Dispatcher API Client Module
  *
- * Provides the HTTP client for interacting with the SpecTree REST API,
+ * Provides the HTTP client for interacting with the Dispatcher REST API,
  * and MCP bridge tools for Copilot SDK integration.
  */
 
 export {
   // Client
-  SpecTreeClient,
-  createSpecTreeClient,
+  DispatcherClient,
+  createDispatcherClient,
   // Types
-  type SpecTreeClientOptions,
+  type DispatcherClientOptions,
   type PaginationMeta,
   type Team,
   type Status,

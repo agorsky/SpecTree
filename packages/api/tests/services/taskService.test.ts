@@ -59,6 +59,9 @@ vi.mock('../../src/utils/dateParser.js', () => ({
 // Mock events
 vi.mock('../../src/events/index.js', () => ({
   emitStatusChanged: vi.fn(),
+  emitEntityCreated: vi.fn(),
+  emitEntityUpdated: vi.fn(),
+  emitEntityDeleted: vi.fn(),
 }));
 
 import { prisma } from '../../src/lib/db.js';
@@ -101,6 +104,8 @@ describe('taskService', () => {
         include: {
           status: true,
           assignee: true,
+          creator: { select: { id: true, name: true, email: true } },
+          implementer: { select: { id: true, name: true, email: true } },
           feature: {
             select: {
               id: true,
@@ -309,6 +314,27 @@ describe('taskService', () => {
       expect(result).toEqual(mockTask);
       expect(prisma.task.findFirst).toHaveBeenCalledWith({
         where: { id: '550e8400-e29b-41d4-a716-446655440000' },
+        include: {
+          status: true,
+          assignee: true,
+          creator: { select: { id: true, name: true, email: true } },
+          implementer: { select: { id: true, name: true, email: true } },
+          feature: {
+            select: {
+              id: true,
+              identifier: true,
+              title: true,
+              epicId: true,
+              epic: {
+                select: {
+                  id: true,
+                  name: true,
+                  teamId: true,
+                },
+              },
+            },
+          },
+        },
       });
     });
 
@@ -326,6 +352,27 @@ describe('taskService', () => {
       expect(result).toEqual(mockTask);
       expect(prisma.task.findFirst).toHaveBeenCalledWith({
         where: { identifier: 'ENG-4-1' },
+        include: {
+          status: true,
+          assignee: true,
+          creator: { select: { id: true, name: true, email: true } },
+          implementer: { select: { id: true, name: true, email: true } },
+          feature: {
+            select: {
+              id: true,
+              identifier: true,
+              title: true,
+              epicId: true,
+              epic: {
+                select: {
+                  id: true,
+                  name: true,
+                  teamId: true,
+                },
+              },
+            },
+          },
+        },
       });
     });
 

@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 import chalk from 'chalk';
 import Table from 'cli-table3';
-import { SpecTreeApiClient } from '../utils/spectree-api-client.js';
+import { DispatcherApiClient } from '../utils/spectree-api-client.js';
 
 interface EpicsListOptions {
   team?: string;
@@ -31,12 +31,12 @@ epicsCommand
   .command('list')
   .description('List epics')
   .option('--team <key>', 'Filter by team ID or key')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (options: EpicsListOptions) => {
     const spinner = ora('Fetching epics...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const params: { teamId?: string } = {};
       if (options.team) {
         params.teamId = options.team;
@@ -83,12 +83,12 @@ epicsCommand
   .command('get')
   .description('Get epic details')
   .argument('<id-or-name>', 'Epic ID or name')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (idOrName: string, options: EpicsGetOptions) => {
     const spinner = ora('Fetching epic...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const result = await client.getEpic(idOrName);
       spinner.stop();
 
@@ -115,12 +115,12 @@ epicsCommand
   .requiredOption('--name <name>', 'Epic name')
   .requiredOption('--team <key>', 'Team ID or key')
   .option('--description <text>', 'Epic description')
-  .option('--url <url>', 'SpecTree API URL (or set SPECTREE_API_URL)')
+  .option('--url <url>', 'Dispatcher API URL (or set DISPATCHER_API_URL)')
   .option('--token <token>', 'API token (or set SPECTREE_API_TOKEN)')
   .action(async (options: EpicsCreateOptions) => {
     const spinner = ora('Creating epic...').start();
     try {
-      const client = new SpecTreeApiClient(options.url, options.token);
+      const client = new DispatcherApiClient(options.url, options.token);
       const input: { name: string; teamId: string; description?: string } = {
         name: options.name,
         teamId: options.team,

@@ -400,7 +400,7 @@ export class MergeConflictError extends OrchestratorError {
 /**
  * SpecTree API errors
  */
-export class SpecTreeAPIError extends OrchestratorError {
+export class DispatcherAPIError extends OrchestratorError {
   readonly endpoint: string;
   readonly method: string;
   readonly statusCode: number | undefined;
@@ -437,7 +437,7 @@ export class SpecTreeAPIError extends OrchestratorError {
 
     super(message, options?.code ?? ErrorCode.SPECTREE_API_ERROR, superOptions);
 
-    this.name = "SpecTreeAPIError";
+    this.name = "DispatcherAPIError";
     this.endpoint = endpoint;
     this.method = method;
     this.statusCode = options?.statusCode;
@@ -459,8 +459,8 @@ export class SpecTreeAPIError extends OrchestratorError {
     return result;
   }
 
-  static notFound(endpoint: string, method: string, resourceId: string): SpecTreeAPIError {
-    return new SpecTreeAPIError(
+  static notFound(endpoint: string, method: string, resourceId: string): DispatcherAPIError {
+    return new DispatcherAPIError(
       `Resource not found: ${resourceId}`,
       endpoint,
       method,
@@ -476,8 +476,8 @@ export class SpecTreeAPIError extends OrchestratorError {
     endpoint: string,
     method: string,
     errors: string[]
-  ): SpecTreeAPIError {
-    return new SpecTreeAPIError(
+  ): DispatcherAPIError {
+    return new DispatcherAPIError(
       `Validation failed: ${errors.join(", ")}`,
       endpoint,
       method,
@@ -579,10 +579,10 @@ export function isMergeConflictError(error: unknown): error is MergeConflictErro
 }
 
 /**
- * Check if an error is a SpecTreeAPIError
+ * Check if an error is a DispatcherAPIError
  */
-export function isSpecTreeAPIError(error: unknown): error is SpecTreeAPIError {
-  return error instanceof SpecTreeAPIError;
+export function isDispatcherAPIError(error: unknown): error is DispatcherAPIError {
+  return error instanceof DispatcherAPIError;
 }
 
 /**

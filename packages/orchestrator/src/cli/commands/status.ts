@@ -35,7 +35,7 @@ import {
   type CompletedItem,
 } from "../state.js";
 import { getApiToken, getApiUrl } from "./auth.js";
-import { SpecTreeClient, type Epic } from "../../spectree/api-client.js";
+import { DispatcherClient, type Epic } from "../../spectree/api-client.js";
 
 // =============================================================================
 // Types
@@ -257,7 +257,7 @@ async function displayEpicStatus(
   const spinner = ora("Loading epic status...").start();
 
   try {
-    const client = new SpecTreeClient({
+    const client = new DispatcherClient({
       apiUrl: getApiUrl(),
       token,
     });

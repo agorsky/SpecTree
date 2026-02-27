@@ -12,7 +12,7 @@ import {
   EVENT_PROGRESS_LOGGED,
   EVENT_SESSION,
 } from "./types.js";
-import type { SessionEvent } from "@spectree/shared";
+import type { SessionEvent } from "@dispatcher/shared";
 import { sessionEventThrottler } from "../services/eventThrottler.js";
 import { persistSessionEvent } from "../services/sessionEventService.js";
 

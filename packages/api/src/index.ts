@@ -118,7 +118,7 @@ async function main(): Promise<void> {
   // API routes
   fastify.get("/api/v1/status", () => {
     return {
-      name: "spectree-api",
+      name: "dispatcher-api",
       version: "0.1.0",
       environment: process.env.NODE_ENV ?? "development",
     };

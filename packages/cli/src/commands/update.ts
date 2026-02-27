@@ -32,7 +32,7 @@ export const updateCommand = new Command('update')
 
       if (Object.keys(installedPacks).length === 0) {
         spinner.info(chalk.yellow('No packs installed'));
-        console.log(chalk.gray('\nInstall a pack first: spectree install <pack-name>'));
+        console.log(chalk.gray('\nInstall a pack first: dispatcher install <pack-name>'));
         return;
       }
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { sessionsApi, type ProgressState } from '@/lib/api/sessions';
 import { sessionEventKeys } from './queries/session-event-keys';
-import type { SessionEvent } from '@spectree/shared';
+import type { SessionEvent } from '@dispatcher/shared';
 
 // Re-export ProgressState for backward compatibility
 export type { ProgressState };

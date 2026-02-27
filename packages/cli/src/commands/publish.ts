@@ -108,7 +108,7 @@ export const publishCommand = new Command('publish')
       );
 
       console.log(chalk.bold('\nInstall with:'));
-      console.log(chalk.cyan(`  spectree install ${packInfo.name}`));
+      console.log(chalk.cyan(`  dispatcher install ${packInfo.name}`));
     } catch (error) {
       spinner.fail(TableFormatter.error('Publish failed'));
 
@@ -122,11 +122,11 @@ export const publishCommand = new Command('publish')
           );
         } else if (error.message.includes('409') || error.message.includes('already exists')) {
           console.error(
-            chalk.yellow('\nTip: Version already published. Bump the version in .spectree/pack.json')
+            chalk.yellow('\nTip: Version already published. Bump the version in .dispatcher/pack.json')
           );
         } else if (error.message.includes('ENOENT')) {
           console.error(
-            chalk.yellow('\nTip: Make sure .spectree/pack.json exists with valid file references')
+            chalk.yellow('\nTip: Make sure .dispatcher/pack.json exists with valid file references')
           );
         }
       }

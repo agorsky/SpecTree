@@ -19,7 +19,7 @@ import ora from "ora";
 import { getApiToken, getApiUrl } from "./auth.js";
 import { initConfig } from "../../config/index.js";
 import {
-  SpecTreeClient,
+  DispatcherClient,
   type Feature,
   type RunAllValidationsResult,
 } from "../../spectree/api-client.js";
@@ -226,7 +226,7 @@ export async function validateCommand(
 
     // Step 2: Initialize client
     const apiUrl = getApiUrl();
-    const client = new SpecTreeClient({ apiUrl, token });
+    const client = new DispatcherClient({ apiUrl, token });
 
     spinner.text = "Resolving epic...";
 

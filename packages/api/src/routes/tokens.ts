@@ -1,5 +1,5 @@
 /**
- * API Token Routes for SpecTree API
+ * API Token Routes for Dispatcher API
  *
  * Provides endpoints for creating, listing, and revoking API tokens.
  * These long-lived tokens are used by MCP and other programmatic clients.

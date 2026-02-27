@@ -14,7 +14,7 @@
 
 import { AcpSessionManager } from "../acp/index.js";
 import {
-  SpecTreeClient,
+  DispatcherClient,
   type CreateEpicInput,
   type CreateFeatureInput,
   type CreateTaskInput,
@@ -343,9 +343,9 @@ export class PlanParsingError extends OrchestratorError {
  */
 export class PlanGenerator {
   private sessionManager: AcpSessionManager;
-  private spectreeClient: SpecTreeClient;
+  private spectreeClient: DispatcherClient;
 
-  constructor(spectreeClient: SpecTreeClient, sessionManager: AcpSessionManager) {
+  constructor(spectreeClient: DispatcherClient, sessionManager: AcpSessionManager) {
     this.spectreeClient = spectreeClient;
     this.sessionManager = sessionManager;
   }
@@ -1538,7 +1538,7 @@ export class PlanGenerator {
 export async function generatePlan(
   prompt: string,
   options: GeneratePlanOptions,
-  spectreeClient: SpecTreeClient,
+  spectreeClient: DispatcherClient,
   sessionManager: AcpSessionManager
 ): Promise<GeneratedPlan> {
   const generator = new PlanGenerator(spectreeClient, sessionManager);
