@@ -22,6 +22,7 @@ export * as decisionService from "./decisionService.js";
 export * as userActivityService from "./userActivityService.js";
 export * as changelogService from "./changelogService.js";
 export * as webhookService from "./webhookService.js";
+export * as agentScoreService from "./agentScoreService.js";
 export * as skillPackRegistryService from "./skill-pack-registry.js";
 
 // Re-export the database client
