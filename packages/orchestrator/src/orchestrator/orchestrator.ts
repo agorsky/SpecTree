@@ -825,7 +825,6 @@ export class Orchestrator extends EventEmitter {
    * Build handoff context from a previous session.
    * @internal Used for session resumption - may be called by subclasses
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected buildHandoffContext(session: SpecTreeSession): string {
     const parts: string[] = [];
 
@@ -919,7 +918,6 @@ export class Orchestrator extends EventEmitter {
    * Execute a single item (feature or task) directly with one agent.
    * @internal Used for testing and direct execution - may be called by subclasses
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected async executeItem(item: ExecutionItem, handoffContext?: string): Promise<ItemResult> {
     const startTime = Date.now();
 

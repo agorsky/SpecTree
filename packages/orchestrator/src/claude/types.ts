@@ -127,6 +127,24 @@ export interface ClaudeCodeClientOptions {
   inactivityTimeoutMs?: number;
 }
 
+/**
+ * Resolved configuration snapshot returned by ClaudeCodeClient.getConfig().
+ * All values reflect the resolved defaults (not the raw options).
+ */
+export interface ClaudeCodeClientConfig {
+  claudePath: string;
+  model: string | undefined;
+  skipPermissions: boolean;
+  mcpConfigPath: string | undefined;
+  systemPrompt: string | undefined;
+  appendSystemPrompt: string | undefined;
+  extraArgs: string[];
+  requestTimeout: number;
+  maxTurns: number | undefined;
+  allowedTools: string[] | undefined;
+  inactivityTimeout: number;
+}
+
 // ---------------------------------------------------------------------------
 // Session Types
 // ---------------------------------------------------------------------------
