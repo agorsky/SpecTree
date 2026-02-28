@@ -89,8 +89,9 @@ export async function authenticate(
   let token = extractBearerToken(authHeader);
 
   // Fallback to query param for SSE (EventSource cannot send custom headers)
-  if (!token && request.query && typeof (request.query as any).token === 'string') {
-    token = (request.query as any).token;
+  const query = request.query as Record<string, unknown> | undefined;
+  if (!token && query && typeof query.token === 'string') {
+    token = query.token;
   }
 
   if (!token) {

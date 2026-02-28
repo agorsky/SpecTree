@@ -11,6 +11,13 @@
 
 import { prisma } from "../lib/db.js";
 import type { SessionEvent } from "@dispatcher/shared";
+import {
+  SessionEventType,
+  isSessionLifecycleEvent,
+  isSessionPhaseEvent,
+  isSessionFeatureEvent,
+  isSessionTaskEvent,
+} from "@dispatcher/shared";
 
 // =============================================================================
 // Type Definitions
@@ -205,8 +212,12 @@ export async function getSessionEvents(
         epicId: dbEvent.epicId,
         sessionId: dbEvent.sessionId ?? "",
         timestamp: dbEvent.timestamp.toISOString(),
-        eventType: dbEvent.eventType as any,
-        payload: {} as any,
+        eventType: SessionEventType.SESSION_ERROR,
+        payload: {
+          errorCode: "PARSE_ERROR",
+          errorMessage: `Failed to parse event payload for event ${dbEvent.id}`,
+          recoverable: false,
+        },
       };
     }
   });
@@ -280,8 +291,8 @@ export function computeProgressState(events: SessionEvent[]): ProgressState {
   // Process events in chronological order
   for (const event of events) {
     // Extract epic-level totals from SESSION_STARTED
-    if (event.eventType === "SESSION_STARTED") {
-      const payload = event.payload as any;
+    if (isSessionLifecycleEvent(event) && event.eventType === SessionEventType.SESSION_STARTED) {
+      const { payload } = event;
       if (typeof payload.totalFeatures === "number") {
         epicTotalFeatures = payload.totalFeatures;
       }
@@ -289,49 +300,49 @@ export function computeProgressState(events: SessionEvent[]): ProgressState {
         epicTotalTasks = payload.totalTasks;
       }
     }
-    
+
     // Track phase information
-    if (event.eventType === "SESSION_PHASE_STARTED" || event.eventType === "SESSION_PHASE_COMPLETED") {
-      const payload = event.payload as any;
+    if (isSessionPhaseEvent(event)) {
+      const { payload } = event;
       progress.totalPhases = payload.totalPhases;
-      
+
       // Collect feature IDs from phase events
       if (Array.isArray(payload.featureIds)) {
         for (const fid of payload.featureIds) {
           allFeatureIds.add(fid);
         }
       }
-      
-      if (event.eventType === "SESSION_PHASE_STARTED") {
+
+      if (event.eventType === SessionEventType.SESSION_PHASE_STARTED) {
         progress.currentPhase = payload.phaseNumber;
-      } else if (event.eventType === "SESSION_PHASE_COMPLETED") {
+      } else if (event.eventType === SessionEventType.SESSION_PHASE_COMPLETED) {
         progress.lastCompletedPhase = payload.phaseNumber;
         progress.currentPhase = null;
       }
     }
-    
+
     // Track feature progress
-    if (event.eventType === "SESSION_FEATURE_STARTED" || event.eventType === "SESSION_FEATURE_COMPLETED") {
-      const payload = event.payload as any;
+    if (isSessionFeatureEvent(event)) {
+      const { payload } = event;
       allFeatureIds.add(payload.featureId);
-      
-      if (event.eventType === "SESSION_FEATURE_STARTED") {
+
+      if (event.eventType === SessionEventType.SESSION_FEATURE_STARTED) {
         if (payload.taskCount != null) {
           featuresWithTaskCount.set(payload.featureId, payload.taskCount);
         }
       }
-      
-      if (event.eventType === "SESSION_FEATURE_COMPLETED") {
+
+      if (event.eventType === SessionEventType.SESSION_FEATURE_COMPLETED) {
         featuresCompleted.add(payload.featureId);
       }
     }
-    
+
     // Track task progress
-    if (event.eventType === "SESSION_TASK_STARTED" || event.eventType === "SESSION_TASK_COMPLETED") {
-      const payload = event.payload as any;
+    if (isSessionTaskEvent(event)) {
+      const { payload } = event;
       allTaskIds.add(payload.taskId);
-      
-      if (event.eventType === "SESSION_TASK_COMPLETED") {
+
+      if (event.eventType === SessionEventType.SESSION_TASK_COMPLETED) {
         tasksCompleted.add(payload.taskId);
       }
     }

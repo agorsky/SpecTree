@@ -1,9 +1,6 @@
 /**
  * Claude Code Session Management — high-level API for creating sessions,
  * sending prompts, and receiving streaming updates.
- *
- * Maintains the same interface contract as AcpSession/AcpSessionManager
- * for drop-in replacement in AgentPool and Orchestrator.
  */
 
 import { EventEmitter } from "events";
@@ -211,39 +208,36 @@ export class ClaudeCodeSession extends EventEmitter {
   private buildSessionClient(): ClaudeCodeClient {
     if (!this.options) return this.client;
 
+    const cfg = this.client.getConfig();
+
     // Build options object, only including defined values
     const opts: ClaudeCodeClientOptions = {
-      claudePath: (this.client as any).claudePath as string,
-      skipPermissions: this.options.skipPermissions ?? (this.client as any).skipPermissions as boolean,
-      requestTimeout: (this.client as any).requestTimeout as number,
+      claudePath: cfg.claudePath,
+      skipPermissions: this.options.skipPermissions ?? cfg.skipPermissions,
+      requestTimeout: cfg.requestTimeout,
     };
 
-    const model = this.options.model ?? (this.client as any).model;
-    if (model) opts.model = model as string;
+    const model = this.options.model ?? cfg.model;
+    if (model) opts.model = model;
 
-    const systemPrompt = this.options.systemPrompt ?? this.options.systemMessage ?? (this.client as any).systemPrompt;
-    if (systemPrompt) opts.systemPrompt = systemPrompt as string;
+    const systemPrompt = this.options.systemPrompt ?? this.options.systemMessage ?? cfg.systemPrompt;
+    if (systemPrompt) opts.systemPrompt = systemPrompt;
 
     if (this.options.env) opts.env = this.options.env;
 
-    const allowedTools = this.options.allowedTools ?? (this.client as any).allowedTools;
-    if (allowedTools) opts.allowedTools = allowedTools as string[];
+    const allowedTools = this.options.allowedTools ?? cfg.allowedTools;
+    if (allowedTools) opts.allowedTools = allowedTools;
 
     // Forward options that were previously missing
-    const mcpConfigPath = (this.client as any).mcpConfigPath as string | undefined;
-    if (mcpConfigPath) opts.mcpConfigPath = mcpConfigPath;
+    if (cfg.mcpConfigPath) opts.mcpConfigPath = cfg.mcpConfigPath;
 
-    const appendSystemPrompt = (this.client as any).appendSystemPrompt as string | undefined;
-    if (appendSystemPrompt) opts.appendSystemPrompt = appendSystemPrompt;
+    if (cfg.appendSystemPrompt) opts.appendSystemPrompt = cfg.appendSystemPrompt;
 
-    const maxTurns = (this.client as any).maxTurns as number | undefined;
-    if (maxTurns !== undefined) opts.maxTurns = maxTurns;
+    if (cfg.maxTurns !== undefined) opts.maxTurns = cfg.maxTurns;
 
-    const extraArgs = (this.client as any).extraArgs as string[];
-    if (extraArgs && extraArgs.length > 0) opts.args = extraArgs;
+    if (cfg.extraArgs && cfg.extraArgs.length > 0) opts.args = cfg.extraArgs;
 
-    const inactivityTimeout = (this.client as any).inactivityTimeout as number | undefined;
-    if (inactivityTimeout !== undefined) opts.inactivityTimeoutMs = inactivityTimeout;
+    if (cfg.inactivityTimeout !== undefined) opts.inactivityTimeoutMs = cfg.inactivityTimeout;
 
     return new ClaudeCodeClient(opts);
   }
@@ -276,8 +270,7 @@ export class ClaudeCodeSessionManager {
   }
 
   /**
-   * Create a new session. Unlike AcpSessionManager, this does not make
-   * a network call — the actual claude process is spawned on send().
+   * Create a new session. The actual claude process is spawned on send().
    */
   async createSession(options?: ClaudeSessionOptions): Promise<ClaudeCodeSession> {
     const sessionId = randomUUID();

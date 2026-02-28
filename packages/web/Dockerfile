@@ -21,8 +21,8 @@ COPY packages/shared ./packages/shared
 COPY packages/web ./packages/web
 
 # Build
-RUN pnpm --filter @spectree/shared build
-RUN pnpm --filter @spectree/web build
+RUN pnpm --filter @dispatcher/shared build
+RUN pnpm --filter @dispatcher/web build
 
 # Production stage - serve with nginx
 FROM nginx:alpine AS runner

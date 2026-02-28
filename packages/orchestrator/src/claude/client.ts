@@ -2,8 +2,7 @@
  * Claude Code Client — spawns `claude -p` as a subprocess per prompt and
  * parses stream-json output from stdout.
  *
- * Unlike AcpClient which maintains one long-lived process with JSON-RPC 2.0,
- * each prompt spawns a fresh `claude` CLI process.
+ * Each prompt spawns a fresh `claude` CLI process.
  */
 
 import { spawn, type ChildProcess } from "child_process";
@@ -11,6 +10,7 @@ import { EventEmitter } from "events";
 
 import { OrchestratorError, ErrorCode } from "../errors.js";
 import type {
+  ClaudeCodeClientConfig,
   ClaudeCodeClientOptions,
   ClaudeStreamEvent,
 } from "./types.js";
@@ -67,6 +67,30 @@ export class ClaudeCodeClient extends EventEmitter {
     this.maxTurns = options?.maxTurns;
     this.allowedTools = options?.allowedTools;
     this.inactivityTimeout = options?.inactivityTimeoutMs ?? DEFAULT_INACTIVITY_TIMEOUT_MS;
+  }
+
+  // -----------------------------------------------------------------------
+  // Config Access
+  // -----------------------------------------------------------------------
+
+  /**
+   * Return a snapshot of the resolved client configuration.
+   * This avoids the need for callers to reach into private fields.
+   */
+  getConfig(): ClaudeCodeClientConfig {
+    return {
+      claudePath: this.claudePath,
+      model: this.model,
+      skipPermissions: this.skipPermissions,
+      mcpConfigPath: this.mcpConfigPath,
+      systemPrompt: this.systemPrompt,
+      appendSystemPrompt: this.appendSystemPrompt,
+      extraArgs: this.extraArgs,
+      requestTimeout: this.requestTimeout,
+      maxTurns: this.maxTurns,
+      allowedTools: this.allowedTools,
+      inactivityTimeout: this.inactivityTimeout,
+    };
   }
 
   // -----------------------------------------------------------------------

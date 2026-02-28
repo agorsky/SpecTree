@@ -20,10 +20,10 @@ COPY packages/shared ./packages/shared
 COPY packages/api ./packages/api
 
 # Generate Prisma client from SQL Server schema for Azure deployment
-RUN pnpm --filter @spectree/api exec prisma generate --schema=prisma/schema.sqlserver.prisma
+RUN pnpm --filter @dispatcher/api exec prisma generate --schema=prisma/schema.sqlserver.prisma
 
 # Build (skip prisma generate in build script — already generated from sqlserver schema above)
-RUN pnpm --filter @spectree/shared build
+RUN pnpm --filter @dispatcher/shared build
 RUN cd packages/api && npx tsc && cp -r src/generated dist/
 
 # Production stage

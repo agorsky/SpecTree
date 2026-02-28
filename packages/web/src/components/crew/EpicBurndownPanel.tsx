@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useEpics } from '@/hooks/queries/use-epics';
 import { useFeatures } from '@/hooks/queries/use-features';
 import { useTasks } from '@/hooks/queries/use-tasks';
-import { PhaseIndicator } from './PhaseIndicator';
 import { TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
