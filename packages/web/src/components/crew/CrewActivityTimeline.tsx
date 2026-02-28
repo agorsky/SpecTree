@@ -98,7 +98,7 @@ export function CrewActivityTimeline() {
                       {new Date(event.timestamp).toLocaleTimeString()}
                     </span>
                   </div>
-                  {meta?.message && (
+                  {meta?.message != null && (
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">
                       {String(meta.message)}
                     </p>

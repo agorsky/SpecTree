@@ -2,8 +2,7 @@
  * Claude Code Client — spawns `claude -p` as a subprocess per prompt and
  * parses stream-json output from stdout.
  *
- * Unlike AcpClient which maintains one long-lived process with JSON-RPC 2.0,
- * each prompt spawns a fresh `claude` CLI process.
+ * Each prompt spawns a fresh `claude` CLI process.
  */
 
 import { spawn, type ChildProcess } from "child_process";

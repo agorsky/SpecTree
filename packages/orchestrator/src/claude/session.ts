@@ -1,9 +1,6 @@
 /**
  * Claude Code Session Management — high-level API for creating sessions,
  * sending prompts, and receiving streaming updates.
- *
- * Maintains the same interface contract as AcpSession/AcpSessionManager
- * for drop-in replacement in AgentPool and Orchestrator.
  */
 
 import { EventEmitter } from "events";
@@ -276,8 +273,7 @@ export class ClaudeCodeSessionManager {
   }
 
   /**
-   * Create a new session. Unlike AcpSessionManager, this does not make
-   * a network call — the actual claude process is spawned on send().
+   * Create a new session. The actual claude process is spawned on send().
    */
   async createSession(options?: ClaudeSessionOptions): Promise<ClaudeCodeSession> {
     const sessionId = randomUUID();

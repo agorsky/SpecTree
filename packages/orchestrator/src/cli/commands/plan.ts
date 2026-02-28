@@ -1,7 +1,7 @@
 /**
  * Plan command - Create a SpecTree epic from a natural language description
  *
- * Invokes the planner agent via ACP to analyze the codebase,
+ * Invokes the planner agent via Claude Code to analyze the codebase,
  * decompose the request into features/tasks, and create a
  * fully-specified SpecTree epic.
  *
@@ -319,7 +319,7 @@ async function resolveTeam(
 /**
  * Plan command implementation.
  * Creates a SpecTree epic from a natural language description
- * using the planner agent via ACP.
+ * using the planner agent via Claude Code.
  */
 export async function planCommand(
   description: string | undefined,
@@ -380,7 +380,7 @@ export async function planCommand(
     // Step 3: Resolve team
     const team = await resolveTeam(client, options.team);
 
-    // Step 4: Generate plan via ACP planner agent
+    // Step 4: Generate plan via Claude Code planner agent
     const planSpinner = ora(
       "Generating execution plan with AI..."
     ).start();

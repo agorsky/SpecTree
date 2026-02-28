@@ -18,7 +18,7 @@ import {
   type GeneratedPlan,
 } from "../src/orchestrator/plan-generator.js";
 import { SpecTreeClient } from "../src/spectree/api-client.js";
-import { AcpSessionManager } from "../src/acp/index.js";
+import { ClaudeCodeSessionManager } from "../src/claude/index.js";
 
 // =============================================================================
 // Test Fixtures
@@ -154,7 +154,7 @@ function createMockSpecTreeClient(): SpecTreeClient {
   } as unknown as SpecTreeClient;
 }
 
-function createMockSessionManager(responseContent: string): AcpSessionManager {
+function createMockSessionManager(responseContent: string): ClaudeCodeSessionManager {
   const mockSession = {
     sendAndWait: vi.fn().mockResolvedValue(responseContent),
     destroy: vi.fn().mockResolvedValue(undefined),
@@ -164,7 +164,7 @@ function createMockSessionManager(responseContent: string): AcpSessionManager {
 
   return {
     createSession: vi.fn().mockResolvedValue(mockSession),
-  } as unknown as AcpSessionManager;
+  } as unknown as ClaudeCodeSessionManager;
 }
 
 // =============================================================================
@@ -173,7 +173,7 @@ function createMockSessionManager(responseContent: string): AcpSessionManager {
 
 describe("PlanGenerator", () => {
   let mockSpecTreeClient: SpecTreeClient;
-  let mockSessionManager: AcpSessionManager;
+  let mockSessionManager: ClaudeCodeSessionManager;
   let generator: PlanGenerator;
 
   beforeEach(() => {
@@ -487,7 +487,7 @@ describe("PlanGenerator", () => {
     });
   });
 
-  describe("ACP Session Integration", () => {
+  describe("Claude Code Session Integration", () => {
     it("should create session with system message", async () => {
       await generator.generatePlan("Build something", {
         team: "Engineering",

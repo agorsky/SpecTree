@@ -513,7 +513,7 @@ export class PlanGenerator {
   }
 
   /**
-   * Use ACP to generate a structured plan from the prompt.
+   * Use Claude Code to generate a structured plan from the prompt.
    */
   private async generatePlanStructure(prompt: string): Promise<PlannerResponse> {
     const session = await this.sessionManager.createSession({
@@ -527,7 +527,7 @@ export class PlanGenerator {
         300000
       );
 
-      // ACP sendAndWait returns the content string directly
+      // sendAndWait returns the content string directly
       if (!content) {
         throw new PlanParsingError(
           "No response received from AI",
@@ -1532,7 +1532,7 @@ export class PlanGenerator {
  * @param prompt - User's feature request in natural language
  * @param options - Generation options including team and dry-run mode
  * @param spectreeClient - SpecTree API client
- * @param sessionManager - ACP session manager
+ * @param sessionManager - Claude Code session manager
  * @returns The generated plan with all created IDs
  */
 export async function generatePlan(

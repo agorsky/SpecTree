@@ -7,7 +7,7 @@
  * This is the integration test that exercises all components working together
  * using the test scenario: "Add a REST API endpoint for user preferences."
  *
- * Mocks: ACP client, SpecTree API (MockSpecTreeServer), git operations
+ * Mocks: Claude Code client, SpecTree API (MockSpecTreeServer), git operations
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";

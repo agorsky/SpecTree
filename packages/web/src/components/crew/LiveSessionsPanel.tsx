@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useEpics } from '@/hooks/queries/use-epics';
 import { useAllActiveSessions } from '@/hooks/queries/use-crew-sessions';
 import { SessionCard } from './SessionCard';

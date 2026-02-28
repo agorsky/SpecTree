@@ -3,7 +3,7 @@
  * SpecTree Parallel Agent Orchestrator CLI
  *
  * A CLI tool for orchestrating parallel AI agents to execute SpecTree epics.
- * Uses ACP (Agent Client Protocol) to spawn and manage Copilot CLI sessions.
+ * Uses Claude Code CLI to spawn and manage AI agent sessions.
  */
 
 // Re-export UI components for programmatic use
@@ -52,7 +52,7 @@ program
   .option("--max-agents <n>", "Maximum concurrent agents", "4")
   .option(
     "--parallel <n>",
-    "Maximum concurrent ACP sessions (alias for --max-agents)"
+    "Maximum concurrent Claude Code sessions (alias for --max-agents)"
   )
   .option("--phase <n>", "Execute only the specified phase number")
   .option(

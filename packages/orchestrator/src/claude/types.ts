@@ -2,8 +2,7 @@
  * Claude Code CLI type definitions.
  *
  * Claude Code uses `claude -p --output-format stream-json` which emits
- * newline-delimited JSON events on stdout. Unlike ACP's JSON-RPC 2.0
- * bidirectional protocol, each prompt spawns a fresh CLI process.
+ * newline-delimited JSON events on stdout. Each prompt spawns a fresh CLI process.
  */
 
 // ---------------------------------------------------------------------------
@@ -133,7 +132,7 @@ export interface ClaudeCodeClientOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Session status lifecycle — matches AcpSessionStatus for drop-in compatibility.
+ * Session status lifecycle.
  */
 export type ClaudeSessionStatus = "idle" | "working" | "completed" | "failed";
 
@@ -141,13 +140,13 @@ export type ClaudeSessionStatus = "idle" | "working" | "completed" | "failed";
  * Options for creating a Claude Code session.
  */
 export interface ClaudeSessionOptions {
-  /** Agent name (ignored for Claude Code, kept for ACP compat). */
+  /** Agent name (ignored for Claude Code). */
   agent?: string;
   /** Model override for this session. */
   model?: string;
   /** System prompt for this session. */
   systemPrompt?: string;
-  /** System message (alias for systemPrompt, for ACP compatibility). */
+  /** System message (alias for systemPrompt). */
   systemMessage?: string;
   /** MCP server configurations. */
   mcpServers?: Record<string, McpServerConfig>;
@@ -159,12 +158,12 @@ export interface ClaudeSessionOptions {
   env?: Record<string, string>;
   /** Skip permission prompts. */
   skipPermissions?: boolean;
-  /** Permissions (ACP compat, mapped to skipPermissions). */
+  /** Permissions (mapped to skipPermissions). */
   permissions?: SessionPermissions;
 }
 
 /**
- * Session permissions (ACP compatibility).
+ * Session permissions.
  */
 export interface SessionPermissions {
   allowAllTools?: boolean;
@@ -173,7 +172,7 @@ export interface SessionPermissions {
 }
 
 /**
- * MCP server configuration (reused from ACP types for compatibility).
+ * MCP server configuration.
  */
 export interface McpServerConfig {
   command: string;
@@ -186,7 +185,7 @@ export interface McpServerConfig {
 // ---------------------------------------------------------------------------
 
 /**
- * Session update type — matches ACP's SessionUpdateType.
+ * Session update type.
  */
 export type SessionUpdateType =
   | "text"
@@ -196,7 +195,7 @@ export type SessionUpdateType =
   | "error";
 
 /**
- * Session event payload — compatible with AcpSessionEvent shape.
+ * Session event payload.
  */
 export interface ClaudeSessionEvent {
   sessionId: string;
@@ -209,7 +208,7 @@ export interface ClaudeSessionEvent {
 }
 
 /**
- * Session event map — compatible with AcpSessionEventMap.
+ * Session event map.
  */
 export interface ClaudeSessionEventMap {
   text: (content: string) => void;
@@ -259,7 +258,6 @@ export function isSystemEvent(event: ClaudeStreamEvent): event is SystemEvent {
 
 /**
  * Check if an unknown value is a ClaudeSessionEvent.
- * Mirrors the existing isSessionUpdate guard for ACP compatibility.
  */
 export function isSessionUpdate(params: unknown): params is ClaudeSessionEvent {
   if (typeof params !== "object" || params === null) return false;

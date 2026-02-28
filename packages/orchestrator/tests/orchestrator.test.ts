@@ -8,7 +8,7 @@
  * - Progress event emission
  * - Resume from specific feature
  * - Error handling for agent failures
- * - ACP session management
+ * - Claude Code session management
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -23,7 +23,7 @@ import {
   type ExecutionPlan,
   type StartSessionResponse,
 } from "../src/spectree/api-client.js";
-import { AcpSessionManager, AcpSession } from "../src/acp/index.js";
+import { ClaudeCodeSessionManager, ClaudeCodeSession } from "../src/claude/index.js";
 import { OrchestratorError } from "../src/errors.js";
 import { BranchManager } from "../src/git/branch-manager.js";
 import { MergeCoordinator } from "../src/git/merge-coordinator.js";
@@ -134,8 +134,8 @@ const MOCK_SESSION_RESPONSE: StartSessionResponse = {
 // Mock Factories
 // =============================================================================
 
-function createMockAcpSession(responseContent = "Task completed successfully", errorMessage?: string): AcpSession {
-  const session = new EventEmitter() as AcpSession;
+function createMockClaudeCodeSession(responseContent = "Task completed successfully", errorMessage?: string): ClaudeCodeSession {
+  const session = new EventEmitter() as ClaudeCodeSession;
 
   (session as unknown as Record<string, unknown>).send = vi.fn().mockImplementation(() => {
     setTimeout(() => {
@@ -165,16 +165,16 @@ function createMockAcpSession(responseContent = "Task completed successfully", e
   return session;
 }
 
-function createMockSessionManager(responseContent = "Task completed successfully", errorMessage?: string): AcpSessionManager {
+function createMockSessionManager(responseContent = "Task completed successfully", errorMessage?: string): ClaudeCodeSessionManager {
   return {
     createSession: vi.fn().mockImplementation(() => {
-      return Promise.resolve(createMockAcpSession(responseContent, errorMessage));
+      return Promise.resolve(createMockClaudeCodeSession(responseContent, errorMessage));
     }),
     getSession: vi.fn(),
     destroySession: vi.fn().mockResolvedValue(undefined),
     destroyAll: vi.fn().mockResolvedValue(undefined),
     activeSessions: 0,
-  } as unknown as AcpSessionManager;
+  } as unknown as ClaudeCodeSessionManager;
 }
 
 function createMockSpecTreeClient(): SpecTreeClient {
@@ -235,7 +235,7 @@ function createMockMergeCoordinator(): MergeCoordinator {
 
 describe("Orchestrator", () => {
   let mockClient: SpecTreeClient;
-  let mockSessionManager: AcpSessionManager;
+  let mockSessionManager: ClaudeCodeSessionManager;
   let mockBranchManager: BranchManager;
   let mockMergeCoordinator: MergeCoordinator;
   let orchestrator: Orchestrator;
@@ -365,8 +365,8 @@ describe("Orchestrator", () => {
     });
   });
 
-  describe("ACP Session Integration", () => {
-    it("should create ACP sessions via session manager", async () => {
+  describe("Claude Code Session Integration", () => {
+    it("should create Claude Code sessions via session manager", async () => {
       await orchestrator.run("epic-123", { sequential: true });
       expect(mockSessionManager.createSession).toHaveBeenCalled();
     });

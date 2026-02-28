@@ -6,7 +6,7 @@
  *
  * Test scenario: "Add a REST API endpoint for user preferences with CRUD operations"
  *
- * Mocks: ACP client (no real Copilot CLI), SpecTree API (MockSpecTreeServer)
+ * Mocks: Claude Code client (no real CLI), SpecTree API (MockSpecTreeServer)
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -41,7 +41,7 @@ const TEST_SCENARIO =
 
 /**
  * Simulates what the PlanGenerator would create for the test scenario.
- * In a real E2E run, this comes from an ACP session with the planner agent.
+ * In a real E2E run, this comes from a Claude Code session with the planner agent.
  */
 function createTestPlan(epicId: string): GeneratedPlan {
   return {

@@ -20,7 +20,7 @@ import {
   type AgentPoolOptions,
 } from "../src/orchestrator/agent-pool.js";
 import type { SpecTreeClient, ExecutionItem } from "../src/spectree/api-client.js";
-import { AcpSessionManager, AcpSession } from "../src/acp/index.js";
+import { ClaudeCodeSessionManager, ClaudeCodeSession } from "../src/claude/index.js";
 import { OrchestratorError } from "../src/errors.js";
 
 // Mock the config module
@@ -77,11 +77,11 @@ function createMockSpecTreeClient(): SpecTreeClient {
 }
 
 /**
- * Creates a mock AcpSession that behaves as an EventEmitter.
+ * Creates a mock ClaudeCodeSession that behaves as an EventEmitter.
  * When send() is called, it schedules 'complete' (or 'error') events asynchronously.
  */
-function createMockAcpSession(responseContent = "Task completed successfully", errorMessage?: string): AcpSession {
-  const session = new EventEmitter() as AcpSession;
+function createMockClaudeCodeSession(responseContent = "Task completed successfully", errorMessage?: string): ClaudeCodeSession {
+  const session = new EventEmitter() as ClaudeCodeSession;
 
   // Add mock methods
   (session as unknown as Record<string, unknown>).send = vi.fn().mockImplementation(() => {
@@ -112,16 +112,16 @@ function createMockAcpSession(responseContent = "Task completed successfully", e
   return session;
 }
 
-function createMockSessionManager(responseContent = "Task completed successfully", errorMessage?: string): AcpSessionManager {
+function createMockSessionManager(responseContent = "Task completed successfully", errorMessage?: string): ClaudeCodeSessionManager {
   return {
     createSession: vi.fn().mockImplementation(() => {
-      return Promise.resolve(createMockAcpSession(responseContent, errorMessage));
+      return Promise.resolve(createMockClaudeCodeSession(responseContent, errorMessage));
     }),
     getSession: vi.fn(),
     destroySession: vi.fn().mockResolvedValue(undefined),
     destroyAll: vi.fn().mockResolvedValue(undefined),
     activeSessions: 0,
-  } as unknown as AcpSessionManager;
+  } as unknown as ClaudeCodeSessionManager;
 }
 
 function createPoolOptions(overrides?: Partial<AgentPoolOptions>): AgentPoolOptions {
@@ -139,7 +139,7 @@ function createPoolOptions(overrides?: Partial<AgentPoolOptions>): AgentPoolOpti
 
 describe("AgentPool", () => {
   let pool: AgentPool;
-  let mockSessionManager: AcpSessionManager;
+  let mockSessionManager: ClaudeCodeSessionManager;
 
   beforeEach(() => {
     mockSessionManager = createMockSessionManager();
@@ -174,7 +174,7 @@ describe("AgentPool", () => {
       expect(agent.progress).toBe(0);
     });
 
-    it("should create ACP session via session manager", async () => {
+    it("should create Claude Code session via session manager", async () => {
       await pool.spawnAgent(MOCK_TASK, "feature/COM-1");
       expect(mockSessionManager.createSession).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -585,11 +585,11 @@ describe("AgentPool", () => {
         createSession: vi.fn().mockImplementation(() => {
           callCount++;
           if (callCount === 1) {
-            return Promise.resolve(createMockAcpSession("", "Agent 1 failed"));
+            return Promise.resolve(createMockClaudeCodeSession("", "Agent 1 failed"));
           }
-          return Promise.resolve(createMockAcpSession("Done"));
+          return Promise.resolve(createMockClaudeCodeSession("Done"));
         }),
-      } as unknown as AcpSessionManager;
+      } as unknown as ClaudeCodeSessionManager;
 
       const mixedPool = new AgentPool(createPoolOptions({ sessionManager: mixedManager }));
       const agent1 = await mixedPool.spawnAgent(MOCK_TASK, "feature/COM-1");

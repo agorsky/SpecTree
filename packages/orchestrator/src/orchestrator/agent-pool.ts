@@ -1,7 +1,7 @@
 /**
  * Agent Pool
  *
- * Manages multiple concurrent ACP sessions for parallel agent execution.
+ * Manages multiple concurrent Claude Code sessions for parallel agent execution.
  * This is the core component that enables the orchestrator to run multiple AI agents
  * simultaneously on independent tasks.
  *
@@ -54,7 +54,7 @@ export interface Agent {
   branch: string;
   /** Current agent status */
   status: AgentStatus;
-  /** The underlying ACP session */
+  /** The underlying Claude Code session */
   session: ClaudeCodeSession;
   /** Progress percentage (0-100) */
   progress: number;
@@ -110,7 +110,7 @@ export interface PoolStatus {
 export interface AgentPoolOptions {
   /** Maximum number of concurrent agents */
   maxAgents: number;
-  /** ACP session manager for creating sessions */
+  /** Claude Code session manager for creating sessions */
   sessionManager: ClaudeCodeSessionManager;
   /** SpecTree client for API operations */
   specTreeClient: DispatcherClient;
@@ -189,7 +189,7 @@ Your job is to implement the assigned task according to its description and acce
 // =============================================================================
 
 /**
- * Manages multiple concurrent ACP sessions for parallel agent execution.
+ * Manages multiple concurrent Claude Code sessions for parallel agent execution.
  */
 export class AgentPool extends EventEmitter {
   private maxAgents: number;
@@ -243,7 +243,7 @@ export class AgentPool extends EventEmitter {
       );
     }
 
-    // 2. Create ACP session
+    // 2. Create Claude Code session
     let session: ClaudeCodeSession;
     try {
       session = await this.sessionManager.createSession({
@@ -317,7 +317,7 @@ export class AgentPool extends EventEmitter {
       // Collect listener cleanup functions
       const cleanups: (() => void)[] = [];
 
-      // ACP streaming event handlers
+      // Claude Code streaming event handlers
       const onText = (chunk: string) => {
         this.emit('agent:message', agent, chunk);
       };
@@ -564,7 +564,7 @@ export class AgentPool extends EventEmitter {
     }
 
     // Signal agent to pause at next safe point
-    // Note: If agent is in the middle of an ACP call, we wait for completion before pausing
+    // Note: If agent is in the middle of a Claude Code call, we wait for completion before pausing
     agent.status = "paused";
     this.emit("agent:pause", agent);
   }
@@ -649,7 +649,7 @@ export class AgentPool extends EventEmitter {
     }
 
     try {
-      // Destroy the ACP session
+      // Destroy the Claude Code session
       await agent.session.destroy();
     } catch {
       // Ignore cleanup errors

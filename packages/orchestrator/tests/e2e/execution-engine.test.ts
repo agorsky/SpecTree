@@ -3,12 +3,12 @@
  *
  * Tests the orchestration execution engine end-to-end, verifying that
  * the run command processes tasks with correct SpecTree progress tracking,
- * git branch management, and ACP session coordination.
+ * git branch management, and Claude Code session coordination.
  *
  * Test scenario: Execute a pre-created "User Preferences API" epic
  * with 4 features and 8 tasks through sequential and parallel phases.
  *
- * Mocks: ACP client, SpecTree API (MockSpecTreeServer), git operations
+ * Mocks: Claude Code client, SpecTree API (MockSpecTreeServer), git operations
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";

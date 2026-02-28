@@ -160,7 +160,7 @@ export interface ProgressEvent {
 export interface OrchestratorOptions {
   /** SpecTree API client */
   client: DispatcherClient;
-  /** ACP session manager for creating sessions */
+  /** Claude Code session manager for creating sessions */
   sessionManager: ClaudeCodeSessionManager;
   /** Maximum concurrent agents (default: 4) */
   maxAgents?: number;
@@ -460,7 +460,7 @@ export class Orchestrator extends EventEmitter {
 
       throw wrapError(error, "Orchestration failed");
     } finally {
-      // Cleanup any active ACP session
+      // Cleanup any active Claude Code session
       if (this.activeSession) {
         try {
           await this.closeSession(this.activeSession);
@@ -937,7 +937,7 @@ export class Orchestrator extends EventEmitter {
         : undefined;
       await this.client.startWork(item.type, item.id, startWorkInput);
 
-      // Step 2: Create ACP session
+      // Step 2: Create Claude Code session
       const session = await this.createSession(item, handoffContext);
       this.activeSession = session;
 
@@ -945,7 +945,7 @@ export class Orchestrator extends EventEmitter {
       const taskPrompt = this.buildTaskPrompt(item, handoffContext);
       const response = await session.sendAndWait(taskPrompt, 1500000);
 
-      // Extract summary from response (ACP sendAndWait returns string directly)
+      // Extract summary from response (sendAndWait returns string directly)
       const summary = this.extractSummary(response);
 
       // Step 4: Mark item as completed in SpecTree
@@ -999,7 +999,7 @@ export class Orchestrator extends EventEmitter {
   }
 
   /**
-   * Create an ACP session for a task.
+   * Create a Claude Code session for a task.
    */
   private async createSession(item: ExecutionItem, _handoffContext?: string): Promise<ClaudeCodeSession> {
     try {
@@ -1024,7 +1024,7 @@ export class Orchestrator extends EventEmitter {
   }
 
   /**
-   * Close an ACP session.
+   * Close a Claude Code session.
    */
   private async closeSession(session: ClaudeCodeSession): Promise<void> {
     try {
@@ -1083,7 +1083,7 @@ export class Orchestrator extends EventEmitter {
       return "Task completed (no response)";
     }
 
-    // ACP sendAndWait returns content as a string directly
+    // sendAndWait returns content as a string directly
     if (typeof response === "string") {
       if (response.length > 500) {
         return response.substring(0, 497) + "...";
