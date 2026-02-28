@@ -628,6 +628,62 @@ describe("ClaudeCodeClient", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // diagnostic and warning events
+  // ---------------------------------------------------------------------------
+
+  describe("diagnostic and warning events", () => {
+    it("should emit diagnostic event for stderr output", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc);
+
+      const diagnostics: string[] = [];
+      client.on("diagnostic", (text: string) => diagnostics.push(text));
+
+      const promise = client.executePrompt("test");
+
+      emitStderr(proc, "debug: loading config\n");
+      emitStderr(proc, "warn: slow response\n");
+
+      const resultEvent: ResultEvent = { type: "result", subtype: "success", result: "done" };
+      emitStdout(proc, JSON.stringify(resultEvent) + "\n");
+      emitExit(proc, 0);
+
+      await promise;
+
+      expect(diagnostics).toEqual(["debug: loading config\n", "warn: slow response\n"]);
+    });
+
+    it("should emit warning event for malformed JSON lines", () => {
+      const proc = createMockProcess();
+      const warnings: { type: string; line: string }[] = [];
+
+      client.on("warning", (w: { type: string; line: string }) => warnings.push(w));
+      client.parseStreamOutput(proc, () => {});
+
+      emitStdout(proc, "not-valid-json\n");
+      emitStdout(proc, "{incomplete\n");
+
+      expect(warnings).toHaveLength(2);
+      expect(warnings[0]).toEqual({ type: "malformed_json", line: "not-valid-json" });
+      expect(warnings[1]).toEqual({ type: "malformed_json", line: "{incomplete" });
+    });
+
+    it("should emit warning for malformed JSON on end flush", () => {
+      const proc = createMockProcess();
+      const warnings: { type: string; line: string }[] = [];
+
+      client.on("warning", (w: { type: string; line: string }) => warnings.push(w));
+      client.parseStreamOutput(proc, () => {});
+
+      emitStdout(proc, "{broken");
+      proc.stdout!.emit("end");
+
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toEqual({ type: "malformed_json", line: "{broken" });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // kill
   // ---------------------------------------------------------------------------
 
