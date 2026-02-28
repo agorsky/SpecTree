@@ -157,9 +157,20 @@ export class ClaudeCodeClient extends EventEmitter {
     proc: ChildProcess,
     onEvent: (event: ClaudeStreamEvent) => void,
   ): void {
+    if (!proc.stdout) {
+      throw new OrchestratorError(
+        "Claude Code process has no stdout pipe — cannot parse stream-json output",
+        ErrorCode.AGENT_SPAWN_FAILED,
+        {
+          context: { pid: proc.pid },
+          recoveryHint: "Check stdio configuration in spawnProcess()",
+        },
+      );
+    }
+
     let buffer = "";
 
-    proc.stdout?.on("data", (chunk: Buffer) => {
+    proc.stdout.on("data", (chunk: Buffer) => {
       buffer += chunk.toString();
       const lines = buffer.split("\n");
       // Keep the last incomplete line in the buffer
@@ -181,6 +192,24 @@ export class ClaudeCodeClient extends EventEmitter {
         if (isAssistantEvent(event) || isResultEvent(event) || isSystemEvent(event)) {
           onEvent(event);
         }
+      }
+    });
+
+    // Flush any remaining data in the buffer when stdout closes
+    proc.stdout.on("end", () => {
+      const trimmed = buffer.trim();
+      if (trimmed.length === 0) return;
+
+      let parsed: Record<string, unknown>;
+      try {
+        parsed = JSON.parse(trimmed) as Record<string, unknown>;
+      } catch {
+        return;
+      }
+
+      const event = parsed as unknown as ClaudeStreamEvent;
+      if (isAssistantEvent(event) || isResultEvent(event) || isSystemEvent(event)) {
+        onEvent(event);
       }
     });
   }
