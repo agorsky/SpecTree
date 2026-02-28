@@ -58,6 +58,8 @@ export interface RunOptions {
   taskLevelAgents?: boolean;
   phase?: string;
   parallel?: string;
+  /** Run post-execution validation pipeline (ENG-48) */
+  validate?: boolean;
 }
 
 // =============================================================================

@@ -9,3 +9,6 @@ export type { BranchManagerOptions } from "./branch-manager.js";
 
 export { MergeCoordinator, createMergeCoordinator } from "./merge-coordinator.js";
 export type { MergeOptions, MergeCoordinatorOptions } from "./merge-coordinator.js";
+
+export { GitCheckpointManager } from "./checkpoint-manager.js";
+export type { CheckpointManagerOptions } from "./checkpoint-manager.js";
