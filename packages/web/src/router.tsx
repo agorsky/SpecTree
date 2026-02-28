@@ -12,6 +12,7 @@ import { TeamDetailPage } from "@/pages/teams/team-detail";
 import { SettingsPage } from "@/pages/settings";
 import { DashboardPage } from "@/pages/dashboard";
 import { WhatsNewPage } from "@/pages/whats-new";
+import { CrewPage } from "@/pages/crew/index";
 import { CompliancePage } from "@/pages/compliance/index";
 import { CaseDetailPage } from "@/pages/compliance/case-detail";
 
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
       },
       { path: "teams", element: <TeamsPage /> },
       { path: "teams/:teamId", element: <TeamDetailPage /> },
+      { path: "crew", element: <CrewPage /> },
       { path: "compliance", element: <CompliancePage /> },
       { path: "compliance/cases/:caseId", element: <CaseDetailPage /> },
       { path: "settings", element: <SettingsPage /> },
