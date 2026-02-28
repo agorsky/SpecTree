@@ -32,6 +32,9 @@ import { registerSummaryTools } from "./summary.js";
 import { registerDecisionTools } from "./decisions.js";
 import { registerTeamTools } from "./teams.js";
 import { registerCompositeTools } from "./composite.js";
+import { registerCodebaseTools } from "./codebase.js";
+import { registerPatternTools } from "./patterns.js";
+import { registerEffortTools } from "./effort.js";
 import { registerWorkflowTools } from "./workflow.js";
 import { registerLawTools } from "./laws.js";
 import { registerCaseTools } from "./cases.js";
@@ -75,6 +78,9 @@ const toolRegistrars: ToolRegistrar[] = [
   registerLawTools,          // Law registry
   registerCaseTools,         // Case management (court cases against agents)
   registerAgentScoreTools,   // Agent score leaderboard and adjustments
+  registerCodebaseTools,     // Codebase analysis (scan structure, analyze file impact)
+  registerPatternTools,      // Pattern detection & convention extraction
+  registerEffortTools,       // Effort estimation engine
   registerWorkflowTools,     // Workflow guidance
   registerSkillPackTools,    // Skill pack management
 ];
