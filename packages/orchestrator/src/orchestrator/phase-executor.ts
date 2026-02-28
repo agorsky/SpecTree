@@ -680,11 +680,32 @@ export class PhaseExecutor extends EventEmitter {
       result.error = new Error(`Validation failed: ${validationResult?.report.summary ?? "unknown"}`);
     }
 
+    // ENG-70: Mark feature as Done when all tasks pass
+    if (overallSuccess) {
+      await this.markFeatureDone(feature);
+    }
+
     // Emit SESSION_FEATURE_COMPLETED event
     const completedTaskCount = taskResults.filter(r => r.success).length;
     await this.emitFeatureCompletedEvent(feature, startTime, completedTaskCount);
 
     return result;
+  }
+
+  /**
+   * ENG-70: Mark a feature as Done via API.
+   */
+  private async markFeatureDone(feature: ExecutionItem): Promise<void> {
+    const DONE_STATUS_ID = "52e901cb-0e67-4136-8f03-ba62d7daa891";
+    try {
+      await this.specTreeClient.updateFeature(feature.id, { statusId: DONE_STATUS_ID });
+      console.log(`    ✅ Feature ${feature.identifier} marked as Done`);
+    } catch (error) {
+      console.warn(
+        `    ⚠️  Failed to mark feature ${feature.identifier} as Done:`,
+        error instanceof Error ? error.message : error
+      );
+    }
   }
 
   /**

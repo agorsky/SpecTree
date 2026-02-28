@@ -740,4 +740,105 @@ describe("PhaseExecutor", () => {
       );
     });
   });
+
+  // ===========================================================================
+  // ENG-70: Feature Completion Marking
+  // ===========================================================================
+
+  describe("feature completion marking (ENG-70)", () => {
+    function createTaskLevelMockClient() {
+      return {
+        startWork: vi.fn().mockResolvedValue({}),
+        completeWork: vi.fn().mockResolvedValue({}),
+        logProgress: vi.fn().mockResolvedValue({}),
+        linkBranch: vi.fn().mockResolvedValue(undefined),
+        linkCodeFile: vi.fn().mockResolvedValue(undefined),
+        updateFeature: vi.fn().mockResolvedValue({}),
+        getFeature: vi.fn().mockResolvedValue({ id: "feature-1", tasks: [{ id: "t1" }], status: { name: "Done" } }),
+        getTask: vi.fn().mockResolvedValue({ id: "t1", status: { name: "Done" } }),
+        emitSessionEvent: vi.fn().mockResolvedValue(undefined),
+        listTasks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: "task-a",
+              identifier: "COM-1-1",
+              title: "Task A",
+              description: "Do A",
+              statusId: null,
+              executionOrder: 1,
+              sortOrder: 1,
+              canParallelize: false,
+              parallelGroup: null,
+              dependencies: null,
+              estimatedComplexity: "simple",
+            },
+          ],
+          meta: { cursor: null, hasMore: false },
+        }),
+      } as unknown as SpecTreeClient;
+    }
+
+    it("should mark feature as Done when all tasks succeed", async () => {
+      const client = createTaskLevelMockClient();
+      const branchManager = createMockBranchManager();
+      (branchManager as any).getLatestCommitHash = vi.fn().mockResolvedValue("abc123");
+      (branchManager as any).getModifiedFiles = vi.fn().mockResolvedValue([]);
+      const agentPool = createMockAgentPool();
+      const executor = new PhaseExecutor({
+        agentPool,
+        branchManager,
+        specTreeClient: client,
+        taskLevelAgents: true,
+        sessionId: "test-session",
+      });
+
+      const feature: ExecutionItem = {
+        ...MOCK_ITEM_1,
+        epicId: "epic-1",
+      };
+      const phase = createMockPhase([feature], false);
+
+      const result = await executor.executePhase(phase);
+
+      expect(result.success).toBe(true);
+      expect((client as any).updateFeature).toHaveBeenCalledWith(
+        feature.id,
+        { statusId: "52e901cb-0e67-4136-8f03-ba62d7daa891" }
+      );
+    });
+
+    it("should NOT mark feature as Done when a task fails", async () => {
+      const client = createTaskLevelMockClient();
+      const branchManager = createMockBranchManager();
+      (branchManager as any).getLatestCommitHash = vi.fn().mockResolvedValue("abc123");
+      (branchManager as any).getModifiedFiles = vi.fn().mockResolvedValue([]);
+      const agentPool = createMockAgentPool();
+      // Make the agent fail
+      (agentPool.startAgent as Mock).mockResolvedValue({
+        agentId: "worker-1",
+        taskId: "COM-1-1",
+        success: false,
+        error: new Error("Agent failed"),
+        duration: 500,
+      });
+      const executor = new PhaseExecutor({
+        agentPool,
+        branchManager,
+        specTreeClient: client,
+        taskLevelAgents: true,
+        sessionId: "test-session",
+      });
+
+      const feature: ExecutionItem = {
+        ...MOCK_ITEM_1,
+        epicId: "epic-1",
+      };
+      const phase = createMockPhase([feature], false);
+
+      const result = await executor.executePhase(phase);
+
+      expect(result.success).toBe(false);
+      expect((client as any).updateFeature).not.toHaveBeenCalled();
+    });
+  });
 });
