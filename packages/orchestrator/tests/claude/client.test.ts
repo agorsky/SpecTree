@@ -343,6 +343,60 @@ describe("ClaudeCodeClient", () => {
 
       expect(events).toHaveLength(0);
     });
+
+    it("should throw OrchestratorError when proc.stdout is null", () => {
+      const proc = createMockProcess();
+      Object.defineProperty(proc, "stdout", { value: null, writable: true });
+
+      expect(() => {
+        client.parseStreamOutput(proc, () => {});
+      }).toThrow("Claude Code process has no stdout pipe");
+    });
+
+    it("should flush remaining buffer on stdout end", () => {
+      const proc = createMockProcess();
+      const events: any[] = [];
+
+      client.parseStreamOutput(proc, (event) => events.push(event));
+
+      const resultEvent: ResultEvent = {
+        type: "result",
+        subtype: "success",
+        result: "final",
+      };
+
+      // Send data without trailing newline
+      emitStdout(proc, JSON.stringify(resultEvent));
+      expect(events).toHaveLength(0);
+
+      // Emit end — should flush the buffer
+      proc.stdout!.emit("end");
+      expect(events).toHaveLength(1);
+      expect(events[0].type).toBe("result");
+      expect(events[0].result).toBe("final");
+    });
+
+    it("should not emit on end if buffer is empty", () => {
+      const proc = createMockProcess();
+      const events: any[] = [];
+
+      client.parseStreamOutput(proc, (event) => events.push(event));
+
+      // End with nothing in buffer
+      proc.stdout!.emit("end");
+      expect(events).toHaveLength(0);
+    });
+
+    it("should not emit on end if buffer contains malformed JSON", () => {
+      const proc = createMockProcess();
+      const events: any[] = [];
+
+      client.parseStreamOutput(proc, (event) => events.push(event));
+
+      emitStdout(proc, "{broken json");
+      proc.stdout!.emit("end");
+      expect(events).toHaveLength(0);
+    });
   });
 
   // ---------------------------------------------------------------------------
