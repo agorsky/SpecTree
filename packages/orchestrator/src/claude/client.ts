@@ -22,6 +22,7 @@ import {
 
 const DEFAULT_CLAUDE_PATH = "claude";
 const DEFAULT_REQUEST_TIMEOUT_MS = 300_000; // 5 minutes
+const DEFAULT_INACTIVITY_TIMEOUT_MS = 60_000; // 60 seconds
 const KILL_TIMEOUT_MS = 5_000;
 
 /**
@@ -34,6 +35,8 @@ export interface SpawnOptions {
   env?: Record<string, string>;
   /** Override timeout for this specific execution. */
   timeoutMs?: number;
+  /** Override inactivity timeout for this specific execution. */
+  inactivityTimeoutMs?: number;
 }
 
 export class ClaudeCodeClient extends EventEmitter {
@@ -48,6 +51,7 @@ export class ClaudeCodeClient extends EventEmitter {
   private readonly requestTimeout: number;
   private readonly maxTurns: number | undefined;
   private readonly allowedTools: string[] | undefined;
+  private readonly inactivityTimeout: number;
 
   constructor(options?: ClaudeCodeClientOptions) {
     super();
@@ -62,6 +66,7 @@ export class ClaudeCodeClient extends EventEmitter {
     this.requestTimeout = options?.requestTimeout ?? DEFAULT_REQUEST_TIMEOUT_MS;
     this.maxTurns = options?.maxTurns;
     this.allowedTools = options?.allowedTools;
+    this.inactivityTimeout = options?.inactivityTimeoutMs ?? DEFAULT_INACTIVITY_TIMEOUT_MS;
   }
 
   // -----------------------------------------------------------------------
@@ -265,6 +270,7 @@ export class ClaudeCodeClient extends EventEmitter {
     sessionId: string | undefined;
   }> {
     const timeoutMs = options?.timeoutMs ?? this.requestTimeout;
+    const inactivityMs = options?.inactivityTimeoutMs ?? this.inactivityTimeout;
 
     return new Promise((resolve, reject) => {
       let proc: ChildProcess;
@@ -285,10 +291,11 @@ export class ClaudeCodeClient extends EventEmitter {
         sessionId: string | undefined;
       } | null = null;
 
-      // Timeout handler
+      // Timeout handler (overall request timeout)
       const timer = setTimeout(() => {
         if (settled) return;
         settled = true;
+        clearTimeout(inactivityTimer);
         void this.kill(proc).then(() => {
           reject(
             new OrchestratorError(
@@ -303,8 +310,38 @@ export class ClaudeCodeClient extends EventEmitter {
         });
       }, timeoutMs);
 
+      // Inactivity timeout — fires if no stream events received within window
+      let inactivityTimer: ReturnType<typeof setTimeout> = setTimeout(onInactivityTimeout, inactivityMs);
+
+      function onInactivityTimeout() {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        void client.kill(proc).then(() => {
+          reject(
+            new OrchestratorError(
+              `Claude Code process inactive for ${inactivityMs}ms — no stream events received`,
+              ErrorCode.AGENT_TIMEOUT,
+              {
+                context: { inactivityMs, timeoutMs, prompt: prompt.substring(0, 200) },
+                recoveryHint: "The process may be stuck. Check stderr for errors or increase inactivityTimeoutMs.",
+              },
+            ),
+          );
+        });
+      }
+
+      function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(onInactivityTimeout, inactivityMs);
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
+      const client = this;
+
       const cleanup = () => {
         clearTimeout(timer);
+        clearTimeout(inactivityTimer);
       };
 
       // Capture stderr
@@ -314,6 +351,7 @@ export class ClaudeCodeClient extends EventEmitter {
 
       // Parse stream-json events
       this.parseStreamOutput(proc, (event) => {
+        resetInactivityTimer();
         if (isAssistantEvent(event)) {
           for (const block of event.message.content) {
             if (block.type === "text") {

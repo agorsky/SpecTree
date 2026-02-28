@@ -124,6 +124,8 @@ export interface ClaudeCodeClientOptions {
   maxTurns?: number;
   /** Allowed tools list. Maps to --allowedTools. */
   allowedTools?: string[];
+  /** Inactivity timeout in milliseconds. Kills the process if no stream events are received. Defaults to 60,000 (60s). */
+  inactivityTimeoutMs?: number;
 }
 
 // ---------------------------------------------------------------------------
