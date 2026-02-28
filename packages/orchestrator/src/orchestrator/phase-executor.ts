@@ -29,6 +29,7 @@
  */
 
 import { EventEmitter } from "events";
+import { spawn } from "child_process";
 import {
   AgentPool,
   type Agent,
@@ -44,7 +45,7 @@ import type {
 import { AgentError, OrchestratorError, wrapError } from "../errors.js";
 import { SessionEventType } from "@dispatcher/shared";
 import { ValidationPipeline, type ValidationPipelineResult } from "../validation/index.js";
-import type { ValidationConfig } from "../config/schemas.js";
+import type { ValidationConfig, PostFeatureHooksConfig } from "../config/schemas.js";
 
 // =============================================================================
 // Types and Interfaces
@@ -108,6 +109,8 @@ export interface PhaseExecutorOptions {
   taskLevelAgents?: boolean;
   /** Post-execution validation config (ENG-48). When set with enabled=true, runs after feature completion. */
   validationConfig?: ValidationConfig;
+  /** Post-feature hooks (ENG-73). Triggers like Barney audit after feature completion. */
+  postFeatureHooks?: PostFeatureHooksConfig;
 }
 
 /**
@@ -158,6 +161,7 @@ export class PhaseExecutor extends EventEmitter {
   private baseBranch: string | undefined;
   private taskLevelAgents: boolean;
   private validationPipeline: ValidationPipeline | null = null;
+  private postFeatureHooks: PostFeatureHooksConfig | undefined;
 
   constructor(options: PhaseExecutorOptions) {
     super();
@@ -167,6 +171,7 @@ export class PhaseExecutor extends EventEmitter {
     this.sessionId = options.sessionId;
     this.baseBranch = options.baseBranch;
     this.taskLevelAgents = options.taskLevelAgents ?? true; // Default to task-level agents
+    this.postFeatureHooks = options.postFeatureHooks;
 
     // Initialize validation pipeline if configured (ENG-48)
     if (options.validationConfig?.enabled) {
@@ -683,6 +688,9 @@ export class PhaseExecutor extends EventEmitter {
     // ENG-70: Mark feature as Done when all tasks pass
     if (overallSuccess) {
       await this.markFeatureDone(feature);
+
+      // ENG-73: Trigger post-feature Barney audit if configured
+      this.triggerPostFeatureHook(feature);
     }
 
     // Emit SESSION_FEATURE_COMPLETED event
@@ -703,6 +711,30 @@ export class PhaseExecutor extends EventEmitter {
     } catch (error) {
       console.warn(
         `    ⚠️  Failed to mark feature ${feature.identifier} as Done:`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  /**
+   * ENG-73: Trigger post-feature Barney audit hook (fire-and-forget).
+   */
+  private triggerPostFeatureHook(feature: ExecutionItem): void {
+    const barneyConfig = this.postFeatureHooks?.barneyAudit;
+    if (!barneyConfig?.enabled) return;
+
+    const scriptPath = barneyConfig.scriptPath.replace(/^~/, process.env.HOME ?? "");
+
+    try {
+      console.log(`    🔍 Triggering Barney post-feature audit for ${feature.identifier}`);
+      const child = spawn("node", [scriptPath, "--mode", "post-feature", "--target", feature.identifier], {
+        detached: true,
+        stdio: "ignore",
+      });
+      child.unref();
+    } catch (error) {
+      console.warn(
+        `    ⚠️  Failed to trigger Barney audit for ${feature.identifier}:`,
         error instanceof Error ? error.message : error
       );
     }

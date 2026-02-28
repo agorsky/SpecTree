@@ -523,6 +523,10 @@ export class Orchestrator extends EventEmitter {
     if (validationConfig) {
       phaseExecutorOpts.validationConfig = validationConfig;
     }
+    // ENG-73: Pass post-feature hooks config
+    if (mergedConfig.postFeatureHooks) {
+      phaseExecutorOpts.postFeatureHooks = mergedConfig.postFeatureHooks;
+    }
     this.phaseExecutor = new PhaseExecutor(phaseExecutorOpts);
 
     // Set session ID if available
