@@ -213,6 +213,9 @@ export function mergeConfig(cliOverrides?: CliOverrides): Config {
       maxRetries: 1,
       dockerComposeFile: "docker-compose.local.yml",
     },
+    postFeatureHooks: {
+      barneyAudit: { enabled: false, scriptPath: "~/clawd/bin/barney-dispatcher.js" },
+    },
   };
 
   // Apply project config

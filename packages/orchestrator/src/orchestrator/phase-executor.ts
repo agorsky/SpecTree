@@ -29,6 +29,7 @@
  */
 
 import { EventEmitter } from "events";
+import { spawn } from "child_process";
 import {
   AgentPool,
   type Agent,
@@ -44,7 +45,7 @@ import type {
 import { AgentError, OrchestratorError, wrapError } from "../errors.js";
 import { SessionEventType } from "@dispatcher/shared";
 import { ValidationPipeline, type ValidationPipelineResult } from "../validation/index.js";
-import type { ValidationConfig } from "../config/schemas.js";
+import type { ValidationConfig, PostFeatureHooksConfig } from "../config/schemas.js";
 
 // =============================================================================
 // Types and Interfaces
@@ -108,6 +109,8 @@ export interface PhaseExecutorOptions {
   taskLevelAgents?: boolean;
   /** Post-execution validation config (ENG-48). When set with enabled=true, runs after feature completion. */
   validationConfig?: ValidationConfig;
+  /** Post-feature hooks (ENG-73). Triggers like Barney audit after feature completion. */
+  postFeatureHooks?: PostFeatureHooksConfig;
 }
 
 /**
@@ -158,6 +161,7 @@ export class PhaseExecutor extends EventEmitter {
   private baseBranch: string | undefined;
   private taskLevelAgents: boolean;
   private validationPipeline: ValidationPipeline | null = null;
+  private postFeatureHooks: PostFeatureHooksConfig | undefined;
 
   constructor(options: PhaseExecutorOptions) {
     super();
@@ -167,6 +171,7 @@ export class PhaseExecutor extends EventEmitter {
     this.sessionId = options.sessionId;
     this.baseBranch = options.baseBranch;
     this.taskLevelAgents = options.taskLevelAgents ?? true; // Default to task-level agents
+    this.postFeatureHooks = options.postFeatureHooks;
 
     // Initialize validation pipeline if configured (ENG-48)
     if (options.validationConfig?.enabled) {
@@ -680,11 +685,59 @@ export class PhaseExecutor extends EventEmitter {
       result.error = new Error(`Validation failed: ${validationResult?.report.summary ?? "unknown"}`);
     }
 
+    // ENG-70: Mark feature as Done when all tasks pass
+    if (overallSuccess) {
+      await this.markFeatureDone(feature);
+
+      // ENG-73: Trigger post-feature Barney audit if configured
+      this.triggerPostFeatureHook(feature);
+    }
+
     // Emit SESSION_FEATURE_COMPLETED event
     const completedTaskCount = taskResults.filter(r => r.success).length;
     await this.emitFeatureCompletedEvent(feature, startTime, completedTaskCount);
 
     return result;
+  }
+
+  /**
+   * ENG-70: Mark a feature as Done via API.
+   */
+  private async markFeatureDone(feature: ExecutionItem): Promise<void> {
+    const DONE_STATUS_ID = "52e901cb-0e67-4136-8f03-ba62d7daa891";
+    try {
+      await this.specTreeClient.updateFeature(feature.id, { statusId: DONE_STATUS_ID });
+      console.log(`    ✅ Feature ${feature.identifier} marked as Done`);
+    } catch (error) {
+      console.warn(
+        `    ⚠️  Failed to mark feature ${feature.identifier} as Done:`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  /**
+   * ENG-73: Trigger post-feature Barney audit hook (fire-and-forget).
+   */
+  private triggerPostFeatureHook(feature: ExecutionItem): void {
+    const barneyConfig = this.postFeatureHooks?.barneyAudit;
+    if (!barneyConfig?.enabled) return;
+
+    const scriptPath = barneyConfig.scriptPath.replace(/^~/, process.env.HOME ?? "");
+
+    try {
+      console.log(`    🔍 Triggering Barney post-feature audit for ${feature.identifier}`);
+      const child = spawn("node", [scriptPath, "--mode", "post-feature", "--target", feature.identifier], {
+        detached: true,
+        stdio: "ignore",
+      });
+      child.unref();
+    } catch (error) {
+      console.warn(
+        `    ⚠️  Failed to trigger Barney audit for ${feature.identifier}:`,
+        error instanceof Error ? error.message : error
+      );
+    }
   }
 
   /**
@@ -717,6 +770,9 @@ export class PhaseExecutor extends EventEmitter {
     console.log(`    🤖 Starting agent for task ${task.identifier}: ${task.title}`);
 
     try {
+      // ENG-69-1: Capture git HEAD before agent spawn
+      const preTaskCommit = await this.branchManager.getLatestCommitHash();
+
       // Mark task as started in SpecTree
       await this.markTaskStarted(task);
 
@@ -753,10 +809,15 @@ export class PhaseExecutor extends EventEmitter {
       // Mark task as completed in SpecTree
       if (agentResult.success) {
         await this.markTaskCompleted(task, agentResult.summary);
-        
+
+        // ENG-69-2: Link modified files to task via API
+        if (preTaskCommit) {
+          await this.linkModifiedFiles(task, preTaskCommit);
+        }
+
         // Emit SESSION_TASK_COMPLETED event
         await this.emitTaskCompletedEvent(task, feature, taskStartTime, true);
-        
+
         this.emit("task:complete", task, feature, true);
         console.log(`    ✅ Task ${task.identifier} completed (${((Date.now() - taskStartTime) / 1000).toFixed(1)}s)`);
       } else {
@@ -783,6 +844,30 @@ export class PhaseExecutor extends EventEmitter {
         success: false,
         error: taskError,
       };
+    }
+  }
+
+  /**
+   * ENG-69-2: Link files modified during a task to the task via API.
+   */
+  private async linkModifiedFiles(task: Task, preTaskCommit: string): Promise<void> {
+    try {
+      const modifiedFiles = await this.branchManager.getModifiedFiles(preTaskCommit);
+      if (modifiedFiles.length === 0) return;
+
+      console.log(`    📎 Linking ${modifiedFiles.length} modified file(s) to ${task.identifier}`);
+      for (const filePath of modifiedFiles) {
+        try {
+          await this.specTreeClient.linkCodeFile("task", task.id, filePath);
+        } catch (e) {
+          console.warn(`      Failed to link file ${filePath}:`, e instanceof Error ? e.message : e);
+        }
+      }
+    } catch (error) {
+      console.warn(
+        `    ⚠️  Failed to link modified files for ${task.identifier}:`,
+        error instanceof Error ? error.message : error
+      );
     }
   }
 

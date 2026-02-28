@@ -85,6 +85,21 @@ export const ValidationConfigSchema = z.object({
 });
 
 /**
+ * Schema for Barney audit hook configuration (ENG-73).
+ */
+export const BarneyAuditConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  scriptPath: z.string().default("~/clawd/bin/barney-dispatcher.js"),
+});
+
+/**
+ * Schema for post-feature hook configuration (ENG-73).
+ */
+export const PostFeatureHooksSchema = z.object({
+  barneyAudit: BarneyAuditConfigSchema.default({}),
+});
+
+/**
  * Schema for the fully merged configuration.
  */
 export const MergedConfigSchema = z.object({
@@ -105,6 +120,9 @@ export const MergedConfigSchema = z.object({
   // Validation pipeline (ENG-43–48)
   validation: ValidationConfigSchema.default({}),
 
+  // Post-feature hooks (ENG-73)
+  postFeatureHooks: PostFeatureHooksSchema.default({}),
+
   // Computed
   repoRoot: z.string().optional(),
 });
@@ -121,6 +139,8 @@ export type ValidationConfig = z.infer<typeof ValidationConfigSchema>;
 export type CheckpointConfig = z.infer<typeof CheckpointConfigSchema>;
 export type SmokeTestConfig = z.infer<typeof SmokeTestConfigSchema>;
 export type SmokeTestEndpoint = z.infer<typeof SmokeTestEndpointSchema>;
+export type BarneyAuditConfig = z.infer<typeof BarneyAuditConfigSchema>;
+export type PostFeatureHooksConfig = z.infer<typeof PostFeatureHooksSchema>;
 
 /**
  * Partial user config for updates.
