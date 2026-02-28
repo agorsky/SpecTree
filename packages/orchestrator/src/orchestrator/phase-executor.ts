@@ -43,6 +43,8 @@ import type {
 } from "../spectree/api-client.js";
 import { AgentError, OrchestratorError, wrapError } from "../errors.js";
 import { SessionEventType } from "@dispatcher/shared";
+import { ValidationPipeline, type ValidationPipelineResult } from "../validation/index.js";
+import type { ValidationConfig } from "../config/schemas.js";
 
 // =============================================================================
 // Types and Interfaces
@@ -104,6 +106,8 @@ export interface PhaseExecutorOptions {
   baseBranch?: string;
   /** Execute each task with its own agent (fresh context per task) */
   taskLevelAgents?: boolean;
+  /** Post-execution validation config (ENG-48). When set with enabled=true, runs after feature completion. */
+  validationConfig?: ValidationConfig;
 }
 
 /**
@@ -153,6 +157,7 @@ export class PhaseExecutor extends EventEmitter {
   private sessionId: string | undefined;
   private baseBranch: string | undefined;
   private taskLevelAgents: boolean;
+  private validationPipeline: ValidationPipeline | null = null;
 
   constructor(options: PhaseExecutorOptions) {
     super();
@@ -162,6 +167,13 @@ export class PhaseExecutor extends EventEmitter {
     this.sessionId = options.sessionId;
     this.baseBranch = options.baseBranch;
     this.taskLevelAgents = options.taskLevelAgents ?? true; // Default to task-level agents
+
+    // Initialize validation pipeline if configured (ENG-48)
+    if (options.validationConfig?.enabled) {
+      this.validationPipeline = new ValidationPipeline({
+        config: options.validationConfig,
+      });
+    }
 
     // Forward streaming events from AgentPool as task:progress
     this.agentPool.on("agent:message", (agent, chunk) => {
@@ -618,16 +630,45 @@ export class PhaseExecutor extends EventEmitter {
     const completedTasks = taskResults.filter(r => r.success).map(r => r.task.identifier);
     const failedTasks = taskResults.filter(r => !r.success).map(r => r.task.identifier);
 
+    let validationResult: ValidationPipelineResult | undefined;
+
+    // Run post-execution validation if all tasks succeeded and pipeline is configured (ENG-48)
+    if (allSucceeded && this.validationPipeline) {
+      try {
+        console.log(`    🔍 Running post-execution validation for ${feature.identifier}...`);
+        validationResult = await this.validationPipeline.run(feature.identifier);
+        console.log(`    ${validationResult.success ? "✅" : "❌"} Validation ${validationResult.success ? "passed" : "failed"}: ${validationResult.report.summary}`);
+      } catch (error) {
+        console.warn(
+          `    ⚠️  Validation pipeline error for ${feature.identifier}:`,
+          error instanceof Error ? error.message : error
+        );
+      }
+    }
+
+    const validationPassed = validationResult?.success ?? true;
+    const overallSuccess = allSucceeded && validationPassed;
+
+    let summary: string;
+    if (overallSuccess) {
+      summary = `Completed ${completedTasks.length} tasks: ${completedTasks.join(", ")}`;
+      if (validationResult) {
+        summary += ` | ${validationResult.report.summary}`;
+      }
+    } else if (!allSucceeded) {
+      summary = `Failed at tasks: ${failedTasks.join(", ")}. Completed: ${completedTasks.join(", ") || "none"}`;
+    } else {
+      summary = `Tasks passed but validation failed: ${validationResult?.report.summary ?? "unknown"}`;
+    }
+
     const result: ItemResult = {
       itemId: feature.id,
       identifier: feature.identifier,
       type: feature.type,
-      success: allSucceeded,
+      success: overallSuccess,
       duration: Date.now() - startTime,
       branch,
-      summary: allSucceeded 
-        ? `Completed ${completedTasks.length} tasks: ${completedTasks.join(", ")}`
-        : `Failed at tasks: ${failedTasks.join(", ")}. Completed: ${completedTasks.join(", ") || "none"}`,
+      summary,
     };
 
     if (!allSucceeded) {
@@ -635,6 +676,8 @@ export class PhaseExecutor extends EventEmitter {
       if (firstError) {
         result.error = firstError;
       }
+    } else if (!validationPassed) {
+      result.error = new Error(`Validation failed: ${validationResult?.report.summary ?? "unknown"}`);
     }
 
     // Emit SESSION_FEATURE_COMPLETED event

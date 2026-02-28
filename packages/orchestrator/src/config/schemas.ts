@@ -48,6 +48,43 @@ export const CliOverridesSchema = z.object({
 });
 
 /**
+ * Schema for checkpoint configuration (ENG-43).
+ */
+export const CheckpointConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  tagPrefix: z.string().default("checkpoint/"),
+});
+
+/**
+ * Schema for smoke test endpoint checks (ENG-46).
+ */
+export const SmokeTestEndpointSchema = z.object({
+  url: z.string(),
+  expectedStatus: z.number().int().default(200),
+  label: z.string().optional(),
+});
+
+/**
+ * Schema for smoke test configuration (ENG-46).
+ */
+export const SmokeTestConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  endpoints: z.array(SmokeTestEndpointSchema).default([]),
+  healthTimeout: z.number().int().default(60000),
+});
+
+/**
+ * Schema for post-execution validation configuration (ENG-43–48).
+ */
+export const ValidationConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  checkpoint: CheckpointConfigSchema.default({}),
+  smokeTest: SmokeTestConfigSchema.default({}),
+  maxRetries: z.number().int().min(0).max(3).default(1),
+  dockerComposeFile: z.string().default("docker-compose.local.yml"),
+});
+
+/**
  * Schema for the fully merged configuration.
  */
 export const MergedConfigSchema = z.object({
@@ -65,6 +102,9 @@ export const MergedConfigSchema = z.object({
   lintCommand: z.string().optional(),
   buildCommand: z.string().optional(),
 
+  // Validation pipeline (ENG-43–48)
+  validation: ValidationConfigSchema.default({}),
+
   // Computed
   repoRoot: z.string().optional(),
 });
@@ -77,6 +117,10 @@ export type UserConfig = z.infer<typeof UserConfigSchema>;
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 export type CliOverrides = z.infer<typeof CliOverridesSchema>;
 export type Config = z.infer<typeof MergedConfigSchema>;
+export type ValidationConfig = z.infer<typeof ValidationConfigSchema>;
+export type CheckpointConfig = z.infer<typeof CheckpointConfigSchema>;
+export type SmokeTestConfig = z.infer<typeof SmokeTestConfigSchema>;
+export type SmokeTestEndpoint = z.infer<typeof SmokeTestEndpointSchema>;
 
 /**
  * Partial user config for updates.

@@ -52,6 +52,7 @@ import {
   isMergeConflictError,
 } from "../errors.js";
 import { getConfig } from "../config/index.js";
+import type { ValidationConfig } from "../config/schemas.js";
 import { PhaseExecutor, type PhaseResult, type TaskProgressEvent } from "./phase-executor.js";
 import { AgentPool } from "./agent-pool.js";
 import { BranchManager } from "../git/branch-manager.js";
@@ -76,6 +77,8 @@ export interface RunOptions {
   baseBranch?: string;
   /** Execute each task with its own dedicated agent (fresh context per task). Default: true */
   taskLevelAgents?: boolean;
+  /** Enable post-execution validation pipeline (ENG-48) */
+  validate?: boolean;
 }
 
 /**
@@ -485,13 +488,24 @@ export class Orchestrator extends EventEmitter {
       specTreeClient: this.client,
     });
 
-    this.phaseExecutor = new PhaseExecutor({
+    // Build validation config if enabled
+    const mergedConfig = getConfig();
+    const validationConfig: ValidationConfig | undefined =
+      (taskLevelAgents && mergedConfig.validation?.enabled)
+        ? mergedConfig.validation
+        : undefined;
+
+    const phaseExecutorOpts: import("./phase-executor.js").PhaseExecutorOptions = {
       agentPool: this.agentPool,
       branchManager: this.branchManager,
       specTreeClient: this.client,
       baseBranch,
       taskLevelAgents,
-    });
+    };
+    if (validationConfig) {
+      phaseExecutorOpts.validationConfig = validationConfig;
+    }
+    this.phaseExecutor = new PhaseExecutor(phaseExecutorOpts);
 
     // Set session ID if available
     if (this.spectreeSession?.id) {

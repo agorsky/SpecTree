@@ -206,6 +206,13 @@ export function mergeConfig(cliOverrides?: CliOverrides): Config {
     ...DEFAULT_USER_CONFIG,
     ...userConfig,
     repoRoot,
+    validation: {
+      enabled: false,
+      checkpoint: { enabled: true, tagPrefix: "checkpoint/" },
+      smokeTest: { enabled: false, endpoints: [], healthTimeout: 60000 },
+      maxRetries: 1,
+      dockerComposeFile: "docker-compose.local.yml",
+    },
   };
 
   // Apply project config
