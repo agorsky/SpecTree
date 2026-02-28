@@ -6,7 +6,7 @@
  * missed completions or stuck items are surfaced.
  */
 
-import type { DispatcherClient, Feature, Task } from "../spectree/api-client.js";
+import type { DispatcherClient } from "../spectree/api-client.js";
 
 // =============================================================================
 // Types
