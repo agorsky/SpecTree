@@ -343,6 +343,60 @@ describe("ClaudeCodeClient", () => {
 
       expect(events).toHaveLength(0);
     });
+
+    it("should throw OrchestratorError when proc.stdout is null", () => {
+      const proc = createMockProcess();
+      Object.defineProperty(proc, "stdout", { value: null, writable: true });
+
+      expect(() => {
+        client.parseStreamOutput(proc, () => {});
+      }).toThrow("Claude Code process has no stdout pipe");
+    });
+
+    it("should flush remaining buffer on stdout end", () => {
+      const proc = createMockProcess();
+      const events: any[] = [];
+
+      client.parseStreamOutput(proc, (event) => events.push(event));
+
+      const resultEvent: ResultEvent = {
+        type: "result",
+        subtype: "success",
+        result: "final",
+      };
+
+      // Send data without trailing newline
+      emitStdout(proc, JSON.stringify(resultEvent));
+      expect(events).toHaveLength(0);
+
+      // Emit end — should flush the buffer
+      proc.stdout!.emit("end");
+      expect(events).toHaveLength(1);
+      expect(events[0].type).toBe("result");
+      expect(events[0].result).toBe("final");
+    });
+
+    it("should not emit on end if buffer is empty", () => {
+      const proc = createMockProcess();
+      const events: any[] = [];
+
+      client.parseStreamOutput(proc, (event) => events.push(event));
+
+      // End with nothing in buffer
+      proc.stdout!.emit("end");
+      expect(events).toHaveLength(0);
+    });
+
+    it("should not emit on end if buffer contains malformed JSON", () => {
+      const proc = createMockProcess();
+      const events: any[] = [];
+
+      client.parseStreamOutput(proc, (event) => events.push(event));
+
+      emitStdout(proc, "{broken json");
+      proc.stdout!.emit("end");
+      expect(events).toHaveLength(0);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -503,6 +557,129 @@ describe("ClaudeCodeClient", () => {
       expect((proc as any).kill).toHaveBeenCalledWith("SIGTERM");
 
       vi.useRealTimers();
+    });
+
+    it("should reject on inactivity timeout when no events received", async () => {
+      vi.useFakeTimers();
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc);
+
+      const c = new ClaudeCodeClient({ inactivityTimeoutMs: 2000, requestTimeout: 30000 });
+      const promise = c.executePrompt("idle task");
+
+      // Advance past inactivity timeout (no events emitted)
+      vi.advanceTimersByTime(2001);
+
+      // Simulate process exit after kill
+      emitExit(proc, null, "SIGTERM");
+
+      await expect(promise).rejects.toThrow("inactive");
+      expect((proc as any).kill).toHaveBeenCalledWith("SIGTERM");
+
+      vi.useRealTimers();
+    });
+
+    it("should reset inactivity timer on each stream event", async () => {
+      vi.useFakeTimers();
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc);
+
+      const c = new ClaudeCodeClient({ inactivityTimeoutMs: 2000, requestTimeout: 30000 });
+      const promise = c.executePrompt("active task");
+
+      const systemEvent: SystemEvent = { type: "system", subtype: "init", message: "init", session_id: "s1" };
+
+      // Advance 1.5s, emit event (resets timer)
+      vi.advanceTimersByTime(1500);
+      emitStdout(proc, JSON.stringify(systemEvent) + "\n");
+
+      // Advance another 1.5s (total 3s, but only 1.5s since last event)
+      vi.advanceTimersByTime(1500);
+      // Should NOT have timed out yet
+
+      // Now emit result and exit
+      const resultEvent: ResultEvent = { type: "result", subtype: "success", result: "done" };
+      emitStdout(proc, JSON.stringify(resultEvent) + "\n");
+      emitExit(proc, 0);
+
+      const result = await promise;
+      expect(result.result).toBe("done");
+
+      vi.useRealTimers();
+    });
+
+    it("should allow per-request inactivity timeout override via SpawnOptions", async () => {
+      vi.useFakeTimers();
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc);
+
+      const c = new ClaudeCodeClient({ inactivityTimeoutMs: 60000, requestTimeout: 300000 });
+      const promise = c.executePrompt("test", { inactivityTimeoutMs: 1000 });
+
+      // Advance past per-request inactivity timeout
+      vi.advanceTimersByTime(1001);
+
+      emitExit(proc, null, "SIGTERM");
+
+      await expect(promise).rejects.toThrow("inactive");
+
+      vi.useRealTimers();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // diagnostic and warning events
+  // ---------------------------------------------------------------------------
+
+  describe("diagnostic and warning events", () => {
+    it("should emit diagnostic event for stderr output", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc);
+
+      const diagnostics: string[] = [];
+      client.on("diagnostic", (text: string) => diagnostics.push(text));
+
+      const promise = client.executePrompt("test");
+
+      emitStderr(proc, "debug: loading config\n");
+      emitStderr(proc, "warn: slow response\n");
+
+      const resultEvent: ResultEvent = { type: "result", subtype: "success", result: "done" };
+      emitStdout(proc, JSON.stringify(resultEvent) + "\n");
+      emitExit(proc, 0);
+
+      await promise;
+
+      expect(diagnostics).toEqual(["debug: loading config\n", "warn: slow response\n"]);
+    });
+
+    it("should emit warning event for malformed JSON lines", () => {
+      const proc = createMockProcess();
+      const warnings: { type: string; line: string }[] = [];
+
+      client.on("warning", (w: { type: string; line: string }) => warnings.push(w));
+      client.parseStreamOutput(proc, () => {});
+
+      emitStdout(proc, "not-valid-json\n");
+      emitStdout(proc, "{incomplete\n");
+
+      expect(warnings).toHaveLength(2);
+      expect(warnings[0]).toEqual({ type: "malformed_json", line: "not-valid-json" });
+      expect(warnings[1]).toEqual({ type: "malformed_json", line: "{incomplete" });
+    });
+
+    it("should emit warning for malformed JSON on end flush", () => {
+      const proc = createMockProcess();
+      const warnings: { type: string; line: string }[] = [];
+
+      client.on("warning", (w: { type: string; line: string }) => warnings.push(w));
+      client.parseStreamOutput(proc, () => {});
+
+      emitStdout(proc, "{broken");
+      proc.stdout!.emit("end");
+
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toEqual({ type: "malformed_json", line: "{broken" });
     });
   });
 

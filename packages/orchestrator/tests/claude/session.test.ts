@@ -202,6 +202,66 @@ describe("ClaudeCodeSession", () => {
 });
 
 // =============================================================================
+// Option Propagation Tests (ENG-36-2)
+// =============================================================================
+
+describe("ClaudeCodeSession option propagation", () => {
+  it("should forward mcpConfigPath, appendSystemPrompt, maxTurns, args from parent client", async () => {
+    // Create a real client with all options set
+    const parentClient = new ClaudeCodeClient({
+      mcpConfigPath: "/tmp/mcp.json",
+      appendSystemPrompt: "extra instructions",
+      maxTurns: 10,
+      args: ["--verbose"],
+      inactivityTimeoutMs: 5000,
+    });
+
+    const session = new ClaudeCodeSession("prop-test", parentClient, {
+      model: "opus",
+    });
+
+    // Access the private buildSessionClient via the session's send path
+    // We'll verify by inspecting the built args
+    const sessionClient = (session as any).buildSessionClient() as ClaudeCodeClient;
+    const args = sessionClient.buildArgs("test prompt");
+
+    expect(args).toContain("--mcp-config");
+    expect(args).toContain("/tmp/mcp.json");
+    expect(args).toContain("--append-system-prompt");
+    expect(args).toContain("extra instructions");
+    expect(args).toContain("--max-turns");
+    expect(args).toContain("10");
+    expect(args).toContain("--verbose");
+    expect(args).toContain("--model");
+    expect(args).toContain("opus");
+  });
+
+  it("should use parent client directly when no session options", () => {
+    const parentClient = new ClaudeCodeClient({
+      mcpConfigPath: "/tmp/mcp.json",
+    });
+
+    const session = new ClaudeCodeSession("no-opts", parentClient);
+
+    const sessionClient = (session as any).buildSessionClient();
+    expect(sessionClient).toBe(parentClient);
+  });
+
+  it("should preserve inactivityTimeout from parent client", () => {
+    const parentClient = new ClaudeCodeClient({
+      inactivityTimeoutMs: 30000,
+    });
+
+    const session = new ClaudeCodeSession("inactivity-test", parentClient, {
+      model: "sonnet",
+    });
+
+    const sessionClient = (session as any).buildSessionClient() as ClaudeCodeClient;
+    expect((sessionClient as any).inactivityTimeout).toBe(30000);
+  });
+});
+
+// =============================================================================
 // ClaudeCodeSessionManager Tests
 // =============================================================================
 
