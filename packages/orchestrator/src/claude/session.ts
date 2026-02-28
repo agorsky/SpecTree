@@ -229,6 +229,22 @@ export class ClaudeCodeSession extends EventEmitter {
     const allowedTools = this.options.allowedTools ?? (this.client as any).allowedTools;
     if (allowedTools) opts.allowedTools = allowedTools as string[];
 
+    // Forward options that were previously missing
+    const mcpConfigPath = (this.client as any).mcpConfigPath as string | undefined;
+    if (mcpConfigPath) opts.mcpConfigPath = mcpConfigPath;
+
+    const appendSystemPrompt = (this.client as any).appendSystemPrompt as string | undefined;
+    if (appendSystemPrompt) opts.appendSystemPrompt = appendSystemPrompt;
+
+    const maxTurns = (this.client as any).maxTurns as number | undefined;
+    if (maxTurns !== undefined) opts.maxTurns = maxTurns;
+
+    const extraArgs = (this.client as any).extraArgs as string[];
+    if (extraArgs && extraArgs.length > 0) opts.args = extraArgs;
+
+    const inactivityTimeout = (this.client as any).inactivityTimeout as number | undefined;
+    if (inactivityTimeout !== undefined) opts.inactivityTimeoutMs = inactivityTimeout;
+
     return new ClaudeCodeClient(opts);
   }
 
