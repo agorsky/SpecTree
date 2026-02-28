@@ -39,6 +39,7 @@ import { registerWorkflowTools } from "./workflow.js";
 import { registerLawTools } from "./laws.js";
 import { registerCaseTools } from "./cases.js";
 import { registerAgentScoreTools } from "./agent-scores.js";
+import { registerMemoryPatternTools } from "./memory-patterns.js";
 
 // Import changelog tools
 import { registerChangelogTools } from "./changelog.js";
@@ -82,6 +83,7 @@ const toolRegistrars: ToolRegistrar[] = [
   registerPatternTools,      // Pattern detection & convention extraction
   registerEffortTools,       // Effort estimation engine
   registerWorkflowTools,     // Workflow guidance
+  registerMemoryPatternTools, // Memory pattern registry (ENG-65)
   registerSkillPackTools,    // Skill pack management
 ];
 

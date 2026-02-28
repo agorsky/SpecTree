@@ -1250,6 +1250,27 @@ export interface AgentScore {
   updatedAt: string;
 }
 
+/** Pattern registry entry (ENG-65) */
+export interface PatternResponse {
+  id: string;
+  epicId: string | null;
+  name: string;
+  category: string;
+  description: string;
+  examples: string[];
+  source: string;
+  confidence: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Briefing response (ENG-66) */
+export interface BriefingResponse {
+  briefing: string;
+  tokenCount: number;
+  sources: string[];
+}
+
 /** Decision record */
 export interface Decision {
   id: string;
@@ -3754,6 +3775,73 @@ export class ApiClient {
       "PUT",
       `/api/v1/agent-scores/${encodeURIComponent(agentName)}/adjust`,
       input
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pattern Registry (ENG-65)
+  // ---------------------------------------------------------------------------
+
+  async listPatterns(params?: {
+    epicId?: string;
+    category?: string;
+    global?: boolean;
+  }): Promise<{ data: PatternResponse[] }> {
+    const query = this.buildQueryString({
+      epicId: params?.epicId,
+      category: params?.category,
+      global: params?.global ? "true" : undefined,
+    });
+    return this.request<{ data: PatternResponse[] }>("GET", `/api/v1/patterns${query}`);
+  }
+
+  async getPattern(id: string): Promise<{ data: PatternResponse }> {
+    return this.request<{ data: PatternResponse }>(
+      "GET",
+      `/api/v1/patterns/${encodeURIComponent(id)}`
+    );
+  }
+
+  async createPattern(input: {
+    name: string;
+    category: string;
+    description: string;
+    examples?: string[];
+    epicId?: string | null;
+    source?: string;
+    confidence?: number;
+  }): Promise<{ data: PatternResponse }> {
+    return this.request<{ data: PatternResponse }>("POST", "/api/v1/patterns", input);
+  }
+
+  async updatePattern(id: string, input: {
+    name?: string;
+    category?: string;
+    description?: string;
+    examples?: string[];
+    epicId?: string | null;
+    source?: string;
+    confidence?: number;
+  }): Promise<{ data: PatternResponse }> {
+    return this.request<{ data: PatternResponse }>(
+      "PATCH",
+      `/api/v1/patterns/${encodeURIComponent(id)}`,
+      input
+    );
+  }
+
+  async deletePattern(id: string): Promise<void> {
+    await this.request<void>("DELETE", `/api/v1/patterns/${encodeURIComponent(id)}`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Briefings (ENG-66)
+  // ---------------------------------------------------------------------------
+
+  async getBriefing(epicId: string): Promise<{ data: BriefingResponse }> {
+    return this.request<{ data: BriefingResponse }>(
+      "GET",
+      `/api/v1/epics/${encodeURIComponent(epicId)}/briefing`
     );
   }
 }
