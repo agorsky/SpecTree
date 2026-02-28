@@ -189,7 +189,7 @@ export class ClaudeCodeClient extends EventEmitter {
         try {
           parsed = JSON.parse(trimmed) as Record<string, unknown>;
         } catch {
-          // Malformed JSON — skip
+          this.emit("warning", { type: "malformed_json", line: trimmed });
           continue;
         }
 
@@ -209,6 +209,7 @@ export class ClaudeCodeClient extends EventEmitter {
       try {
         parsed = JSON.parse(trimmed) as Record<string, unknown>;
       } catch {
+        this.emit("warning", { type: "malformed_json", line: trimmed });
         return;
       }
 
@@ -344,9 +345,11 @@ export class ClaudeCodeClient extends EventEmitter {
         clearTimeout(inactivityTimer);
       };
 
-      // Capture stderr
+      // Capture stderr and emit diagnostic events
       proc.stderr?.on("data", (chunk: Buffer) => {
-        stderr += chunk.toString();
+        const text = chunk.toString();
+        stderr += text;
+        (client as EventEmitter).emit("diagnostic", text);
       });
 
       // Parse stream-json events
