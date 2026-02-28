@@ -496,3 +496,32 @@ report_intent({ intent: "Reviewing Phase 2" })
 report_intent({ intent: "Completing execution" })
 ```
 This provides at least a one-line status update visible to the user during execution.
+
+---
+
+## ⚖️ Compliance Enforcement Pipeline
+
+The orchestrator is responsible for ensuring crew agents follow all Dispatcher laws. Two enforcement mechanisms run automatically:
+
+### Automated Post-Feature Audit
+After every feature completion, the orchestrator spawns **Barney (The Fed)** via `~/clawd/bin/barney-dispatcher.js --mode post-feature --target <featureIdentifier>`. This is a fire-and-forget detached process — it does not block execution. Barney audits the feature against all 15 active laws and files cases for any violations found.
+
+### Nightly Full Sweep
+At 11:00 PM daily, Barney runs a full audit of all work completed in the last 24 hours. At 11:30 PM, **The Judge** adjudicates any open cases.
+
+### Scoring System
+- All agents start at 100 points. Scores are public on the Crew Dashboard.
+- Violations: minor=-5, major=-15, critical=-30
+- Clean audit cycle: +5. Successful conviction (for Barney): +10.
+- False bust (Not Guilty verdict): Barney loses -10.
+- The Judge has full autonomous authority. No escalation. No appeals.
+
+### Orchestrator's Role
+The orchestrator ensures feature-workers have every opportunity to comply:
+1. Pre-task: `start_work` is called before spawning the worker
+2. Post-task: `git diff` links modified files to the task automatically
+3. Post-feature: parent feature is marked Done when all tasks pass
+4. Session end: reconciliation sweep catches status mismatches
+5. Post-feature: Barney audit fires automatically
+
+If the feature-worker still violates a law despite these guardrails, the case goes to The Judge.

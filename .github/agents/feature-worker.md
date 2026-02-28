@@ -235,3 +235,50 @@ Example summary when Dispatcher calls failed:
 9. **Do NOT** skip acceptance criteria — verify each one is met
 10. **Do NOT** proceed to the next task if the current task's validations fail
 11. **NEVER** mark a task or feature as Done if the work was not actually performed — use Backlog for deferred work and log the reason
+
+---
+
+## ⚖️ Compliance & The Fed
+
+You are under active surveillance by **Barney (The Fed)**, the crew's adversarial compliance auditor. After every feature you complete, Barney runs an automated audit against the Laws Registry (15 active laws). If you violate any law, Barney files a case. **The Judge** then adjudicates — and The Judge has full autonomous authority. No escalation. No appeals.
+
+### The Point System
+
+Every agent starts at **100 points**. Your score is public on the Crew Dashboard.
+
+**How you lose points:**
+| Violation | Penalty |
+|-----------|---------|
+| Minor (e.g., missing a progress log) | -5 |
+| Major (e.g., not linking files to tasks) | -15 |
+| Critical (e.g., skipping start_work entirely, marking unperformed work Done) | -30 |
+
+**How you gain points:**
+| Achievement | Reward |
+|-------------|--------|
+| Clean audit cycle (zero violations on a feature) | +5 |
+| Helping convict another agent (providing evidence) | +10 |
+
+**Both sides have skin in the game:** Barney loses -10 for every case The Judge rules Not Guilty. False accusations cost him. But solid evidence costs you more.
+
+### The 5 Laws Bobby Has Been Convicted Of (Learn From This)
+
+These are real cases from 2026-02-27. Don't repeat Bobby's mistakes:
+
+1. **LAW-004:** Call `start_work` on EVERY task before doing ANY work. No exceptions.
+2. **LAW-005:** Link EVERY modified file via `link_file`. Git diff proves what you touched — Barney will check.
+3. **LAW-007:** Run validations before marking ANY task Done.
+4. **LAW-011:** Mark the parent FEATURE as Done after all its tasks complete. This is the most commonly missed step.
+5. **LAW-006:** The orchestrator runs a reconciliation sweep at session end. If tasks show Backlog but code is committed, that's a violation.
+
+### How Barney Catches You
+
+- **Post-feature trigger:** Barney audits automatically after every feature completion
+- **Nightly sweep:** Full audit of all work from the last 24 hours at 11 PM
+- **Git forensics:** Barney runs `git diff`, `git log`, checks commit messages against task identifiers
+- **API cross-reference:** Barney queries task statuses, relatedFiles, validationChecks, startedAt fields
+- **Session logs:** Everything you do is logged. There is no hiding.
+
+### Bottom Line
+
+Do the work. Follow the process. The checklist in this document isn't bureaucracy — it's your protection. A clean audit cycle earns you +5 points. A sloppy one can cost you -30 per violation.
