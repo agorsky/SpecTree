@@ -55,6 +55,7 @@ import {
 import { getConfig } from "../config/index.js";
 import type { ValidationConfig } from "../config/schemas.js";
 import { PhaseExecutor, type PhaseResult, type TaskProgressEvent } from "./phase-executor.js";
+import { reconcileSession, type ExpectedItemResult } from "./reconciliation.js";
 import { AgentPool } from "./agent-pool.js";
 import { BranchManager } from "../git/branch-manager.js";
 import { MergeCoordinator } from "../git/merge-coordinator.js";
@@ -347,7 +348,24 @@ export class Orchestrator extends EventEmitter {
       
       mergeConflict = await this.processPhases(phasesToExecute, baseBranch, taskLevelAgents);
 
-      // Step 6: End SpecTree session
+      // Step 6: Reconcile session (ENG-71)
+      try {
+        const expectedResults: ExpectedItemResult[] = [
+          ...this.completedItems.map((id) => ({ identifier: id, success: true })),
+          ...this.failedItems.map((id) => ({ identifier: id, success: false })),
+        ];
+        const reconciliation = await reconcileSession(this.client, epicId, expectedResults);
+        if (!reconciliation.clean) {
+          console.warn(`⚠️  Session reconciliation found ${reconciliation.discrepancies.length} discrepancy(ies):`);
+          for (const d of reconciliation.discrepancies) {
+            console.warn(`  - ${d.message}`);
+          }
+        }
+      } catch (error) {
+        console.warn("⚠️  Session reconciliation failed:", error instanceof Error ? error.message : error);
+      }
+
+      // Step 7: End SpecTree session
       await this.endSpectreeSession(epicId, this.completedItems, this.failedItems, mergeConflict);
 
       const duration = Date.now() - startTime;
