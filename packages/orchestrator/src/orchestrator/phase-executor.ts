@@ -717,6 +717,9 @@ export class PhaseExecutor extends EventEmitter {
     console.log(`    🤖 Starting agent for task ${task.identifier}: ${task.title}`);
 
     try {
+      // ENG-69-1: Capture git HEAD before agent spawn
+      const preTaskCommit = await this.branchManager.getLatestCommitHash();
+
       // Mark task as started in SpecTree
       await this.markTaskStarted(task);
 
@@ -753,10 +756,15 @@ export class PhaseExecutor extends EventEmitter {
       // Mark task as completed in SpecTree
       if (agentResult.success) {
         await this.markTaskCompleted(task, agentResult.summary);
-        
+
+        // ENG-69-2: Link modified files to task via API
+        if (preTaskCommit) {
+          await this.linkModifiedFiles(task, preTaskCommit);
+        }
+
         // Emit SESSION_TASK_COMPLETED event
         await this.emitTaskCompletedEvent(task, feature, taskStartTime, true);
-        
+
         this.emit("task:complete", task, feature, true);
         console.log(`    ✅ Task ${task.identifier} completed (${((Date.now() - taskStartTime) / 1000).toFixed(1)}s)`);
       } else {
@@ -783,6 +791,30 @@ export class PhaseExecutor extends EventEmitter {
         success: false,
         error: taskError,
       };
+    }
+  }
+
+  /**
+   * ENG-69-2: Link files modified during a task to the task via API.
+   */
+  private async linkModifiedFiles(task: Task, preTaskCommit: string): Promise<void> {
+    try {
+      const modifiedFiles = await this.branchManager.getModifiedFiles(preTaskCommit);
+      if (modifiedFiles.length === 0) return;
+
+      console.log(`    📎 Linking ${modifiedFiles.length} modified file(s) to ${task.identifier}`);
+      for (const filePath of modifiedFiles) {
+        try {
+          await this.specTreeClient.linkCodeFile("task", task.id, filePath);
+        } catch (e) {
+          console.warn(`      Failed to link file ${filePath}:`, e instanceof Error ? e.message : e);
+        }
+      }
+    } catch (error) {
+      console.warn(
+        `    ⚠️  Failed to link modified files for ${task.identifier}:`,
+        error instanceof Error ? error.message : error
+      );
     }
   }
 

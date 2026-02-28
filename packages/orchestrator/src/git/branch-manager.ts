@@ -302,6 +302,28 @@ export class BranchManager {
   }
 
   /**
+   * Get files modified between two git refs.
+   *
+   * @param fromRef - Starting ref (commit hash, branch name, tag)
+   * @param toRef - Ending ref (defaults to HEAD)
+   * @returns Array of modified file paths (relative to repo root)
+   */
+  async getModifiedFiles(fromRef: string, toRef?: string): Promise<string[]> {
+    await this.ensureGitRepo();
+
+    try {
+      const target = toRef ?? "HEAD";
+      const result = await this.git.diff(["--name-only", `${fromRef}..${target}`]);
+      return result
+        .split("\n")
+        .map((f) => f.trim())
+        .filter((f) => f.length > 0);
+    } catch (error) {
+      throw this.wrapGitError(error, `Failed to get modified files between '${fromRef}' and '${toRef ?? "HEAD"}'`);
+    }
+  }
+
+  /**
    * Get the branch prefix.
    */
   getBranchPrefix(): string {
