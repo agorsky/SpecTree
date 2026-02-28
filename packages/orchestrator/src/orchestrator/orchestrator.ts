@@ -42,6 +42,7 @@ import {
   type Session as SpecTreeSession,
   type StartSessionResponse,
   type SessionHandoff,
+  type BriefingResponse,
 } from "../spectree/api-client.js";
 import {
   AgentError,
@@ -259,6 +260,7 @@ export class Orchestrator extends EventEmitter {
   private phaseResults: PhaseResult[] = [];
   private completedItems: string[] = [];
   private failedItems: string[] = [];
+  private epicBriefing: BriefingResponse | null = null;
 
   constructor(options: OrchestratorOptions) {
     super();
@@ -321,10 +323,8 @@ export class Orchestrator extends EventEmitter {
         },
       });
 
-      // TODO: Use handoff context from previous session for resumption
-      // const handoffContext = sessionResponse.previousSession
-      //   ? this.buildHandoffContext(sessionResponse.previousSession)
-      //   : undefined;
+      // Fetch epic briefing for cross-session context injection (ENG-67)
+      this.epicBriefing = await this.client.getBriefing(epicId);
 
       // Step 3: Determine execution mode
       const forceSequential = options?.sequential ?? false;
@@ -981,8 +981,14 @@ export class Orchestrator extends EventEmitter {
    */
   private async createSession(item: ExecutionItem, _handoffContext?: string): Promise<ClaudeCodeSession> {
     try {
+      // Inject epic briefing into system prompt if available (ENG-67)
+      let systemMessage = AGENT_SYSTEM_PROMPT;
+      if (this.epicBriefing?.briefing) {
+        systemMessage += `\n\n## Cross-Session Briefing\n\n${this.epicBriefing.briefing}`;
+      }
+
       const session = await this.sessionManager.createSession({
-        systemMessage: AGENT_SYSTEM_PROMPT,
+        systemMessage,
       });
 
       return session;

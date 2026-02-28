@@ -709,6 +709,29 @@ model SkillPackFile {
   @@map("skill_pack_files")
 }
 
+// =============================================================================
+// Pattern Model (ENG-65)
+// Registry of reusable patterns and conventions for cross-session learning
+// =============================================================================
+
+model Pattern {
+  id          String   @id @default(uuid())
+  epicId      String?  @map("epic_id")       // null = global pattern
+  name        String
+  category    String                          // e.g., "architecture", "testing", "naming", "workflow"
+  description String
+  examples    String?                         // JSON array of example strings
+  source      String                          // e.g., "debrief", "manual", "promoted"
+  confidence  Float    @default(0.5)          // 0.0 to 1.0
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([epicId])
+  @@index([category])
+  @@index([name])
+  @@map("patterns")
+}
+
 model InstalledSkillPack {
   id               String   @id @default(uuid())
   skillPackId      String   @map("skill_pack_id")

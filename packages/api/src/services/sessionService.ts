@@ -9,6 +9,7 @@ import { prisma } from "../lib/db.js";
 import { NotFoundError, ValidationError } from "../errors/index.js";
 import { emitSessionEvent } from "../events/index.js";
 import { SessionEventType } from "@dispatcher/shared";
+import { extractDebrief, storeDebrief } from "./debriefService.js";
 import type {
   StartSessionInput,
   EndSessionInput,
@@ -313,16 +314,24 @@ export async function endSession(
       ...(input.summary ? { summary: input.summary } : {}),
       ...(input.nextSteps ? { nextSteps: input.nextSteps } : {}),
       ...(input.blockers ? { blockers: input.blockers } : {}),
-      ...(input.decisions 
-        ? { 
+      ...(input.decisions
+        ? {
             decisions: input.decisions.map(d => ({
               decision: d.decision,
               ...(d.rationale ? { rationale: d.rationale } : {})
             }))
-          } 
+          }
         : {}),
     },
   });
+
+  // Extract and store session debrief as AI note on the epic (ENG-64)
+  try {
+    const debrief = extractDebrief(updatedSession);
+    await storeDebrief(epic.id, updatedSession.id, debrief);
+  } catch {
+    // Debrief storage failure should not break session end
+  }
 
   return transformSession(updatedSession);
 }

@@ -395,6 +395,13 @@ export interface StructuredDescription {
   estimatedEffort?: EstimatedEffort;
 }
 
+/** Briefing response from the memory compiler (ENG-67) */
+export interface BriefingResponse {
+  briefing: string;
+  tokenCount: number;
+  sources: string[];
+}
+
 // -----------------------------------------------------------------------------
 // Template Types
 // -----------------------------------------------------------------------------
@@ -1566,6 +1573,27 @@ export class DispatcherClient {
         : `/tasks/${id}/structured-desc`;
     const response = await this.request<{ data: StructuredDescription | null }>("GET", endpoint);
     return response.data;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Briefings (ENG-67)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get a compiled briefing for an epic.
+   * Returns cross-session context including decisions, patterns, and debriefs.
+   */
+  async getBriefing(epicId: string): Promise<BriefingResponse | null> {
+    try {
+      const response = await this.request<{ data: BriefingResponse }>(
+        "GET",
+        `/epics/${epicId}/briefing`
+      );
+      return response.data;
+    } catch {
+      // Briefing fetch failure should not break orchestration
+      return null;
+    }
   }
 }
 
