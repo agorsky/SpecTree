@@ -558,6 +558,73 @@ describe("ClaudeCodeClient", () => {
 
       vi.useRealTimers();
     });
+
+    it("should reject on inactivity timeout when no events received", async () => {
+      vi.useFakeTimers();
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc);
+
+      const c = new ClaudeCodeClient({ inactivityTimeoutMs: 2000, requestTimeout: 30000 });
+      const promise = c.executePrompt("idle task");
+
+      // Advance past inactivity timeout (no events emitted)
+      vi.advanceTimersByTime(2001);
+
+      // Simulate process exit after kill
+      emitExit(proc, null, "SIGTERM");
+
+      await expect(promise).rejects.toThrow("inactive");
+      expect((proc as any).kill).toHaveBeenCalledWith("SIGTERM");
+
+      vi.useRealTimers();
+    });
+
+    it("should reset inactivity timer on each stream event", async () => {
+      vi.useFakeTimers();
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc);
+
+      const c = new ClaudeCodeClient({ inactivityTimeoutMs: 2000, requestTimeout: 30000 });
+      const promise = c.executePrompt("active task");
+
+      const systemEvent: SystemEvent = { type: "system", subtype: "init", message: "init", session_id: "s1" };
+
+      // Advance 1.5s, emit event (resets timer)
+      vi.advanceTimersByTime(1500);
+      emitStdout(proc, JSON.stringify(systemEvent) + "\n");
+
+      // Advance another 1.5s (total 3s, but only 1.5s since last event)
+      vi.advanceTimersByTime(1500);
+      // Should NOT have timed out yet
+
+      // Now emit result and exit
+      const resultEvent: ResultEvent = { type: "result", subtype: "success", result: "done" };
+      emitStdout(proc, JSON.stringify(resultEvent) + "\n");
+      emitExit(proc, 0);
+
+      const result = await promise;
+      expect(result.result).toBe("done");
+
+      vi.useRealTimers();
+    });
+
+    it("should allow per-request inactivity timeout override via SpawnOptions", async () => {
+      vi.useFakeTimers();
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc);
+
+      const c = new ClaudeCodeClient({ inactivityTimeoutMs: 60000, requestTimeout: 300000 });
+      const promise = c.executePrompt("test", { inactivityTimeoutMs: 1000 });
+
+      // Advance past per-request inactivity timeout
+      vi.advanceTimersByTime(1001);
+
+      emitExit(proc, null, "SIGTERM");
+
+      await expect(promise).rejects.toThrow("inactive");
+
+      vi.useRealTimers();
+    });
   });
 
   // ---------------------------------------------------------------------------
