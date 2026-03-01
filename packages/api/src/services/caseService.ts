@@ -201,37 +201,31 @@ export async function issueVerdict(
   }
 
   if (input.verdict === "guilty") {
-    // Atomic transaction: update case + create remediation task + stub agent score update
-    return prisma.$transaction(async (tx) => {
-      // Create a remediation task linked to the case
-      // We need a feature to attach the task to. Use the law's description as context.
-      // For now, create the task in a well-known remediation feature if it exists,
-      // or skip task creation if no feature context is available.
-      const updatedCase = await tx.case.update({
-        where: { id: caseId },
-        data: {
-          status: "verdict",
-          verdict: input.verdict,
-          verdictReason: input.verdictReason,
-          deductionLevel: input.deductionLevel,
-        },
-      });
-
-      // Deduct points from the accused agent's score
-      await agentScoreService.updateOnVerdict(
-        c.accusedAgent,
-        input.deductionLevel
-      ).catch(() => {
-        // Score record may not exist yet — don't block verdict
-      });
-
-      // Barney earns points for a successful conviction
-      await agentScoreService.updateOnConviction(c.filedBy).catch(() => {
-        // Score record may not exist yet — don't block verdict
-      });
-
-      return updatedCase;
+    // Update case verdict first
+    const updatedCase = await prisma.case.update({
+      where: { id: caseId },
+      data: {
+        status: "verdict",
+        verdict: input.verdict,
+        verdictReason: input.verdictReason,
+        deductionLevel: input.deductionLevel,
+      },
     });
+
+    // Score updates are done outside the case update to avoid SQLite
+    // interactive-transaction lock conflicts when agent scores don't exist yet.
+    await agentScoreService.updateOnVerdict(
+      c.accusedAgent,
+      input.deductionLevel
+    ).catch(() => {
+      // Score record may not exist yet — don't block verdict
+    });
+
+    await agentScoreService.updateOnConviction(c.filedBy).catch(() => {
+      // Score record may not exist yet — don't block verdict
+    });
+
+    return updatedCase;
   }
 
   if (input.verdict === "not_guilty") {
